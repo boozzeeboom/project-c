@@ -1,0 +1,1386 @@
+[
+  {
+    "matchNo": 751,
+    "result": {
+      "winner": "minus",
+      "reason": "hold",
+      "moves": 25
+    },
+    "replay": {
+      "winner": "minus",
+      "reason": "hold",
+      "moves": 25,
+      "ok": true
+    },
+    "llm": {
+      "actions": 5,
+      "moves": 5,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 0,
+      "lineKills": 0,
+      "supportNull": 0,
+      "noopSupports": 0,
+      "osc1": 4,
+      "osc2": 0,
+      "repeatPiece": 4,
+      "gateMoves": 0,
+      "centerTicks": 0,
+      "maxHold": 0,
+      "holdTicks": 0
+    },
+    "ai": {
+      "actions": 20,
+      "moves": 20,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 1,
+      "lineKills": 0,
+      "osc1": 0,
+      "osc2": 0,
+      "repeatPiece": 8,
+      "centerTicks": 6,
+      "maxHold": 2,
+      "holdTicks": 1,
+      "gateMoves": null
+    },
+    "llmTurns": 5,
+    "zeroHoldMax": 0,
+    "flags": {
+      "fallbacks": 0,
+      "errors": [],
+      "illegal": [],
+      "outsideDisplayed": [],
+      "staleSupports": [],
+      "integrity": [],
+      "missedLineDefense": [],
+      "noDefenseAvailable": [],
+      "centerOpportunities": [],
+      "supportTargets": [],
+      "lineDeaths": [],
+      "plans": [
+        {
+          "i": 2,
+          "move": 2,
+          "plan": "Скиталец с C1 продвигаю к жёлтым воротам и «Ц», чтобы начать гонку за центр.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 2,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 5,
+          "move": 5,
+          "plan": "Продолжаю гонку скитальца к жёлтым воротам/центру, чтобы быстрее претендовать на «Ц».",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 3,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 7,
+          "move": 7,
+          "plan": "Скиталец с C1 продвигается к центру/жёлтым воротам, чтобы начать удержание «Ц».",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 2,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 20,
+          "move": 20,
+          "plan": "Минусы уже на «Ц», поэтому нужно быстро продвигать скитальца к жёлтым воротам и центру, чтобы оспорить удержание.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 3,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 24,
+          "move": 24,
+          "plan": "Скиталец с C1 продвигается к центру, чтобы оспорить удержание «Ц» Минусами.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 2,
+            "r": 0,
+            "displace": false
+          }
+        }
+      ],
+      "displaceEvents": []
+    }
+  },
+  {
+    "matchNo": 752,
+    "result": {
+      "winner": "minus",
+      "reason": "hold",
+      "moves": 24
+    },
+    "replay": {
+      "winner": "minus",
+      "reason": "hold",
+      "moves": 24,
+      "ok": true
+    },
+    "llm": {
+      "actions": 10,
+      "moves": 10,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 0,
+      "lineKills": 0,
+      "supportNull": 0,
+      "noopSupports": 0,
+      "osc1": 9,
+      "osc2": 0,
+      "repeatPiece": 9,
+      "gateMoves": 0,
+      "centerTicks": 0,
+      "maxHold": 0,
+      "holdTicks": 0
+    },
+    "ai": {
+      "actions": 14,
+      "moves": 14,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 0,
+      "lineKills": 0,
+      "osc1": 0,
+      "osc2": 0,
+      "repeatPiece": 4,
+      "centerTicks": 6,
+      "maxHold": 2,
+      "holdTicks": 0,
+      "gateMoves": null
+    },
+    "llmTurns": 10,
+    "zeroHoldMax": 0,
+    "flags": {
+      "fallbacks": 0,
+      "errors": [],
+      "illegal": [],
+      "outsideDisplayed": [],
+      "staleSupports": [],
+      "integrity": [],
+      "missedLineDefense": [],
+      "noDefenseAvailable": [],
+      "centerOpportunities": [],
+      "supportTargets": [],
+      "lineDeaths": [],
+      "plans": [
+        {
+          "i": 3,
+          "move": 3,
+          "plan": "Занять пустой центр скитальцем из C1, чтобы начать удержание и блокировать путь военных.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 2,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 4,
+          "move": 4,
+          "plan": "Занять пустой центр скитальцем, чтобы начать удержание и прервать гонку военных.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 3,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 5,
+          "move": 5,
+          "plan": "Скиталец из C1 идёт на центр, чтобы занять «Ц» и не дать военным опередить Нулей.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 2,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 6,
+          "move": 6,
+          "plan": "Скиталец из B1 выходит на центр (3,0), чтобы занять «Ц» и начать удержание.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 3,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 11,
+          "move": 11,
+          "plan": "Военный занял центр, поэтому продвигаю скитальца к жёлтым воротам (2,0), чтобы оспорить доступ и готовить возврат «Ц».",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 2,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 12,
+          "move": 12,
+          "plan": "Центр занят Минусами, поэтому скиталец идёт к (3,0), чтобы оспорить ворота и не дать усилить удержание.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 3,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 13,
+          "move": 13,
+          "plan": "Минусы держат центр, поэтому скиталец из C1 идёт к (2,0), чтобы оспорить ворота и подготовить оттеснение.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 2,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 16,
+          "move": 16,
+          "plan": "Центр занят Минусами, поэтому скиталец идёт к (3,0), чтобы оспорить ворота и не дать усилить удержание.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 3,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 20,
+          "move": 20,
+          "plan": "Центр занят Минусами, поэтому скиталец из C1 идёт к (2,0), чтобы оспорить ворота и подготовить возврат «Ц».",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 2,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 22,
+          "move": 22,
+          "plan": "Центр занят Минусами, поэтому скиталец идёт к (3,0), чтобы оспорить ворота и мешать удержанию.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 3,
+            "r": 0,
+            "displace": false
+          }
+        }
+      ],
+      "displaceEvents": []
+    }
+  },
+  {
+    "matchNo": 753,
+    "result": {
+      "winner": "plus",
+      "reason": "hold",
+      "moves": 20
+    },
+    "replay": {
+      "winner": "plus",
+      "reason": "hold",
+      "moves": 20,
+      "ok": true
+    },
+    "llm": {
+      "actions": 4,
+      "moves": 4,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 0,
+      "lineKills": 0,
+      "supportNull": 0,
+      "noopSupports": 0,
+      "osc1": 2,
+      "osc2": 0,
+      "repeatPiece": 3,
+      "gateMoves": 2,
+      "centerTicks": 0,
+      "maxHold": 0,
+      "holdTicks": 0
+    },
+    "ai": {
+      "actions": 16,
+      "moves": 16,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 1,
+      "lineKills": 0,
+      "osc1": 0,
+      "osc2": 0,
+      "repeatPiece": 3,
+      "centerTicks": 6,
+      "maxHold": 2,
+      "holdTicks": 0,
+      "gateMoves": null
+    },
+    "llmTurns": 4,
+    "zeroHoldMax": 0,
+    "flags": {
+      "fallbacks": 0,
+      "errors": [],
+      "illegal": [],
+      "outsideDisplayed": [],
+      "staleSupports": [],
+      "integrity": [],
+      "missedLineDefense": [],
+      "noDefenseAvailable": [],
+      "centerOpportunities": [],
+      "supportTargets": [],
+      "lineDeaths": [],
+      "plans": [
+        {
+          "i": 8,
+          "move": 8,
+          "plan": "Скиталец из C1 продвигается к жёлтым воротам и «Ц», чтобы начать гонку за удержание.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 2,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 11,
+          "move": 11,
+          "plan": "Скиталец продолжает движение к «Ц», занятому Плюсами, чтобы оспорить контроль и не дать им удержать 3 круга.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 1,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 12,
+          "move": 12,
+          "plan": "Скиталец из A1 продолжает гонку к «Ц», чтобы оспорить удержание Плюсов.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 2,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 19,
+          "move": 19,
+          "plan": "Скиталец снова двигается к «Ц», чтобы не дать Плюсам удержать его третий круг.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 1,
+            "r": 0,
+            "displace": false
+          }
+        }
+      ],
+      "displaceEvents": []
+    }
+  },
+  {
+    "matchNo": 754,
+    "result": {
+      "winner": "minus",
+      "reason": "king",
+      "moves": 15
+    },
+    "replay": {
+      "winner": "minus",
+      "reason": "king",
+      "moves": 15,
+      "ok": true
+    },
+    "llm": {
+      "actions": 0,
+      "moves": 0,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 0,
+      "lineKills": 0,
+      "supportNull": 0,
+      "noopSupports": 0,
+      "osc1": 0,
+      "osc2": 0,
+      "repeatPiece": 0,
+      "gateMoves": 0,
+      "centerTicks": 0,
+      "maxHold": 0,
+      "holdTicks": 0
+    },
+    "ai": {
+      "actions": 15,
+      "moves": 15,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 1,
+      "lineKills": 1,
+      "osc1": 0,
+      "osc2": 0,
+      "repeatPiece": 2,
+      "centerTicks": 0,
+      "maxHold": 0,
+      "holdTicks": 0
+    },
+    "llmTurns": 0,
+    "zeroHoldMax": 0,
+    "flags": {
+      "fallbacks": 0,
+      "errors": [],
+      "illegal": [],
+      "outsideDisplayed": [],
+      "staleSupports": [],
+      "integrity": [],
+      "missedLineDefense": [],
+      "noDefenseAvailable": [],
+      "centerOpportunities": [],
+      "supportTargets": [],
+      "lineDeaths": [
+        {
+          "i": 14,
+          "move": 15,
+          "killer": "minus",
+          "victim": "plus",
+          "winner": "minus",
+          "reason": "king"
+        }
+      ],
+      "plans": [],
+      "displaceEvents": []
+    }
+  },
+  {
+    "matchNo": 755,
+    "result": {
+      "winner": "minus",
+      "reason": "king",
+      "moves": 24
+    },
+    "replay": {
+      "winner": "minus",
+      "reason": "king",
+      "moves": 24,
+      "ok": true
+    },
+    "llm": {
+      "actions": 9,
+      "moves": 8,
+      "supports": 1,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 0,
+      "lineKills": 0,
+      "supportNull": 0,
+      "noopSupports": 0,
+      "osc1": 7,
+      "osc2": 0,
+      "repeatPiece": 7,
+      "gateMoves": 0,
+      "centerTicks": 0,
+      "maxHold": 0,
+      "holdTicks": 0
+    },
+    "ai": {
+      "actions": 15,
+      "moves": 15,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 1,
+      "lineKills": 1,
+      "osc1": 0,
+      "osc2": 0,
+      "repeatPiece": 2,
+      "centerTicks": 0,
+      "maxHold": 0,
+      "holdTicks": 0
+    },
+    "llmTurns": 9,
+    "zeroHoldMax": 0,
+    "flags": {
+      "fallbacks": 0,
+      "errors": [],
+      "illegal": [],
+      "outsideDisplayed": [],
+      "staleSupports": [],
+      "integrity": [],
+      "missedLineDefense": [],
+      "noDefenseAvailable": [],
+      "centerOpportunities": [],
+      "supportTargets": [
+        {
+          "i": 9,
+          "move": 9,
+          "zero": "Z-P22",
+          "target": "Z-P21",
+          "targetType": "parliament",
+          "targetFaction": "zero",
+          "nullTarget": false
+        }
+      ],
+      "lineDeaths": [
+        {
+          "i": 23,
+          "move": 24,
+          "killer": "minus",
+          "victim": "plus",
+          "winner": "minus",
+          "reason": "king"
+        }
+      ],
+      "plans": [
+        {
+          "i": 2,
+          "move": 2,
+          "plan": "Веду Скитальца из C1 к жёлтым воротам и «Ц», чтобы начать гонку за центр; не трачу ход на поддержку.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 2,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 3,
+          "move": 3,
+          "plan": "Продолжаю гонку Скитальца к центру через (3,0), чтобы быстрее достичь жёлтых ворот и «Ц»; поддержка сейчас не защищает центр или Линейного.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 3,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 7,
+          "move": 7,
+          "plan": "Скиталец из C1 снова движется к центру через (2,0), приближаясь к жёлтым воротам; поддержка сейчас не защищает «Ц» или Линейного.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 2,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 9,
+          "move": 9,
+          "plan": "P-L1 стоит рядом с открытым Z-P21, поэтому даю ему щит 2 через поддержку; это важнее гонки в этот ход.",
+          "act": {
+            "kind": "support",
+            "zeroId": "Z-P22",
+            "targetId": "Z-P21",
+            "explicitTarget": true
+          }
+        },
+        {
+          "i": 11,
+          "move": 11,
+          "plan": "Поддержка Z-P22 уже стоит, повторять её не нужно; продвигаю Скитальца к центру через (3,0), чтобы продолжить гонку за «Ц».",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 3,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 14,
+          "move": 14,
+          "plan": "Скиталец из C1 снова идёт к центру через (2,0); поддержка уже стоит и не нуждается в повторении.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 2,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 15,
+          "move": 15,
+          "plan": "Скиталец из B1 продолжает путь к центру через (3,0); поддержка Линейного уже стоит, поэтому не повторяю её.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 3,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 18,
+          "move": 18,
+          "plan": "Скиталец из C1 продвигается к центру через (2,0); поддержка Линейного уже стоит и не повторяется.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 2,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 19,
+          "move": 19,
+          "plan": "Скиталец из B1 продолжает путь к центру через (3,0); поддержка Линейного уже стоит, поэтому не повторяю её.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 3,
+            "r": 0,
+            "displace": false
+          }
+        }
+      ],
+      "displaceEvents": []
+    }
+  },
+  {
+    "matchNo": 756,
+    "result": {
+      "winner": "zero",
+      "reason": "hold",
+      "moves": 17
+    },
+    "replay": {
+      "winner": "zero",
+      "reason": "hold",
+      "moves": 17,
+      "ok": true
+    },
+    "llm": {
+      "actions": 5,
+      "moves": 5,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 0,
+      "lineKills": 0,
+      "supportNull": 0,
+      "noopSupports": 0,
+      "osc1": 0,
+      "osc2": 0,
+      "repeatPiece": 3,
+      "gateMoves": 3,
+      "centerTicks": 3,
+      "maxHold": 2,
+      "holdTicks": 1
+    },
+    "ai": {
+      "actions": 12,
+      "moves": 12,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 2,
+      "lineKills": 0,
+      "osc1": 0,
+      "osc2": 0,
+      "repeatPiece": 1,
+      "centerTicks": 0,
+      "maxHold": 0,
+      "holdTicks": 0
+    },
+    "llmTurns": 5,
+    "zeroHoldMax": 3,
+    "flags": {
+      "fallbacks": 0,
+      "errors": [],
+      "illegal": [],
+      "outsideDisplayed": [],
+      "staleSupports": [],
+      "integrity": [],
+      "missedLineDefense": [],
+      "noDefenseAvailable": [],
+      "centerOpportunities": [],
+      "supportTargets": [],
+      "lineDeaths": [],
+      "plans": [
+        {
+          "i": 1,
+          "move": 1,
+          "plan": "Веду Скитальца с C1 к центру, чтобы начать гонку за жёлтые ворота и «Ц».",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 2,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 3,
+          "move": 3,
+          "plan": "Продолжаю гонку Скитальца к центру/жёлтым воротам; угроз Линейным сейчас нет, поддержка не нужна.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 1,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 6,
+          "move": 6,
+          "plan": "Скиталец доходит до центральной клетки, приближаясь к жёлтым воротам и «Ц»; угроз Линейным нет.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 0,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 11,
+          "move": 11,
+          "plan": "Держу Скитальца на «Ц» (Hold 1/3); подвожу другой Скиталец ближе, чтобы в следующем ходу поддержать стоящего и дать щит 2.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S42",
+            "q": 1,
+            "r": 1,
+            "displace": false
+          }
+        },
+        {
+          "i": 15,
+          "move": 15,
+          "plan": "Держу «Ц» (Hold 2/3); подвожу Скитальца на соседнюю клетку, чтобы в следующем ходу поддержать стоящего и завершить удержание.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S42",
+            "q": 1,
+            "r": 0,
+            "displace": false
+          }
+        }
+      ],
+      "displaceEvents": []
+    }
+  },
+  {
+    "matchNo": 757,
+    "result": {
+      "winner": "minus",
+      "reason": "hold",
+      "moves": 25
+    },
+    "replay": {
+      "winner": "minus",
+      "reason": "hold",
+      "moves": 25,
+      "ok": true
+    },
+    "llm": {
+      "actions": 10,
+      "moves": 10,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 0,
+      "lineKills": 0,
+      "supportNull": 0,
+      "noopSupports": 0,
+      "osc1": 9,
+      "osc2": 0,
+      "repeatPiece": 9,
+      "gateMoves": 0,
+      "centerTicks": 0,
+      "maxHold": 0,
+      "holdTicks": 0
+    },
+    "ai": {
+      "actions": 15,
+      "moves": 15,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 1,
+      "lineKills": 0,
+      "osc1": 0,
+      "osc2": 0,
+      "repeatPiece": 3,
+      "centerTicks": 4,
+      "maxHold": 2,
+      "holdTicks": 1,
+      "gateMoves": null
+    },
+    "llmTurns": 10,
+    "zeroHoldMax": 0,
+    "flags": {
+      "fallbacks": 0,
+      "errors": [],
+      "illegal": [],
+      "outsideDisplayed": [],
+      "staleSupports": [],
+      "integrity": [],
+      "missedLineDefense": [],
+      "noDefenseAvailable": [],
+      "centerOpportunities": [],
+      "supportTargets": [],
+      "lineDeaths": [],
+      "plans": [],
+      "displaceEvents": []
+    }
+  },
+  {
+    "matchNo": 758,
+    "result": {
+      "winner": "plus",
+      "reason": "king",
+      "moves": 6
+    },
+    "replay": {
+      "winner": "plus",
+      "reason": "king",
+      "moves": 6,
+      "ok": true
+    },
+    "llm": {
+      "actions": 1,
+      "moves": 1,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 0,
+      "lineKills": 0,
+      "supportNull": 0,
+      "noopSupports": 0,
+      "osc1": 0,
+      "osc2": 0,
+      "repeatPiece": 0,
+      "gateMoves": 0,
+      "centerTicks": 0,
+      "maxHold": 0,
+      "holdTicks": 0
+    },
+    "ai": {
+      "actions": 5,
+      "moves": 5,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 2,
+      "lineKills": 1,
+      "osc1": 0,
+      "osc2": 0,
+      "repeatPiece": 3,
+      "centerTicks": 0,
+      "maxHold": 0,
+      "holdTicks": 0,
+      "gateMoves": null
+    },
+    "llmTurns": 1,
+    "zeroHoldMax": 0,
+    "flags": {
+      "fallbacks": 0,
+      "errors": [],
+      "illegal": [],
+      "outsideDisplayed": [],
+      "staleSupports": [],
+      "integrity": [],
+      "missedLineDefense": [],
+      "noDefenseAvailable": [],
+      "centerOpportunities": [],
+      "supportTargets": [],
+      "lineDeaths": [
+        {
+          "i": 5,
+          "move": 6,
+          "killer": "plus",
+          "victim": "minus",
+          "winner": "plus",
+          "reason": "king"
+        }
+      ],
+      "plans": [
+        {
+          "i": 3,
+          "move": 3,
+          "plan": "Двигаю Скитальца с C1 к центру, чтобы быстрее выйти к жёлтым воротам и претендовать на «Ц».",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 2,
+            "r": 0,
+            "displace": false
+          }
+        }
+      ],
+      "displaceEvents": []
+    }
+  },
+  {
+    "matchNo": 759,
+    "result": {
+      "winner": "minus",
+      "reason": "hold",
+      "moves": 30
+    },
+    "replay": {
+      "winner": "minus",
+      "reason": "hold",
+      "moves": 30,
+      "ok": true
+    },
+    "llm": {
+      "actions": 14,
+      "moves": 13,
+      "supports": 1,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 0,
+      "lineKills": 0,
+      "supportNull": 0,
+      "noopSupports": 0,
+      "osc1": 6,
+      "osc2": 0,
+      "repeatPiece": 10,
+      "gateMoves": 6,
+      "centerTicks": 3,
+      "maxHold": 1,
+      "holdTicks": 0
+    },
+    "ai": {
+      "actions": 16,
+      "moves": 16,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 2,
+      "lineKills": 0,
+      "osc1": 0,
+      "osc2": 0,
+      "repeatPiece": 4,
+      "centerTicks": 3,
+      "maxHold": 2,
+      "holdTicks": 1,
+      "gateMoves": null
+    },
+    "llmTurns": 14,
+    "zeroHoldMax": 1,
+    "flags": {
+      "fallbacks": 0,
+      "errors": [],
+      "illegal": [],
+      "outsideDisplayed": [],
+      "staleSupports": [],
+      "integrity": [],
+      "missedLineDefense": [],
+      "noDefenseAvailable": [],
+      "centerOpportunities": [],
+      "supportTargets": [
+        {
+          "i": 8,
+          "move": 8,
+          "zero": "Z-P22",
+          "target": "Z-P21",
+          "targetType": "parliament",
+          "targetFaction": "zero",
+          "nullTarget": false
+        }
+      ],
+      "lineDeaths": [],
+      "plans": [
+        {
+          "i": 3,
+          "move": 3,
+          "plan": "Продвигаю Скитальца к жёлтым воротам и Ц, чтобы начать гонку за удержание центра.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 2,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 5,
+          "move": 5,
+          "plan": "Продолжаю гонку Скитальца к жёлтым воротам и Ц, чтобы закрепить преимущество по темпу.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 3,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 6,
+          "move": 6,
+          "plan": "Выдвигаю ещё одного Скитальца к центру, чтобы усилить гонку за Ц и создать резерв.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S44",
+            "q": 2,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 8,
+          "move": 8,
+          "plan": "Поддерживаю своего Линейного щитом 2, так как рядом вражеский Бомбардир угрожает открытому Линейному.",
+          "act": {
+            "kind": "support",
+            "zeroId": "Z-P22",
+            "targetId": "Z-P21",
+            "explicitTarget": true
+          }
+        },
+        {
+          "i": 9,
+          "move": 9,
+          "plan": "Продвигаю Скитальца дальше к центру, усиливая гонку за Ц.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S44",
+            "q": 1,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 10,
+          "move": 10,
+          "plan": "Занимаю Центр Скитальцем — это наша цель удержания 3 круга.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S44",
+            "q": 0,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 11,
+          "move": 11,
+          "plan": "Подвожу Свободного к Центру, чтобы в следующем ходу поддержать стоящего на Ц Скитальца щитом 2.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F29",
+            "q": 1,
+            "r": -1,
+            "displace": false
+          }
+        },
+        {
+          "i": 15,
+          "move": 15,
+          "plan": "Подвожу Свободного вплотную к Центру, чтобы поддержать стоящего на Ц Скитальца щитом 2.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F29",
+            "q": 1,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 19,
+          "move": 19,
+          "plan": "Подвожу Свободного к Центру, чтобы при первой возможности оспорить занятое противником Ц.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F29",
+            "q": 1,
+            "r": 1,
+            "displace": false
+          }
+        },
+        {
+          "i": 20,
+          "move": 20,
+          "plan": "Подвожу Свободного к Центру, чтобы оспорить его при первой возможности.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F29",
+            "q": 1,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 21,
+          "move": 21,
+          "plan": "Подвожу Свободного к Центру, готовясь оспорить его.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F29",
+            "q": 1,
+            "r": 1,
+            "displace": false
+          }
+        },
+        {
+          "i": 24,
+          "move": 24,
+          "plan": "Подвожу Свободного к Центру, чтобы оспорить его.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F29",
+            "q": 1,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 26,
+          "move": 26,
+          "plan": "Подвожу Свободного к Центру, чтобы оспорить его.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F29",
+            "q": 1,
+            "r": 1,
+            "displace": false
+          }
+        },
+        {
+          "i": 27,
+          "move": 27,
+          "plan": "Подвожу Свободного к Центру, чтобы оспорить его.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-F29",
+            "q": 1,
+            "r": 0,
+            "displace": false
+          }
+        }
+      ],
+      "displaceEvents": []
+    }
+  },
+  {
+    "matchNo": 760,
+    "result": {
+      "winner": "minus",
+      "reason": "hold",
+      "moves": 27
+    },
+    "replay": {
+      "winner": "minus",
+      "reason": "hold",
+      "moves": 27,
+      "ok": true
+    },
+    "llm": {
+      "actions": 9,
+      "moves": 9,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 0,
+      "lineKills": 0,
+      "supportNull": 0,
+      "noopSupports": 0,
+      "osc1": 8,
+      "osc2": 0,
+      "repeatPiece": 8,
+      "gateMoves": 0,
+      "centerTicks": 0,
+      "maxHold": 0,
+      "holdTicks": 0
+    },
+    "ai": {
+      "actions": 18,
+      "moves": 18,
+      "supports": 0,
+      "skips": 0,
+      "displaces": 0,
+      "captures": 0,
+      "lineKills": 0,
+      "osc1": 0,
+      "osc2": 0,
+      "repeatPiece": 5,
+      "centerTicks": 6,
+      "maxHold": 2,
+      "holdTicks": 1,
+      "gateMoves": null
+    },
+    "llmTurns": 9,
+    "zeroHoldMax": 0,
+    "flags": {
+      "fallbacks": 0,
+      "errors": [],
+      "illegal": [],
+      "outsideDisplayed": [],
+      "staleSupports": [],
+      "integrity": [],
+      "missedLineDefense": [],
+      "noDefenseAvailable": [],
+      "centerOpportunities": [],
+      "supportTargets": [],
+      "lineDeaths": [],
+      "plans": [
+        {
+          "i": 0,
+          "move": 0,
+          "plan": "Скиталец из C1 продвигается к жёлтым воротам и Ц; первый ход — пешкой, гонка за Ц.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 2,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 1,
+          "move": 1,
+          "plan": "Скиталец продолжает гонку к жёлтым воротам и Ц, приближаясь к центру.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 3,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 3,
+          "move": 3,
+          "plan": "Скиталец из C1 движется к жёлтым воротам, приближаясь к Ц.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 2,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 11,
+          "move": 11,
+          "plan": "Скиталец продолжает гонку к жёлтым воротам и Ц.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 3,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 14,
+          "move": 14,
+          "plan": "Скиталец из C1 движется к жёлтым воротам, чтобы оспорить занятый Минусами Ц.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 2,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 15,
+          "move": 15,
+          "plan": "Скиталец продолжает гонку к жёлтым воротам и Ц, оспаривая Минусов.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 3,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 19,
+          "move": 19,
+          "plan": "Скиталец из C1 движется к жёлтым воротам, оспаривая занятый Минусами Ц.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 2,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 23,
+          "move": 23,
+          "plan": "Скиталец продолжает гонку к жёлтым воротам и Ц, оспаривая Минусов.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 3,
+            "r": 0,
+            "displace": false
+          }
+        },
+        {
+          "i": 24,
+          "move": 24,
+          "plan": "Скиталец из C1 движется к жёлтым воротам, оспаривая занятый Минусами Ц.",
+          "act": {
+            "kind": "move",
+            "pieceId": "Z-S43",
+            "q": 2,
+            "r": 0,
+            "displace": false
+          }
+        }
+      ],
+      "displaceEvents": []
+    }
+  }
+]

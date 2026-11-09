@@ -1,0 +1,424 @@
+{
+ "matchNo": 760,
+ "assign": {
+  "beam": "zero"
+ },
+ "mode": {
+  "turn": "arrow",
+  "death": "main"
+ },
+ "pawns": 5,
+ "limit": 120,
+ "firstMovePawn": true,
+ "winner": "minus",
+ "reason": "hold",
+ "moves": 27,
+ "contaminated": false,
+ "log": [
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-S43",
+    "to": {
+     "q": 2,
+     "r": 0
+    }
+   },
+   "move": 0,
+   "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":2,\"r\":0},\"plan\":\"Скиталец из C1 продвигается к жёлтым воротам и Ц; первый ход — пешкой, гонка за Ц.\"}",
+   "plan": "Скиталец из C1 продвигается к жёлтым воротам и Ц; первый ход — пешкой, гонка за Ц.",
+   "winner": null,
+   "reason": null,
+   "after": 1
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-S43",
+    "to": {
+     "q": 3,
+     "r": 0
+    }
+   },
+   "move": 1,
+   "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":3,\"r\":0},\"plan\":\"Скиталец продолжает гонку к жёлтым воротам и Ц, приближаясь к центру.\"}",
+   "plan": "Скиталец продолжает гонку к жёлтым воротам и Ц, приближаясь к центру.",
+   "winner": null,
+   "reason": null,
+   "after": 2
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-T40",
+    "q": 0,
+    "r": 2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 3
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-S43",
+    "to": {
+     "q": 2,
+     "r": 0
+    }
+   },
+   "move": 3,
+   "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":2,\"r\":0},\"plan\":\"Скиталец из C1 движется к жёлтым воротам, приближаясь к Ц.\"}",
+   "plan": "Скиталец из C1 движется к жёлтым воротам, приближаясь к Ц.",
+   "winner": null,
+   "reason": null,
+   "after": 4
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-C16",
+    "q": -1,
+    "r": 3,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 5
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-C16",
+    "q": 0,
+    "r": 1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 6
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-T36",
+    "q": -2,
+    "r": 1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 7
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-T39",
+    "q": -1,
+    "r": 2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 8
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D18",
+    "q": -2,
+    "r": 2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 9
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-T35",
+    "q": -1,
+    "r": -1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 10
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-T39",
+    "q": -1,
+    "r": 1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 11
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-S43",
+    "to": {
+     "q": 3,
+     "r": 0
+    }
+   },
+   "move": 11,
+   "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":3,\"r\":0},\"plan\":\"Скиталец продолжает гонку к жёлтым воротам и Ц.\"}",
+   "plan": "Скиталец продолжает гонку к жёлтым воротам и Ц.",
+   "winner": null,
+   "reason": null,
+   "after": 12
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-T39",
+    "q": 0,
+    "r": 0,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 13
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D19",
+    "q": -2,
+    "r": 3,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 14
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-S43",
+    "to": {
+     "q": 2,
+     "r": 0
+    }
+   },
+   "move": 14,
+   "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":2,\"r\":0},\"plan\":\"Скиталец из C1 движется к жёлтым воротам, чтобы оспорить занятый Минусами Ц.\"}",
+   "plan": "Скиталец из C1 движется к жёлтым воротам, чтобы оспорить занятый Минусами Ц.",
+   "winner": null,
+   "reason": null,
+   "after": 15
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-S43",
+    "to": {
+     "q": 3,
+     "r": 0
+    }
+   },
+   "move": 15,
+   "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":3,\"r\":0},\"plan\":\"Скиталец продолжает гонку к жёлтым воротам и Ц, оспаривая Минусов.\"}",
+   "plan": "Скиталец продолжает гонку к жёлтым воротам и Ц, оспаривая Минусов.",
+   "winner": null,
+   "reason": null,
+   "after": 16
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D19",
+    "q": -1,
+    "r": 2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 17
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-T32",
+    "q": 0,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 18
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-F10",
+    "q": 1,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 19
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-S43",
+    "to": {
+     "q": 2,
+     "r": 0
+    }
+   },
+   "move": 19,
+   "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":2,\"r\":0},\"plan\":\"Скиталец из C1 движется к жёлтым воротам, оспаривая занятый Минусами Ц.\"}",
+   "plan": "Скиталец из C1 движется к жёлтым воротам, оспаривая занятый Минусами Ц.",
+   "winner": null,
+   "reason": null,
+   "after": 20
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D7",
+    "q": 1,
+    "r": -3,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 21
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D19",
+    "q": -1,
+    "r": 1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 22
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-B14",
+    "q": -1,
+    "r": 2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 23
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-S43",
+    "to": {
+     "q": 3,
+     "r": 0
+    }
+   },
+   "move": 23,
+   "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":3,\"r\":0},\"plan\":\"Скиталец продолжает гонку к жёлтым воротам и Ц, оспаривая Минусов.\"}",
+   "plan": "Скиталец продолжает гонку к жёлтым воротам и Ц, оспаривая Минусов.",
+   "winner": null,
+   "reason": null,
+   "after": 24
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-S43",
+    "to": {
+     "q": 2,
+     "r": 0
+    }
+   },
+   "move": 24,
+   "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":2,\"r\":0},\"plan\":\"Скиталец из C1 движется к жёлтым воротам, оспаривая занятый Минусами Ц.\"}",
+   "plan": "Скиталец из C1 движется к жёлтым воротам, оспаривая занятый Минусами Ц.",
+   "winner": null,
+   "reason": null,
+   "after": 25
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-B14",
+    "q": 2,
+    "r": -1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 26
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D8",
+    "q": -2,
+    "r": 0,
+    "capture": false
+   },
+   "ai": true,
+   "winner": "minus",
+   "reason": "hold",
+   "after": 27
+  }
+ ]
+}

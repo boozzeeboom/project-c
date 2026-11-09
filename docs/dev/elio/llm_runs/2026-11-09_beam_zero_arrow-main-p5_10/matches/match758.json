@@ -1,0 +1,106 @@
+{
+ "matchNo": 758,
+ "assign": {
+  "beam": "zero"
+ },
+ "mode": {
+  "turn": "arrow",
+  "death": "main"
+ },
+ "pawns": 5,
+ "limit": 120,
+ "firstMovePawn": true,
+ "winner": "plus",
+ "reason": "king",
+ "moves": 6,
+ "contaminated": false,
+ "log": [
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-T32",
+    "q": 0,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 1
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-B4",
+    "q": -1,
+    "r": -1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 2
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-B4",
+    "q": -1,
+    "r": 1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 3
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-S43",
+    "to": {
+     "q": 2,
+     "r": 0
+    }
+   },
+   "move": 3,
+   "raw": "{\"plan\":\"Двигаю Скитальца с C1 к центру, чтобы быстрее выйти к жёлтым воротам и претендовать на «Ц».\",\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":2,\"r\":0}}",
+   "plan": "Двигаю Скитальца с C1 к центру, чтобы быстрее выйти к жёлтым воротам и претендовать на «Ц».",
+   "winner": null,
+   "reason": null,
+   "after": 4
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-B4",
+    "q": -3,
+    "r": 3,
+    "capture": true
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 5
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-B4",
+    "q": -5,
+    "r": 5,
+    "capture": true
+   },
+   "ai": true,
+   "winner": "plus",
+   "reason": "king",
+   "after": 6
+  }
+ ]
+}

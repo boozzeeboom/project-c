@@ -190,6 +190,43 @@
       "lineDeaths": 2,
       "plans": 95,
       "note": "4–0–6 (40 %); по 2/5 в каждом сетапе; ровно AI-база Нулей 40.5/40.0 %. 0 contaminated; passTo fix."
+    },
+    {
+      "runId": "2026-11-09_beam_zero_arrow-main-p5_10",
+      "date": "2026-11-09",
+      "engine": "elio_engine.js v1.3d + passTo fix",
+      "promptVersion": "zero-doctrine-v2-action-list",
+      "model": "beam-free (opencode-go)",
+      "v3": false,
+      "games": 10,
+      "wins": 1,
+      "draws": 0,
+      "losses": 9,
+      "contaminatedGames": [],
+      "cleanGames": 10,
+      "cleanWins": 1,
+      "cleanDraws": 0,
+      "cleanLosses": 9,
+      "setup": "arrow+main+15",
+      "avgMoves": 21.3,
+      "llmActions": 67,
+      "llmMoves": 65,
+      "llmSupports": 2,
+      "displaces": 0,
+      "osc1": 45,
+      "osc2": 0,
+      "repeatPiece": 53,
+      "gateMoves": 11,
+      "centerTicks": 6,
+      "maxHoldByLlmAction": 2,
+      "cleanMaxHold": 3,
+      "zeroHoldMaxByGame": {
+        "751": 0, "752": 0, "753": 0, "754": 0, "755": 0,
+        "756": 3, "757": 0, "758": 0, "759": 1, "760": 0
+      },
+      "lineDeaths": 3,
+      "plans": 57,
+      "note": "1–0–9 (10 %) против AI 40 % и DeepSeek 40 %; 69 % осцилляций, 6 center ticks; 754 — 0 ходов Нулей (стрелка), 758 — 1 ход. 0 contaminated."
     }
   ]
 }

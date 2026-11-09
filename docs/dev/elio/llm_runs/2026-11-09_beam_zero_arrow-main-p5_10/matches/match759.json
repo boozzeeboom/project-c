@@ -1,0 +1,478 @@
+{
+ "matchNo": 759,
+ "assign": {
+  "beam": "zero"
+ },
+ "mode": {
+  "turn": "arrow",
+  "death": "main"
+ },
+ "pawns": 5,
+ "limit": 120,
+ "firstMovePawn": true,
+ "winner": "minus",
+ "reason": "hold",
+ "moves": 30,
+ "contaminated": false,
+ "log": [
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-T34",
+    "q": 0,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 1
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D9",
+    "q": -1,
+    "r": -1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 2
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-T31",
+    "q": 1,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 3
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-S43",
+    "to": {
+     "q": 2,
+     "r": 0
+    }
+   },
+   "move": 3,
+   "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":2,\"r\":0},\"plan\":\"Продвигаю Скитальца к жёлтым воротам и Ц, чтобы начать гонку за удержание центра.\"}",
+   "plan": "Продвигаю Скитальца к жёлтым воротам и Ц, чтобы начать гонку за удержание центра.",
+   "winner": null,
+   "reason": null,
+   "after": 4
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D7",
+    "q": 2,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 5
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-S43",
+    "to": {
+     "q": 3,
+     "r": 0
+    }
+   },
+   "move": 5,
+   "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":3,\"r\":0},\"plan\":\"Продолжаю гонку Скитальца к жёлтым воротам и Ц, чтобы закрепить преимущество по темпу.\"}",
+   "plan": "Продолжаю гонку Скитальца к жёлтым воротам и Ц, чтобы закрепить преимущество по темпу.",
+   "winner": null,
+   "reason": null,
+   "after": 6
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-S44",
+    "to": {
+     "q": 2,
+     "r": 0
+    }
+   },
+   "move": 6,
+   "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S44\",\"to\":{\"q\":2,\"r\":0},\"plan\":\"Выдвигаю ещё одного Скитальца к центру, чтобы усилить гонку за Ц и создать резерв.\"}",
+   "plan": "Выдвигаю ещё одного Скитальца к центру, чтобы усилить гонку за Ц и создать резерв.",
+   "winner": null,
+   "reason": null,
+   "after": 7
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D8",
+    "q": -1,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 8
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "support",
+    "zeroId": "Z-P22",
+    "targetId": "Z-P21"
+   },
+   "move": 8,
+   "raw": "{\"kind\":\"support\",\"zeroId\":\"Z-P22\",\"targetId\":\"Z-P21\",\"plan\":\"Поддерживаю своего Линейного щитом 2, так как рядом вражеский Бомбардир угрожает открытому Линейному.\"}",
+   "plan": "Поддерживаю своего Линейного щитом 2, так как рядом вражеский Бомбардир угрожает открытому Линейному.",
+   "winner": null,
+   "reason": null,
+   "after": 9
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-S44",
+    "to": {
+     "q": 1,
+     "r": 0
+    }
+   },
+   "move": 9,
+   "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S44\",\"to\":{\"q\":1,\"r\":0},\"plan\":\"Продвигаю Скитальца дальше к центру, усиливая гонку за Ц.\"}",
+   "plan": "Продвигаю Скитальца дальше к центру, усиливая гонку за Ц.",
+   "winner": null,
+   "reason": null,
+   "after": 10
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-S44",
+    "to": {
+     "q": 0,
+     "r": 0
+    }
+   },
+   "move": 10,
+   "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S44\",\"to\":{\"q\":0,\"r\":0},\"plan\":\"Занимаю Центр Скитальцем — это наша цель удержания 3 круга.\"}",
+   "plan": "Занимаю Центр Скитальцем — это наша цель удержания 3 круга.",
+   "winner": null,
+   "reason": null,
+   "after": 11
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-F29",
+    "to": {
+     "q": 1,
+     "r": -1
+    }
+   },
+   "move": 11,
+   "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-F29\",\"to\":{\"q\":1,\"r\":-1},\"plan\":\"Подвожу Свободного к Центру, чтобы в следующем ходу поддержать стоящего на Ц Скитальца щитом 2.\"}",
+   "plan": "Подвожу Свободного к Центру, чтобы в следующем ходу поддержать стоящего на Ц Скитальца щитом 2.",
+   "winner": null,
+   "reason": null,
+   "after": 12
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D9",
+    "q": -1,
+    "r": 0,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 13
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-B4",
+    "q": -1,
+    "r": -1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 14
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-B4",
+    "q": -1,
+    "r": 1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 15
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-F29",
+    "to": {
+     "q": 1,
+     "r": 0
+    }
+   },
+   "move": 15,
+   "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-F29\",\"to\":{\"q\":1,\"r\":0},\"plan\":\"Подвожу Свободного вплотную к Центру, чтобы поддержать стоящего на Ц Скитальца щитом 2.\"}",
+   "plan": "Подвожу Свободного вплотную к Центру, чтобы поддержать стоящего на Ц Скитальца щитом 2.",
+   "winner": null,
+   "reason": null,
+   "after": 16
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-T38",
+    "q": -2,
+    "r": 2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 17
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-T38",
+    "q": -1,
+    "r": 1,
+    "capture": true
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 18
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-T38",
+    "q": 0,
+    "r": 0,
+    "capture": true
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 19
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-F29",
+    "to": {
+     "q": 1,
+     "r": 1
+    }
+   },
+   "move": 19,
+   "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-F29\",\"to\":{\"q\":1,\"r\":1},\"plan\":\"Подвожу Свободного к Центру, чтобы при первой возможности оспорить занятое противником Ц.\"}",
+   "plan": "Подвожу Свободного к Центру, чтобы при первой возможности оспорить занятое противником Ц.",
+   "winner": null,
+   "reason": null,
+   "after": 20
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-F29",
+    "to": {
+     "q": 1,
+     "r": 0
+    }
+   },
+   "move": 20,
+   "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-F29\",\"to\":{\"q\":1,\"r\":0},\"plan\":\"Подвожу Свободного к Центру, чтобы оспорить его при первой возможности.\"}",
+   "plan": "Подвожу Свободного к Центру, чтобы оспорить его при первой возможности.",
+   "winner": null,
+   "reason": null,
+   "after": 21
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-F29",
+    "to": {
+     "q": 1,
+     "r": 1
+    }
+   },
+   "move": 21,
+   "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-F29\",\"to\":{\"q\":1,\"r\":1},\"plan\":\"Подвожу Свободного к Центру, готовясь оспорить его.\"}",
+   "plan": "Подвожу Свободного к Центру, готовясь оспорить его.",
+   "winner": null,
+   "reason": null,
+   "after": 22
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D8",
+    "q": -1,
+    "r": -4,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 23
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D9",
+    "q": -1,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 24
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-F29",
+    "to": {
+     "q": 1,
+     "r": 0
+    }
+   },
+   "move": 24,
+   "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-F29\",\"to\":{\"q\":1,\"r\":0},\"plan\":\"Подвожу Свободного к Центру, чтобы оспорить его.\"}",
+   "plan": "Подвожу Свободного к Центру, чтобы оспорить его.",
+   "winner": null,
+   "reason": null,
+   "after": 25
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-B12",
+    "q": -1,
+    "r": 1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 26
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-F29",
+    "to": {
+     "q": 1,
+     "r": 1
+    }
+   },
+   "move": 26,
+   "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-F29\",\"to\":{\"q\":1,\"r\":1},\"plan\":\"Подвожу Свободного к Центру, чтобы оспорить его.\"}",
+   "plan": "Подвожу Свободного к Центру, чтобы оспорить его.",
+   "winner": null,
+   "reason": null,
+   "after": 27
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-F29",
+    "to": {
+     "q": 1,
+     "r": 0
+    }
+   },
+   "move": 27,
+   "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-F29\",\"to\":{\"q\":1,\"r\":0},\"plan\":\"Подвожу Свободного к Центру, чтобы оспорить его.\"}",
+   "plan": "Подвожу Свободного к Центру, чтобы оспорить его.",
+   "winner": null,
+   "reason": null,
+   "after": 28
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-B12",
+    "q": 0,
+    "r": 1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 29
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-T31",
+    "q": 1,
+    "r": -1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": "minus",
+   "reason": "hold",
+   "after": 30
+  }
+ ]
+}

@@ -1,0 +1,385 @@
+{
+ "matchNo": 752,
+ "assign": {
+  "beam": "zero"
+ },
+ "mode": {
+  "turn": "arrow",
+  "death": "main"
+ },
+ "pawns": 5,
+ "limit": 120,
+ "firstMovePawn": true,
+ "winner": "minus",
+ "reason": "hold",
+ "moves": 24,
+ "contaminated": false,
+ "log": [
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-T39",
+    "q": -2,
+    "r": 2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 1
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D19",
+    "q": -1,
+    "r": 2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 2
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D19",
+    "q": -1,
+    "r": 1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 3
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-S43",
+    "to": {
+     "q": 2,
+     "r": 0
+    }
+   },
+   "move": 3,
+   "raw": "{\"plan\":\"Занять пустой центр скитальцем из C1, чтобы начать удержание и блокировать путь военных.\",\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":2,\"r\":0}}",
+   "plan": "Занять пустой центр скитальцем из C1, чтобы начать удержание и блокировать путь военных.",
+   "winner": null,
+   "reason": null,
+   "after": 4
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-S43",
+    "to": {
+     "q": 3,
+     "r": 0
+    }
+   },
+   "move": 4,
+   "raw": "{\"plan\":\"Занять пустой центр скитальцем, чтобы начать удержание и прервать гонку военных.\",\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":3,\"r\":0}}",
+   "plan": "Занять пустой центр скитальцем, чтобы начать удержание и прервать гонку военных.",
+   "winner": null,
+   "reason": null,
+   "after": 5
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-S43",
+    "to": {
+     "q": 2,
+     "r": 0
+    }
+   },
+   "move": 5,
+   "raw": "{\"plan\":\"Скиталец из C1 идёт на центр, чтобы занять «Ц» и не дать военным опередить Нулей.\",\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":2,\"r\":0}}",
+   "plan": "Скиталец из C1 идёт на центр, чтобы занять «Ц» и не дать военным опередить Нулей.",
+   "winner": null,
+   "reason": null,
+   "after": 6
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-S43",
+    "to": {
+     "q": 3,
+     "r": 0
+    }
+   },
+   "move": 6,
+   "raw": "{\"plan\":\"Скиталец из B1 выходит на центр (3,0), чтобы занять «Ц» и начать удержание.\",\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":3,\"r\":0}}",
+   "plan": "Скиталец из B1 выходит на центр (3,0), чтобы занять «Ц» и начать удержание.",
+   "winner": null,
+   "reason": null,
+   "after": 7
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-T34",
+    "q": -1,
+    "r": -1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 8
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D19",
+    "q": 0,
+    "r": 0,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 9
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D8",
+    "q": 0,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 10
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-T31",
+    "q": 1,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 11
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-S43",
+    "to": {
+     "q": 2,
+     "r": 0
+    }
+   },
+   "move": 11,
+   "raw": "{\"plan\":\"Военный занял центр, поэтому продвигаю скитальца к жёлтым воротам (2,0), чтобы оспорить доступ и готовить возврат «Ц».\",\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":2,\"r\":0}}",
+   "plan": "Военный занял центр, поэтому продвигаю скитальца к жёлтым воротам (2,0), чтобы оспорить доступ и готовить возврат «Ц».",
+   "winner": null,
+   "reason": null,
+   "after": 12
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-S43",
+    "to": {
+     "q": 3,
+     "r": 0
+    }
+   },
+   "move": 12,
+   "raw": "{\"plan\":\"Центр занят Минусами, поэтому скиталец идёт к (3,0), чтобы оспорить ворота и не дать усилить удержание.\",\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":3,\"r\":0}}",
+   "plan": "Центр занят Минусами, поэтому скиталец идёт к (3,0), чтобы оспорить ворота и не дать усилить удержание.",
+   "winner": null,
+   "reason": null,
+   "after": 13
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-S43",
+    "to": {
+     "q": 2,
+     "r": 0
+    }
+   },
+   "move": 13,
+   "raw": "{\"plan\":\"Минусы держат центр, поэтому скиталец из C1 идёт к (2,0), чтобы оспорить ворота и подготовить оттеснение.\",\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":2,\"r\":0}}",
+   "plan": "Минусы держат центр, поэтому скиталец из C1 идёт к (2,0), чтобы оспорить ворота и подготовить оттеснение.",
+   "winner": null,
+   "reason": null,
+   "after": 14
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D18",
+    "q": -2,
+    "r": 3,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 15
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-D7",
+    "q": 2,
+    "r": -2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 16
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-S43",
+    "to": {
+     "q": 3,
+     "r": 0
+    }
+   },
+   "move": 16,
+   "raw": "{\"plan\":\"Центр занят Минусами, поэтому скиталец идёт к (3,0), чтобы оспорить ворота и не дать усилить удержание.\",\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":3,\"r\":0}}",
+   "plan": "Центр занят Минусами, поэтому скиталец идёт к (3,0), чтобы оспорить ворота и не дать усилить удержание.",
+   "winner": null,
+   "reason": null,
+   "after": 17
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-D18",
+    "q": 0,
+    "r": 1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 18
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-T40",
+    "q": -1,
+    "r": 2,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 19
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-C16",
+    "q": -2,
+    "r": 3,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 20
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-S43",
+    "to": {
+     "q": 2,
+     "r": 0
+    }
+   },
+   "move": 20,
+   "raw": "{\"plan\":\"Центр занят Минусами, поэтому скиталец из C1 идёт к (2,0), чтобы оспорить ворота и подготовить возврат «Ц».\",\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":2,\"r\":0}}",
+   "plan": "Центр занят Минусами, поэтому скиталец из C1 идёт к (2,0), чтобы оспорить ворота и подготовить возврат «Ц».",
+   "winner": null,
+   "reason": null,
+   "after": 21
+  },
+  {
+   "f": "minus",
+   "act": {
+    "type": "move",
+    "pieceId": "M-C16",
+    "q": -2,
+    "r": 1,
+    "capture": false
+   },
+   "ai": true,
+   "winner": null,
+   "reason": null,
+   "after": 22
+  },
+  {
+   "f": "zero",
+   "act": {
+    "kind": "move",
+    "pieceId": "Z-S43",
+    "to": {
+     "q": 3,
+     "r": 0
+    }
+   },
+   "move": 22,
+   "raw": "{\"plan\":\"Центр занят Минусами, поэтому скиталец идёт к (3,0), чтобы оспорить ворота и мешать удержанию.\",\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":3,\"r\":0}}",
+   "plan": "Центр занят Минусами, поэтому скиталец идёт к (3,0), чтобы оспорить ворота и мешать удержанию.",
+   "winner": null,
+   "reason": null,
+   "after": 23
+  },
+  {
+   "f": "plus",
+   "act": {
+    "type": "move",
+    "pieceId": "P-T34",
+    "q": -1,
+    "r": 0,
+    "capture": false
+   },
+   "ai": true,
+   "winner": "minus",
+   "reason": "hold",
+   "after": 24
+  }
+ ]
+}

@@ -1,0 +1,75 @@
+{
+  "runId": "2026-11-09_beam_zero_arrow-main-p5_10",
+  "date": "2026-11-09",
+  "engine": "elio_engine.js v1.3d",
+  "ai": "elio_ai.js v1.3c + passTo fix",
+  "model": { "id": "beam-free", "providerID": "opencode-go", "variant": "low" },
+  "promptVersion": "zero-doctrine-v2-action-list",
+  "v3": false,
+  "config": {
+    "setup": "arrow+main+15",
+    "turn": "arrow",
+    "death": "main",
+    "pawns": 5,
+    "firstMovePawn": true,
+    "limit": 120,
+    "games": 10,
+    "startMatchNo": 751
+  },
+  "result": {
+    "games": 10,
+    "wins": 1,
+    "draws": 0,
+    "losses": 9,
+    "winrate": 10.0,
+    "contaminated": 0,
+    "clean": { "wins": 1, "draws": 0, "losses": 9 },
+    "byGame": [
+      { "matchNo": 751, "winner": "minus", "reason": "hold", "moves": 25, "llmActions": 5, "osc1": 4, "centerTicks": 0 },
+      { "matchNo": 752, "winner": "minus", "reason": "hold", "moves": 24, "llmActions": 10, "osc1": 9, "centerTicks": 0 },
+      { "matchNo": 753, "winner": "plus", "reason": "hold", "moves": 20, "llmActions": 4, "osc1": 2, "centerTicks": 0 },
+      { "matchNo": 754, "winner": "minus", "reason": "king", "moves": 15, "llmActions": 0, "osc1": 0, "centerTicks": 0 },
+      { "matchNo": 755, "winner": "minus", "reason": "king", "moves": 24, "llmActions": 9, "osc1": 7, "centerTicks": 0 },
+      { "matchNo": 756, "winner": "zero", "reason": "hold", "moves": 17, "llmActions": 5, "osc1": 0, "centerTicks": 3 },
+      { "matchNo": 757, "winner": "minus", "reason": "hold", "moves": 25, "llmActions": 10, "osc1": 9, "centerTicks": 0 },
+      { "matchNo": 758, "winner": "plus", "reason": "king", "moves": 6, "llmActions": 1, "osc1": 0, "centerTicks": 0 },
+      { "matchNo": 759, "winner": "minus", "reason": "hold", "moves": 30, "llmActions": 14, "osc1": 6, "centerTicks": 3 },
+      { "matchNo": 760, "winner": "minus", "reason": "hold", "moves": 27, "llmActions": 9, "osc1": 8, "centerTicks": 0 }
+    ]
+  },
+  "llmMetrics": {
+    "actions": 67,
+    "moves": 65,
+    "supports": 2,
+    "skips": 0,
+    "displaces": 0,
+    "osc1": 45,
+    "osc2": 0,
+    "repeatPiece": 53,
+    "gateMoves": 11,
+    "centerTicks": 6,
+    "maxHoldByLlmAction": 2,
+    "zeroHoldMaxByGame": { "751": 0, "752": 0, "753": 0, "754": 0, "755": 0, "756": 3, "757": 0, "758": 0, "759": 1, "760": 0 },
+    "lineDeaths": 3,
+    "plans": 57,
+    "fallbacks": 0,
+    "errors": 0
+  },
+  "comparison": {
+    "setup": "arrow+main+15",
+    "aiZeroWinrate": 40.0,
+    "deepseek": { "games": 5, "winrate": 40.0, "actionsPerGame": 9.4, "centerTicksPerGame": 3.0, "osc1Rate": 11.1, "supportsPerGame": 1.0 },
+    "beam": { "games": 10, "winrate": 10.0, "actionsPerGame": 6.7, "centerTicksPerGame": 0.6, "osc1Rate": 69.2, "supportsPerGame": 0.2 }
+  },
+  "artifacts": {
+    "754": "нулей 0 ходов: стрелка 15 раз подряд дала Плюсам/Минусам",
+    "758": "нулей 1 ход: king на 6-м ходу"
+  },
+  "audit": "audit.json",
+  "notes": [
+    "1–0–9 (10 %) против AI-базы 40 % и DeepSeek 40 %.",
+    "Причина: 69 % осцилляций, 6 center ticks за 10 игр — доктрина «займи Ц и держи» не выполняется.",
+    "0 contaminated, 0 fallback, 0 errors; 10/10 replay.",
+    "Единственная победа 756 — 0 осцилляций, 3 center ticks."
+  ]
+}

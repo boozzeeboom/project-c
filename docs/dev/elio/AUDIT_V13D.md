@@ -477,6 +477,7 @@ if(k==='displace') return E.applyDisplace(s, m.pieceId, m.from.q, m.from.r, m.pa
 - **v2.1 (fixed engine): 1–0–5, 0 contaminated.** 725 — чистая победа удержанием; в остальных 5 играх `zeroHoldMax=0`. Осцилляции 3/44 (6.8 %). Движок v1.3d подтверждён: 0 illegal/integrity/stale, единственное `displace` — легальное.
 - **400×2 (v1.3d):** Pass+Main p1 fixed passTo — 27.25/31/40.5; Arrow+Main p5 — 25.25/34.75/40. Оба zero-favored ~40 %; 100-игровые 29/33/36 и 32/31/37 были шумом/багом; passTo-фикс сдвинул Нулей на +6.75 п.п.
 - **Zero mix (10 игр):** Pass+Main p1 2/5 + Arrow+Main p5 2/5 = **4/10 (40 %)**; ровно AI-база 40.5/40.0; 0 contaminated; 736 — осмысленный план с 5 скитальцами. Audit-скрипт жёстко инициализировал 10+1/arrow и давал false `illegal` на 15-фигурах — исправлено.
+- **Beam Free (10 игр, Arrow+Main 15, v2 без v3): 1–0–9 (10 %)** против AI 40 % и DeepSeek 40 %. **69 % осцилляций, 6 center ticks за 10 игр**; 754 — 0 ходов Нулей (удача стрелки), 758 — 1 ход. 0 contaminated, 0 fallback, 10/10 replay. Причина не в промпте/движке (одинаковы с DeepSeek), а в исполнении: Beam не доходит до центра и болтает фигуру. См. `llm_runs/2026-11-09_beam_zero_arrow-main-p5_10/`.
 - **400-партийный баланс (10 фигур) — ещё не полный:** 100×18 и 400×2 (Pass+Main p1, Arrow+Main p5) выполнены; чистый 400 p0 — pending. До него старые 400-цифры 10 фигур нельзя использовать как канон.
 
 ---

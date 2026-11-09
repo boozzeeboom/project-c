@@ -1,0 +1,33 @@
+{
+  "date": "2026-11-09",
+  "experiment": "beam_zero_arrow-main-p5_10games",
+  "engine": "elio_engine.js v1.3d",
+  "ai": "elio_ai.js v1.3c + passTo fix",
+  "model": {
+    "id": "beam-free",
+    "providerID": "opencode-go",
+    "variant": "low",
+    "name": "Beam Free"
+  },
+  "faction": "zero",
+  "setup": {
+    "label": "arrow+main+15",
+    "turn": "arrow",
+    "death": "main",
+    "pawns": 5,
+    "firstMovePawn": true,
+    "limit": 120
+  },
+  "games": 10,
+  "startMatchNo": 751,
+  "topActions": 16,
+  "prompt": "prompt.txt",
+  "promptVersion": "zero-doctrine-v2-action-list",
+  "notes": [
+    "Без v3 — тот же промпт (zero-doctrine v2), что в mix-прогоне.",
+    "Борется с двумя ИИ v1.3c (Плюсы/Минусы).",
+    "15 фигур — тест-вариант, не канон.",
+    "Ориентиры: AI zero 40.0 % (400), DeepSeek 2/5 = 40 % (5 игр).",
+    "Пилот: 10 игр."
+  ]
+}

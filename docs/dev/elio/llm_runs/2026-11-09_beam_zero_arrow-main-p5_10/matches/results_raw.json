@@ -1,0 +1,3379 @@
+[
+ {
+  "matchNo": 751,
+  "assign": {
+   "beam": "zero"
+  },
+  "mode": {
+   "turn": "arrow",
+   "death": "main"
+  },
+  "pawns": 5,
+  "limit": 120,
+  "firstMovePawn": true,
+  "winner": "minus",
+  "reason": "hold",
+  "moves": 25,
+  "contaminated": false,
+  "log": [
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-T38",
+     "q": -2,
+     "r": 2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 1
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-T35",
+     "q": -1,
+     "r": -1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 2
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 2,
+      "r": 0
+     }
+    },
+    "move": 2,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":2,\"r\":0},\"plan\":\"Скиталец с C1 продвигаю к жёлтым воротам и «Ц», чтобы начать гонку за центр.\"}",
+    "plan": "Скиталец с C1 продвигаю к жёлтым воротам и «Ц», чтобы начать гонку за центр.",
+    "winner": null,
+    "reason": null,
+    "after": 3
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-T38",
+     "q": -1,
+     "r": 1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 4
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-T33",
+     "q": 0,
+     "r": -2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 5
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 3,
+      "r": 0
+     }
+    },
+    "move": 5,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":3,\"r\":0},\"plan\":\"Продолжаю гонку скитальца к жёлтым воротам/центру, чтобы быстрее претендовать на «Ц».\"}",
+    "plan": "Продолжаю гонку скитальца к жёлтым воротам/центру, чтобы быстрее претендовать на «Ц».",
+    "winner": null,
+    "reason": null,
+    "after": 6
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-C6",
+     "q": 0,
+     "r": -3,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 7
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 2,
+      "r": 0
+     }
+    },
+    "move": 7,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":2,\"r\":0},\"plan\":\"Скиталец с C1 продвигается к центру/жёлтым воротам, чтобы начать удержание «Ц».\"}",
+    "plan": "Скиталец с C1 продвигается к центру/жёлтым воротам, чтобы начать удержание «Ц».",
+    "winner": null,
+    "reason": null,
+    "after": 8
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-T38",
+     "q": 0,
+     "r": 0,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 9
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-B12",
+     "q": -1,
+     "r": 1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 10
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-T31",
+     "q": 1,
+     "r": -2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 11
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-D7",
+     "q": 2,
+     "r": -2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 12
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-D8",
+     "q": -2,
+     "r": -3,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 13
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-D8",
+     "q": -2,
+     "r": -1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 14
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-C5",
+     "q": 2,
+     "r": -3,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 15
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-C5",
+     "q": 2,
+     "r": -1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 16
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-B12",
+     "q": 0,
+     "r": 1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 17
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-C5",
+     "q": 0,
+     "r": 1,
+     "capture": true
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 18
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-L11",
+     "q": -4,
+     "r": 4,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 19
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-C5",
+     "q": 1,
+     "r": -1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 20
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 3,
+      "r": 0
+     }
+    },
+    "move": 20,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":3,\"r\":0},\"plan\":\"Минусы уже на «Ц», поэтому нужно быстро продвигать скитальца к жёлтым воротам и центру, чтобы оспорить удержание.\"}",
+    "plan": "Минусы уже на «Ц», поэтому нужно быстро продвигать скитальца к жёлтым воротам и центру, чтобы оспорить удержание.",
+    "winner": null,
+    "reason": null,
+    "after": 21
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-C5",
+     "q": 1,
+     "r": 1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 22
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-C16",
+     "q": -3,
+     "r": 3,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 23
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-C15",
+     "q": -5,
+     "r": 5,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 24
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 2,
+      "r": 0
+     }
+    },
+    "move": 24,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":2,\"r\":0},\"plan\":\"Скиталец с C1 продвигается к центру, чтобы оспорить удержание «Ц» Минусами.\"}",
+    "plan": "Скиталец с C1 продвигается к центру, чтобы оспорить удержание «Ц» Минусами.",
+    "winner": "minus",
+    "reason": "hold",
+    "after": 25
+   }
+  ],
+  "setup": "arrow+main+15",
+  "model": "beam"
+ },
+ {
+  "matchNo": 752,
+  "assign": {
+   "beam": "zero"
+  },
+  "mode": {
+   "turn": "arrow",
+   "death": "main"
+  },
+  "pawns": 5,
+  "limit": 120,
+  "firstMovePawn": true,
+  "winner": "minus",
+  "reason": "hold",
+  "moves": 24,
+  "contaminated": false,
+  "log": [
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-T39",
+     "q": -2,
+     "r": 2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 1
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-D19",
+     "q": -1,
+     "r": 2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 2
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-D19",
+     "q": -1,
+     "r": 1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 3
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 2,
+      "r": 0
+     }
+    },
+    "move": 3,
+    "raw": "{\"plan\":\"Занять пустой центр скитальцем из C1, чтобы начать удержание и блокировать путь военных.\",\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":2,\"r\":0}}",
+    "plan": "Занять пустой центр скитальцем из C1, чтобы начать удержание и блокировать путь военных.",
+    "winner": null,
+    "reason": null,
+    "after": 4
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 3,
+      "r": 0
+     }
+    },
+    "move": 4,
+    "raw": "{\"plan\":\"Занять пустой центр скитальцем, чтобы начать удержание и прервать гонку военных.\",\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":3,\"r\":0}}",
+    "plan": "Занять пустой центр скитальцем, чтобы начать удержание и прервать гонку военных.",
+    "winner": null,
+    "reason": null,
+    "after": 5
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 2,
+      "r": 0
+     }
+    },
+    "move": 5,
+    "raw": "{\"plan\":\"Скиталец из C1 идёт на центр, чтобы занять «Ц» и не дать военным опередить Нулей.\",\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":2,\"r\":0}}",
+    "plan": "Скиталец из C1 идёт на центр, чтобы занять «Ц» и не дать военным опередить Нулей.",
+    "winner": null,
+    "reason": null,
+    "after": 6
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 3,
+      "r": 0
+     }
+    },
+    "move": 6,
+    "raw": "{\"plan\":\"Скиталец из B1 выходит на центр (3,0), чтобы занять «Ц» и начать удержание.\",\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":3,\"r\":0}}",
+    "plan": "Скиталец из B1 выходит на центр (3,0), чтобы занять «Ц» и начать удержание.",
+    "winner": null,
+    "reason": null,
+    "after": 7
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-T34",
+     "q": -1,
+     "r": -1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 8
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-D19",
+     "q": 0,
+     "r": 0,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 9
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-D8",
+     "q": 0,
+     "r": -2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 10
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-T31",
+     "q": 1,
+     "r": -2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 11
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 2,
+      "r": 0
+     }
+    },
+    "move": 11,
+    "raw": "{\"plan\":\"Военный занял центр, поэтому продвигаю скитальца к жёлтым воротам (2,0), чтобы оспорить доступ и готовить возврат «Ц».\",\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":2,\"r\":0}}",
+    "plan": "Военный занял центр, поэтому продвигаю скитальца к жёлтым воротам (2,0), чтобы оспорить доступ и готовить возврат «Ц».",
+    "winner": null,
+    "reason": null,
+    "after": 12
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 3,
+      "r": 0
+     }
+    },
+    "move": 12,
+    "raw": "{\"plan\":\"Центр занят Минусами, поэтому скиталец идёт к (3,0), чтобы оспорить ворота и не дать усилить удержание.\",\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":3,\"r\":0}}",
+    "plan": "Центр занят Минусами, поэтому скиталец идёт к (3,0), чтобы оспорить ворота и не дать усилить удержание.",
+    "winner": null,
+    "reason": null,
+    "after": 13
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 2,
+      "r": 0
+     }
+    },
+    "move": 13,
+    "raw": "{\"plan\":\"Минусы держат центр, поэтому скиталец из C1 идёт к (2,0), чтобы оспорить ворота и подготовить оттеснение.\",\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":2,\"r\":0}}",
+    "plan": "Минусы держат центр, поэтому скиталец из C1 идёт к (2,0), чтобы оспорить ворота и подготовить оттеснение.",
+    "winner": null,
+    "reason": null,
+    "after": 14
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-D18",
+     "q": -2,
+     "r": 3,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 15
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-D7",
+     "q": 2,
+     "r": -2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 16
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 3,
+      "r": 0
+     }
+    },
+    "move": 16,
+    "raw": "{\"plan\":\"Центр занят Минусами, поэтому скиталец идёт к (3,0), чтобы оспорить ворота и не дать усилить удержание.\",\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":3,\"r\":0}}",
+    "plan": "Центр занят Минусами, поэтому скиталец идёт к (3,0), чтобы оспорить ворота и не дать усилить удержание.",
+    "winner": null,
+    "reason": null,
+    "after": 17
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-D18",
+     "q": 0,
+     "r": 1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 18
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-T40",
+     "q": -1,
+     "r": 2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 19
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-C16",
+     "q": -2,
+     "r": 3,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 20
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 2,
+      "r": 0
+     }
+    },
+    "move": 20,
+    "raw": "{\"plan\":\"Центр занят Минусами, поэтому скиталец из C1 идёт к (2,0), чтобы оспорить ворота и подготовить возврат «Ц».\",\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":2,\"r\":0}}",
+    "plan": "Центр занят Минусами, поэтому скиталец из C1 идёт к (2,0), чтобы оспорить ворота и подготовить возврат «Ц».",
+    "winner": null,
+    "reason": null,
+    "after": 21
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-C16",
+     "q": -2,
+     "r": 1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 22
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 3,
+      "r": 0
+     }
+    },
+    "move": 22,
+    "raw": "{\"plan\":\"Центр занят Минусами, поэтому скиталец идёт к (3,0), чтобы оспорить ворота и мешать удержанию.\",\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":3,\"r\":0}}",
+    "plan": "Центр занят Минусами, поэтому скиталец идёт к (3,0), чтобы оспорить ворота и мешать удержанию.",
+    "winner": null,
+    "reason": null,
+    "after": 23
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-T34",
+     "q": -1,
+     "r": 0,
+     "capture": false
+    },
+    "ai": true,
+    "winner": "minus",
+    "reason": "hold",
+    "after": 24
+   }
+  ],
+  "setup": "arrow+main+15",
+  "model": "beam"
+ },
+ {
+  "matchNo": 753,
+  "assign": {
+   "beam": "zero"
+  },
+  "mode": {
+   "turn": "arrow",
+   "death": "main"
+  },
+  "pawns": 5,
+  "limit": 120,
+  "firstMovePawn": true,
+  "winner": "plus",
+  "reason": "hold",
+  "moves": 20,
+  "contaminated": false,
+  "log": [
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-T35",
+     "q": -1,
+     "r": -1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 1
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-T36",
+     "q": -2,
+     "r": 1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 2
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-T36",
+     "q": -1,
+     "r": 1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 3
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-D8",
+     "q": -2,
+     "r": 0,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 4
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-T32",
+     "q": 0,
+     "r": -2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 5
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-T35",
+     "q": 0,
+     "r": -1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 6
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-T36",
+     "q": 0,
+     "r": 0,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 7
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-T39",
+     "q": -1,
+     "r": 2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 8
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 2,
+      "r": 0
+     }
+    },
+    "move": 8,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":2,\"r\":0},\"plan\":\"Скиталец из C1 продвигается к жёлтым воротам и «Ц», чтобы начать гонку за удержание.\"}",
+    "plan": "Скиталец из C1 продвигается к жёлтым воротам и «Ц», чтобы начать гонку за удержание.",
+    "winner": null,
+    "reason": null,
+    "after": 9
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-T35",
+     "q": 0,
+     "r": 0,
+     "capture": true
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 10
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-D18",
+     "q": -2,
+     "r": 2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 11
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 1,
+      "r": 0
+     }
+    },
+    "move": 11,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":1,\"r\":0},\"plan\":\"Скиталец продолжает движение к «Ц», занятому Плюсами, чтобы оспорить контроль и не дать им удержать 3 круга.\"}",
+    "plan": "Скиталец продолжает движение к «Ц», занятому Плюсами, чтобы оспорить контроль и не дать им удержать 3 круга.",
+    "winner": null,
+    "reason": null,
+    "after": 12
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 2,
+      "r": 0
+     }
+    },
+    "move": 12,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":2,\"r\":0},\"plan\":\"Скиталец из A1 продолжает гонку к «Ц», чтобы оспорить удержание Плюсов.\"}",
+    "plan": "Скиталец из A1 продолжает гонку к «Ц», чтобы оспорить удержание Плюсов.",
+    "winner": null,
+    "reason": null,
+    "after": 13
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-B4",
+     "q": -1,
+     "r": -1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 14
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-T39",
+     "q": 0,
+     "r": 2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 15
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-C16",
+     "q": -2,
+     "r": 3,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 16
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-D9",
+     "q": -1,
+     "r": -4,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 17
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-T39",
+     "q": 1,
+     "r": 1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 18
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-F10",
+     "q": 1,
+     "r": -2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 19
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 1,
+      "r": 0
+     }
+    },
+    "move": 19,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":1,\"r\":0},\"plan\":\"Скиталец снова двигается к «Ц», чтобы не дать Плюсам удержать его третий круг.\"}",
+    "plan": "Скиталец снова двигается к «Ц», чтобы не дать Плюсам удержать его третий круг.",
+    "winner": "plus",
+    "reason": "hold",
+    "after": 20
+   }
+  ],
+  "setup": "arrow+main+15",
+  "model": "beam"
+ },
+ {
+  "matchNo": 754,
+  "assign": {
+   "beam": "zero"
+  },
+  "mode": {
+   "turn": "arrow",
+   "death": "main"
+  },
+  "pawns": 5,
+  "limit": 120,
+  "firstMovePawn": true,
+  "winner": "minus",
+  "reason": "king",
+  "moves": 15,
+  "contaminated": false,
+  "log": [
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-T37",
+     "q": -2,
+     "r": 1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 1
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-T32",
+     "q": 1,
+     "r": -2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 2
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-D17",
+     "q": -2,
+     "r": 2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 3
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-T40",
+     "q": 0,
+     "r": 2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 4
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-B4",
+     "q": -1,
+     "r": -1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 5
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-T36",
+     "q": -3,
+     "r": 2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 6
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-T40",
+     "q": 0,
+     "r": 1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 7
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-L1",
+     "q": -1,
+     "r": -4,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 8
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-C5",
+     "q": 0,
+     "r": -5,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 9
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-D18",
+     "q": 0,
+     "r": 2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 10
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-T37",
+     "q": -1,
+     "r": 0,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 11
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-B4",
+     "q": 1,
+     "r": -1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 12
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-B14",
+     "q": -1,
+     "r": 2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 13
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-B14",
+     "q": -1,
+     "r": -1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 14
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-B14",
+     "q": -1,
+     "r": -4,
+     "capture": true
+    },
+    "ai": true,
+    "winner": "minus",
+    "reason": "king",
+    "after": 15
+   }
+  ],
+  "setup": "arrow+main+15",
+  "model": "beam"
+ },
+ {
+  "matchNo": 755,
+  "assign": {
+   "beam": "zero"
+  },
+  "mode": {
+   "turn": "arrow",
+   "death": "main"
+  },
+  "pawns": 5,
+  "limit": 120,
+  "firstMovePawn": true,
+  "winner": "minus",
+  "reason": "king",
+  "moves": 24,
+  "contaminated": false,
+  "log": [
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-T34",
+     "q": 0,
+     "r": -2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 1
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-T37",
+     "q": -2,
+     "r": 2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 2
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 2,
+      "r": 0
+     }
+    },
+    "move": 2,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":2,\"r\":0},\"plan\":\"Веду Скитальца из C1 к жёлтым воротам и «Ц», чтобы начать гонку за центр; не трачу ход на поддержку.\"}",
+    "plan": "Веду Скитальца из C1 к жёлтым воротам и «Ц», чтобы начать гонку за центр; не трачу ход на поддержку.",
+    "winner": null,
+    "reason": null,
+    "after": 3
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 3,
+      "r": 0
+     }
+    },
+    "move": 3,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":3,\"r\":0},\"plan\":\"Продолжаю гонку Скитальца к центру через (3,0), чтобы быстрее достичь жёлтых ворот и «Ц»; поддержка сейчас не защищает центр или Линейного.\"}",
+    "plan": "Продолжаю гонку Скитальца к центру через (3,0), чтобы быстрее достичь жёлтых ворот и «Ц»; поддержка сейчас не защищает центр или Линейного.",
+    "winner": null,
+    "reason": null,
+    "after": 4
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-T39",
+     "q": -1,
+     "r": 2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 5
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-B4",
+     "q": -1,
+     "r": -1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 6
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-D17",
+     "q": -3,
+     "r": 2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 7
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 2,
+      "r": 0
+     }
+    },
+    "move": 7,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":2,\"r\":0},\"plan\":\"Скиталец из C1 снова движется к центру через (2,0), приближаясь к жёлтым воротам; поддержка сейчас не защищает «Ц» или Линейного.\"}",
+    "plan": "Скиталец из C1 снова движется к центру через (2,0), приближаясь к жёлтым воротам; поддержка сейчас не защищает «Ц» или Линейного.",
+    "winner": null,
+    "reason": null,
+    "after": 8
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-L1",
+     "q": -1,
+     "r": -4,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 9
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "support",
+     "zeroId": "Z-P22",
+     "targetId": "Z-P21"
+    },
+    "move": 9,
+    "raw": "{\"kind\":\"support\",\"zeroId\":\"Z-P22\",\"targetId\":\"Z-P21\",\"plan\":\"P-L1 стоит рядом с открытым Z-P21, поэтому даю ему щит 2 через поддержку; это важнее гонки в этот ход.\"}",
+    "plan": "P-L1 стоит рядом с открытым Z-P21, поэтому даю ему щит 2 через поддержку; это важнее гонки в этот ход.",
+    "winner": null,
+    "reason": null,
+    "after": 10
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-T39",
+     "q": 0,
+     "r": 1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 11
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 3,
+      "r": 0
+     }
+    },
+    "move": 11,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":3,\"r\":0},\"plan\":\"Поддержка Z-P22 уже стоит, повторять её не нужно; продвигаю Скитальца к центру через (3,0), чтобы продолжить гонку за «Ц».\"}",
+    "plan": "Поддержка Z-P22 уже стоит, повторять её не нужно; продвигаю Скитальца к центру через (3,0), чтобы продолжить гонку за «Ц».",
+    "winner": null,
+    "reason": null,
+    "after": 12
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-T36",
+     "q": -2,
+     "r": 1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 13
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-D18",
+     "q": -2,
+     "r": 3,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 14
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 2,
+      "r": 0
+     }
+    },
+    "move": 14,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":2,\"r\":0},\"plan\":\"Скиталец из C1 снова идёт к центру через (2,0); поддержка уже стоит и не нуждается в повторении.\"}",
+    "plan": "Скиталец из C1 снова идёт к центру через (2,0); поддержка уже стоит и не нуждается в повторении.",
+    "winner": null,
+    "reason": null,
+    "after": 15
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 3,
+      "r": 0
+     }
+    },
+    "move": 15,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":3,\"r\":0},\"plan\":\"Скиталец из B1 продолжает путь к центру через (3,0); поддержка Линейного уже стоит, поэтому не повторяю её.\"}",
+    "plan": "Скиталец из B1 продолжает путь к центру через (3,0); поддержка Линейного уже стоит, поэтому не повторяю её.",
+    "winner": null,
+    "reason": null,
+    "after": 16
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-C5",
+     "q": 0,
+     "r": -5,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 17
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-T40",
+     "q": 0,
+     "r": 2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 18
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 2,
+      "r": 0
+     }
+    },
+    "move": 18,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":2,\"r\":0},\"plan\":\"Скиталец из C1 продвигается к центру через (2,0); поддержка Линейного уже стоит и не повторяется.\"}",
+    "plan": "Скиталец из C1 продвигается к центру через (2,0); поддержка Линейного уже стоит и не повторяется.",
+    "winner": null,
+    "reason": null,
+    "after": 19
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 3,
+      "r": 0
+     }
+    },
+    "move": 19,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":3,\"r\":0},\"plan\":\"Скиталец из B1 продолжает путь к центру через (3,0); поддержка Линейного уже стоит, поэтому не повторяю её.\"}",
+    "plan": "Скиталец из B1 продолжает путь к центру через (3,0); поддержка Линейного уже стоит, поэтому не повторяю её.",
+    "winner": null,
+    "reason": null,
+    "after": 20
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-B4",
+     "q": 1,
+     "r": -1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 21
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-B14",
+     "q": -1,
+     "r": 2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 22
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-B14",
+     "q": -1,
+     "r": -1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 23
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-B14",
+     "q": -1,
+     "r": -4,
+     "capture": true
+    },
+    "ai": true,
+    "winner": "minus",
+    "reason": "king",
+    "after": 24
+   }
+  ],
+  "setup": "arrow+main+15",
+  "model": "beam"
+ },
+ {
+  "matchNo": 756,
+  "assign": {
+   "beam": "zero"
+  },
+  "mode": {
+   "turn": "arrow",
+   "death": "main"
+  },
+  "pawns": 5,
+  "limit": 120,
+  "firstMovePawn": true,
+  "winner": "zero",
+  "reason": "hold",
+  "moves": 17,
+  "contaminated": false,
+  "log": [
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-T31",
+     "q": 2,
+     "r": -2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 1
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 2,
+      "r": 0
+     }
+    },
+    "move": 1,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":2,\"r\":0},\"plan\":\"Веду Скитальца с C1 к центру, чтобы начать гонку за жёлтые ворота и «Ц».\"}",
+    "plan": "Веду Скитальца с C1 к центру, чтобы начать гонку за жёлтые ворота и «Ц».",
+    "winner": null,
+    "reason": null,
+    "after": 2
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-B4",
+     "q": -1,
+     "r": -1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 3
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 1,
+      "r": 0
+     }
+    },
+    "move": 3,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":1,\"r\":0},\"plan\":\"Продолжаю гонку Скитальца к центру/жёлтым воротам; угроз Линейным сейчас нет, поддержка не нужна.\"}",
+    "plan": "Продолжаю гонку Скитальца к центру/жёлтым воротам; угроз Линейным сейчас нет, поддержка не нужна.",
+    "winner": null,
+    "reason": null,
+    "after": 4
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-T36",
+     "q": -2,
+     "r": 1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 5
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-D9",
+     "q": -1,
+     "r": -4,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 6
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 0,
+      "r": 0
+     }
+    },
+    "move": 6,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":0,\"r\":0},\"plan\":\"Скиталец доходит до центральной клетки, приближаясь к жёлтым воротам и «Ц»; угроз Линейным нет.\"}",
+    "plan": "Скиталец доходит до центральной клетки, приближаясь к жёлтым воротам и «Ц»; угроз Линейным нет.",
+    "winner": null,
+    "reason": null,
+    "after": 7
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-T31",
+     "q": 1,
+     "r": -1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 8
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-D17",
+     "q": -2,
+     "r": 0,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 9
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-D17",
+     "q": -1,
+     "r": -1,
+     "capture": true
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 10
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-T34",
+     "q": -1,
+     "r": -1,
+     "capture": true
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 11
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S42",
+     "to": {
+      "q": 1,
+      "r": 1
+     }
+    },
+    "move": 11,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S42\",\"to\":{\"q\":1,\"r\":1},\"plan\":\"Держу Скитальца на «Ц» (Hold 1/3); подвожу другой Скиталец ближе, чтобы в следующем ходу поддержать стоящего и дать щит 2.\"}",
+    "plan": "Держу Скитальца на «Ц» (Hold 1/3); подвожу другой Скиталец ближе, чтобы в следующем ходу поддержать стоящего и дать щит 2.",
+    "winner": null,
+    "reason": null,
+    "after": 12
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-D7",
+     "q": 2,
+     "r": -2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 13
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-D8",
+     "q": 0,
+     "r": -2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 14
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-C5",
+     "q": 2,
+     "r": -3,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 15
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S42",
+     "to": {
+      "q": 1,
+      "r": 0
+     }
+    },
+    "move": 15,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S42\",\"to\":{\"q\":1,\"r\":0},\"plan\":\"Держу «Ц» (Hold 2/3); подвожу Скитальца на соседнюю клетку, чтобы в следующем ходу поддержать стоящего и завершить удержание.\"}",
+    "plan": "Держу «Ц» (Hold 2/3); подвожу Скитальца на соседнюю клетку, чтобы в следующем ходу поддержать стоящего и завершить удержание.",
+    "winner": null,
+    "reason": null,
+    "after": 16
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-T39",
+     "q": -1,
+     "r": 2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": "zero",
+    "reason": "hold",
+    "after": 17
+   }
+  ],
+  "setup": "arrow+main+15",
+  "model": "beam"
+ },
+ {
+  "matchNo": 757,
+  "assign": {
+   "beam": "zero"
+  },
+  "mode": {
+   "turn": "arrow",
+   "death": "main"
+  },
+  "pawns": 5,
+  "limit": 120,
+  "firstMovePawn": true,
+  "winner": "minus",
+  "reason": "hold",
+  "moves": 25,
+  "contaminated": false,
+  "log": [
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 2,
+      "r": 0
+     }
+    },
+    "move": 0,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":2,\"r\":0}}",
+    "winner": null,
+    "reason": null,
+    "after": 1
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 3,
+      "r": 0
+     }
+    },
+    "move": 1,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":3,\"r\":0}}",
+    "winner": null,
+    "reason": null,
+    "after": 2
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 2,
+      "r": 0
+     }
+    },
+    "move": 2,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":2,\"r\":0}}",
+    "winner": null,
+    "reason": null,
+    "after": 3
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-T40",
+     "q": 0,
+     "r": 2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 4
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-T32",
+     "q": 0,
+     "r": -2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 5
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-T36",
+     "q": -2,
+     "r": 1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 6
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-B4",
+     "q": -1,
+     "r": -1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 7
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 3,
+      "r": 0
+     }
+    },
+    "move": 7,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":3,\"r\":0}}",
+    "winner": null,
+    "reason": null,
+    "after": 8
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-D17",
+     "q": -2,
+     "r": 0,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 9
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 2,
+      "r": 0
+     }
+    },
+    "move": 9,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":2,\"r\":0}}",
+    "winner": null,
+    "reason": null,
+    "after": 10
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-D17",
+     "q": -1,
+     "r": -1,
+     "capture": true
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 11
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 3,
+      "r": 0
+     }
+    },
+    "move": 11,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":3,\"r\":0}}",
+    "winner": null,
+    "reason": null,
+    "after": 12
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-D17",
+     "q": -1,
+     "r": 0,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 13
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 2,
+      "r": 0
+     }
+    },
+    "move": 13,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":2,\"r\":0}}",
+    "winner": null,
+    "reason": null,
+    "after": 14
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 3,
+      "r": 0
+     }
+    },
+    "move": 14,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":3,\"r\":0}}",
+    "winner": null,
+    "reason": null,
+    "after": 15
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-T36",
+     "q": -1,
+     "r": 1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 16
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-T36",
+     "q": 0,
+     "r": 0,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 17
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-D9",
+     "q": -1,
+     "r": -4,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 18
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-F10",
+     "q": 1,
+     "r": -2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 19
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 2,
+      "r": 0
+     }
+    },
+    "move": 19,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":2,\"r\":0}}",
+    "winner": null,
+    "reason": null,
+    "after": 20
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-D17",
+     "q": -1,
+     "r": 1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 21
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-T38",
+     "q": -2,
+     "r": 2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 22
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-T39",
+     "q": -1,
+     "r": 2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 23
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-T31",
+     "q": 2,
+     "r": -2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 24
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 3,
+      "r": 0
+     }
+    },
+    "move": 24,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":3,\"r\":0}}",
+    "winner": "minus",
+    "reason": "hold",
+    "after": 25
+   }
+  ],
+  "setup": "arrow+main+15",
+  "model": "beam"
+ },
+ {
+  "matchNo": 758,
+  "assign": {
+   "beam": "zero"
+  },
+  "mode": {
+   "turn": "arrow",
+   "death": "main"
+  },
+  "pawns": 5,
+  "limit": 120,
+  "firstMovePawn": true,
+  "winner": "plus",
+  "reason": "king",
+  "moves": 6,
+  "contaminated": false,
+  "log": [
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-T32",
+     "q": 0,
+     "r": -2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 1
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-B4",
+     "q": -1,
+     "r": -1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 2
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-B4",
+     "q": -1,
+     "r": 1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 3
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 2,
+      "r": 0
+     }
+    },
+    "move": 3,
+    "raw": "{\"plan\":\"Двигаю Скитальца с C1 к центру, чтобы быстрее выйти к жёлтым воротам и претендовать на «Ц».\",\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":2,\"r\":0}}",
+    "plan": "Двигаю Скитальца с C1 к центру, чтобы быстрее выйти к жёлтым воротам и претендовать на «Ц».",
+    "winner": null,
+    "reason": null,
+    "after": 4
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-B4",
+     "q": -3,
+     "r": 3,
+     "capture": true
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 5
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-B4",
+     "q": -5,
+     "r": 5,
+     "capture": true
+    },
+    "ai": true,
+    "winner": "plus",
+    "reason": "king",
+    "after": 6
+   }
+  ],
+  "setup": "arrow+main+15",
+  "model": "beam"
+ },
+ {
+  "matchNo": 759,
+  "assign": {
+   "beam": "zero"
+  },
+  "mode": {
+   "turn": "arrow",
+   "death": "main"
+  },
+  "pawns": 5,
+  "limit": 120,
+  "firstMovePawn": true,
+  "winner": "minus",
+  "reason": "hold",
+  "moves": 30,
+  "contaminated": false,
+  "log": [
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-T34",
+     "q": 0,
+     "r": -2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 1
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-D9",
+     "q": -1,
+     "r": -1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 2
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-T31",
+     "q": 1,
+     "r": -2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 3
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 2,
+      "r": 0
+     }
+    },
+    "move": 3,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":2,\"r\":0},\"plan\":\"Продвигаю Скитальца к жёлтым воротам и Ц, чтобы начать гонку за удержание центра.\"}",
+    "plan": "Продвигаю Скитальца к жёлтым воротам и Ц, чтобы начать гонку за удержание центра.",
+    "winner": null,
+    "reason": null,
+    "after": 4
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-D7",
+     "q": 2,
+     "r": -2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 5
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 3,
+      "r": 0
+     }
+    },
+    "move": 5,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":3,\"r\":0},\"plan\":\"Продолжаю гонку Скитальца к жёлтым воротам и Ц, чтобы закрепить преимущество по темпу.\"}",
+    "plan": "Продолжаю гонку Скитальца к жёлтым воротам и Ц, чтобы закрепить преимущество по темпу.",
+    "winner": null,
+    "reason": null,
+    "after": 6
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S44",
+     "to": {
+      "q": 2,
+      "r": 0
+     }
+    },
+    "move": 6,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S44\",\"to\":{\"q\":2,\"r\":0},\"plan\":\"Выдвигаю ещё одного Скитальца к центру, чтобы усилить гонку за Ц и создать резерв.\"}",
+    "plan": "Выдвигаю ещё одного Скитальца к центру, чтобы усилить гонку за Ц и создать резерв.",
+    "winner": null,
+    "reason": null,
+    "after": 7
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-D8",
+     "q": -1,
+     "r": -2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 8
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "support",
+     "zeroId": "Z-P22",
+     "targetId": "Z-P21"
+    },
+    "move": 8,
+    "raw": "{\"kind\":\"support\",\"zeroId\":\"Z-P22\",\"targetId\":\"Z-P21\",\"plan\":\"Поддерживаю своего Линейного щитом 2, так как рядом вражеский Бомбардир угрожает открытому Линейному.\"}",
+    "plan": "Поддерживаю своего Линейного щитом 2, так как рядом вражеский Бомбардир угрожает открытому Линейному.",
+    "winner": null,
+    "reason": null,
+    "after": 9
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S44",
+     "to": {
+      "q": 1,
+      "r": 0
+     }
+    },
+    "move": 9,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S44\",\"to\":{\"q\":1,\"r\":0},\"plan\":\"Продвигаю Скитальца дальше к центру, усиливая гонку за Ц.\"}",
+    "plan": "Продвигаю Скитальца дальше к центру, усиливая гонку за Ц.",
+    "winner": null,
+    "reason": null,
+    "after": 10
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S44",
+     "to": {
+      "q": 0,
+      "r": 0
+     }
+    },
+    "move": 10,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S44\",\"to\":{\"q\":0,\"r\":0},\"plan\":\"Занимаю Центр Скитальцем — это наша цель удержания 3 круга.\"}",
+    "plan": "Занимаю Центр Скитальцем — это наша цель удержания 3 круга.",
+    "winner": null,
+    "reason": null,
+    "after": 11
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-F29",
+     "to": {
+      "q": 1,
+      "r": -1
+     }
+    },
+    "move": 11,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-F29\",\"to\":{\"q\":1,\"r\":-1},\"plan\":\"Подвожу Свободного к Центру, чтобы в следующем ходу поддержать стоящего на Ц Скитальца щитом 2.\"}",
+    "plan": "Подвожу Свободного к Центру, чтобы в следующем ходу поддержать стоящего на Ц Скитальца щитом 2.",
+    "winner": null,
+    "reason": null,
+    "after": 12
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-D9",
+     "q": -1,
+     "r": 0,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 13
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-B4",
+     "q": -1,
+     "r": -1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 14
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-B4",
+     "q": -1,
+     "r": 1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 15
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-F29",
+     "to": {
+      "q": 1,
+      "r": 0
+     }
+    },
+    "move": 15,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-F29\",\"to\":{\"q\":1,\"r\":0},\"plan\":\"Подвожу Свободного вплотную к Центру, чтобы поддержать стоящего на Ц Скитальца щитом 2.\"}",
+    "plan": "Подвожу Свободного вплотную к Центру, чтобы поддержать стоящего на Ц Скитальца щитом 2.",
+    "winner": null,
+    "reason": null,
+    "after": 16
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-T38",
+     "q": -2,
+     "r": 2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 17
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-T38",
+     "q": -1,
+     "r": 1,
+     "capture": true
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 18
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-T38",
+     "q": 0,
+     "r": 0,
+     "capture": true
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 19
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-F29",
+     "to": {
+      "q": 1,
+      "r": 1
+     }
+    },
+    "move": 19,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-F29\",\"to\":{\"q\":1,\"r\":1},\"plan\":\"Подвожу Свободного к Центру, чтобы при первой возможности оспорить занятое противником Ц.\"}",
+    "plan": "Подвожу Свободного к Центру, чтобы при первой возможности оспорить занятое противником Ц.",
+    "winner": null,
+    "reason": null,
+    "after": 20
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-F29",
+     "to": {
+      "q": 1,
+      "r": 0
+     }
+    },
+    "move": 20,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-F29\",\"to\":{\"q\":1,\"r\":0},\"plan\":\"Подвожу Свободного к Центру, чтобы оспорить его при первой возможности.\"}",
+    "plan": "Подвожу Свободного к Центру, чтобы оспорить его при первой возможности.",
+    "winner": null,
+    "reason": null,
+    "after": 21
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-F29",
+     "to": {
+      "q": 1,
+      "r": 1
+     }
+    },
+    "move": 21,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-F29\",\"to\":{\"q\":1,\"r\":1},\"plan\":\"Подвожу Свободного к Центру, готовясь оспорить его.\"}",
+    "plan": "Подвожу Свободного к Центру, готовясь оспорить его.",
+    "winner": null,
+    "reason": null,
+    "after": 22
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-D8",
+     "q": -1,
+     "r": -4,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 23
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-D9",
+     "q": -1,
+     "r": -2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 24
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-F29",
+     "to": {
+      "q": 1,
+      "r": 0
+     }
+    },
+    "move": 24,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-F29\",\"to\":{\"q\":1,\"r\":0},\"plan\":\"Подвожу Свободного к Центру, чтобы оспорить его.\"}",
+    "plan": "Подвожу Свободного к Центру, чтобы оспорить его.",
+    "winner": null,
+    "reason": null,
+    "after": 25
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-B12",
+     "q": -1,
+     "r": 1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 26
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-F29",
+     "to": {
+      "q": 1,
+      "r": 1
+     }
+    },
+    "move": 26,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-F29\",\"to\":{\"q\":1,\"r\":1},\"plan\":\"Подвожу Свободного к Центру, чтобы оспорить его.\"}",
+    "plan": "Подвожу Свободного к Центру, чтобы оспорить его.",
+    "winner": null,
+    "reason": null,
+    "after": 27
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-F29",
+     "to": {
+      "q": 1,
+      "r": 0
+     }
+    },
+    "move": 27,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-F29\",\"to\":{\"q\":1,\"r\":0},\"plan\":\"Подвожу Свободного к Центру, чтобы оспорить его.\"}",
+    "plan": "Подвожу Свободного к Центру, чтобы оспорить его.",
+    "winner": null,
+    "reason": null,
+    "after": 28
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-B12",
+     "q": 0,
+     "r": 1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 29
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-T31",
+     "q": 1,
+     "r": -1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": "minus",
+    "reason": "hold",
+    "after": 30
+   }
+  ],
+  "setup": "arrow+main+15",
+  "model": "beam"
+ },
+ {
+  "matchNo": 760,
+  "assign": {
+   "beam": "zero"
+  },
+  "mode": {
+   "turn": "arrow",
+   "death": "main"
+  },
+  "pawns": 5,
+  "limit": 120,
+  "firstMovePawn": true,
+  "winner": "minus",
+  "reason": "hold",
+  "moves": 27,
+  "contaminated": false,
+  "log": [
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 2,
+      "r": 0
+     }
+    },
+    "move": 0,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":2,\"r\":0},\"plan\":\"Скиталец из C1 продвигается к жёлтым воротам и Ц; первый ход — пешкой, гонка за Ц.\"}",
+    "plan": "Скиталец из C1 продвигается к жёлтым воротам и Ц; первый ход — пешкой, гонка за Ц.",
+    "winner": null,
+    "reason": null,
+    "after": 1
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 3,
+      "r": 0
+     }
+    },
+    "move": 1,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":3,\"r\":0},\"plan\":\"Скиталец продолжает гонку к жёлтым воротам и Ц, приближаясь к центру.\"}",
+    "plan": "Скиталец продолжает гонку к жёлтым воротам и Ц, приближаясь к центру.",
+    "winner": null,
+    "reason": null,
+    "after": 2
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-T40",
+     "q": 0,
+     "r": 2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 3
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 2,
+      "r": 0
+     }
+    },
+    "move": 3,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":2,\"r\":0},\"plan\":\"Скиталец из C1 движется к жёлтым воротам, приближаясь к Ц.\"}",
+    "plan": "Скиталец из C1 движется к жёлтым воротам, приближаясь к Ц.",
+    "winner": null,
+    "reason": null,
+    "after": 4
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-C16",
+     "q": -1,
+     "r": 3,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 5
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-C16",
+     "q": 0,
+     "r": 1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 6
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-T36",
+     "q": -2,
+     "r": 1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 7
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-T39",
+     "q": -1,
+     "r": 2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 8
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-D18",
+     "q": -2,
+     "r": 2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 9
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-T35",
+     "q": -1,
+     "r": -1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 10
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-T39",
+     "q": -1,
+     "r": 1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 11
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 3,
+      "r": 0
+     }
+    },
+    "move": 11,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":3,\"r\":0},\"plan\":\"Скиталец продолжает гонку к жёлтым воротам и Ц.\"}",
+    "plan": "Скиталец продолжает гонку к жёлтым воротам и Ц.",
+    "winner": null,
+    "reason": null,
+    "after": 12
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-T39",
+     "q": 0,
+     "r": 0,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 13
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-D19",
+     "q": -2,
+     "r": 3,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 14
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 2,
+      "r": 0
+     }
+    },
+    "move": 14,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":2,\"r\":0},\"plan\":\"Скиталец из C1 движется к жёлтым воротам, чтобы оспорить занятый Минусами Ц.\"}",
+    "plan": "Скиталец из C1 движется к жёлтым воротам, чтобы оспорить занятый Минусами Ц.",
+    "winner": null,
+    "reason": null,
+    "after": 15
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 3,
+      "r": 0
+     }
+    },
+    "move": 15,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":3,\"r\":0},\"plan\":\"Скиталец продолжает гонку к жёлтым воротам и Ц, оспаривая Минусов.\"}",
+    "plan": "Скиталец продолжает гонку к жёлтым воротам и Ц, оспаривая Минусов.",
+    "winner": null,
+    "reason": null,
+    "after": 16
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-D19",
+     "q": -1,
+     "r": 2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 17
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-T32",
+     "q": 0,
+     "r": -2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 18
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-F10",
+     "q": 1,
+     "r": -2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 19
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 2,
+      "r": 0
+     }
+    },
+    "move": 19,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":2,\"r\":0},\"plan\":\"Скиталец из C1 движется к жёлтым воротам, оспаривая занятый Минусами Ц.\"}",
+    "plan": "Скиталец из C1 движется к жёлтым воротам, оспаривая занятый Минусами Ц.",
+    "winner": null,
+    "reason": null,
+    "after": 20
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-D7",
+     "q": 1,
+     "r": -3,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 21
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-D19",
+     "q": -1,
+     "r": 1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 22
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-B14",
+     "q": -1,
+     "r": 2,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 23
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 3,
+      "r": 0
+     }
+    },
+    "move": 23,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":3,\"r\":0},\"plan\":\"Скиталец продолжает гонку к жёлтым воротам и Ц, оспаривая Минусов.\"}",
+    "plan": "Скиталец продолжает гонку к жёлтым воротам и Ц, оспаривая Минусов.",
+    "winner": null,
+    "reason": null,
+    "after": 24
+   },
+   {
+    "f": "zero",
+    "act": {
+     "kind": "move",
+     "pieceId": "Z-S43",
+     "to": {
+      "q": 2,
+      "r": 0
+     }
+    },
+    "move": 24,
+    "raw": "{\"kind\":\"move\",\"pieceId\":\"Z-S43\",\"to\":{\"q\":2,\"r\":0},\"plan\":\"Скиталец из C1 движется к жёлтым воротам, оспаривая занятый Минусами Ц.\"}",
+    "plan": "Скиталец из C1 движется к жёлтым воротам, оспаривая занятый Минусами Ц.",
+    "winner": null,
+    "reason": null,
+    "after": 25
+   },
+   {
+    "f": "minus",
+    "act": {
+     "type": "move",
+     "pieceId": "M-B14",
+     "q": 2,
+     "r": -1,
+     "capture": false
+    },
+    "ai": true,
+    "winner": null,
+    "reason": null,
+    "after": 26
+   },
+   {
+    "f": "plus",
+    "act": {
+     "type": "move",
+     "pieceId": "P-D8",
+     "q": -2,
+     "r": 0,
+     "capture": false
+    },
+    "ai": true,
+    "winner": "minus",
+    "reason": "hold",
+    "after": 27
+   }
+  ],
+  "setup": "arrow+main+15",
+  "model": "beam"
+ }
+]

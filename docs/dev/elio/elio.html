@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#101514">
-<title>Эльо — игра трёх сил</title>
+<title>Эльо — воздушные суда трёх сил</title>
 <style>
 :root {
   color-scheme: dark;
@@ -122,15 +122,36 @@ button:disabled { opacity: .42; cursor: not-allowed !important; }
 @keyframes target-pulse { 50% { opacity: .58; transform: scale(.82); } }
 .piece-2d { pointer-events: none; }
 .piece-2d text { user-select: none; }
-.piece-tooltip { position: absolute; z-index: 8; width: max-content; max-width: 250px; padding: 11px 13px; border: 1px solid #d8bd7a45; border-radius: 12px; background: rgba(18,25,22,.96); box-shadow: 0 10px 35px #0008; backdrop-filter: blur(14px); pointer-events: none; opacity: 0; visibility: hidden; transition: opacity .12s; }
+.piece-tooltip { position: absolute; z-index: 8; width: max-content; max-width: 275px; padding: 11px 13px; border: 1px solid #d8bd7a45; border-radius: 12px; background: rgba(18,25,22,.96); box-shadow: 0 10px 35px #0008; backdrop-filter: blur(14px); pointer-events: none; opacity: 0; visibility: hidden; transition: opacity .12s; }
 .piece-tooltip.visible { opacity: 1; visibility: visible; }
 .piece-tooltip strong { display: block; color: var(--tooltip-color,var(--gold-bright)); font-size: 12px; margin-bottom: 4px; }
 .piece-tooltip span { display: block; color: var(--muted); font-size: 10px; margin-bottom: 6px; }
 .piece-tooltip p { margin: 0; color: #d2d8d3; font-size: 10px; line-height: 1.5; }
 .center-countdown { position: absolute; z-index: 5; left: 50%; bottom: 16px; transform: translateX(-50%); max-width: calc(100% - 32px); padding: 8px 14px; border: 1px solid var(--line); border-radius: 100px; background: rgba(16,21,20,.86); backdrop-filter: blur(12px); color: var(--muted); font-size: 11px; text-align: center; white-space: nowrap; pointer-events: none; }
 .center-countdown.active { color: var(--gold-bright); border-color: #d8bd7a55; }
-.support-line { pointer-events: none; stroke-dasharray: 4 4; animation: dash 12s linear infinite; }
-@keyframes dash { to { stroke-dashoffset: -100; } }
+.support-line { pointer-events: none; stroke-dasharray: 5 4; animation: dash 1.5s linear infinite; filter: drop-shadow(0 0 3px #d8bd7a90); }
+@keyframes dash { to { stroke-dashoffset: -72; } }
+.support-shield { pointer-events: none; transform-box: fill-box; transform-origin: center; animation: support-shield-pulse 1.7s ease-in-out infinite; }
+@keyframes support-shield-pulse { 50% { opacity: .38; transform: scale(1.09); } }
+.support-badge { pointer-events: none; filter: drop-shadow(0 0 4px #d8bd7a90); }
+.support-badge-text { pointer-events: none; fill: #171d19; font-size: 8px; font-weight: 800; }
+.tour-backdrop { position: fixed; inset: 0; z-index: 119; background: transparent; }
+.tour-spot { position: fixed; z-index: 120; border: 2px solid var(--gold); border-radius: 16px; pointer-events: none; box-shadow: 0 0 0 9999px rgba(4,8,7,.7), 0 0 30px #d8bd7a75; animation: tour-spot-pulse 1.7s ease-in-out infinite; }
+@keyframes tour-spot-pulse { 50% { box-shadow: 0 0 0 9999px rgba(4,8,7,.7), 0 0 48px #f0d99b; } }
+.tour-pop { position: fixed; z-index: 121; width: min(340px,calc(100vw - 28px)); padding: 16px; border: 1px solid #d8bd7a55; border-radius: 18px; background: rgba(22,30,27,.97); box-shadow: 0 22px 70px #000a; backdrop-filter: blur(18px); }
+.tour-kicker { color: var(--gold); font-size: 9px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; margin-bottom: 7px; }
+.tour-title { font-family: Prata,Georgia,serif; font-size: 18px; margin-bottom: 8px; }
+.tour-text { color: #c6cec8; font-size: 11px; line-height: 1.65; }
+.tour-text ul { margin: 8px 0 0; padding-left: 17px; }
+.tour-text li { margin: 4px 0; }
+.tour-actions { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
+.tour-actions .action-btn { min-height: 36px; padding: 0 12px; font-size: 10px; }
+.tour-counter { margin-left: auto; color: var(--muted); font-size: 10px; }
+.rule-list { margin: 7px 0 0; padding-left: 17px; }
+.rule-list li { margin: 4px 0; }
+.credits { margin-top: 16px; padding-top: 13px; border-top: 1px solid var(--line); color: var(--muted); font-size: 10px; line-height: 1.6; }
+.credits a { color: var(--gold-bright); text-decoration: none; }
+.credits a:hover { text-decoration: underline; }
 #loading { position: absolute; inset: 0; z-index: 7; display: none; place-items: center; background: #101514d9; backdrop-filter: blur(8px); }
 #loading.visible { display: grid; }
 .loader-inner { text-align: center; color: var(--muted); font-size: 11px; letter-spacing: .04em; }
@@ -264,7 +285,7 @@ textarea#importArea { width: 100%; min-height: 180px; resize: vertical; border: 
 <header class="topbar">
   <div class="brand" aria-label="Эльо">
     <svg class="brand-mark" viewBox="0 0 42 46" fill="none"><path d="m21 2 18 10v22L21 44 3 34V12L21 2Z" stroke="currentColor"/><path d="m21 9 12 7v14l-12 7-12-7V16l12-7Z" stroke="currentColor" opacity=".45"/><path d="M21 14v18M13 18l16 10M29 18 13 28" stroke="currentColor"/></svg>
-    <div><div class="brand-name">ЭЛЬО</div><div class="brand-sub">Игра трёх сил</div></div>
+    <div><div class="brand-name">ЭЛЬО</div><div class="brand-sub">Воздушная игра трёх сил</div></div>
   </div>
   <div class="view-switch" role="group" aria-label="Вид доски">
     <button id="view2d" class="active" aria-pressed="true"><svg class="icon"><use href="#i-grid"/></svg>2D</button>
@@ -338,23 +359,43 @@ const $ = id => document.getElementById(id);
 const NS = 'http://www.w3.org/2000/svg';
 const COLORS = { plus: '#72b7d2', minus: '#df8178', zero: '#b6bdb7' };
 const SYMBOLS = { plus: '+', minus: '−', zero: '0' };
-const ROLES = { plus: 'Военная фракция', minus: 'Военная фракция', zero: 'Парламент · поддержка' };
+const ROLES = { plus: 'Военная небесная держава', minus: 'Военная небесная держава', zero: 'Парламент · поддержка' };
 const SHORT = { line:'Л', battleship:'Лк', bombardier:'Бм', frigate:'Ф', corvette:'Кв', destroyer:'Мн', tender:'Т', skiff:'Ск', parliament:'КЛ', free:'Св', courier:'Ку', engineer:'Ин', saboteur:'Ди' };
 const DESCRIPTIONS = {
-  line:'Один шаг в любом направлении. Тяжёлая фигура и главная цель противника.',
-  battleship:'Любая дистанция по прямой. Тяжёлая фигура, пробивает защиту 1.',
-  bombardier:'Прыжок на 2–3 клетки по прямой через фигуры, но не через «Ц».',
-  frigate:'До двух клеток по прямой. Не перепрыгивает фигуры.', corvette:'Прыжок ровно на две клетки, в том числе через «Ц».',
-  destroyer:'Один шаг или рывок на две клетки по свободной прямой.', tender:'Пешка Плюсов или Минусов. Один шаг в любом направлении.', skiff:'Пешка Нулей. Один шаг, не поддерживает другие фигуры.',
-  parliament:'Один шаг. Может поддержать соседнюю фигуру абсолютным щитом.', free:'До трёх клеток по прямой. Может поддерживать соседей.',
-  courier:'До четырёх клеток по прямой. Может поддерживать соседей.', engineer:'До двух клеток по прямой. Даёт соседям пассивную защиту 1.', saboteur:'Один шаг. Может поддержать соседнюю фигуру.'
+  line:'Тяжёлый флагманский дирижабль. Ходит на одну клетку; его гибель решает партию.',
+  battleship:'Тяжёлый линкор. Летит на любую дистанцию по прямой и пробивает защиту 1.',
+  bombardier:'Бомбардировщик. Прыгает на 2–3 клетки через суда, но не через «Ц».',
+  frigate:'Военный фрегат. Летит до двух клеток по прямой и не перепрыгивает суда.', corvette:'Быстрый корвет. Прыгает ровно на две клетки, разрешён перелёт через «Ц».',
+  destroyer:'Миноносец. Один шаг или рывок на две клетки по свободной прямой.', tender:'Вспомогательный тендер. Пешка Плюсов или Минусов, ходит на одну клетку.', skiff:'Лёгкий скиталец. Пешка Нулей: ходит на одну клетку, но не поддерживает.',
+  parliament:'Парламентский капитан-линейный. Ходит на одну клетку и держит абсолютный щит.', free:'Вольный нуль. Летит до трёх клеток и может поддерживать соседей.',
+  courier:'Курьер. Летит до четырёх клеток и может поддерживать соседей.', engineer:'Инженер. Летит до двух клеток; соседние военные суда получают защиту 1.', saboteur:'Дивергент. Ходит на одну клетку и может поддерживать соседнюю фигуру.'
 };
 const REASONS = { king:'гибель Линейного', hold:'удержание «Ц»', limit:'лимит ходов', draw:'«Ц» свободен на лимите', zeros_last:'обе военные выбыли' };
+const UI_TIPS = [
+  {selector:'#view2d',title:'2D-вид',sub:'Плоская тактическая доска',text:'Лучше видны все клетки, линии поддержки и доступные ходы.'},
+  {selector:'#view3d',title:'3D-вид',sub:'Объёмные воздушные суда',text:'Доску можно вращать и приближать. Подсказки появляются при наведении или тапе.'},
+  {selector:'#btnHistoryTop',title:'Журнал',sub:'История партии',text:'Здесь находятся ходы, экспорт, импорт и пошаговое воспроизведение.'},
+  {selector:'#btnRules',title:'Правила и лор',sub:'Как устроено Эльо',text:'Краткие правила, роли трёх сил и запуск обучения.'},
+  {selector:'#btnSettings',title:'Настройки',sub:'Сценарий партии',text:'Выбор режима, состава эскадрильи, направления ходов и условия удержания «Ц».'},
+  {selector:'#btnResetCamera',title:'Центр камеры',sub:'3D-вид',text:'Возвращает камеру к общему виду доски.'},
+  {selector:'#btnPanel',title:'Панель партии',sub:'Мобильный режим',text:'Открывает сводку сил, центр, выбранную фигуру и журнал.'},
+  {selector:'#btnAi',title:'Ход ИИ',sub:'Один расчёт',text:'ИИ выполняет ход за фракцию, которая сейчас ходит.'},
+  {selector:'#btnAuto',title:'Авто-игра',sub:'Демонстрация',text:'Три фракции играют без участия игрока. Ещё раз нажмите, чтобы остановить.'},
+  {selector:'#btnNew',title:'Новая игра',sub:'Сценарий и фракция',text:'Позволяет настроить и начать новую партию.'},
+  {selector:'#tabStatus',title:'Вкладка «Партия»',sub:'Текущее состояние',text:'Показывает силы фракций, удержание центра и описание выбранной фигуры.'},
+  {selector:'#tabHistory',title:'Вкладка «Журнал»',sub:'Ходы и воспроизведение',text:'Список решений, экспорт, импорт и повтор партии.'},
+  {selector:'#btnExport',title:'Экспорт',sub:'JSON журнала',text:'Сохраняет партию в файл для архива или передачи.'},
+  {selector:'#btnImport',title:'Импорт',sub:'JSON журнала',text:'Загружает ранее сохранённую партию для просмотра.'},
+  {selector:'#btnReplayStart',title:'В начало',sub:'Воспроизведение',text:'Возвращает доску к исходной позиции журнала.'},
+  {selector:'#btnReplayStep',title:'Шаг',sub:'Воспроизведение',text:'Выполняет следующий записанный ход.'},
+  {selector:'#btnReplayAll',title:'Все ходы',sub:'Автоповтор',text:'Показывает всю сохранённую партию с задержкой между ходами.'}
+];
 let settings = { turn:'cycle', death:'main', cycleDir:'forward', pawns:0, holdTarget:3 };
 const turnWord=n=>n===1?'ход':n<5?'хода':'ходов';
 let state = E.init(settings), selectedId = null, legalTargets = [], supportTargets = [], view = '2d';
 let gameMode = 'coop', humanFaction = 'plus';
 let autoPlay = false, autoTimer = null, replayTimer = null, aiChainTimer = null, modalDismissible = true, lastFocused = null, gameOverShown = false;
+let mobileTipTimer = null, tourIndex = 0, tourBackdrop = null, tourSpot = null, tourPop = null;
 
 function svgEl(tag, attrs = {}, text) {
   const el = document.createElementNS(NS, tag);
@@ -366,18 +407,58 @@ function axialToPx(q,r) { return { x:425 + 60*q, y:440 + Math.sqrt(3)*40*(r+q/2)
 function axialTo3D(q,r) { return new THREE.Vector3(1.5*q, 0, Math.sqrt(3)*(r+q/2)); }
 function hexPoints(cx,cy,size) { return Array.from({length:6},(_,i)=>`${(cx+size*Math.cos(Math.PI/3*i)).toFixed(1)},${(cy+size*Math.sin(Math.PI/3*i)).toFixed(1)}`).join(' '); }
 function esc(value) { const d=document.createElement('div'); d.textContent=String(value ?? ''); return d.innerHTML; }
-function hidePieceTooltip(){ $('pieceTooltip').classList.remove('visible'); }
-function showPieceTooltip(p,clientX,clientY){
-  if(!p){hidePieceTooltip();return;}
-  const tip=$('pieceTooltip'),stage=$('boardStage').getBoundingClientRect(),code=E.codeMap.get(p.q+','+p.r)||`${p.q}, ${p.r}`;
-  const status=p.inert?'Инертная фигура':E.isNullType(p.type)?(E.isNeutralZero(p)?'Нейтральный · неуязвим':'Заявленный · уязвим'):`Защита ${E.protLevel(state,p)}`;
-  tip.style.setProperty('--tooltip-color',COLORS[p.faction]);
-  tip.innerHTML=`<strong>${esc(E.TYPE_NAME[p.type])}</strong><span>${esc(E.FACTION_NAME[p.faction])} · ${esc(code)} · ${esc(status)}</span><p>${esc(DESCRIPTIONS[p.type])}</p>`;
+function hidePieceTooltip(){ clearTimeout(mobileTipTimer); mobileTipTimer=null; $('pieceTooltip').classList.remove('visible'); }
+function showInfoTooltip(info,clientX,clientY,autoHide=0){
+  if(!info){hidePieceTooltip();return;}
+  const tip=$('pieceTooltip'),stage=$('boardStage').getBoundingClientRect();
+  tip.style.setProperty('--tooltip-color',info.color||'var(--gold-bright)');
+  tip.innerHTML=`<strong>${esc(info.title)}</strong>${info.subtitle?`<span>${esc(info.subtitle)}</span>`:''}<p>${esc(info.text||'')}</p>`;
   tip.classList.add('visible');
   const x=Math.min(stage.width-tip.offsetWidth-10,Math.max(10,clientX-stage.left+16));
   const y=Math.min(stage.height-tip.offsetHeight-10,Math.max(10,clientY-stage.top+16));
   tip.style.left=x+'px';tip.style.top=y+'px';
+  clearTimeout(mobileTipTimer);
+  if(autoHide>0)mobileTipTimer=setTimeout(hidePieceTooltip,autoHide);
 }
+function pieceTooltipInfo(p){
+  const code=E.codeMap.get(p.q+','+p.r)||`${p.q}, ${p.r}`;
+  const supporter=state.pieces.find(z=>z.alive&&z.supportTarget===p.id);
+  const supportTarget=p.supportTarget?state.pieces.find(x=>x.id===p.supportTarget&&x.alive):null;
+  let status='';
+  if(p.inert)status='Инертная фигура';
+  else if(E.isNullType(p.type)){
+    if(supportTarget)status=`Связь → ${E.TYPE_NAME[supportTarget.type]} ${supportTarget.id}`;
+    else if(supporter)status=`Поддержка Нулей · щит ${supporter.id}`;
+    else if(E.isOnGateOrCenter(p))status='Заявленный · стоит на «Ц» или воротах';
+    else status='Нейтральный · неуязвим';
+  } else {
+    const protection=E.protLevel(state,p);
+    status=protection===2?'Поддержка Нулей · защита 2':protection===1?'Защита 1 · пробивают тяжёлые':'Без защиты';
+  }
+  let text=DESCRIPTIONS[p.type];
+  if(!p.inert&&E.protLevel(state,p)===2&&supporter)text+=` Щит держит ${supporter.id}. Сначала снимите связующего нуля, затем атакуйте судно.`;
+  if(supportTarget)text+=` Поддержка даёт цели защиту 2 и делает нуль уязвимым для противоположной военной фракции.`;
+  return {title:E.TYPE_NAME[p.type],subtitle:`${E.FACTION_NAME[p.faction]} · ${code} · ${status}`,text,color:COLORS[p.faction]};
+}
+function showPieceTooltip(p,clientX,clientY,autoHide=0){ if(!p){hidePieceTooltip();return;} showInfoTooltip(pieceTooltipInfo(p),clientX,clientY,autoHide); }
+function showCellTooltip(q,r,clientX,clientY,autoHide=0){
+  const key=q+','+r,c=state.cells.get(key),code=E.codeMap.get(key)||key,center=q===0&&r===0,gate=E.GATE_SET.has(key);
+  let info;
+  if(center)info={title:'Центр «Ц»',subtitle:'Золотая точка доски',text:`Вход сюда возможен только с жёлтых ворот. Удержите центр ${state.holdTarget} ${turnWord(state.holdTarget)}, чтобы победить.`,color:'#d8bd7a'};
+  else if(gate)info={title:'Золотые ворота',subtitle:code,text:'С этих трёх клеток воздушное судно может войти в центр «Ц». Нуль на воротах становится уязвимым.',color:'#d8bd7a'};
+  else if(c?.kind==='disputed')info={title:'Спорное поле',subtitle:code,text:'Пограничная клетка между тремя территориями. Важна для манёвров и удержания связей.',color:'#9aa0d0'};
+  else {const field=E.FIELD_INFO.find(f=>f.id===c?.fieldId);info={title:field?field.name:'Игровой гекс',subtitle:`${code} · ${q}, ${r}`,text:field?'Клетка территории фракции. Суда ходят по гексам и не могут покидать доску.':'Свободная клетка доски.',color:field?COLORS[field.id]:'#98a39e'};}
+  showInfoTooltip(info,clientX,clientY,autoHide);
+}
+function showBoardTooltip(q,r,clientX,clientY,autoHide=0){const p=E.pieceAt(state,q,r);if(p)showPieceTooltip(p,clientX,clientY,autoHide);else showCellTooltip(q,r,clientX,clientY,autoHide);}
+function bindTipElement(el,tip){
+  el.addEventListener('pointerenter',e=>{if(e.pointerType==='mouse')showInfoTooltip(tip,e.clientX,e.clientY);});
+  el.addEventListener('pointerleave',e=>{if(e.pointerType==='mouse')hidePieceTooltip();});
+  el.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse')showInfoTooltip(tip,e.clientX,e.clientY,2600);});
+  el.addEventListener('focusin',e=>{const r=el.getBoundingClientRect();showInfoTooltip(tip,r.left+r.width/2,r.top+r.height/2);});
+  el.addEventListener('focusout',hidePieceTooltip);
+}
+function bindUiTips(){UI_TIPS.forEach(tip=>document.querySelectorAll(tip.selector).forEach(el=>bindTipElement(el,tip)));}
 
 function toast(title, text='', type='info', duration=4000) {
   const colors={info:COLORS.plus,success:'#88c9a5',warning:'#d8bd7a',error:'#ef8d82'};
@@ -397,15 +478,54 @@ function openModal({title,kicker='Эльо',body,buttons=[],dismissible=true}) {
 function closeModal(){ $('modalLayer').classList.remove('open'); lastFocused?.focus?.(); }
 $('modalClose').onclick=closeModal;
 $('modalLayer').addEventListener('pointerdown',e=>{ if(e.target===$('modalLayer')&&modalDismissible)closeModal(); });
-document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&$('modalLayer').classList.contains('open')&&modalDismissible)closeModal(); });
+document.addEventListener('keydown',e=>{ if(e.key!=='Escape')return; if(tourPop){stopOnboarding();return;} if($('modalLayer').classList.contains('open')&&modalDismissible)closeModal(); });
 
 function showRules(){
-  openModal({title:'Три силы. Один центр.',kicker:'Краткие правила',body:`<p class="rules-intro">Космические флоты борются за власть, а Нули решают, кому достанется равновесие.</p>
-  <div class="rule-block"><h3>Как сделать ход</h3><p>Выберите фигуру активной фракции, затем подсвеченную клетку. Нули не атакуют: вместо перемещения они могут установить или снять поддержку соседней фигуры.</p></div>
-  <div class="rule-block"><h3>Как победить</h3><p>Уничтожьте вражеского Линейного в Основном режиме или удерживайте «Ц» ${settings.holdTarget} ${turnWord(settings.holdTarget)}. Вход не засчитывается: при стандартной тройке Плюсы побеждают в начале своего четвёртого хода на «Ц». Войти в центр можно только с золотых ворот. На лимите побеждает держатель центра.</p></div>
-  <div class="rule-block"><h3>Защита и поддержка</h3><p>Линейный и Инженер дают соседям защиту 1 — её пробивают только тяжёлые Линейный и Линкор. Поддержка Нулей даёт защиту 2, которую нельзя пробить, пока жив поддерживающий нуль.</p></div>
-  <div class="rule-block"><h3>Нейтралитет</h3><p>Нуль без поддержки вне «Ц» и ворот неуязвим. Военная фигура может оттеснить его на одну клетку, оставшись на месте. Поддержка — добровольная заявка: она делает нуль уязвимым.</p></div>
-  <div class="legend"><span><i style="background:#d8bd7a"></i>перемещение</span><span><i style="background:#df8178"></i>взятие</span><span><i style="background:#72b7d2"></i>оттеснение</span><span><i style="background:#b6bdb7"></i>поддержка</span></div>`});
+  openModal({title:'Небесные поля. Три силы.',kicker:'Правила и лор',body:`<p class="rules-intro">Эльо — пошаговая игра о воздушных судах трёх держав. Доска состоит из трёх полей и центральной точки «Ц», через которую проходят главные маршруты.</p>
+  <div class="rule-block"><h3>Кто участвует</h3><p>Плюсы и Минусы — военные фракции. Нули — парламент посредников: их суда не атакуют, зато создают поддержку и защиту.</p></div>
+  <div class="rule-block"><h3>Как сделать ход</h3><p>Выберите судно фракции, которая сейчас ходит, затем подсвеченный гекс. Нули выбирают соседнее судно и вместо перемещения устанавливают или снимают связь поддержки.</p></div>
+  <div class="rule-block"><h3>Что такое «Ц»</h3><p>«Ц» — золотой центр доски. Войти в него можно только с трёх жёлтых ворот. Чтобы победить по центру, удерживайте «Ц» ${settings.holdTarget} ${turnWord(settings.holdTarget)}. Вход не засчитывается: при трёх победа наступает в начале четвёртого собственного хода на «Ц».</p></div>
+  <div class="rule-block"><h3>Как победить</h3><p>В Основном режиме побеждает уничтожившая вражеский Линейный. Также побеждает держатель «Ц» после нужного числа собственных ходов; на лимите преимущество у держателя центра. Нули не бьют, но могут сами зайти на «Ц» с ворот и удержать его.</p></div>
+  <div class="rule-block"><h3>Линейный и флагманская защита</h3><p>Линейный — тяжёлый флагманский дирижабль и главная цель. Линейный и Инженер дают соседним военным судам защиту 1; её пробивают только тяжёлые Линейный и Линкор.</p></div>
+  <div class="rule-block"><h3>Поддержка Нулей</h3><p>Нуль рядом с фигурой может держать связь: судно получает защиту 2, которую обычная атака не пробивает. Сначала нужно снять самого поддерживающего нуля. После установления связи нуль становится заявленным и уязвимым для противоположной военной фракции.</p></div>
+  <div class="rule-block"><h3>Нейтральные Нули</h3><p>Нуль вне поддержки, «Ц» и ворот неуязвим. Его нельзя сбить, но военное судно может оттеснить его на свободную клетку, оставшись на месте. Скиталец не поддерживает.</p></div>
+  <div class="rule-block"><h3>Различия судов</h3><ul class="rule-list"><li><strong>Линейный</strong> — флагман, один шаг, решает партию.</li><li><strong>Линкор</strong> — дальняя прямая, тяжёлая атака.</li><li><strong>Бомбардир</strong> — прыжок на 2–3 клетки.</li><li><strong>Корвет</strong> — прыжок ровно на 2 клетки.</li><li><strong>Фрегат</strong> — до 2 клеток, <strong>Миноносец</strong> — рывок на 2 свободные клетки.</li><li><strong>Парламентский, Вольный, Курьер, Инженер и Дивергент</strong> — суда Нулей с разной скоростью и поддержкой.</li></ul></div>
+  <div class="legend"><span><i style="background:#d8bd7a"></i>перемещение</span><span><i style="background:#df8178"></i>взятие</span><span><i style="background:#72b7d2"></i>оттеснение</span><span><i style="background:#b6bdb7"></i>поддержка</span></div>
+  <div class="credits">По мотивам книги «Интеграл Пьявица» Леонида Малкова. Сделано в рамках проекта «Гравитация» для масштабной адвенчуры Project C · <a href="https://thegravity.ru" target="_blank" rel="noopener">thegravity.ru</a></div>`,
+  buttons:[{label:'Обучение',action:startOnboarding},{label:'Понятно',primary:true}]});
+}
+
+const TOUR_STEPS=[
+  {target:'.brand',title:'Добро пожаловать в Эльо',text:'Это пошаговая игра о воздушных судах трёх держав. Партия проходит на гексагональной доске из трёх полей и центральной точки «Ц».'},
+  {target:'#view2d',title:'Два вида доски',text:'2D удобен для точных ходов и связей. 3D показывает объёмные воздушные суда; доску можно вращать.'},
+  {target:'#boardStage',title:'Доска и подсказки',text:'Цветные лепестки — территории Плюсов, Минусов и Нулей. Золотые гексы — ворота и центр. Наведите курсор или тапните по гексу и судну, чтобы узнать, что это.'},
+  {target:'#turnBanner',title:'Очередь хода',text:'Баннер показывает фракцию, которая сейчас действует. Порядок зависит от выбранного режима: Цикл, Стрелка или Передача.'},
+  {target:'.bottom-bar',title:'Основные действия',text:'«Состояние» открывает панель, «Ход ИИ» и «Авто-игра» демонстрируют решения, «Новая игра» настраивает партии.'},
+  {target:()=>innerWidth<=760?'#btnPanel':'#sidebar',title:'Панель партии',text:'Здесь видны силы фракций, счёт удержания центра и карточка выбранного судна. На телефоне панель открывается кнопкой «Состояние».'},
+  {target:()=>innerWidth<=760?'#btnPanel':'#paneStatus .selection-card',title:'Выбор судна',text:'Нажмите на фигуру своей активной фракции. Доступные клетки подсветятся: золотые перемещения, красные взятия, голубые оттеснения, серые — поддержка Нулей.'},
+  {target:'#centerCountdown',title:'Центр «Ц»',text:'В центр можно войти только с жёлтых ворот. Строка под доской показывает, кто его удерживает и сколько собственных ходов осталось до победы.'},
+  {target:'#btnRules',title:'Правила всегда рядом',text:'Эта кнопка открывает понятные правила, роли фракций и кредиты. Обучение можно запустить заново из окна правил.'},
+  {target:null,title:'Различия фигур',text:'<ul><li>Линейный — флагман и главная цель.</li><li>Линкор бьёт на дистанции, Бомбардир прыгает через суда.</li><li>Корвет быстро прыгает на две клетки, Миноносец делает рывок.</li><li>Нули не атакуют: они передвигаются и поддерживают.</li><li>Защита 1 пробивается тяжёлыми, защита 2 Нулей — сначала снимите связующего нуля.</li></ul>'}
+];
+function onboardingCompleted(){try{return localStorage.getItem('elio-onboarding-v1')==='1';}catch{return true;}}
+function completeOnboarding(){try{localStorage.setItem('elio-onboarding-v1','1');}catch{}}
+function stopOnboarding(){tourBackdrop?.remove();tourSpot?.remove();tourPop?.remove();tourBackdrop=null;tourSpot=null;tourPop=null;}
+function renderTourStep(){
+  const step=TOUR_STEPS[tourIndex],selector=typeof step.target==='function'?step.target():step.target,target=selector?document.querySelector(selector):null;
+  if(target){const rect=target.getBoundingClientRect(),pad=7;tourSpot.hidden=false;Object.assign(tourSpot.style,{left:rect.left-pad+'px',top:rect.top-pad+'px',width:rect.width+pad*2+'px',height:rect.height+pad*2+'px'});}else tourSpot.hidden=true;
+  tourPop.innerHTML=`<div class="tour-kicker">Обучение · ${tourIndex+1} из ${TOUR_STEPS.length}</div><div class="tour-title">${esc(step.title)}</div><div class="tour-text">${step.text}</div><div class="tour-actions"><button class="action-btn" data-tour="prev" ${tourIndex===0?'disabled':''}>Назад</button><button class="action-btn" data-tour="close">Закрыть</button><span class="tour-counter">${tourIndex+1} / ${TOUR_STEPS.length}</span><button class="action-btn ${tourIndex===TOUR_STEPS.length-1?'primary':''}" data-tour="next">${tourIndex===TOUR_STEPS.length-1?'Завершить':'Далее'}</button></div>`;
+  const rect=target?target.getBoundingClientRect():null,width=Math.min(340,innerWidth-28),height=tourPop.offsetHeight||220;
+  let left=(innerWidth-width)/2,top=(innerHeight-height)/2;
+  if(rect){left=rect.left+rect.width/2-width/2;top=rect.bottom+16;if(top+height>innerHeight-12)top=rect.top-height-16;if(top<12)top=12;}
+  tourPop.style.left=Math.max(14,Math.min(innerWidth-width-14,left))+'px';tourPop.style.top=Math.max(14,Math.min(innerHeight-height-14,top))+'px';
+}
+function startOnboarding(){
+  stopAuto();stopAiChain();closeModal();hidePieceTooltip();tourIndex=0;
+  tourBackdrop=document.createElement('div');tourBackdrop.className='tour-backdrop';tourBackdrop.setAttribute('aria-hidden','true');
+  tourSpot=document.createElement('div');tourSpot.className='tour-spot';
+  tourPop=document.createElement('div');tourPop.className='tour-pop';tourPop.setAttribute('role','dialog');tourPop.setAttribute('aria-label','Обучение Эльо');
+  tourPop.addEventListener('click',e=>{const action=e.target.closest('[data-tour]')?.dataset.tour;if(!action)return;if(action==='close'){stopOnboarding();return;}if(action==='prev')tourIndex=Math.max(0,tourIndex-1);else{tourIndex++;if(tourIndex>=TOUR_STEPS.length){completeOnboarding();stopOnboarding();return;}}renderTourStep();});
+  document.body.append(tourBackdrop,tourSpot,tourPop);renderTourStep();
 }
 function showSettings(){
   const option=(name,value,label,checked)=>`<label class="option"><input type="radio" name="${name}" value="${value}" ${checked?'checked':''}><span>${label}</span></label>`;
@@ -415,7 +535,7 @@ function showSettings(){
   <div><span class="setting-label">Порядок хода</span><div class="option-grid">${option('turn','cycle','Цикл',settings.turn==='cycle')}${option('turn','arrow','Стрелка',settings.turn==='arrow')}${option('turn','pass','Передача',settings.turn==='pass')}</div><div class="setting-hint" style="margin:8px 0 0">Стрелка выбирает фракцию случайно; в Передаче игрок сам назначает следующего.</div></div>
   <div><span class="setting-label">Условие гибели Линейного</span><div class="option-grid" style="grid-template-columns:repeat(2,1fr)">${option('death','main','Основной · победа',settings.death==='main')}${option('death','long','Длинный · выбывание',settings.death==='long')}</div></div>
   <div><span class="setting-label">Удержание «Ц» для победы</span><div class="option-grid" style="grid-template-columns:repeat(5,1fr)">${[1,2,3,4,5].map(n=>option('holdTarget',n,`${n} ${turnWord(n)}`,settings.holdTarget===n)).join('')}</div><div class="setting-hint" style="margin:8px 0 0">Считаются следующие собственные ходы держателя. При трёх победа наступает в начале четвёртого хода на «Ц», включая вход.</div></div>
-  <div><span class="setting-label">Состав флота</span><div class="option-grid">${option('pawns','0','Классика · 10',settings.pawns===0)}${option('pawns','1','10 + 1 пешка',settings.pawns===1)}${option('pawns','5','Расширенный · 15',settings.pawns===5)}</div><div class="setting-hint" style="margin:8px 0 0">Варианты с пешками экспериментальные; 15 фигур увеличивают лимит до 120.</div></div>
+  <div><span class="setting-label">Состав эскадрильи</span><div class="option-grid">${option('pawns','0','Классика · 10',settings.pawns===0)}${option('pawns','1','10 + 1 пешка',settings.pawns===1)}${option('pawns','5','Расширенный · 15',settings.pawns===5)}</div><div class="setting-hint" style="margin:8px 0 0">Варианты с пешками экспериментальные; 15 фигур увеличивают лимит до 120.</div></div>
   <div id="cycleSetting"><span class="setting-label">Направление цикла</span><div class="option-grid" style="grid-template-columns:repeat(2,1fr)">${option('cycleDir','forward','П → М → Н',settings.cycleDir==='forward')}${option('cycleDir','reverse','П → Н → М',settings.cycleDir==='reverse')}</div></div></div>`,
   buttons:[{label:'Отмена'},{label:'Начать партию',primary:true,action:()=>{ const data=new FormData(); document.querySelectorAll('#modalBody input:checked').forEach(i=>data.append(i.name,i.value)); gameMode=data.get('gameMode'); humanFaction=data.get('humanFaction')||humanFaction; settings={turn:data.get('turn'),death:data.get('death'),cycleDir:data.get('cycleDir'),pawns:Number(data.get('pawns')),holdTarget:Number(data.get('holdTarget'))}; newGame(); }}]});
   const update=()=>{
@@ -442,7 +562,7 @@ function buildBoard2D(){
     const poly=svgEl('polygon',{points:hexPoints(p.x,p.y,38.5),fill:color+(center?'24':gate?'1c':'0e'),stroke:color+(center?'bb':gate?'88':'55'),'stroke-width':center?2:1,class:'hex','data-q':c.q,'data-r':c.r,tabindex:0,role:'button','aria-label':`${c.code||'клетка'} ${c.q},${c.r}`});
     if(c.kind==='disputed')poly.setAttribute('stroke-dasharray','4 4');
     poly.addEventListener('click',()=>handleCell(c.q,c.r)); poly.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();handleCell(c.q,c.r);}});
-    poly.addEventListener('pointermove',e=>showPieceTooltip(E.pieceAt(state,c.q,c.r),e.clientX,e.clientY));poly.addEventListener('pointerleave',hidePieceTooltip);cells.appendChild(poly);
+    poly.addEventListener('pointermove',e=>{if(e.pointerType==='mouse')showBoardTooltip(c.q,c.r,e.clientX,e.clientY);});poly.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse')showBoardTooltip(c.q,c.r,e.clientX,e.clientY,2300);});poly.addEventListener('pointerleave',e=>{if(e.pointerType==='mouse')hidePieceTooltip();});cells.appendChild(poly);
     const text=svgEl('text',{x:p.x,y:p.y+26,'text-anchor':'middle',fill:center?'#d8bd7a':'#87938d','font-size':center?11:7.5,'font-weight':600,class:'cell-code'},center?'Ц':c.code); cells.appendChild(text);
   });
   E.FIELD_INFO.forEach(f=>{const p=axialToPx(f.center[0],f.center[1]);const y=f.id==='plus'?p.y-216:p.y+211;svg.appendChild(svgEl('text',{x:p.x,y,'text-anchor':'middle',fill:COLORS[f.id],'font-size':12,'font-weight':600,'letter-spacing':4,opacity:.7},f.name));});
@@ -452,22 +572,29 @@ function render2D(){
   const lines=$('supportLines'), targets=$('targets'), pieces=$('pieces'); if(!lines)return;
   lines.innerHTML=''; targets.innerHTML=''; pieces.innerHTML='';
   document.querySelectorAll('.hex').forEach(el=>el.classList.toggle('selected',el.dataset.q==String(selectedPiece()?.q)&&el.dataset.r==String(selectedPiece()?.r)));
-  state.pieces.filter(p=>p.alive&&p.supportTarget).forEach(p=>{const t=state.pieces.find(x=>x.id===p.supportTarget&&x.alive);if(!t)return;const a=axialToPx(p.q,p.r),b=axialToPx(t.q,t.r);lines.appendChild(svgEl('line',{x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:'#d8bd7a','stroke-width':1.5,opacity:.65,class:'support-line'}));});
+  const supportedIds=new Set(state.pieces.filter(p=>p.alive&&p.supportTarget).map(p=>p.supportTarget));
+  state.pieces.filter(p=>p.alive&&p.supportTarget).forEach(p=>{const t=state.pieces.find(x=>x.id===p.supportTarget&&x.alive);if(!t)return;const a=axialToPx(p.q,p.r),b=axialToPx(t.q,t.r);lines.appendChild(svgEl('line',{x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:'#f0d99b','stroke-width':2.2,opacity:.9,class:'support-line'}));});
   legalTargets.forEach(t=>{const p=axialToPx(t.q,t.r),color=t.capture?'#df8178':t.displace?'#72b7d2':'#d8bd7a';targets.appendChild(svgEl('circle',{cx:p.x,cy:p.y,r:t.capture?29:10,fill:t.capture?'transparent':color+'55',stroke:color,'stroke-width':t.capture?2:1.5,class:'target'}));});
-  supportTargets.forEach(id=>{const t=state.pieces.find(x=>x.id===id);if(!t)return;const p=axialToPx(t.q,t.r);targets.appendChild(svgEl('circle',{cx:p.x,cy:p.y,r:31,fill:'none',stroke:'#b6bdb7','stroke-width':2,'stroke-dasharray':'3 3',class:'target'}));});
+  supportTargets.forEach(id=>{const t=state.pieces.find(x=>x.id===id);if(!t)return;const p=axialToPx(t.q,t.r);targets.appendChild(svgEl('circle',{cx:p.x,cy:p.y,r:31,fill:'none',stroke:'#f0d99b','stroke-width':2.2,'stroke-dasharray':'3 3',class:'target'}));});
   state.pieces.filter(p=>p.alive).forEach(p=>{
     const pos=axialToPx(p.q,p.r), color=COLORS[p.faction], g=svgEl('g',{class:'piece-2d',opacity:p.inert?.35:1});
     g.appendChild(svgEl('circle',{cx:pos.x,cy:pos.y+3,r:21,fill:'#050806',opacity:.45}));
+    if(supportedIds.has(p.id)){
+      g.appendChild(svgEl('circle',{cx:pos.x,cy:pos.y,r:27,fill:'#d8bd7a',opacity:.1,stroke:'#f0d99b','stroke-width':2.2,class:'support-shield'}));
+      g.appendChild(svgEl('polygon',{points:hexPoints(pos.x,pos.y-27,8.5),fill:'#d8bd7a',stroke:'#f0d99b','stroke-width':1,class:'support-badge'}));
+      g.appendChild(svgEl('text',{x:pos.x,y:pos.y-23.8,'text-anchor':'middle',class:'support-badge-text'},'2'));
+    }
     g.appendChild(svgEl('circle',{cx:pos.x,cy:pos.y,r:20,fill:'#17201d',stroke:color,'stroke-width':p.id===selectedId?3:1.8}));
     g.appendChild(svgEl('circle',{cx:pos.x,cy:pos.y,r:16,fill:color,opacity:E.isNullType(p.type)?.24:.32}));
     if(p.type==='line')g.appendChild(svgEl('circle',{cx:pos.x,cy:pos.y,r:24,fill:'none',stroke:'#d8bd7a','stroke-width':1.4}));
     if(E.isNullType(p.type)&&!p.supportTarget)g.appendChild(svgEl('circle',{cx:pos.x,cy:pos.y,r:23,fill:'none',stroke:color,'stroke-width':1,'stroke-dasharray':'2 4',opacity:.7}));
+    if(E.isNullType(p.type)&&p.supportTarget)g.appendChild(svgEl('circle',{cx:pos.x,cy:pos.y,r:23,fill:'#d8bd7a',opacity:.08,stroke:'#f0d99b','stroke-width':1.5,class:'support-shield'}));
     g.appendChild(svgEl('text',{x:pos.x,y:pos.y+4,'text-anchor':'middle',fill:p.inert?'#87938d':'#f0eee7','font-size':SHORT[p.type]?.length>1?10:12,'font-weight':700},SHORT[p.type]||p.type[0])); pieces.appendChild(g);
   });
 }
 
 let renderer,scene,camera,controls,raycaster,pointer,threeReady=false,threeInitializing=null;
-const pieceMeshes=new Map(), highlightMeshes=[], cellMeshes=[], tweens=[], modelCache=new Map();
+const pieceMeshes=new Map(), highlightMeshes=[], supportFxMeshes=[], cellMeshes=[], tweens=[], modelCache=new Map();
 let interactables=[];
 const MODEL_MAP={plus:{line:'Plus-Linear.fbx',battleship:'Plus-HeavyCruiser.fbx',frigate:'Plus-Frigate.fbx',corvette:'Plus-Corvette.fbx',destroyer:'Plus-Destroyer.fbx',bombardier:'Plus-Frigate.fbx'},minus:{line:'Minus-Linear.fbx',battleship:'Minus-HeavyCruiser.fbx',frigate:'Minus-Frigate.fbx',corvette:'Minus-Corvette.fbx',destroyer:'Minus-Destroyer.fbx',bombardier:'Minus-Frigate.fbx'},zero:{parliament:'Zero-CaptainLinear.fbx',free:'Zero-Free.fbx',courier:'Zero-Courier.fbx',engineer:'Zero-Engineer.fbx',saboteur:'Zero-Divergent.fbx'}};
 const THREE_COLORS={plus:'#58c8f2',minus:'#ff7d72',zero:'#d3dbd5'};
@@ -503,9 +630,9 @@ async function init3D(){
     const HEX_COLORS={plus:0x246d8f,minus:0x84302b,zero:0x52645d,disputed:0x48506c,center:0xa98c47,gate:0x9b8148};
     const hexGeo=new THREE.CylinderGeometry(.88,.88,.18,6);
     state.cells.forEach(c=>{const gate=E.GATE_SET.has(c.q+','+c.r),center=c.q===0&&c.r===0;const color=HEX_COLORS[center?'center':gate?'gate':c.fieldId]||HEX_COLORS.disputed;const baseColor=new THREE.Color(color);const mat=new THREE.MeshStandardMaterial({color:baseColor,metalness:.42,roughness:.54});const m=new THREE.Mesh(hexGeo,mat);m.rotation.y=Math.PI/6;const p=axialTo3D(c.q,c.r);m.position.set(p.x,-.12,p.z);m.receiveShadow=true;m.castShadow=true;m.userData={type:'cell',q:c.q,r:c.r};scene.add(m);cellMeshes.push(m);const edge=new THREE.LineSegments(new THREE.EdgesGeometry(hexGeo),new THREE.LineBasicMaterial({color:center?0xf0d99b:c.kind==='disputed'?0x969bc0:baseColor.clone().lerp(new THREE.Color(0xffffff),.34)}));edge.rotation.copy(m.rotation);edge.position.set(p.x,-.01,p.z);scene.add(edge);addLabel3D(center?'Ц':c.code,p,center||gate?'#f0d99b':'#aab7b0');});
-    createArrow3D(); raycaster=new THREE.Raycaster();pointer=new THREE.Vector2();renderer.domElement.addEventListener('pointerdown',on3DPointer);renderer.domElement.addEventListener('pointermove',on3DHover);renderer.domElement.addEventListener('pointerleave',hidePieceTooltip);new ResizeObserver(resize3D).observe(host);resize3D();resetCamera();
+    createArrow3D(); raycaster=new THREE.Raycaster();pointer=new THREE.Vector2();renderer.domElement.addEventListener('pointerdown',on3DPointer);renderer.domElement.addEventListener('pointermove',on3DHover);renderer.domElement.addEventListener('pointerleave',e=>{if(e.pointerType==='mouse')hidePieceTooltip();});new ResizeObserver(resize3D).observe(host);resize3D();resetCamera();
     const paths=new Set();Object.values(MODEL_MAP).forEach(types=>Object.values(types).forEach(p=>paths.add(p)));let loaded=0;
-    await Promise.allSettled([...paths].map(async path=>{try{const obj=await new Promise((resolve,reject)=>loader.load('3d/export/'+path,resolve,undefined,reject));normalizeModel(obj);modelCache.set(path,obj);}catch(e){console.warn('Модель недоступна:',path);}finally{$('loadingText').textContent=`Загрузка флота · ${++loaded} / ${paths.size}`;}}));
+    await Promise.allSettled([...paths].map(async path=>{try{const obj=await new Promise((resolve,reject)=>loader.load('3d/export/'+path,resolve,undefined,reject));normalizeModel(obj);modelCache.set(path,obj);}catch(e){console.warn('Модель недоступна:',path);}finally{$('loadingText').textContent=`Загрузка эскадрильи · ${++loaded} / ${paths.size}`;}}));
     threeReady=true;sync3D();animate3D();$('loading').classList.remove('visible');
   })(); return threeInitializing;
 }
@@ -519,8 +646,21 @@ function fallbackPiece(p){const group=new THREE.Group(),mat=new THREE.MeshStanda
 function stylizePiece(group,p){const base=new THREE.Color(THREE_COLORS[p.faction]);const metal=base.clone();group.traverse(m=>{if(!m.isMesh)return;const source=Array.isArray(m.material)?m.material:[m.material];const styled=source.map(src=>{const mat=src.clone();mat.color=metal.clone();if(src.map)mat.map=src.map;mat.metalness=.58;mat.roughness=.22;mat.envMapIntensity=1.18;if(p.type==='line'||p.type==='parliament')mat.emissive=base.clone().multiplyScalar(.16);else mat.emissive=base.clone().multiplyScalar(.055);if(p.inert){mat.color.multiplyScalar(.45);mat.transparent=true;mat.opacity=.72;}return mat;});m.material=Array.isArray(m.material)?styled:styled[0];m.castShadow=true;m.receiveShadow=true;});}
 function ensureMesh(p){if(pieceMeshes.has(p.id))return pieceMeshes.get(p.id);let mesh;if(!E.isPawnType(p.type)&&modelCache.has(MODEL_MAP[p.faction]?.[p.type]))mesh=modelCache.get(MODEL_MAP[p.faction][p.type]).clone(true);else mesh=fallbackPiece(p);stylizePiece(mesh,p);const group=new THREE.Group();group.add(mesh);group.userData={type:'piece',id:p.id};group.position.copy(axialTo3D(p.q,p.r));scene.add(group);pieceMeshes.set(p.id,group);return group;}
 function sync3D(movedId=null){if(!threeReady)return;const alive=new Set();state.pieces.filter(p=>p.alive).forEach(p=>{alive.add(p.id);const m=ensureMesh(p),target=axialTo3D(p.q,p.r);if(p.id===movedId&&m.position.distanceTo(target)>.01)tweens.push({mesh:m,from:m.position.clone(),to:target,start:performance.now(),duration:380});else m.position.copy(target);m.visible=true;});pieceMeshes.forEach((m,id)=>{if(!alive.has(id)){scene.remove(m);pieceMeshes.delete(id);}});renderHighlights3D();updateArrow(false);}
+function supportBeam3D(source,target){
+  const from=axialTo3D(source.q,source.r).setY(.82),to=axialTo3D(target.q,target.r).setY(.82),direction=to.clone().sub(from),length=direction.length();
+  const beam=new THREE.Mesh(new THREE.CylinderGeometry(.04,.04,length,10,1,true),new THREE.MeshBasicMaterial({color:0xf0d99b,transparent:true,opacity:.9,depthWrite:false,depthTest:false}));
+  beam.position.copy(from).add(to).multiplyScalar(.5);beam.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),direction.normalize());beam.renderOrder=23;beam.userData={supportPulse:true,baseOpacity:.9};return beam;
+}
+function supportRing3D(pos,source=false){
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(source ? .43 : .7,source ? .055 : .075,12,64),new THREE.MeshBasicMaterial({color:source?0xd3dbd5:0xf0d99b,transparent:true,opacity:source ? .82 : .95,depthWrite:false,depthTest:false}));
+  ring.rotation.x=Math.PI/2;ring.position.copy(pos);ring.position.y=source ? .34 : .76;ring.renderOrder=24;ring.userData={supportPulse:true,baseOpacity:source ? .82 : .95,baseScale:1,spin:!source};return ring;
+}
+function supportShield3D(pos){
+  const shield=new THREE.Mesh(new THREE.CylinderGeometry(.72,.72,1.05,32,1,true),new THREE.MeshBasicMaterial({color:0xd8bd7a,transparent:true,opacity:.22,depthWrite:false,depthTest:false,side:THREE.DoubleSide}));
+  shield.position.copy(pos);shield.position.y=.58;shield.renderOrder=22;shield.userData={supportPulse:true,baseOpacity:.22};return shield;
+}
 function renderHighlights3D(){
-  highlightMeshes.forEach(m=>scene.remove(m));highlightMeshes.length=0;interactables=[...pieceMeshes.values(),...cellMeshes];if(!threeReady)return;
+  highlightMeshes.forEach(m=>scene.remove(m));highlightMeshes.length=0;supportFxMeshes.forEach(m=>scene.remove(m));supportFxMeshes.length=0;interactables=[...pieceMeshes.values(),...cellMeshes];if(!threeReady)return;
   legalTargets.forEach(t=>{
     const color=t.capture?0xff6f61:t.displace?0x52d9ff:0xffe39a;
     const geometry=t.capture?new THREE.TorusGeometry(.61,.075,10,40):new THREE.SphereGeometry(.27,20,14);
@@ -530,15 +670,27 @@ function renderHighlights3D(){
     m.userData={type:'target',q:t.q,r:t.r,mode:'move',pulse:true};scene.add(m);highlightMeshes.push(m);interactables.push(m);
   });
   supportTargets.forEach(id=>{const p=state.pieces.find(x=>x.id===id);if(!p)return;const m=new THREE.Mesh(new THREE.TorusGeometry(.55,.055,10,40),new THREE.MeshBasicMaterial({color:0xffe39a,depthTest:false,depthWrite:false}));m.rotation.x=Math.PI/2;m.position.copy(axialTo3D(p.q,p.r));m.position.y=.24;m.renderOrder=20;m.userData={type:'target',mode:'support',targetId:id,pulse:true};scene.add(m);highlightMeshes.push(m);interactables.push(m);});
+  state.pieces.filter(p=>p.alive&&p.supportTarget).forEach(p=>{
+    const target=state.pieces.find(x=>x.id===p.supportTarget&&x.alive);if(!target)return;
+    const beam=supportBeam3D(p,target),sourcePos=axialTo3D(p.q,p.r),targetPos=axialTo3D(target.q,target.r);
+    const sourceRing=supportRing3D(sourcePos,true),shield=supportShield3D(targetPos),targetRing=supportRing3D(targetPos,false);
+    scene.add(beam,sourceRing,shield,targetRing);supportFxMeshes.push(beam,sourceRing,shield,targetRing);
+  });
 }
-function on3DPointer(e){if(!threeReady||e.button!==0)return;const r=renderer.domElement.getBoundingClientRect();pointer.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);raycaster.setFromCamera(pointer,camera);const hits=raycaster.intersectObjects(interactables,true);for(const h of hits){let o=h.object;while(o&&!o.userData.type)o=o.parent;if(!o)continue;const d=o.userData;if(d.type==='target'){if(d.mode==='support')requestSupport(selectedId,d.targetId);else requestMove(selectedId,d.q,d.r);}else if(d.type==='piece')selectOrInspect(d.id);else if(d.type==='cell')handleCell(d.q,d.r);return;}clearSelection();}
+function show3DObjectTooltip(d,clientX,clientY,autoHide=0){
+  if(d.type==='piece')showPieceTooltip(state.pieces.find(p=>p.id===d.id),clientX,clientY,autoHide);
+  else if(d.type==='target'&&d.mode==='support')showPieceTooltip(state.pieces.find(p=>p.id===d.targetId),clientX,clientY,autoHide);
+  else showBoardTooltip(d.q,d.r,clientX,clientY,autoHide);
+}
+function on3DPointer(e){if(!threeReady||e.button!==0)return;const r=renderer.domElement.getBoundingClientRect();pointer.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);raycaster.setFromCamera(pointer,camera);const hits=raycaster.intersectObjects(interactables,true),touch=e.pointerType!=='mouse';for(const h of hits){let o=h.object;while(o&&!o.userData.type)o=o.parent;if(!o)continue;const d=o.userData;if(touch)show3DObjectTooltip(d,e.clientX,e.clientY,2300);if(d.type==='target'){if(d.mode==='support')requestSupport(selectedId,d.targetId);else requestMove(selectedId,d.q,d.r);}else if(d.type==='piece')selectOrInspect(d.id);else if(d.type==='cell')handleCell(d.q,d.r);return;}clearSelection();}
 function on3DHover(e){
   if(!threeReady||e.buttons){hidePieceTooltip();return;}
   const r=renderer.domElement.getBoundingClientRect();pointer.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);raycaster.setFromCamera(pointer,camera);
-  const hit=raycaster.intersectObjects([...pieceMeshes.values()],true)[0];if(!hit){hidePieceTooltip();return;}
-  let o=hit.object;while(o&&!o.userData.id)o=o.parent;showPieceTooltip(state.pieces.find(p=>p.id===o?.userData.id),e.clientX,e.clientY);
+  const hit=raycaster.intersectObjects(interactables,true)[0];if(!hit){hidePieceTooltip();return;}
+  let o=hit.object;while(o&&!o.userData.type)o=o.parent;const d=o?.userData;if(!d){hidePieceTooltip();return;}
+  show3DObjectTooltip(d,e.clientX,e.clientY);
 }
-function animate3D(){requestAnimationFrame(animate3D);const now=performance.now();for(let i=tweens.length-1;i>=0;i--){const t=tweens[i],k=Math.min(1,(now-t.start)/t.duration),ease=1-Math.pow(1-k,3);t.mesh.position.lerpVectors(t.from,t.to,ease);t.mesh.position.y+=Math.sin(k*Math.PI)*.6;if(k===1)tweens.splice(i,1);}highlightMeshes.forEach((m,i)=>{if(m.userData.pulse){m.scale.setScalar(1.08+Math.sin(now*.006+i)*.22);m.material.opacity=.78+Math.sin(now*.006+i)*.22;}});controls.update();renderer.render(scene,camera);}
+function animate3D(){requestAnimationFrame(animate3D);const now=performance.now();for(let i=tweens.length-1;i>=0;i--){const t=tweens[i],k=Math.min(1,(now-t.start)/t.duration),ease=1-Math.pow(1-k,3);t.mesh.position.lerpVectors(t.from,t.to,ease);t.mesh.position.y+=Math.sin(k*Math.PI)*.6;if(k===1)tweens.splice(i,1);}highlightMeshes.forEach((m,i)=>{if(m.userData.pulse){m.scale.setScalar(1.08+Math.sin(now*.006+i)*.22);m.material.opacity=.78+Math.sin(now*.006+i)*.22;}});supportFxMeshes.forEach((m,i)=>{if(!m.userData.supportPulse)return;const wave=Math.sin(now*.005+i*.9);m.material.opacity=Math.max(.06,(m.userData.baseOpacity??.7)+wave*.15);if(m.userData.baseScale)m.scale.setScalar(m.userData.baseScale*(1+wave*.055));if(m.userData.spin)m.rotation.z=now*.0018;});controls.update();renderer.render(scene,camera);}
 function updateArrow(animate=true){if(!arrowGroup)return;arrowGroup.visible=state.mode.turn==='arrow';if(!arrowGroup.visible)return;arrowMat.color.set(COLORS[state.turnFaction]);const angles={plus:Math.PI,minus:-Math.PI/3,zero:Math.PI/3};if(animate)tweens.push({mesh:arrowGroup,from:arrowGroup.position,to:arrowGroup.position,start:performance.now(),duration:1});arrowGroup.rotation.y=angles[state.turnFaction]||0;}
 
 function selectedPiece(){return state.pieces.find(p=>p.id===selectedId&&p.alive)||null;}
@@ -596,7 +748,7 @@ function renderUI(){
   $('centerCountdown').textContent=cp&&!state.gameOver?`${E.FACTION_NAME[cp.faction]} победят в начале своего хода · осталось ${remaining}`:state.gameOver?'Партия завершена':'Центр свободен';
   $('centerCountdown').classList.toggle('active',!!cp&&!state.gameOver);
   const p=selectedPiece();if(!p){$('selectionInfo').className='selection-empty';$('selectionInfo').innerHTML=gameMode==='ai'?(state.turnFaction===humanFaction?`Вы играете за ${E.FACTION_NAME[humanFaction]}.<br>Доступные действия появятся на доске.`:'ИИ выполняет ход.<br>Очередь скоро вернётся к вам.'):'Выберите фигуру активной фракции.<br>Доступные действия появятся на доске.';}
-  else{const code=E.codeMap.get(p.q+','+p.r)||`${p.q}, ${p.r}`,protection=E.protLevel(state,p);let status=E.isNullType(p.type)?(p.supportTarget?'Поддержка → '+p.supportTarget:E.isNeutralZero(p)?'Нейтральный · неуязвим':'Заявленный · уязвим'):`Защита ${protection}`;if(p.inert)status='Инертная фигура';$('selectionInfo').className='';$('selectionInfo').innerHTML=`<div class="piece-title" style="--piece-color:${COLORS[p.faction]}"><i class="piece-dot"></i>${E.TYPE_NAME[p.type]}</div><div class="piece-meta">${E.FACTION_NAME[p.faction]} · ${code}<br>${esc(status)}</div><div class="piece-desc">${DESCRIPTIONS[p.type]}</div>${p.faction===state.turnFaction&&E.isNullType(p.type)&&p.supportTarget?'<div class="selection-actions"><button class="action-btn" id="btnRemoveSupport">Снять поддержку</button></div>':''}`;$('btnRemoveSupport')?.addEventListener('click',()=>requestSupport(p.id,null));}
+  else{const info=pieceTooltipInfo(p);$('selectionInfo').className='';$('selectionInfo').innerHTML=`<div class="piece-title" style="--piece-color:${COLORS[p.faction]}"><i class="piece-dot"></i>${E.TYPE_NAME[p.type]}</div><div class="piece-meta">${esc(info.subtitle)}</div><div class="piece-desc">${esc(info.text)}</div>${p.faction===state.turnFaction&&E.isNullType(p.type)&&p.supportTarget?'<div class="selection-actions"><button class="action-btn" id="btnRemoveSupport">Снять поддержку</button></div>':''}`;$('btnRemoveSupport')?.addEventListener('click',()=>requestSupport(p.id,null));}
   const aiOpponent=gameMode==='ai';$('btnAi').disabled=state.gameOver||aiOpponent;$('btnAuto').disabled=state.gameOver||aiOpponent;$('btnAi').title=aiOpponent?'В режиме против ИИ ходы соперников выполняются автоматически':'Сделать ход за текущую фракцию';$('btnAuto').title=aiOpponent?'Недоступно в режиме против ИИ':'Автоматическая партия трёх фракций';renderHistory();
 }
 const modeNames={turn:{cycle:'Цикл',arrow:'Стрелка',pass:'Передача'},death:{main:'Основной',long:'Длинный'}};
@@ -616,9 +768,11 @@ $('btnExport').onclick=()=>{const blob=new Blob([REC.exportJSON()],{type:'applic
 $('btnReplayStart').onclick=()=>{stopAuto();stopAiChain();if(!REC.getMoves().length){toast('Пока нет ходов','Сыграйте партию или импортируйте журнал.','info');return;}const saved=REC.getSettings();state=REC.startReplay(saved.turn||state.mode.turn,saved.death||state.mode.death,saved.pawns??state.pawns,saved.cycleDir||state.cycleDir,saved.holdTarget||state.holdTarget);selectedId=null;legalTargets=[];supportTargets=[];syncNewMeshes();renderAll();$('replayPos').textContent='0 / '+REC.getMoves().length;};
 $('btnReplayStep').onclick=()=>{stopAuto();stopAiChain();const r=REC.stepReplay();if(r.error){toast('Ошибка воспроизведения',r.error,'error');return;}state=r.state;syncNewMeshes();renderAll();$('replayPos').textContent=REC.getReplayIndex()+' / '+REC.getMoves().length;if(r.done)toast('Конец журнала','Воспроизведение завершено.','success');};
 $('btnReplayAll').onclick=()=>{stopAuto();stopAiChain();if(!REC.getMoves().length)return;if(!REC.getReplayState())$('btnReplayStart').click();const step=()=>{const r=REC.stepReplay();if(r.error){toast('Ошибка воспроизведения',r.error,'error');return;}state=r.state;syncNewMeshes();renderAll();$('replayPos').textContent=REC.getReplayIndex()+' / '+REC.getMoves().length;if(!r.done)replayTimer=setTimeout(step,420);};step();};
-window.addEventListener('resize',()=>{if(innerWidth>760){$('sidebar').classList.remove('mobile-open');$('btnPanel').style.display='none';}else $('btnPanel').style.display='inline-flex';resize3D();});
+bindUiTips();
+window.addEventListener('resize',()=>{if(innerWidth>760){$('sidebar').classList.remove('mobile-open');$('btnPanel').style.display='none';}else $('btnPanel').style.display='inline-flex';resize3D();if(tourPop)renderTourStep();});
 buildBoard2D();REC.reset(settings);renderAll();
-window.__elio={getState:()=>state,getView:()=>view,setView,selectPiece:selectOrInspect,move:requestMove,support:requestSupport,newGame:()=>newGame(),getSelected:()=>selectedId,getLegalTargets:()=>legalTargets,getMode:()=>({gameMode,humanFaction}),isAiBusy:()=>aiChainTimer!==null};
+if(!onboardingCompleted())setTimeout(startOnboarding,700);
+window.__elio={getState:()=>state,getView:()=>view,setView,selectPiece:selectOrInspect,move:requestMove,support:requestSupport,newGame:()=>newGame(),getSelected:()=>selectedId,getLegalTargets:()=>legalTargets,getMode:()=>({gameMode,humanFaction}),isAiBusy:()=>aiChainTimer!==null,startOnboarding,showRules};
 </script>
 </body>
 </html>

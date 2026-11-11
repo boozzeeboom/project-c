@@ -48,10 +48,32 @@ function legalActions(state, faction) {
   if (!acts.length) acts.push({ kind: 'skip' });
   return acts;
 }
-function selectActions(acts, faction) {
+function selectActions(acts, faction, state) {
   if (faction !== 'zero') return acts.slice(0, 12);
-  const moves = acts.filter(a => a.kind === 'move');
+  let moves = acts.filter(a => a.kind === 'move');
   const supports = acts.filter(a => a.kind === 'support');
+  if (process.env.ELIO_V3 === '1' && state && state.log) {
+    const isGateOrCenter = (a) => (a.q === 0 && a.r === 0) || E.GATE_SET.has(a.q + ',' + a.r);
+    const last = new Map();
+    for (let i = state.log.length - 1; i >= 0; i--) {
+      const r = state.log[i];
+      if (r.kind === 'move' && r.faction === 'zero' && !last.has(r.pieceId)) last.set(r.pieceId, r);
+    }
+    const recent = [];
+    for (let i = state.log.length - 1; i >= 0 && recent.length < 3; i--) {
+      const r = state.log[i];
+      if (r.kind === 'move' && r.faction === 'zero') recent.push(r);
+    }
+    const run3 = recent.length === 3 && recent[0].pieceId === recent[1].pieceId && recent[1].pieceId === recent[2].pieceId;
+    const filtered = moves.filter(a => {
+      if (isGateOrCenter(a)) return true;
+      const lm = last.get(a.pieceId);
+      if (lm && lm.from && lm.from.q === a.q && lm.from.r === a.r) return false;
+      if (run3 && recent[0].pieceId === a.pieceId) return false;
+      return true;
+    });
+    if (filtered.length) moves = filtered;
+  }
   const gateMoves = moves.filter(a => (a.q === 0 && a.r === 0) || E.GATE_SET.has(a.q + ',' + a.r));
   const otherMoves = moves.filter(a => gateMoves.indexOf(a) === -1);
   const picked = [];
@@ -161,7 +183,7 @@ for (const m of matches) {
     const isLLM = !entry.ai && !entry.fallback;
     if (isLLM) {
       llmTurns++;
-      const displayed = selectActions(acts, f).map(keyOf);
+      const displayed = selectActions(acts, f, s).map(keyOf);
       if (displayed.indexOf(legalKey) === -1) flags.outsideDisplayed.push({ i, move: s.moveNumber, act: a });
       // возможности центра
       const centerMove = acts.find(x => x.kind === 'move' && x.q === 0 && x.r === 0);

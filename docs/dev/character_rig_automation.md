@@ -48,7 +48,29 @@
 
 ## Масштабирование на каталог
 
-- Общий скелет и правила одинаковы для 40k, 12k и raw; измерения выполняются заново по каждому мешу.
+- Общий скелет и правила одинаковы для 40k, 12k и raw; измерения выполняются заново по каждому мешу (для NPC — переиспользуется готовый 40k-риг, см. ниже).
 - LOD связываются с одним скелетом/Avatar только после подтверждения совпадения пропорций.
-- Скрипт уже принимает `--input`, `--out`, `--report`, `--renders`, `--blend` и `--no-mirror`. Следующий этап — отдельный 12k-пилот, затем обёртка пакетного обхода каталога с одним JSON на персонажа и остановкой ошибочных моделей без нового FBX.
-- До пакетного запуска нужны пороги высоты из профилей персонажей и отдельная проверка репрезентативных несимметричных моделей.
+
+## Пакетная обработка 40k (игрок, ~40k треугольников) — T-CHAR-RIG02
+
+- План пар: `Tools/Blender/CharacterRig/_work/catalog_pairs.json` (106 пар 1:1 `player`↔`npc`, `player_only`/`npc_only` пустые).
+- Обёртка: `Tools/Blender/CharacterRig/run_catalog_40k.py` (`--start/--limit/--include-failed/--force`, лог `_work/catalog_40k/batch_log.json`); один вызов Blender на персонажа, падение одной модели не останавливает остальные.
+- Итог: **106/106 OK** — 58 со строгими пальцами, 48 в перчаточном режиме (скелет 1-в-1, пальцы ставит эталонный кадр кисти, скин варежки целиком на `B-hand`/`B-forearm`). Решение пользователя (2026-11-12): перчаточный режим оставляем как есть.
+- Выходы: `Assets/Generated_Models_Rigged/01_Characters/<Group>/<Name>/<Name>_Rigged_Humanoid.fbx` + `_BaseColor.png`. Отчёты и рендеры: `Tools/Blender/CharacterRig/_reports/catalog_40k/<Group>/<Name>/`.
+- Известные особенности каталога: дети с частично сросшимися пальцами (уходят в glove), диагональные ступни (эвристика оси `score_x = max(toe_x, head_x)`, `score_y = max(toe_y, head_y)`).
+
+## Unity-импорт 40k и NPC
+
+- Драйвер: `Tools/Blender/CharacterRig/setup_humanoid_unity.py` (`--which player|npc`, чанки по 20, маркер `[RIG_IMPORT] chunk done ok=N` из консоли, лог `_work/unity_humanoid_log.json`).
+- ModelImporter: `animationType=Human`, `avatarSetup=CreateFromThisModel`, `importAnimation=false`; проверка `Avatar.isValid/isHuman` каждого файла.
+- Два сбоя и фиксы: (1) пути из pairs.json с бэкслешами не резались сплитом — сначала `replace("\\","/")`; (2) свежесозданные каталоги ещё не в AssetDatabase — `AssetDatabase.Refresh()` в начале чанка.
+- Итог: **40k — 106/106 Humanoid-аватаров, NPC — 106/106, 0 errors в консоли**. Spot-check: высота localBounds 1,88–1,99 м (включает шлемы/снаряжение), Scale Factor 1.00, `useFileScale=true`.
+
+## Перенос ригов на NPC (12k) — тот же тикет
+
+- Скрипт: `Tools/Blender/CharacterRig/transfer_npc_rig.py`; обёртка `run_catalog_npc.py` (те же флаги, лог `_work/catalog_npc/batch_log.json`).
+- Принцип: armature берётся 1-в-1 из готового `<Name>_Rigged_Humanoid.fbx`; NPC-меш нормализуется тем же `orient_and_scale`; веса — ручной барицентрический перенос с ближайшего треугольника 40k-меша (BVH; без модификатора DATA_TRANSFER — его API менялся в Blender 5.x); кисти переопределяются тем же `weight_hands`, перчаточный флаг — из отчёта 40k-прогона.
+- Контроль качества: совмещение NPC↔40k до переноса (отказ при `p95 > 1 см`; фактический максимум по каталогу 2,8 мм); блокировка при невзвешенных вершинах, нулевых костях (кроме пальцев в glove) и суммах весов вне допуска.
+- Фолбэк оси вперёд: на разреженном NPC-меше эвристика может выбрать знак, отличный от 40k (`Guild_Success_Male`) — тогда повтор с `rot_deg` из отчёта 40k (`forward_fallback` в отчёте).
+- Итог: **106/106 OK**, 48 glove (1-в-1 со статистикой 40k), 0 непокрытых вершин, ≤4 влияния, суммы весов ≈1.
+- Выходы: `Assets/Generated_Models_Rigged_NPC/01_Characters/<Group>/<Name>/<Name>_Rigged_NPC_Humanoid.fbx` + `_BaseColor.png`. Отчёты/рендеры: `Tools/Blender/CharacterRig/_reports/catalog_npc/<Group>/<Name>/`.

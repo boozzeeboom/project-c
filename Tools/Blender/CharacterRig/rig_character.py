@@ -530,13 +530,23 @@ def orient_and_scale(obj, report):
     if H <= 0:
         raise RuntimeError("degenerate mesh height")
 
-    # --- forward axis: the horizontal axis with the biggest asymmetry in the
-    #     lowest 5% of the body (toes stick out forward)
+    # --- forward axis: asymmetry of toes (lowest 5 %) and head (80–98 % H).
+    #     max() по двум зонам: развернутые набок ступни не должны перевешивать
+    #     направление корпуса, а голова подтверждает ось, когда пальцы ног
+    #     указывают вбок.
     low = co[co[:, 2] <= lo[2] + 0.05 * H]
+    head = co[(co[:, 2] >= lo[2] + 0.80 * H) & (co[:, 2] <= lo[2] + 0.98 * H)]
     cx = 0.5 * (lo[0] + hi[0])
     cy = 0.5 * (lo[1] + hi[1])
-    score_x = abs(float(low[:, 0].mean()) - cx) / H
-    score_y = abs(float(low[:, 1].mean()) - cy) / H
+    toe_x = abs(float(low[:, 0].mean()) - cx) / H
+    toe_y = abs(float(low[:, 1].mean()) - cy) / H
+    if len(head):
+        head_x = abs(float(head[:, 0].mean()) - cx) / H
+        head_y = abs(float(head[:, 1].mean()) - cy) / H
+    else:
+        head_x, head_y = 0.0, 0.0
+    score_x = max(toe_x, head_x)
+    score_y = max(toe_y, head_y)
     if score_x >= score_y:
         axis, sign = "x", (1.0 if float(low[:, 0].mean()) > cx else -1.0)
     else:

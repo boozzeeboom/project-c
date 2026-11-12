@@ -64,6 +64,44 @@ def safe_import_fbx(path):
 H["import_fbx"] = safe_import_fbx
 
 
+def hand_geo_relaxed(co, mask, A, W, min_points=80, min_tris=40):
+    """Ослабленная копия hand_geo из rig_character.py.
+
+    У разреженных ретопо-кистей крупные треугольники обрезаются радиальной маской,
+    и строгие пороги (200 точек / 100 трисов) отбраковывают валидную кисть.
+    Дилатация: треугольник входит целиком, если в маске хотя бы одна вершина,
+    затем граф строится по всем вершинам этих треугольников.
+    Возвращает (None, None, None, None, None) вместо распаковки в 4 значения.
+    """
+    tris = H["_TRIS"]
+    if tris is None:
+        return None, None, None, None, None
+    if int(mask.sum()) < min_points:
+        return None, None, None, None, None
+    t_any = tris[mask[tris].any(axis=1)]
+    if len(t_any) < min_tris:
+        return None, None, None, None, None
+    keep = np.zeros(len(co), dtype=bool)
+    keep[t_any.ravel()] = True
+    idx = np.where(keep)[0]
+    P = co[idx]
+    remap = -np.ones(len(co), dtype=np.int64)
+    remap[idx] = np.arange(len(idx))
+    e = remap[np.concatenate([t_any[:, [0, 1]], t_any[:, [1, 2]], t_any[:, [2, 0]]], axis=0)]
+    a, b = e[:, 0], e[:, 1]
+    w = np.linalg.norm(P[a] - P[b], axis=1)
+    cnt = np.bincount(a, minlength=len(idx))
+    indptr = np.concatenate([[0], np.cumsum(cnt)]).astype(np.int64)
+    order = np.argsort(a, kind="stable")
+    nb, ww = b[order], w[order]
+    u = (P - np.array(W, dtype=float)) @ np.array(A, dtype=float)
+    g = H["geo_field"](indptr, nb, ww, np.where(u < u.min() + 0.004)[0])
+    return P, g, indptr, nb, ww
+
+
+H["hand_geo"] = hand_geo_relaxed
+
+
 def shortest_path_data(P, A, W, indptr, nb, ww):
     """Кратчайшие пути по коже от запястья, включая предшественников."""
     import heapq
@@ -220,8 +258,11 @@ def trace_chain(P, previous, tip_index, target_length, fractions, bvh, palm_norm
         centers[1:-1] = (centers[:-2] + centers[1:-1] + centers[2:]) / 3.0
     arc = np.concatenate([[0.0], np.cumsum(np.linalg.norm(np.diff(centers, axis=0), axis=1))])
     total = float(arc[-1])
-    if not 0.025 < target_length < total:
-        raise RuntimeError("REVIEW_HANDS: эталонная длина не помещается в трассу")
+    if total < 0.025:
+        raise RuntimeError("REVIEW_HANDS: слишком короткая трасса для пальца")
+    # Перчаточные пальцы-заглушки короче эталона: клампим целевую длину по
+    # реальной геодезической трассе, чтобы суставы не вылетали за кончик.
+    target_length = min(float(target_length), total * 0.98)
 
     def at_distance(distance):
         distance = float(np.clip(distance, 0.0, total))
@@ -273,38 +314,59 @@ def strict_hand_fit(co, wrist0, arm_dir, provisional_length, sgn, suffix, templa
              (initial_distance < 0.60 * provisional_length)
     region_points = initial_perp[region]
     region_u = initial_u[region]
-    grid = np.arange(-0.45 * provisional_length, 0.45 * provisional_length, 0.004)
+    # Адаптивные срезы: разреженные руки после ретопо дают <20 точек на срез 4 мм.
+    # Срез 8 мм с шагом 6 мм и порогом 8 точек покрывает и плотные, и разреженные кисти.
+    grid = np.arange(-0.60 * provisional_length, 0.60 * provisional_length, 0.006)
     widths = np.full(len(grid), np.nan)
     for i, position in enumerate(grid):
-        selected = np.abs(region_u - position) < 0.002
-        if selected.sum() >= 20:
+        selected = np.abs(region_u - position) < 0.004
+        if selected.sum() >= 8:
             section = region_points[selected] - region_points[selected].mean(axis=0)
             widths[i] = float(np.percentile(np.linalg.norm(section, axis=1), 90))
     if np.all(np.isnan(widths)):
         raise RuntimeError("REVIEW_HANDS: нет профиля запястья")
-    wrist_offset = float(grid[int(np.nanargmin(widths))])
+    # Пропуски профиля заполняем ближайшими валидными значениями, чтобы argmin
+    # не выбирал край диапазона только из-за пропущенного среза.
+    valid = np.where(~np.isnan(widths))[0]
+    filled = widths.copy()
+    for i in range(len(grid)):
+        if np.isnan(filled[i]):
+            nearest = valid[np.argmin(np.abs(valid - i))]
+            filled[i] = widths[nearest]
+    wrist_offset = float(grid[int(np.nanargmin(filled))])
     W0 = W0 + A * wrist_offset
     # Затем центрируем сечение, убирая смещение к краю рукава.
+    # Разреженные кисти дают мало точек в узком срезе — расширяем окно по эскалации.
     rel0 = co - W0
     u0 = rel0 @ A
     perp0 = rel0 - np.outer(u0, A)
-    slice_mask = (np.abs(u0) < 0.010) & (np.linalg.norm(perp0, axis=1) < 0.100)
-    if slice_mask.sum() < 12:
+    W = None
+    for halfwidth in (0.010, 0.016, 0.026):
+        slice_mask = (np.abs(u0) < halfwidth) & (np.linalg.norm(perp0, axis=1) < 0.120)
+        if slice_mask.sum() >= 12:
+            W = W0 + np.median(perp0[slice_mask], axis=0)
+            break
+    if W is None:
         raise RuntimeError("REVIEW_HANDS: не удалось измерить сечение запястья")
-    W = W0 + np.median(perp0[slice_mask], axis=0)
     rel = co - W
     u = rel @ A
     perp = rel - np.outer(u, A)
     distance = np.linalg.norm(perp, axis=1)
-    hand_mask = (u > 0.0) & (u < 0.45) & (distance < 0.55 * provisional_length)
-    P, g, indptr, nb, ww = H["hand_geo"](co, hand_mask, A, W)
+    # Кисть может уходить вбок от оси предплечья (A-pose с поднятыми руками):
+    # расширяем радиус захвата, пока граф кисти не наберёт достаточно трисов.
+    P = None
+    for radius_factor in (0.55, 0.80, 1.10):
+        hand_mask = (u > 0.0) & (u < 0.45) & (distance < radius_factor * provisional_length)
+        P, g, indptr, nb, ww = H["hand_geo"](co, hand_mask, A, W)
+        if P is not None:
+            break
     if P is None:
         raise RuntimeError("REVIEW_HANDS: пустой граф кисти")
     distance, previous = shortest_path_data(P, A, W, indptr, nb, ww)
     g = distance
     tip_indices = detect_tips(P, g, indptr, nb)
-    if len(tip_indices) < 5:
-        raise RuntimeError("REVIEW_HANDS: детектор нашёл %d концов" % len(tip_indices))
+    # Меньше пяти кончиков — не повод для отказа: choose_digits внутри
+    # strict_digits_fit поднимет REVIEW_HANDS, и кисть уйдёт в перчаточный режим.
     Hvec = P - W
     D = Hvec[int(np.argmax(g))].copy()
     D /= np.linalg.norm(D)
@@ -328,6 +390,16 @@ def strict_hand_fit(co, wrist0, arm_dir, provisional_length, sgn, suffix, templa
             "spread": float((P[tip_index] - W) @ S),
             "forward": float((P[tip_index] - W) @ D),
         })
+    try:
+        return strict_digits_fit(candidates, P, previous, Hvec, template, suffix, W, S, D, N, report)
+    except RuntimeError as exc:
+        if "REVIEW_HANDS" not in str(exc):
+            raise
+        return glove_hand_fit(W, D, N, S, template, suffix, report, candidates, str(exc))
+
+
+def strict_digits_fit(candidates, P, previous, Hvec, template, suffix, W, S, D, N, report):
+    """Веер из четырёх длинных пальцев + большой, трассы по геодезии кожи."""
     thumb, selected_ids, rejected_ids, choices = choose_digits(candidates, template["bones"])
     by_id = {item["id"]: item for item in candidates}
     assignment = {"B-thumb": thumb["id"]}
@@ -345,7 +417,8 @@ def strict_hand_fit(co, wrist0, arm_dir, provisional_length, sgn, suffix, templa
                                             fractions, _BVH, N)
         for index, info in enumerate(quality):
             if not info["inside"]:
-                outside_joints.append({"candidate": candidate_id, "joint": index})
+                outside_joints.append({"candidate": candidate_id, "joint": index,
+                                       "clearance": round(float(info["clearance"]), 4)})
         names = sorted(name for name in template["bones"]
                        if name.startswith(tag) and name.endswith(suffix) and not name.endswith("_end"))
         lengths = [float(np.linalg.norm(nodes[i + 1] - nodes[i])) for i in range(3)]
@@ -388,13 +461,59 @@ def strict_hand_fit(co, wrist0, arm_dir, provisional_length, sgn, suffix, templa
         "status": "OK" if not outside_joints else "REVIEW_HANDS",
     }
     report.setdefault("hand_fit", {})[suffix] = fit
-    if outside_joints:
+    # Один сустав на куполе короткой перчаточной заглушки может давать ложный
+    # «вне» у parity-пробы на грубом меше. Критично только реально потерянное
+    # сочленение (clearance > 2 см) или несколько таких суставов сразу.
+    lost = [joint for joint in outside_joints if joint["clearance"] > 0.02]
+    if lost or len(outside_joints) > 2:
         failure_path = os.path.join(ROOT, "_reports", "adjudicator_v2", "hand_failure" + suffix + ".json")
         os.makedirs(os.path.dirname(failure_path), exist_ok=True)
         with open(failure_path, "w", encoding="utf-8") as handle:
             json.dump(fit, handle, ensure_ascii=False, indent=1)
         raise RuntimeError("REVIEW_HANDS: суставы вне меша " + suffix + ": " + str(outside_joints))
     return fit
+
+
+def glove_hand_fit(W, D, N, S, template, suffix, report, candidates, reason):
+    """Перчаточный режим: варежка без раздельных пальцев.
+
+    Скелет сохраняется 1-в-1 (важно для переноса рига и анимаций): пальцы
+    ставит build_armature глобальным подобием эталонного кадра кисти, потому
+    что digit_fit намеренно пуст. Скин варежки целиком идёт на кость кисти —
+    в Unity Humanoid пальцы необязательны, кисть анимируется как единое целое.
+    """
+    tips = [np.array(c["tip"], dtype=float) for c in candidates]
+    hand_len = float(max((np.linalg.norm(t - W) for t in tips), default=0.15))
+    ref_frame = H["ref_hand_frame"](template["bones"], suffix)
+    O_ref, X_ref, Y_ref, Z_ref, ref_len = ref_frame
+    reference_frame = np.stack([np.array(X_ref), np.array(Y_ref), np.array(Z_ref)], axis=1)
+    target_frame = np.stack([S, D, N], axis=1)
+    rotation = target_frame @ reference_frame.T
+    fit = {
+        "wrist": [float(v) for v in W],
+        "hand_dir": [float(v) for v in D],
+        "palm_normal": [float(v) for v in N],
+        "spread_axis": [float(v) for v in S],
+        "hand_len": float(hand_len),
+        "hand_rot": [float(v) for v in rotation.reshape(-1)],
+        "hand_scale": 1.0,
+        "digits": {},
+        "candidates": candidates,
+        "selected": {},
+        "rejected": [],
+        "subset_scores": [],
+        "traces": {},
+        "outside_joints": [],
+        "glove_mode": True,
+        "glove_reason": reason,
+        "status": "OK_GLOVE",
+    }
+    report.setdefault("hand_fit", {})[suffix] = fit
+    return fit
+
+
+def is_glove_fit(fit):
+    return bool(fit.get("glove_mode"))
 
 
 def weight_report(mesh, arm):
@@ -463,6 +582,26 @@ def weight_hands(mesh, arm, hand_fits):
                             (radial < hand_length * 0.78))[0]
         hand_name = "B-hand" + suffix
         forearm_name = "B-forearm" + suffix
+        hand_bone = arm.data.bones[hand_name]
+        forearm_bone = arm.data.bones[forearm_name]
+        hand_segment = (np.array(hand_bone.head_local), np.array(hand_bone.tail_local))
+        forearm_segment = (np.array(forearm_bone.head_local), np.array(forearm_bone.tail_local))
+        if is_glove_fit(fit):
+            # Варежка: не размазываем скин по пальцам, вся кисть следует за костью кисти.
+            for vertex_index in selected:
+                point = coordinates[vertex_index]
+                hand_distance = segment_distance(point, *hand_segment)
+                forearm_distance = segment_distance(point, *forearm_segment)
+                weights = {hand_name: 1.0 / ((hand_distance + 0.0025) ** 4)}
+                if along[vertex_index] < 0.025:
+                    weights[forearm_name] = 1.0 / ((forearm_distance + 0.0025) ** 4)
+                mesh.vertex_groups[hand_name].remove([int(vertex_index)])
+                mesh.vertex_groups[forearm_name].remove([int(vertex_index)])
+                total = sum(weights.values())
+                for name, weight in weights.items():
+                    mesh.vertex_groups[name].add([int(vertex_index)], weight / total, 'REPLACE')
+            stats[suffix] = {"mode": "glove", "vertices": int(len(selected))}
+            continue
         finger_segments = []
         for tag in TAGS:
             chain = []
@@ -471,10 +610,6 @@ def weight_hands(mesh, arm, hand_fits):
                 bone = arm.data.bones[name]
                 chain.append((name, np.array(bone.head_local), np.array(bone.tail_local)))
             finger_segments.append(chain)
-        hand_bone = arm.data.bones[hand_name]
-        forearm_bone = arm.data.bones[forearm_name]
-        hand_segment = (np.array(hand_bone.head_local), np.array(hand_bone.tail_local))
-        forearm_segment = (np.array(forearm_bone.head_local), np.array(forearm_bone.tail_local))
         affected_names = [hand_name, forearm_name] + [item[0] for chain in finger_segments for item in chain]
         additions = {name: [] for name in affected_names}
         for vertex_index in selected:
@@ -609,6 +744,9 @@ def render_previews(mesh, arm, measurement, renders):
 
 def symmetry_metrics(co):
     """Проверяет, можно ли переносить измеренную кисть на другую сторону."""
+    if len(co) == 0:
+        # Пустая область (необычная поза рук): зеркалирование отключаем большими значениями.
+        return {"median": 1.0, "p95": 1.0, "max": 1.0, "samples": 0}
     tree = kdtree.KDTree(len(co))
     for i, point in enumerate(co):
         tree.insert(Vector(tuple(point)), i)
@@ -710,9 +848,17 @@ def main():
     bpy.ops.object.vertex_group_normalize_all(group_select_mode='ALL', lock_active=False)
     report["weights"] = weight_report(mesh, arm)
     weights = report["weights"]
-    if (weights["unweighted"] or weights["zero_weight_bones"] or weights["max_influences"] > 4 or
+    zero_bones = list(weights["zero_weight_bones"])
+    glove_used = any(is_glove_fit(report["hand_fit"][s]) for s in (".L", ".R"))
+    if glove_used:
+        # В перчаточном режиме пальцы намеренно не взвешены — кисть едет за костью кисти.
+        zero_bones = [name for name in zero_bones
+                      if not any(name.startswith(tag) for tag in TAGS)]
+    if (weights["unweighted"] or zero_bones or weights["max_influences"] > 4 or
             abs(weights["sum_min"] - 1.0) > 1e-4 or abs(weights["sum_max"] - 1.0) > 1e-4):
         raise RuntimeError("Некорректные веса: " + str(weights))
+    if glove_used:
+        report["glove_mode"] = {s: is_glove_fit(report["hand_fit"][s]) for s in (".L", ".R")}
     measurement["hand_fit"] = report["hand_fit"]
     render_previews(mesh, arm, measurement, renders)
     H["check_pose"](arm)

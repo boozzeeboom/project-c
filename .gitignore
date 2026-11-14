@@ -220,3 +220,14 @@ docs/dev/elio/llm_runs/*
 docs/dev/elio/elio_board_tabletop_v6.ble*
 docs/dev/elio/elio_board.blen*
 docs/dev/elio/elio_site.zip*
+Assets/Generated_Models*
+Tools/Blender/CharacterRebake/_*
+Tools/Blender/*
+.gitignore
+Assets/Editor/_AuraTemp/*
+Tools/UnityMcp/*
+docs/dev/elio/playground_elio.html
+docs/dev/elio/article.html
+
+# aura_export intermediate dumps/scripts (generated)
+aura_export/

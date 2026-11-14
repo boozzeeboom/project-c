@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Text;
 using ProjectC.World.Generation;
 using UnityEditor;
@@ -179,35 +180,63 @@ namespace ProjectC.EditorTools
                 return sb.ToString();
             }
 
-            if (output.sections.Count == 0)
-            {
-                output.ReleaseMeshes();
-                sb.AppendLine("[Fence] Секций нет — сцена не изменена.");
-                return sb.ToString();
-            }
-
-            string id = SanitizeName(fence.EffectiveId);
+            string id = ResolveGeneratedId(fence, true);
             string folder = $"{GeneratedRoot}/{id}";
 
             int undoGroup = Undo.GetCurrentGroup();
             Undo.SetCurrentGroupName($"Пересборка забора «{fence.name}»");
 
+            // 1. Сначала сносим СВОИ объекты. Пока MeshRenderer жив, его меш-ассет трогать нельзя:
+            //    рендерер, оставшийся с уничтоженным мешем, валит culling-джоб Burst
+            //    (GPU Resident Drawer / BatchRendererGroup) — это реальный краш редактора 2026-11-14.
             RemoveGenerated(fence);
-            DeleteGeneratedFolder(folder);
+
+            if (output.sections.Count == 0)
+            {
+                output.ReleaseMeshes();
+                DeleteOrphanAssets(folder, null);
+
+                Undo.CollapseUndoOperations(undoGroup);
+                AssetDatabase.SaveAssets();
+                EditorSceneManager.MarkSceneDirty(fence.gameObject.scene);
+
+                sb.AppendLine("[Fence] Секций нет — сгенерированное снесено.");
+                return sb.ToString();
+            }
 
             EnsureFolder(folder);
+
+            var usedAssets = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+            int createdMeshes = 0, updatedMeshes = 0;
 
             for (int i = 0; i < output.sections.Count; i++)
             {
                 FenceSectionMesh section = output.sections[i];
-                Mesh mesh = section.mesh;
-                if (mesh == null) continue;
+                Mesh built = section.mesh;
+                if (built == null) continue;
 
                 string baseName = SanitizeName(section.name);
                 string assetPath = $"{folder}/{baseName}.asset";
+                usedAssets.Add(assetPath);
 
-                mesh.name = baseName;
-                AssetDatabase.CreateAsset(mesh, assetPath);
+                // 2. Существующий меш обновляем НА МЕСТЕ (объект и GUID живут), только
+                //    недостающий создаём: иначе рендереры остались бы с уничтоженным мешем.
+                Mesh mesh = AssetDatabase.LoadAssetAtPath<Mesh>(assetPath);
+
+                if (mesh != null)
+                {
+                    CopyMeshData(mesh, built);
+                    EditorUtility.SetDirty(mesh);
+                    Object.DestroyImmediate(built);
+                    updatedMeshes++;
+                }
+                else
+                {
+                    built.name = baseName;
+                    AssetDatabase.CreateAsset(built, assetPath);
+                    mesh = built;
+                    createdMeshes++;
+                }
 
                 var go = new GameObject(baseName);
                 Undo.RegisterCreatedObjectUndo(go, "Fence section");
@@ -241,11 +270,17 @@ namespace ProjectC.EditorTools
             for (int i = 0; i < output.colliders.Count; i++)
                 CreateCollider(output.colliders[i], colliderRoot.transform, fence.colliderLayer);
 
+            // 3. Меши, которые больше не нужны этому забору, сносим ТОЛЬКО теперь — когда
+            //    в сцене не осталось ни одного рендерера, который их держит.
+            DeleteOrphanAssets(folder, usedAssets);
+
             Undo.CollapseUndoOperations(undoGroup);
 
             AssetDatabase.SaveAssets();
             EditorSceneManager.MarkSceneDirty(fence.gameObject.scene);
 
+            sb.AppendLine($"[Fence] Меши: обновлено на месте {updatedMeshes}, создано {createdMeshes}; " +
+                          $"id «{id}»");
             sb.AppendLine($"[Fence] Пересобрано: {folder}");
             return sb.ToString();
         }
@@ -280,6 +315,136 @@ namespace ProjectC.EditorTools
             var box = go.AddComponent<BoxCollider>();
             box.center = Vector3.zero;
             box.size = new Vector3(Mathf.Abs(spec.size.x), Mathf.Abs(spec.size.y), Mathf.Abs(spec.size.z));
+        }
+
+        // ============================================================
+        // Уникальный id и меш-ассеты
+        // ============================================================
+
+        /// <summary>
+        /// Уникальный id сгенерированного: папка <c>Generated/Fences/&lt;id&gt;</c> — это «владение» забора.
+        ///
+        /// Зачем: два забора с одинаковым именем получали один id, второй пересобирал ту же папку
+        /// и удалял меши первого. Рендерер с уничтоженным мешем валит culling-джоб Burst на GPU
+        /// Resident Drawer — краш редактора 2026-11-14 (см. §14 дизайн-ноты).
+        ///
+        /// Кто получает базовый id: сначала забор с уже проставленным <c>fenceId</c>, затем с меньшим
+        /// instanceID. Остальным выдаётся суффикс <c>_2</c>, <c>_3</c>… и он ЗАПИСЫВАЕТСЯ в
+        /// <c>fence.fenceId</c>, чтобы дальше id был стабилен между сессиями.
+        /// </summary>
+        public static string ResolveGeneratedId(SplineFence fence, bool persist)
+        {
+            string baseId = SanitizeName(fence.EffectiveId);
+            SplineFence[] all = AllFences();
+
+            var group = new List<SplineFence>();
+            for (int i = 0; i < all.Length; i++)
+            {
+                if (string.Equals(SanitizeName(all[i].EffectiveId), baseId, System.StringComparison.OrdinalIgnoreCase))
+                    group.Add(all[i]);
+            }
+
+            group.Sort((a, b) =>
+            {
+                bool explicitA = !string.IsNullOrWhiteSpace(a.fenceId);
+                bool explicitB = !string.IsNullOrWhiteSpace(b.fenceId);
+                if (explicitA != explicitB) return explicitA ? -1 : 1;
+
+                // Порядок в иерархии — стабильный между сессиями (в отличие от instanceID)
+                return string.CompareOrdinal(HierarchyKey(a), HierarchyKey(b));
+            });
+
+            int suffix = Mathf.Max(0, group.IndexOf(fence)) + 1;
+            string candidate = suffix <= 1 ? baseId : $"{baseId}_{suffix}";
+
+            // чужой забор мог занять «Spline_2» руками
+            while (IsIdTaken(candidate, fence, all))
+                candidate = $"{baseId}_{++suffix}";
+
+            if (persist && !string.Equals(candidate, SanitizeName(fence.EffectiveId), System.StringComparison.Ordinal))
+            {
+                Undo.RecordObject(fence, "Fence generated id");
+                string previous = fence.fenceId;
+                fence.fenceId = candidate;
+                EditorUtility.SetDirty(fence);
+
+                Debug.Log($"[Fence] «{fence.name}»: id «{baseId}» уже занят другим забором — " +
+                          $"выдан «{candidate}» и записан в SplineFence.fenceId" +
+                          (string.IsNullOrWhiteSpace(previous) ? "." : $" (было «{previous}»)."));
+            }
+
+            return candidate;
+        }
+
+        private static bool IsIdTaken(string id, SplineFence self, SplineFence[] all)
+        {
+            for (int i = 0; i < all.Length; i++)
+            {
+                if (all[i] == self) continue;
+                if (string.Equals(SanitizeName(all[i].EffectiveId), id, System.StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>Стабильный ключ порядка: имя сцены + путь sibling-индексов в иерархии.</summary>
+        private static string HierarchyKey(SplineFence fence)
+        {
+            var key = new StringBuilder();
+            Transform t = fence.transform;
+
+            while (t != null)
+            {
+                key.Insert(0, "/" + t.GetSiblingIndex().ToString("D4"));
+                t = t.parent;
+            }
+
+            key.Insert(0, fence.gameObject.scene.name);
+            return key.ToString();
+        }
+
+        private static SplineFence[] AllFences()
+        {
+            return Object.FindObjectsByType<SplineFence>(FindObjectsInactive.Include);
+        }
+
+        /// <summary>
+        /// Обновляет меш-ассет НА МЕСТЕ: объект и GUID сохраняются, поэтому ни сцена, ни Undo,
+        /// ни GPU Resident Drawer не видят «уничтоженный меш» — именно это роняло редактор.
+        /// </summary>
+        private static void CopyMeshData(Mesh target, Mesh source)
+        {
+            target.Clear();
+            target.indexFormat = source.indexFormat;
+
+            target.SetVertices(source.vertices);
+            target.SetNormals(source.normals);
+
+            Vector2[] uv = source.uv;
+            if (uv != null && uv.Length > 0) target.SetUVs(0, uv);
+
+            target.subMeshCount = source.subMeshCount;
+            for (int s = 0; s < source.subMeshCount; s++)
+                target.SetTriangles(source.GetTriangles(s), s, false);
+
+            target.RecalculateBounds();
+        }
+
+        /// <summary>Сносит меши папки, которые текущая сборка не использовала (used = null — все).</summary>
+        private static void DeleteOrphanAssets(string folder, HashSet<string> used)
+        {
+            if (!AssetDatabase.IsValidFolder(folder)) return;
+
+            string[] guids = AssetDatabase.FindAssets("t:Mesh", new[] { folder });
+
+            for (int i = 0; i < guids.Length; i++)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+                if (used != null && used.Contains(path)) continue;
+
+                AssetDatabase.DeleteAsset(path);
+            }
         }
 
         // ============================================================

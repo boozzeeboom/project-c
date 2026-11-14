@@ -44,6 +44,9 @@ namespace ProjectC.EditorTools
         private SerializedProperty surfaceProbeUp;
         private SerializedProperty surfaceProbeDown;
         private SerializedProperty surfaceOffset;
+        private SerializedProperty surfaceSamples;
+        private SerializedProperty surfaceTolerance;
+        private SerializedProperty surfaceMaxSplits;
 
         private SerializedProperty roadId;
 
@@ -80,6 +83,9 @@ namespace ProjectC.EditorTools
             surfaceProbeUp = serializedObject.FindProperty(nameof(SplineRoad.surfaceProbeUp));
             surfaceProbeDown = serializedObject.FindProperty(nameof(SplineRoad.surfaceProbeDown));
             surfaceOffset = serializedObject.FindProperty(nameof(SplineRoad.surfaceOffset));
+            surfaceSamples = serializedObject.FindProperty(nameof(SplineRoad.surfaceSamples));
+            surfaceTolerance = serializedObject.FindProperty(nameof(SplineRoad.surfaceTolerance));
+            surfaceMaxSplits = serializedObject.FindProperty(nameof(SplineRoad.surfaceMaxSplits));
 
             roadId = serializedObject.FindProperty(nameof(SplineRoad.roadId));
         }
@@ -194,7 +200,17 @@ namespace ProjectC.EditorTools
                 EditorGUILayout.PropertyField(surfaceProbeUp, new GUIContent("Старт луча выше, м",
                     "Насколько выше кадра начинать луч. Сплайн, нарисованный над землёй, требует запаса."));
                 EditorGUILayout.PropertyField(surfaceProbeDown, new GUIContent("Глубина луча ниже, м"));
-                EditorGUILayout.PropertyField(surfaceOffset, new GUIContent("Зазор до поверхности, м"));
+                EditorGUILayout.PropertyField(surfaceOffset, new GUIContent("Зазор до поверхности, м",
+                    "Насколько покрытие стоит выше найденной поверхности. 0 — покрытие точно в поверхности, " +
+                    "риск мерцания (z-fighting)."));
+                EditorGUILayout.PropertyField(surfaceSamples, new GUIContent("Точек поперёк, шт",
+                    "Сколько лучей пускать поперёк ширины. Берётся САМАЯ ВЫСОКАЯ точка — иначе на поперечном " +
+                    "уклоне половина покрытия уходит под землю. 1 — только осевая линия."));
+                EditorGUILayout.PropertyField(surfaceTolerance, new GUIContent("Допуск по рельефу, м",
+                    "Насколько покрытие может расходиться с рельефом между кадрами. Больше — в пролёт вставляется " +
+                    "дополнительный кадр. 0.01 — покрытие ложится по рельефу без щелей и утопаний."));
+                EditorGUILayout.PropertyField(surfaceMaxSplits, new GUIContent("Предел доп. кадров, шт",
+                    "Сколько кадров максимум добавить под рельеф. Защита от патологического рельефа."));
 
                 if (generateColliders.boolValue &&
                     (surfaceMask.intValue & (1 << colliderLayer.intValue)) != 0)

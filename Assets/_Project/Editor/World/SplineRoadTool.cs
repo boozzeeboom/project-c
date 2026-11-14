@@ -184,7 +184,7 @@ namespace ProjectC.EditorTools
             RoadBuildOutput output = RoadMeshBuilder.Build(path, geometry);
 
             string snapNote = road.snapToSurface
-                ? $", привязка к поверхности: промахов {snapMisses}"
+                ? $", привязка к поверхности: промахов {snapMisses}, под рельеф добавлено кадров {road.lastSurfaceSplits}"
                 : ", привязка к поверхности выключена";
 
             sb.AppendLine($"[Road] {road.name} → {road.surface}, ширина {road.width:F2} м, " +

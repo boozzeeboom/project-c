@@ -2223,16 +2223,32 @@ namespace ProjectC.EditorTools
 
             // Границы slab'ов: равномерная сетка + реальные координаты вершин по оси реза.
             // Кромки проёмов и уступов в меше всегда лежат на координатах вершин, поэтому такой
-            // набор делает край проёма точным, а не «плюс-минус шаг». Если координат слишком
-            // много (кривые меши), остаётся только равномерная сетка.
-            var edges = new List<float>(Mathf.Min(k + verts.Length + 2, MaxSlabs + 2)) { minA };
+            // набор делает край проёма точным, а не «плюс-минус шаг». Бюджет считаем по
+            // УНИКАЛЬНЫМ координатам, а не по вершинам: у импортированной геометрии их десятки,
+            // а вершин тысячи — раньше такой меш терял точные границы целиком (PM_PORT_HUB_MF_Concrete:
+            // 2688 вершин → стенка 0.15 м поперёк оси реза попадала в середину метрового slab'а
+            // и пропадала: скан идёт лучом в середине slab'а).
+            float gap = Mathf.Max(qeps, len * 5e-4f);
+            var axisCoords = new List<float>(Mathf.Min(verts.Length, MaxSlabs));
+            for (int v = 0; v < verts.Length; v++)
+            {
+                float c = verts[v][axis];
+                if (c <= minA + gap || c >= b.max[axis] - gap) continue;
+                axisCoords.Add(c);
+            }
+            axisCoords.Sort();
+            int uc = 0;
+            for (int r = 0; r < axisCoords.Count; r++)
+                if (uc == 0 || axisCoords[r] - axisCoords[uc - 1] > gap) axisCoords[uc++] = axisCoords[r];
+            if (uc < axisCoords.Count) axisCoords.RemoveRange(uc, axisCoords.Count - uc);
+
+            var edges = new List<float>(k + axisCoords.Count + 2) { minA };
             for (int i = 1; i < k; i++) edges.Add(minA + i * step);
             edges.Add(b.max[axis]);
-            if (k + verts.Length + 2 <= MaxSlabs + 2)
+            if (edges.Count + axisCoords.Count <= MaxSlabs + 2)
             {
-                for (int v = 0; v < verts.Length; v++) edges.Add(verts[v][axis]);
+                edges.AddRange(axisCoords);
                 edges.Sort();
-                float gap = Mathf.Max(qeps, len * 5e-4f);
                 int w = 1;
                 for (int r = 1; r < edges.Count; r++)
                 {
@@ -2301,12 +2317,22 @@ namespace ProjectC.EditorTools
                 pts.Clear();
                 slabPolys.Clear();
                 float slabArea = 0f, slabTilt = 0f;
+                float inEps = Mathf.Min(qeps, (hi - lo) * 0.25f);
+                float aMin = float.MaxValue, aMax = float.MinValue; // фактический габарит геометрии slab'а по оси реза
                 for (int t = 0; t < triCount; t++)
                 {
                     if (tC1Lo[t] > tC1Hi[t]) continue;
                     if (tAHi[t] < lo - qeps || tALo[t] > hi + qeps) continue;
                     var poly = ClipTriToSlab(tA[t], tB[t], tC[t], axis, lo, hi);
-                    if (poly.Count > 0) pts.AddRange(poly);
+                    if (poly.Count > 0)
+                    {
+                        pts.AddRange(poly);
+                        for (int pk = 0; pk < poly.Count; pk++)
+                        {
+                            if (poly[pk][axis] < aMin) aMin = poly[pk][axis];
+                            if (poly[pk][axis] > aMax) aMax = poly[pk][axis];
+                        }
+                    }
                     if (allowOblique && poly.Count >= 3)
                     {
                         Vector3 sa = Vector3.Scale(tA[t], worldPerLocal);
@@ -2421,8 +2447,13 @@ namespace ProjectC.EditorTools
                 // Пустой или переусложнённый slab — габарит сечения (прежнее поведение).
                 if (slabBoxes.Count == 0 || slabBoxes.Count > MaxRectsPerSlab)
                 {
+                    // По оси реза кусок обжимаем по ФАКТИЧЕСКОЙ геометрии slab'а, а не по его границам:
+                    // тонкая стенка, стоящая у края толстого slab'а, иначе получала бокс толщиной
+                    // в шаг нарезки и накрывала пустоту рядом с собой. Плоскость, лежащая ровно
+                    // на границе slab'а (объёма нет) — пропускаем совсем.
+                    if (slabBoxes.Count == 0 && aMax - aMin <= inEps) continue;
                     slabBoxes.Clear();
-                    slabBoxes.Add(MakeBox(axis, lo, hi, c1, c1min, c1max, c2, c2min, c2max, i));
+                    slabBoxes.Add(MakeBox(axis, aMin, aMax, c1, c1min, c1max, c2, c2min, c2max, i));
                 }
 
                 // Наклонный slab (скрученная/наклонная пластина): один повёрнутый бокс по
@@ -2968,42 +2999,82 @@ namespace ProjectC.EditorTools
         }
 
         /// <summary>
-        /// Строки сканирования по c1: равномерная сетка с шагом нарезки + фактические координаты
-        /// граней со сдвигом внутрь (стенка тоньше шага иначе проскочит между строками).
-        /// Переполнение (плотная сетка вершин) → остаётся только равномерная сетка.
+        /// Строки сканирования по c1: равномерная сетка с шагом нарезки + строки по реальным
+        /// граням со сдвигом внутрь (стенка тоньше шага иначе проскочит между строками и slab
+        /// уйдёт в габаритный фолбэк — тогда и проёмы залиты, и сторон нет).
+        /// Координат больше бюджета строк → берутся САМЫЕ ТОНКИЕ интервалы по всей длине c1
+        /// (раньше брались первые координаты от начала диапазона, и дальний край терялся),
+        /// остаток бюджета добивается равномерно разложенными координатами и сеткой.
+        /// Переполнение уменьшает равномерную сетку, а не выбрасывает строки по граням:
+        /// без них скан не видит стенок тоньше шага (PM_PORT_HUB_MF_Concrete: стена 0.15 м
+        /// на 67 м глубины, стенки не попадали ни в одну строку → весь меш = один бокс).
         /// </summary>
         private static void BuildRows(List<float> coords, float lo, float hi, float step, float qeps, List<float> outRows)
         {
             outRows.Clear();
             float span = hi - lo;
             if (span <= qeps) return;
-            int n = Mathf.Clamp(Mathf.CeilToInt(span / step), 1, MaxRows);
             float jitter = Mathf.Clamp(span * 1e-3f, qeps * 4f, 0.25f * step);
 
-            int added = 0;
-            for (int i = 0; i < coords.Count && added < MaxRowsFromCoords; i++)
+            var edgeRows = new List<float>(MaxRowsFromCoords * 2);
+            if (coords.Count <= MaxRowsFromCoords)
             {
-                float c = coords[i];
-                if (c <= lo + qeps || c >= hi - qeps) continue;
-                outRows.Add(c - jitter);
-                outRows.Add(c + jitter);
-                added++;
+                for (int i = 0; i < coords.Count; i++)
+                {
+                    float c = coords[i];
+                    if (c <= lo + qeps || c >= hi - qeps) continue;
+                    edgeRows.Add(c - jitter);
+                    edgeRows.Add(c + jitter);
+                }
             }
+            else
+            {
+                // Бюджет меньше числа координат: приоритет — тонкие интервалы (это стенки,
+                // кромки проёмов и полки), самые тонкие первыми, по всей длине c1.
+                var thin = new List<Vector2>(coords.Count); // x = ширина интервала, y = его середина
+                for (int i = 1; i < coords.Count; i++)
+                {
+                    float a = coords[i - 1], b = coords[i];
+                    if (b <= lo + qeps || a >= hi - qeps) continue;
+                    float w = b - a;
+                    if (w <= qeps || w >= step) continue; // не тонкий — его поймает равномерная сетка
+                    thin.Add(new Vector2(w, (a + b) * 0.5f));
+                }
+                thin.Sort((p, q) => p.x.CompareTo(q.x));
+                int take = Mathf.Min(Mathf.Max(1, MaxRowsFromCoords / 2), thin.Count);
+                for (int i = 0; i < take; i++)
+                {
+                    float w = thin[i].x;
+                    float c = thin[i].y;
+                    float inset = Mathf.Min(jitter, w * 0.25f); // строки ВНУТРИ интервала
+                    edgeRows.Add(c - w * 0.5f + inset);
+                    edgeRows.Add(c + w * 0.5f - inset);
+                }
+                // Вторая половина бюджета — координаты, разложенные по всей длине c1: тонкие
+                // интервалы могут оказаться все в одном углу (фаски у одной стенки), а нужны
+                // и дальние стенки/перегородки.
+                int spread = Mathf.Max(1, MaxRowsFromCoords - take);
+                for (int k = 0; k < spread; k++)
+                {
+                    float c = coords[Mathf.RoundToInt(k * (coords.Count - 1) / (float)Mathf.Max(1, spread - 1))];
+                    if (c <= lo + qeps || c >= hi - qeps) continue;
+                    edgeRows.Add(c - jitter);
+                    edgeRows.Add(c + jitter);
+                }
+            }
+
+            int n = Mathf.Clamp(Mathf.CeilToInt(span / step), 1, Mathf.Max(1, MaxRows - edgeRows.Count));
+            outRows.AddRange(edgeRows);
             for (int j = 0; j < n; j++)
                 outRows.Add(lo + (j + 0.5f) * span / n);
 
             if (outRows.Count > MaxRows)
-            {
-                outRows.Clear();
-                for (int j = 0; j < n; j++)
-                    outRows.Add(lo + (j + 0.5f) * span / n);
-                return;
-            }
+                outRows.RemoveRange(MaxRows, outRows.Count - MaxRows); // страховка, порядок ещё не важен
             outRows.Sort();
-            int w = 1;
+            int w2 = 1;
             for (int i = 1; i < outRows.Count; i++)
-                if (outRows[i] - outRows[w - 1] > qeps) outRows[w++] = outRows[i];
-            if (w < outRows.Count) outRows.RemoveRange(w, outRows.Count - w);
+                if (outRows[i] - outRows[w2 - 1] > qeps) outRows[w2++] = outRows[i];
+            if (w2 < outRows.Count) outRows.RemoveRange(w2, outRows.Count - w2);
         }
 
         /// <summary>

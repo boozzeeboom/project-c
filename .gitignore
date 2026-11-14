@@ -231,3 +231,6 @@ docs/dev/elio/article.html
 
 # aura_export intermediate dumps/scripts (generated)
 aura_export/
+Assets/_Project/Generated/Fences/Spline/*
+Assets/_Project/Generated/Fences/*
+Assets/Editor/_Editor_Temp/*

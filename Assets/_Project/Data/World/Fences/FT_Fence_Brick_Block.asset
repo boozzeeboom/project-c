@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6530fa12957172e4d8102f66cdae6fae, type: 3}
+  m_Name: FT_Fence_Brick_Block
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.Generation.FenceTypeDefinition
+  style: 1
+  primaryMaterial: {fileID: 2100000, guid: 74800abb6c3c5ff41bbc8f742810f98b, type: 2}
+  secondaryMaterial: {fileID: 2100000, guid: 804f97bc6dcb6394794a1562440d517a, type: 2}
+  height: 1.35
+  thickness: 0.25
+  colliderHeight: 1.41
+  postSize: 0.38
+  postHeight: 1.55
+  postSpacing: 2.6
+  maxDeviation: 0.01
+  sharpAngleDeg: 25
+  minRadius: 0
+  railSize: 0.04
+  railBottomY: 0.12
+  railTopY: 1.84
+  midRail: 0
+  midRailY: 0.95
+  barSize: 0.012
+  barSpacing: 0.12
+  barBottomY: 0.18
+  barTopY: 1.8
+  brickScale: 5.8
+  panelChordError: 0.02
+  sectionAlignDeg: 1
+  copingHeight: 0.06
+  copingOverhang: 0.025
+  capSize: 0.45
+  capHeight: 0.06

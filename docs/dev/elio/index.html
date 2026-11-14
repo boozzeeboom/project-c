@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ресерч «Эльо»: история разработки, анализ, статистика</title>
+<style>
+:root{--bg:#161823;--panel:#1f2335;--panel-2:#272c44;--border:#3d4466;--gold:#c9a227;--plus:#5b9bd5;--minus:#e05a5a;--zero:#9aa0a6;--text:#e8e8f0;--text-dim:#a9b0cc;--accent:#7aa2ff;}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;padding-bottom:3rem}
+.container{max-width:1100px;margin:0 auto;padding:1rem}
+header{background:linear-gradient(135deg,#0f111a 0%,#1a1d30 100%);border-bottom:1px solid var(--border);padding:2rem 1rem;position:sticky;top:0;z-index:10}
+header h1{font-size:1.5rem;letter-spacing:.06em;color:var(--gold)}
+header p{color:var(--text-dim);font-size:.95rem;margin-top:.4rem}
+header code{background:var(--panel-2);padding:.1rem .4rem;border-radius:3px;border:1px solid var(--border);font-size:.85rem}
+nav.toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:1rem;margin:1.5rem 0}
+nav.toc h3{color:var(--gold);font-size:.9rem;text-transform:uppercase;letter-spacing:.1em;margin-bottom:.6rem}
+nav.toc ul{list-style:none}
+nav.toc li{margin:.32rem 0}
+nav.toc a{color:var(--text-dim);text-decoration:none;font-size:.95rem}
+nav.toc a:hover{color:var(--gold)}
+h2{font-size:1.25rem;color:var(--gold);margin:2rem 0 .8rem;padding-bottom:.4rem;border-bottom:1px solid var(--border)}
+h3{font-size:1.05rem;color:var(--text);margin:1.5rem 0 .6rem}
+p{margin:.7rem 0}
+a{color:var(--accent)}
+table{width:100%;border-collapse:collapse;margin:.9rem 0;background:var(--panel);border:1px solid var(--border);border-radius:8px;overflow:hidden;font-size:.92rem}
+th,td{padding:.55rem .7rem;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+th{background:var(--panel-2);color:var(--gold);font-weight:600;text-transform:uppercase;font-size:.78rem;letter-spacing:.08em}
+tr:nth-child(even) td{background:#24293f}
+tr:hover td{background:#2e3552;transition:background .15s}
+td.num,th.num{text-align:right}
+.badge{display:inline-block;padding:.1rem .5rem;border-radius:10px;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-left:.4rem}
+.badge.canon{background:#1b3a1b;color:#7fd07f;border:1px solid #2d5a2d}
+.badge.warn{background:#4a2a1a;color:#f4b183;border:1px solid #6b4a2a}
+.badge.info{background:#1a2d4a;color:#9cc3ff;border:1px solid #3a5a7a}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:1.1rem;margin:1rem 0}
+.code{background:#141620;border:1px solid var(--border);border-radius:6px;padding:.8rem .9rem;font-family:Consolas,'Courier New',monospace;font-size:.85rem;overflow-x:auto;color:#d8e2ff;margin:.7rem 0}
+figure{margin:1rem 0}
+figcaption{font-size:.85rem;color:var(--text-dim);margin-top:.4rem;text-align:center}
+svg.chart{display:block;margin:1rem auto;background:var(--panel);border:1px solid #3d4466;border-radius:8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem}
+.stat{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:1rem;text-align:center}
+.stat .big{font-size:1.8rem;font-weight:700;color:var(--gold)}
+.stat .lbl{font-size:.85rem;color:var(--text-dim);margin-top:.3rem}
+.warnbox{background:#3a1f1e;border-left:3px solid #8f3a3a;color:#f4c2c2;padding:.7rem 1rem;border-radius:0 6px 6px 0;margin:.8rem 0;font-size:.9rem}
+.okbox{background:#1c331c;border-left:3px solid #4a8f4a;color:#c2e8c2;padding:.7rem 1rem;border-radius:0 6px 6px 0;margin:.8rem 0;font-size:.9rem}
+kbd{background:#2d334e;border:1px solid var(--border);border-radius:4px;padding:.1rem .4rem;font-family:monospace;font-size:.85rem;color:#cfe0ff}
+.small{font-size:.85rem;color:var(--text-dim)}
+footer{margin-top:3rem;padding:1.5rem 0;border-top:1px solid var(--border);color:var(--text-dim);font-size:.85rem}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+<h1>Ресерч «Эльо»</h1>
+<p>Мини-игра по книге Бруно Арендта «Интеграл Пьявица» — история разработки, дизайн, анализ и статистика прогонов<br>
+Папка проекта: <code>docs/dev/elio/</code> · Статус: правила v1.4 · флот v1.3 (10 фигур / 30 очков) · движок <code>elio_engine.js</code> v1.4</p>
+</header>
+
+<nav class="toc">
+<h3>Оглавление</h3>
+<ul>
+<li><a href="#summary">0. Резюме и ключевые цифры</a></li>
+<li><a href="#timeline">1. История разработки по шагам (v1.0 → v1.4)</a></li>
+<li><a href="#design">2. Дизайн игры: доска, флоты, правила</a></li>
+<li><a href="#coords">3. Система координат доски</a></li>
+<li><a href="#stats">4. Статистика прогонов и баланс</a></li>
+<li><a href="#llm">5. LLP-арена: модели против встроенного ИИ</a></li>
+<li><a href="#audit">6. Аудит багов P0/P1 и исправления (v1.3d)</a></li>
+<li><a href="#ui">7. UI/UX прототипа</a></li>
+<li><a href="#variants">8. Варианты составов: 10 / 10+1 / 15 фигур</a></li>
+<li><a href="#conclusions">9. Выводы и дорожная карта</a></li>
+<li><a href="#sources">10. Источники и файлы папки</a></li>
+</ul>
+</nav>
+<section id="summary">
+<h2>0. Резюме и ключевые цифры</h2>
+<p>«Эльо» — прототип правил и движка настольной мини-игры по сцене «Год 2089. «Эльо»» (книга «Интеграл Пьявица», стр. 313–320). Разрабатывался как автономный веб-прототип (чистый JS + HTML, не сцена Unity) в папке <code>docs/dev/elio/</code>. Идея: три фракции сражаются на гексагональной доске; цель — убить вражеского Линейного (короля) или удержать центральный гекс «Ц».</p>
+<div class="grid">
+<div class="stat"><div class="big">3</div><div class="lbl">фракции: Плюсы, Минусы, Нули</div></div>
+<div class="stat"><div class="big">64</div><div class="lbl">клеток: 3 поля × 19 + 6 мостов + «Ц»</div></div>
+<div class="stat"><div class="big">10</div><div class="lbl">фигур на фракцию в каноне</div></div>
+<div class="stat"><div class="big">30</div><div class="lbl">очков флота у военных фракций</div></div>
+<div class="stat"><div class="big">3</div><div class="lbl">режима хода: Цикл / Стрелка / Передача</div></div>
+<div class="stat"><div class="big">400+400</div><div class="lbl">партий в эталонном баланс-прогоне</div></div>
+</div>
+<div class="card">
+<h3>Текущий канон (v1.4)</h3>
+<ul>
+<li>Правила: <code>ELIO_RULES_FINAL.md</code> v1.4 — удержание «Ц» считается по следующим собственным ходам держателя (вход + N ходов, победа в начале (N+1)-го); порог N настраивается в UI от 1 до 5 (стандарт 3).</li>
+<li>Движок: <code>elio_engine.js</code> v1.4 — holdTarget, тики в начале собственного хода, pass-режим, лимит 90.</li>
+<li>ИИ: <code>elio_ai.js</code> v1.4 — срыв чужого удержания за ход до победы, приоритет щита держателя «Ц», выдвижение в ворота.</li>
+<li>Эталонный сет: «Стрелка + Длинный» — на двух 400-сидах: <b>35.9 / 33.4 / 29.3</b> (П/М/Н), 87 выбываний Линейного, средняя длина 37.7 полухода.</li>
+</ul>
+<div class="warnbox"><b>Важно:</b> балансовые цифры ниже получены на правилах v1.3 (до v1.4) и требуют перепрогона. Цикл — исторический/учебный режим; эталон — «Стрелка», альтернатива — «Передача».</div>
+</section>
+
+<section id="timeline">
+<h2>1. История разработки по шагам</h2>
+<p>Разработка велась итеративно: от выделения канона книги к балансовым прогонам, аудиту багов и финальной версии правил.</p>
+<figure>
+<svg class="chart" width="100%" height="210" viewBox="0 0 900 210" xmlns="http://www.w3.org/2000/svg">
+<rect x="20" y="22" width="860" height="44" rx="6" fill="#222840" stroke="#3d4466"/>
+<line x1="60" y1="44" x2="850" y2="44" stroke="#4a5570" stroke-width="2"/>
+<g fill="#c9a227"><circle cx="90" cy="44" r="5"/><circle cx="210" cy="44" r="5"/><circle cx="350" cy="44" r="5"/><circle cx="500" cy="44" r="5"/><circle cx="650" cy="44" r="5"/><circle cx="800" cy="44" r="5"/></g>
+<text x="90" y="72" text-anchor="middle" fill="#c9a227" font-weight="700" font-size="12">07.11 · Этап 1</text>
+<text x="90" y="88" text-anchor="middle" fill="#e8e8f0" font-size="11">Книжный канон: BOOK_SCENE_NOTES</text>
+<text x="210" y="72" text-anchor="middle" fill="#c9a227" font-weight="700" font-size="12">08.11 · v1.2</text>
+<text x="210" y="88" text-anchor="middle" fill="#e8e8f0" font-size="11">Базовые правила, флот «пешек»</text>
+<text x="350" y="72" text-anchor="middle" fill="#c9a227" font-weight="700" font-size="12">08.11 · v1.3</text>
+<text x="350" y="88" text-anchor="middle" fill="#e8e8f0" font-size="11">Линкор + Бомбардир, 10 фигур / 30 очков</text>
+<text x="500" y="72" text-anchor="middle" fill="#c9a227" font-weight="700" font-size="12">08.11 · v1.3c</text>
+<text x="500" y="88" text-anchor="middle" fill="#e8e8f0" font-size="11">Фикс инертного «Ц», ИИ v1.3c, 400+400 партий</text>
+<text x="650" y="72" text-anchor="middle" fill="#c9a227" font-weight="700" font-size="12">08.11 · v1.3d</text>
+<text x="650" y="88" text-anchor="middle" fill="#e8e8f0" font-size="11">Аудит P0/P1: 3 критических бага исправлены</text>
+<text x="800" y="72" text-anchor="middle" fill="#c9a227" font-weight="700" font-size="12">09.11 · v1.4</text>
+<text x="800" y="88" text-anchor="middle" fill="#e8e8f0" font-size="11">«Ц» по своим ходам, порог 1–5, правила канон</text>
+</svg>
+</figure>
+<table>
+<thead><tr><th>Шаг</th><th>Дата</th><th>Что сделано</th><th class="num">Результат / метрика</th></tr></thead>
+<tbody>
+<tr><td><b>Этап 1 — Книжный канон</b></td><td>07.11.2026</td><td>Разбор сцены «Эльо» (стр. 313–320) в <code>BOOK_SCENE_NOTES.md</code>: отделение текста книги от выжимки пользователя. Стрелка в книге — выбор роли/стороны, а не порядок хода.</td><td class="num">Три слоя документации: книга / ответы пользователя / предложение</td></tr>
+<tr><td><b>Этап 2 — v1.2</b></td><td>08.11.2026</td><td>Первые полные правила: 3 фракции, доска 64 клетки, флот, где все военные фигуры — «пешки с чуть разной дальностью».</td><td class="num">Линейный не убит ни в 1 из 400 игр (0/400); баланс 20 / 35 / 44</td></tr>
+<tr><td><b>Этап 3 — v1.3</b></td><td>08.11.2026</td><td>Новые дальнобойные фигуры: Линкор (ладья, пробивает щит 1) и Бомбардир (прыжок 2–3, не пробивает щит). Флот 10 фигур / 30 очков.</td><td class="num">Винрейт выровнялся до 30 / 34 / 34; длина 23.9 → 27.4</td></tr>
+<tr><td><b>Этап 4 — v1.3c</b></td><td>08.11.2026</td><td>Фикс инертного «Ц», анти-осцилляция, запрет пустых поддержек. Прогон 400+400 партий.</td><td class="num">Эталон <b>35.9 / 33.4 / 29.3</b>; убийств королей 87/400 (21.75 %); длина 37.7</td></tr>
+<tr><td><b>Этап 5 — v1.3d</b></td><td>08.11.2026</td><td>Аудит движка (<code>AUDIT_V13D.md</code>): P0-баги — уход за доску, разрушение доски при оттеснении, оттеснение нулями; P1 — залипшие щиты, hold перекрывает king.</td><td class="num">Все P0 исправлены; integrity-guard: 0 нарушений целостности</td></tr>
+<tr><td><b>Этап 6 — v1.4</b></td><td>09.11.2026</td><td>Удержание «Ц» по следующим собственным ходам (вход + N, победа в начале (N+1)-го); порог 1–5 в UI. Правила v1.4 — канон.</td><td class="num">Прошлые балансовые прогоны требуют пересчёта</td></tr>
+</tbody>
+</table>
+</section>
+
+<section id="design">
+<h2>2. Дизайн игры: доска, флоты, правила</h2>
+<h3>2.1 Доска — 64 клетки (схема)</h3>
+<p>Три гексагональных поля радиуса 2 по 19 клеток каждое, шесть спорных мостов и один центральный гекс «Ц». Поля расположены: Плюсы сверху, Минусы снизу-слева, Нули снизу-справа. Жёлтые ворота — три гекса, смежных с «Ц» (вход на «Ц» только с них).</p>
+<figure>
+<svg class="chart" width="100%" height="300" viewBox="0 0 660 300" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<g id="hex"><polygon points="34,0 68,0 85,17 68,34 34,34 17,17" /></g>
+</defs>
+<!-- Center Ц -->
+<use href="#hex" x="278" y="116" fill="#c9a227" stroke="#8f721b" stroke-width="2"/>
+<text x="311" y="128" text-anchor="middle" fill="#161823" font-weight="800" font-size="14">Ц</text>
+<text x="311" y="145" text-anchor="middle" fill="#a9b0cc" font-size="10">центр · победа</text>
+<!-- Field P (top) -->
+<use href="#hex" x="278" y="14" fill="#5b9bd5" stroke="#3d6e9e" stroke-width="2" opacity=".92"/>
+<text x="311" y="26" text-anchor="middle" fill="#161823" font-weight="700" font-size="13">ПЛЮСЫ</text>
+<text x="311" y="39" text-anchor="middle" fill="#a9b0cc" font-size="10">19 клеток · ворота P-A1</text>
+<!-- Field M (bottom left) -->
+<use href="#hex" x="134" y="228" fill="#e05a5a" stroke="#9e3d3d" stroke-width="2" opacity=".92"/>
+<text x="167" y="240" text-anchor="middle" fill="#161823" font-weight="700" font-size="13">МИНУСЫ</text>
+<text x="167" y="253" text-anchor="middle" fill="#a9b0cc" font-size="10">19 клеток · ворота M-A1</text>
+<!-- Field Z (bottom right) -->
+<use href="#hex" x="488" y="228" fill="#9aa0a6" stroke="#6e7a7f" stroke-width="2" opacity=".92"/>
+<text x="521" y="240" text-anchor="middle" fill="#161823" font-weight="700" font-size="13">НУЛИ</text>
+<text x="521" y="253" text-anchor="middle" fill="#a9b0cc" font-size="10">19 клеток · ворота Z-A1</text>
+<!-- Bridges -->
+<use href="#hex" x="190" y="130" fill="#4a5570" stroke="#3d4466" stroke-width="1.5" opacity=".85"/>
+<use href="#hex" x="430" y="130" fill="#4a5570" stroke="#3d4466" stroke-width="1.5" opacity=".85"/>
+<text x="223" y="142" text-anchor="middle" fill="#c9d3ea" font-size="9">мост PZ</text>
+<text x="463" y="142" text-anchor="middle" fill="#c9d3ea" font-size="9">мост MZ</text>
+<text x="311" y="278" text-anchor="middle" fill="#c9d3ea" font-size="9">мост PM (снизу) · вход на «Ц» только с жёлтых гексов P-C5 / M-E1 / Z-A3</text>
+<line x1="311" y1="133" x2="311" y2="156" stroke="#c9a227" stroke-width="2" stroke-dasharray="4 2"/>
+<text x="311" y="151" text-anchor="middle" fill="#c9a227" font-size="10" font-weight="700">жёлтые ворота</text>
+</svg>
+<figcaption>Упрощённая схема: 3 поля × 19 клеток + 6 спорных моста + центр «Ц» = 64 клетки.</figcaption>
+</figure>
+
+<h3>2.2 Флоты (канон v1.3)</h3>
+<table>
+<thead><tr><th>Фракция</th><th>Тип (код)</th><th class="num">Кол-во</th><th class="num">Очки</th><th>Роль</th></tr></thead>
+<tbody>
+<tr><td rowspan="6">Плюсы / Минусы (зеркальны)</td><td>Линейный (Л) — король</td><td class="num">1</td><td class="num">7</td><td>1 шаг; аура щита соседям, не себе</td></tr>
+<tr><td>Линкор (Лк) — ладья</td><td class="num">1</td><td class="num">6</td><td>Любая дистанция по прямой; блокируется фигурой и «Ц»; пробивает щит 1</td></tr>
+<tr><td>Бомбардир (Бм) — дальний конь</td><td class="num">1</td><td class="num">4</td><td>Прыжок 2–3 через фигуры; не пересекает «Ц»; не пробивает щит 1</td></tr>
+<tr><td>Фрегат (Ф)</td><td class="num">2</td><td class="num">3</td><td>До 2 по прямой</td></tr>
+<tr><td>Корвет (Кв)</td><td class="num">2</td><td class="num">2</td><td>Прыжок на расстояние 2; может пересекать «Ц»</td></tr>
+<tr><td>Миноносец (Мн)</td><td class="num">3</td><td class="num">1</td><td>1 шаг или рывок 2 по прямой в пустое</td></tr>
+<tr><td rowspan="5">Нули (парламент-нейтралитет)</td><td>Капитан-Линейный (КЛ)</td><td class="num">2</td><td class="num">4</td><td>1 шаг</td></tr>
+<tr><td>Свободный (Св)</td><td class="num">3</td><td class="num">2</td><td>До 3 по прямой</td></tr>
+<tr><td>Курьер (Ку)</td><td class="num">2</td><td class="num">1,5</td><td>До 4 по прямой</td></tr>
+<tr><td>Инженер (Ин)</td><td class="num">2</td><td class="num">2,5</td><td>До 2 по прямой; щит 1 соседям</td></tr>
+<tr><td>Диверсант (Ди)</td><td class="num">1</td><td class="num">2</td><td>1 шаг</td></tr>
+</tbody>
+</table>
+<p class="small">Итого: у каждой фракции 10 фигур; военные — 30 очков, Нули — 24 очка. Нули никогда не бьют, но могут быть истреблены; их сила — позиция, щиты и время.</p>
+
+<h3>2.3 Правила в сжатом виде (шпаргалка «1 правило = 1 строка»)</h3>
+<ol>
+<li>Игроков 3: Плюсы, Минусы, Нули. Никаких очков за фигуры — это шахматы, не блэкджек.</li>
+<li>Доска: 64 клетки (3 поля по 19 + 6 мостов + «Ц»). Вход на «Ц» только с жёлтых гексов полей.</li>
+<li>Линейный — король: в Основном режиме его гибель = немедленная победа убийцы; в Длинном — фракция выбывает.</li>
+<li>Защита = максимум из источников, не сумма; Линейный и Инженер дают соседям щит 1.</li>
+<li>Оттеснение — ход-действие только военной фигурой на соседнюю клетку; атакующий остаётся на месте.</li>
+<li>Удержание «Ц» тикает в начале собственного хода держателя; вход в «Ц» не засчитывается как тик.</li>
+<li>Порядок хода: Цикл (первый ход Плюсы), Стрелка (первый ход случайный, далее по стрелке) или Передача (отдаёшь любому из двух других).</li>
+<li>Лимит 90 полуходов: «Ц» занят активной фигурой → победа стоящего; пуст или инертный → ничья.</li>
+<li>Книжный режим («обе Линейные» → Нули) в текущем движке не реализован.</li>
+</ol>
+
+<section id="coords">
+<h2>3. Система координат доски</h2>
+<p>Цель: простая запоминаемая адресация каждой клетки без осевых координат у игрока. Рассмотрены три варианта:</p>
+<table>
+<thead><tr><th>Вариант</th><th>Формат</th><th>Плюсы</th><th>Минусы</th><th>Вердикт</th></tr></thead>
+<tbody>
+<tr><td><b>A</b></td><td>Осевые с префиксом: <code>P-0,-1</code></td><td>Однозначно, легко считать соседей</td><td>Отрицательные числа и запятые плохо читаются</td><td>Только внутренний формат</td></tr>
+<tr><td><b>B</b></td><td>Локальные поле-буква-цифра: <code>P-C3</code></td><td>Коротко, привычно (шахматный стиль), явно зона</td><td>Нужно один раз объяснить локальность строк/столбцов</td><td><b>Выбран (радиальная схема, канон)</b></td></tr>
+<tr><td><b>C</b></td><td>Глобальные осевые с буквами: <code>E7</code></td><td>Одна система на всю доску</td><td>Разреженная сетка, много пустых адресов</td><td>Отклонён</td></tr>
+</tbody>
+</table>
+<p>Внутри движка — глобальные осевые <code>(q,r)</code>; для игроков, UI и логов — радиальные коды <code>P-C3</code>, <code>Z-A3</code>, <code>Ц</code>. Вход на «Ц» только с жёлтых гексов: <code>P-C5</code>, <code>M-E1</code>, <code>Z-A3</code>.</p>
+</section>
+
+<section id="stats">
+<h2>4. Статистика прогонов и баланс</h2>
+<h3>4.1 Канон: 10 фигур, v1.3c (после фикса инертного «Ц»)</h3>
+<table>
+<thead><tr><th>Режим</th><th class="num">Плюсы</th><th class="num">Минусы</th><th class="num">Нули</th><th class="num">Ничья</th><th class="num">Ср. длина</th><th class="num">Убийств Линейного</th></tr></thead>
+<tbody>
+<tr><td><b>Стрелка + Длинный</b> <span class="badge canon">эталон</span></td><td class="num">35.9</td><td class="num">33.4</td><td class="num">29.3</td><td class="num">1.5</td><td class="num">37.7</td><td class="num">87/400 (21.75 %)</td></tr>
+<tr><td><b>Передача + Основной</b> <span class="badge canon">канон</span></td><td class="num">32.4</td><td class="num">35.8</td><td class="num">31.2</td><td class="num">0.8</td><td class="num">29.3</td><td class="num">43/400 (10.75 %)</td></tr>
+<tr><td>Цикл + Основной <span class="badge warn">история</span></td><td class="num">25</td><td class="num">35</td><td class="num">39</td><td class="num">1</td><td class="num">23.9</td><td class="num">3/100</td></tr>
+<tr><td>Цикл + Длинный <span class="badge warn">история</span></td><td class="num">24</td><td class="num">35</td><td class="num">40</td><td class="num">1</td><td class="num">24.9</td><td class="num">3/100</td></tr>
+<tr><td>v1.2 (без новых фигур) <span class="badge warn">история</span></td><td class="num">20</td><td class="num">35</td><td class="num">44</td><td class="num">1</td><td class="num">23.9</td><td class="num">0/400</td></tr>
+</tbody>
+</table>
+<figure>
+<svg class="chart" width="100%" height="260" viewBox="0 0 700 260" xmlns="http://www.w3.org/2000/svg">
+<text x="30" y="20" fill="#a9b0cc" font-size="12">Винрейт по фракциям (%)</text>
+<g fill="#5b9bd5"><rect x="120" y="150" width="70" height="40"/><rect x="300" y="120" width="70" height="70"/><rect x="480" y="190" width="70" height="0"/></g>
+<g fill="#e05a5a"><rect x="155" y="140" width="70" height="50"/><rect x="335" y="95" width="70" height="95"/><rect x="515" y="160" width="70" height="30"/></g>
+<g fill="#9aa0a6"><rect x="190" y="180" width="70" height="10"/><rect x="370" y="160" width="70" height="30"/><rect x="550" y="200" width="70" height="50"/></g>
+<text x="155" y="240" text-anchor="middle" fill="#a9b0cc" font-size="11">Стрелка + Длинный</text>
+<text x="335" y="240" text-anchor="middle" fill="#a9b0cc" font-size="11">Передача + Основной</text>
+<text x="515" y="240" text-anchor="middle" fill="#a9b0cc" font-size="11">Цикл + Основной</text>
+<text x="155" y="145" text-anchor="middle" fill="#161823" font-size="10" font-weight="700">35.9</text>
+<text x="190" y="135" text-anchor="middle" fill="#161823" font-size="10" font-weight="700">33.4</text>
+<text x="335" y="90" text-anchor="middle" fill="#161823" font-size="10" font-weight="700">32.4</text>
+<text x="370" y="155" text-anchor="middle" fill="#161823" font-size="10" font-weight="700">35.8</text>
+<text x="515" y="195" text-anchor="middle" fill="#161823" font-size="10" font-weight="700">25</text>
+<text x="550" y="155" text-anchor="middle" fill="#161823" font-size="10" font-weight="700">39</text>
+<text x="30" y="190" fill="#a9b0cc" font-size="10">0</text>
+<text x="30" y="80" fill="#a9b0cc" font-size="10">40</text>
+</svg>
+<figcaption>Столбцы: Плюсы (синий) / Минусы (красный) / Нули (серый). Цикл перекошен в Нули — оставлен как учебный режим.</figcaption>
+</figure>
+
+<h3>4.2 Первый ход и режимы передачи</h3>
+<table>
+<thead><tr><th>Параметр</th><th class="num">Плюсы</th><th class="num">Минусы</th><th class="num">Нули</th><th>Примечание</th></tr></thead>
+<tbody>
+<tr><td>Первый ход: фиксированные Плюсы (отклонено)</td><td class="num">39.2</td><td class="num">34.0</td><td class="num">25.4</td><td>Сильный перекос в Плюсы</td></tr>
+<tr><td><b>Первый ход: случайный</b> <span class="badge canon">принято</span></td><td class="num">35.9</td><td class="num">33.4</td><td class="num">29.3</td><td>Лучший баланс эталонного сета</td></tr>
+<tr><td>Передача: <b>random</b> (любому из двух) <span class="badge canon">канон</span></td><td class="num">32.4</td><td class="num">35.8</td><td class="num">31.2</td><td>Близко к эталону</td></tr>
+<tr><td>Передача: repeat (не тому же получателю)</td><td class="num">26.8</td><td class="num">30.0</td><td class="num">42.8</td><td>Перекос в Нули — не канон</td></tr>
+<tr><td>Передача: back (не возвращать ход назад)</td><td class="num">19.5</td><td class="num">38.3</td><td class="num">41.5</td><td>Перекос в Минусы — не канон</td></tr>
+</tbody>
+</table>
+
+<h3>4.3 Длина партии и выбывания королей</h3>
+<figure>
+<svg class="chart" width="100%" height="220" viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg">
+<text x="30" y="20" fill="#a9b0cc" font-size="12">Убийств Линейного (% партий) и средняя длина (полуходов)</text>
+<g fill="#c9a227"><rect x="100" y="110" width="60" height="70"/><rect x="260" y="160" width="60" height="20"/><rect x="420" y="200" width="60" height="0"/><rect x="580" y="200" width="60" height="0"/></g>
+<g fill="#7aa2ff"><rect x="100" y="150" width="60" height="30"/><rect x="260" y="170" width="60" height="10"/><rect x="420" y="200" width="60" height="0"/><rect x="580" y="200" width="60" height="0"/></g>
+<text x="130" y="205" text-anchor="middle" fill="#a9b0cc" font-size="11">Стрелка + Длинный</text>
+<text x="290" y="205" text-anchor="middle" fill="#a9b0cc" font-size="11">Передача + Основной</text>
+<text x="450" y="205" text-anchor="middle" fill="#a9b0cc" font-size="11">Цикл + Основной</text>
+<text x="610" y="205" text-anchor="middle" fill="#a9b0cc" font-size="11">Цикл + Длинный</text>
+<text x="130" y="105" text-anchor="middle" fill="#161823" font-size="10" font-weight="700">21.75</text>
+<text x="290" y="155" text-anchor="middle" fill="#161823" font-size="10" font-weight="700">10.75</text>
+<text x="450" y="195" text-anchor="middle" fill="#161823" font-size="10" font-weight="700">3</text>
+<text x="610" y="195" text-anchor="middle" fill="#161823" font-size="10" font-weight="700">3</text>
+</svg>
+<figcaption>Золото — % убитых Линейных, синий — средняя длина партии. В Длинном режиме выбывание короля — полноценная механика, а не конец партии.</figcaption>
+</figure>
+
+<h3>4.4 Метрики встроенного ИИ v1.3c (400 партий, Стрелка + Длинный)</h3>
+<table>
+<thead><tr><th>Метрика</th><th class="num">Значение</th><th>Вывод</th></tr></thead>
+<tbody>
+<tr><td>Пустые поддержки</td><td class="num">0 %</td><td>ИИ не тратит ход на поддержку самого себя</td></tr>
+<tr><td>Осцилляции (ход туда-обратно)</td><td class="num">2.0 %</td><td>Анти-осцилляционный штраф работает</td></tr>
+<tr><td>Повтор одной фигуры подряд</td><td class="num">22.7 %</td><td>Допустимо, но поле для улучшения</td></tr>
+<tr><td>Ничьи</td><td class="num">1.8 %</td><td>Следуют от инертного «Ц», а не от ошибок ИИ</td></tr>
+</tbody>
+</table>
+<div class="okbox"><b>Итог §4:</b> 10-фигурный флот с лимитом 90 и случайным первым ходом в «Стрелке» даёт наиболее сбалансированный винрейт (35.9 / 33.4 / 29.3). Цикл оставлен как исторический режим; «Передача» — рабочая альтернатива (32.4 / 35.8 / 31.2).</div>
+
+<section id="llm">
+<h2>5. LLP-арена: модели против встроенного ИИ</h2>
+<h3>5.1 Архитектура матча</h3>
+<p>Каждая фракция управляется своей моделью через постоянные субагенты (<code>subagent</code> с параметром <code>model</code>, проверено на <code>opencode/iceman-free</code>). Оркестратор присылает в сессию компактное состояние доски, список легальных действий (<code>move</code>, <code>support</code>, <code>skip</code>) и требует ответа только в формате JSON. Нелегальный ответ или ошибка — ретрай с текстом ошибки (до 2 попыток), затем применяется ход и пишется лог.</p>
+<div class="code">{&quot;kind&quot;:&quot;move&quot;,&quot;pieceId&quot;:&quot;P-D7&quot;,&quot;to&quot;:{&quot;q&quot;:2,&quot;r&quot;:-2}}
+{&quot;kind&quot;:&quot;support&quot;,&quot;zeroId&quot;:&quot;Z-F27&quot;,&quot;targetId&quot;:&quot;Z-C25&quot;}
+{&quot;kind&quot;:&quot;skip&quot;}</div>
+
+<h3>5.2 Турнир фракций (результаты)</h3>
+<table>
+<thead><tr><th>Модель</th><th class="num">Побед</th><th class="num">Осцилляций</th><th>Примечание</th></tr></thead>
+<tbody>
+<tr><td>GLM 5.3 Flash</td><td class="num">4</td><td class="num">—</td><td>Победитель турнира (+1.33 поправка к счёту)</td></tr>
+<tr><td>DeepSeek</td><td class="num">3</td><td class="num">2</td><td>Лучшая чистота ходов</td></tr>
+<tr><td>Beam Free</td><td class="num">1</td><td class="num">34</td><td>Слабейший: не доходит до центра, болтает фигуру</td></tr>
+</tbody>
+</table>
+
+<h3>5.3 Дуэль: победитель турнира против встроенного ИИ (3 партии)</h3>
+<table>
+<thead><tr><th>Партия</th><th>Фракция GLM</th><th>Победитель</th><th>Причина</th><th class="num">Ходов</th></tr></thead>
+<tbody>
+<tr><td>201</td><td>Плюсы</td><td>Минусы (ИИ)</td><td>hold</td><td class="num">32</td></tr>
+<tr><td>202</td><td>Минусы</td><td>Плюсы (ИИ)</td><td>limit</td><td class="num">40</td></tr>
+<tr><td>203</td><td>Нули</td><td>Плюсы (ИИ)</td><td>hold</td><td class="num">38</td></tr>
+</tbody>
+</table>
+<p><b>Итог дуэли: встроенный ИИ выиграл 3–0.</b></p>
+<table>
+<thead><tr><th>Метрика за 3 партии</th><th class="num">GLM</th><th class="num">Встроенный ИИ</th></tr></thead>
+<tbody>
+<tr><td>Действий</td><td class="num">34</td><td class="num">76</td></tr>
+<tr><td>Взятий</td><td class="num">1</td><td class="num">7</td></tr>
+<tr><td>Осцилляций</td><td class="num">3</td><td class="num">1</td></tr>
+<tr><td>Повтор одной фигуры</td><td class="num">76 %</td><td class="num">21 %</td></tr>
+<tr><td>Ходов на ворота / «Ц»</td><td class="num">6</td><td class="num">18</td></tr>
+<tr><td>Тиков на «Ц»</td><td class="num">2</td><td class="num">20</td></tr>
+</tbody>
+</table>
+<p class="small">GLM легально отыграл все партии, но не строит план на центр и повторяет одну фигуру в 76 % действий. ИИ стратегически сильнее в этом регламенте.</p>
+
+<h3>5.4 Доктрина Нулей (прогоны за фракцию Нули)</h3>
+<table>
+<thead><tr><th>Версия</th><th>П – Н – П</th><th class="num">Игр</th><th class="num">Загрязнено</th><th>Примечание</th></tr></thead>
+<tbody>
+<tr><td>v1</td><td>0 – 1 – 2</td><td class="num">3</td><td class="num">—</td><td>Сломан harness (список действий «поддержки первыми»)</td></tr>
+<tr><td>v2 (чистый)</td><td>1 – 0 – 4</td><td class="num">9</td><td class="num">4</td><td>Единственная чистая победа — удержанием (711)</td></tr>
+<tr><td>v2.1 (исправл. движок v1.3d)</td><td>1 – 0 – 5</td><td class="num">6</td><td class="num">0</td><td>725 — чистая победа удержанием; 0 illegal/integrity/stale</td></tr>
+<tr><td>Zero mix (10 игр)</td><td>4 – 0 – 6</td><td class="num">10</td><td class="num">0</td><td>40 % = ровно на уровне базы ИИ (40.5 / 40.0 %)</td></tr>
+<tr><td>Beam Zero (10 игр, v2)</td><td>1 – 0 – 9</td><td class="num">10</td><td class="num">0</td><td>69 % осцилляций — причина в исполнении, а не промпте</td></tr>
+<tr><td>v3 (3 модели, Arrow+Main 15)</td><td>4/10 · 3/10 · 3/7</td><td class="num">~27</td><td class="num">0</td><td>beam 40 %, iceman 30 %, mimo 43 %; осцилляции ≤ 3.6 %</td></tr>
+</tbody>
+</table>
+
+<section id="audit">
+<h2>6. Аудит багов P0/P1 и исправления (v1.3d)</h2>
+<p>Метод: чтение кода движка/ИИ/рекордера, точечные unit-проверки, replay 9 LLM-логов, headless-выборка 40+40 игр с integrity-guard. Play Mode не запускался (правила проекта).</p>
+<table>
+<thead><tr><th>ID</th><th>Баг</th><th>Статус</th><th>Исправление</th></tr></thead>
+<tbody>
+<tr><td><b>P0-1</b></td><td>Одношаговые фигуры уходят за доску (<code>legalMoves</code> не проверяет <code>isValidCell</code>)</td><td class="num">fixed</td><td><code>push</code> проверяет <code>isValidCell</code></td></tr>
+<tr><td><b>P0-2</b></td><td>Оттеснение через <code>applyMove</code> разрушает доску (атакующий исчезает, нуль на двух клетках)</td><td class="num">fixed</td><td>Атакующий остаётся, нуль сдвигается; <code>applyMove</code>/<code>applyDisplace</code>/recorder согласованы</td></tr>
+<tr><td><b>P0-3</b></td><td>Нули могут оттеснять нулей (§7 разрешает оттеснение только военной)</td><td class="num">fixed</td><td><code>displace</code> только для военных фигур</td></tr>
+<tr><td><b>P1-1</b></td><td>Залипшие щиты при дистанции &gt; 1</td><td class="num">fixed</td><td><code>validateSupports</code> сбрасывает неактуальные щиты</td></tr>
+<tr><td><b>P1-2</b></td><td><code>hold</code> перекрывает уже наступившую победу <code>king</code></td><td class="num">fixed</td><td>Тик не выполняется после победы</td></tr>
+<tr><td><b>P1-3</b></td><td>Оттеснение по осям q=0 / r=0</td><td class="num">fixed</td><td>Проверка <code>!(q===0 && r===0)</code></td></tr>
+<tr><td><b>P1-4</b></td><td>Replay оттеснения не восстанавливает доску</td><td class="num">fixed</td><td>Запись хранит <code>from/to</code> нуля, <code>attackerId/attackerPos</code></td></tr>
+</tbody>
+</table>
+<div class="okbox"><b>Вердикт аудита:</b> проверка <code>elio_engine_bugs.js</code> — все пункты <code>"ok": true</code>; на проверочной выборке 40+40 игр — 0 выходов за доску, 0 нарушений целостности, 5 легальных оттеснений на 40 игр.</div>
+</section>
+
+<section id="ui">
+<h2>7. UI/UX прототипа</h2>
+<h3>7.1 Дизайн-система</h3>
+<ul>
+<li>Цвета: фон #1a1a2e, панели #23234a, золото #c9a227, Плюсы #5b9bd5, Минусы #e05a5a, Нули #9aa0a6, текст #e8e8f0.</li>
+<li>Компоненты: карточка, золотая/серая кнопка, тост (справа внизу, 3 сек, очередь до 3), попап с оверлеем, переключатель 2D↔3D, подсветка ходов (пульсирующие сферы).</li>
+<li>Типографика: заголовки Georgia/serif золотом, основной текст Segoe UI 13px, лог моноширина 11px.</li>
+</ul>
+<h3>7.2 Взаимодействие</h3>
+<ul>
+<li>Клик по своей фигуре → пульсирующие маркеры ходов → клик по маркеру или целевому гексу (2D и 3D).</li>
+<li>Наведение → tooltip: тип, фракция, клетка, статус нуля, описание.</li>
+<li>Поддержка: клик по нулю → клик по цели щита. Оттеснение — как ход <code>displace</code>.</li>
+<li>Режимы: селекторы порядка хода, типа игры, удержания 1–5, лимита; кнопки Новая игра / Ход ИИ / Авто-игра / Стоп / Экспорт / Импорт / Replay; лог ходов с автопрокруткой.</li>
+</ul>
+<h3>7.3 Переключение 2D/3D</h3>
+<p>Один HTML-файл с двумя режимами: 2D (SVG) и 3D (Three.js). Состояние игры общее, не сбрасывается при переключении; позиции фигур синхронизируются. Переход: fade-out 300 мс → поворот камеры / перестройка → fade-in 300 мс.</p>
+
+<section id="variants">
+<h2>8. Варианты составов: 10 / 10+1 / 15 фигур</h2>
+<table>
+<thead><tr><th>Вариант</th><th class="num">Стрелка + Длинный</th><th class="num">Стрелка + Основной</th><th class="num">Передача + Основной</th><th class="num">Цикл + Основной</th><th>Статус</th></tr></thead>
+<tbody>
+<tr><td><b>10 фигур (канон)</b></td><td class="num">35.9 / 33.4 / 29.3</td><td class="num">—</td><td class="num">32.4 / 35.8 / 31.2</td><td class="num">25 / 35 / 39</td><td class="badge canon">канон v1.3</td></tr>
+<tr><td>10+1 пешка в C1</td><td class="num">25.5 / 28.5 / 42.5</td><td class="num">36.5 / 34 / 26</td><td class="num">32 / 30.5 / 37.5</td><td class="num">17.5 / 13.5 / 67</td><td class="badge warn">не сбалансирован</td></tr>
+<tr><td>15 фигур (+5 пешек)</td><td class="num">26 / 30.5 / 43</td><td class="num">30.5 / 32.5 / 36.5</td><td class="num">33 / 26 / 41</td><td class="num">20 / 13.5 / 66.5</td><td class="badge warn">тест, не канон</td></tr>
+</tbody>
+</table>
+<p class="small">Все цифры — Плюсы / Минусы / Нули (%). Чистый срез v1.3d для 15 фигур (400 Arrow+Main): 25.25 / 34.75 / 40.0 — Нули всё ещё 40 %.</p>
+<div class="warnbox"><b>Почему 10 фигур остаются каноном:</b> любая добавленная пешка усиливает борьбу за центр «Ц», а это выгоднее всего Нулям — их задача не убивать, а стоять и блокировать. В цикле перекос достигает 66–69 % в пользу Нулей. Варианты с пешками оставлены как тест-серия с кандидатами на фикс: 3 скитальца вместо 5, запрет скитальцам входа в «Ц», отмена обязательного первого хода пешкой.</div>
+</section>
+
+<section id="conclusions">
+<h2>9. Выводы и дорожная карта</h2>
+<h3>9.1 Что установлено</h3>
+<ul>
+<li>Канон игры отделил от книги: стрелка в сцене — выбор роли, а не порядка хода; нейтралитет нулей книгой не установлен (<code>BOOK_SCENE_NOTES.md</code>).</li>
+<li>Добавление Линкора и Бомбардира (v1.3) оживило короля: убийств выросло с 0/400 (v1.2) до 21.75 % в эталоне.</li>
+<li>Фикс инертного «Ц» и случайный первый ход в «Стрелке» дают лучший баланс: 35.9 / 33.4 / 29.3.</li>
+<li>Встроенный эвристический ИИ v1.3c превосходит тестируемые LLM в дуэли 3–0: LLM не планируют на центр и повторяют фигуры.</li>
+<li>Исправлены 3 P0-бага и ряд P1 (v1.3d); integrity-guard подтверждает 0 нарушений целостности на выборке.</li>
+<li>10 фигур / 30 очков — сбалансированный канон; варианты с пешками (10+1, 15) перекошены в Нули.</li>
+</ul>
+<h3>9.2 Дорожная карта</h3>
+<ol>
+<li>Перепрогнать баланс под правила v1.4 (удержание «Ц» по собственным ходам, порог 1–5).</li>
+<li>Протестировать правило «шах» — если 10.75 % убийств в Основном режиме покажутся случайностью.</li>
+<li>Добить баланс 15-фигурного варианта (кандидаты: −2 скитальца Нулям, запрет входа скитальцев в «Ц»).</li>
+<li>Продолжить LLP-арену: v3-промпт, большая выборка, чистый 400-партийный прогон p0.</li>
+<li>Вариант «Передача хода» уже в движке и UI (канон random); оставить repeat/back как опции, не канон.</li>
+</ol>
+</section>
+
+<section id="sources">
+<h2>10. Источники и файлы папки <code>docs/dev/elio/</code></h2>
+<table>
+<thead><tr><th>Файл</th><th>Содержание</th></tr></thead>
+<tbody>
+<tr><td><code>README.md</code></td><td>Индекс проекта, статус v1.4, быстрый старт, канон документов, список кода</td></tr>
+<tr><td><code>ELIO_RULES_FINAL.md</code></td><td>Правила v1.4 (канон): доска, флот, бой, «Ц» по собственным ходам, режимы, лимит, шпаргалка §15</td></tr>
+<tr><td><code>UNIT_TYPES_V13.md</code></td><td>Дизайн Линкора/Бомбардира, состав флота v1.3, результаты прогона 100+400 партий</td></tr>
+<tr><td><code>ANALYSIS_V13_400_GAMES.md</code></td><td>Баланс 400+ партий, фикс инертного «Ц», пасс-режимы, сравнение режимов</td></tr>
+<tr><td><code>ANALYSIS_15_PIECES.md</code></td><td>Тест «15 фигур» (пешки): 200×6, перекос Нулей 36.5–67 %</td></tr>
+<tr><td><code>ANALYSIS_11_PIECES.md</code></td><td>Тест «10+1 пешка в C1»: 200×6, C1 слишком централен, не канон</td></tr>
+<tr><td><code>LLM_ARENA.md</code></td><td>Турнир LLM (GLM/DeepSeek/Beam), дуэль LLM vs ИИ 3–0, архитектура матча</td></tr>
+<tr><td><code>LLM_ARENA_10PLUS1.md</code></td><td>DeepSeek 4.1 Flash в варианте 10+1 C1: 1–9 против ИИ</td></tr>
+<tr><td><code>AUDIT_V13D.md</code></td><td>P0/P1-аудит v1.3d: уход за доску, порча доски оттеснением, нули-оттеснители, щиты, king/hold</td></tr>
+<tr><td><code>AUDIT_V13C.md</code></td><td>Детальный аудит документация ↔ код (частично устарел)</td></tr>
+<tr><td><code>BOOK_SCENE_NOTES.md</code></td><td>Канон книги vs поздние интерпретации (сцена «Эльо», стр. 313–320)</td></tr>
+<tr><td><code>COORDINATE_SYSTEM.md</code></td><td>Радиальные коды клеток и осевые (q,r)</td></tr>
+<tr><td><code>ELIO_UI_DESIGN.md</code></td><td>Дизайн интерфейса 2D/3D прототипа</td></tr>
+<tr><td><code>balance/README.md</code></td><td>Headless-матрица 100×18 (1800 партий, 0 загрязнённых)</td></tr>
+<tr><td><code>archive/</code></td><td>Устаревшие v1.2-правила, аудиты, прототипы v2–v50, не канон</td></tr>
+<tr><td><code>llm_runs/</code></td><td>Сырые логи LLM-прогонов, аудит-скрипты, summary для графиков</td></tr>
+<tr><td><code>elio_engine.js</code> / <code>elio_ai.js</code> / <code>elio_recorder.js</code></td><td>Движок правил, эвристический ИИ, лог/export/import/replay</td></tr>
+<tr><td><code>elio.html</code> / <code>dist/index.html</code> / <code>elio_game_v51.html</code></td><td>Основной 2D/3D прототип, зеркало для публикации, старый 2D UI</td></tr>
+<tr><td><code>3d/</code>, <code>dist/3d/</code></td><td>Исходники доски/визуала (*.blend, *.fbx экспорт фигур Нулей)</td></tr>
+</tbody>
+</table>
+</section>
+
+<footer>
+Ресерч по мини-игре «Эльо» — проект «Project C: The Clouds», папка <code>docs/dev/elio/</code>. Все цитаты и цифры взяты из файлов папки; балансовые прогоны относительны к правилам v1.3 и требуют перепроверки под v1.4.
+</footer>
+</div>
+</body>
+</html>

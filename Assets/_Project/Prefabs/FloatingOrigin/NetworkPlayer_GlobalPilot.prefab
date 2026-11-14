@@ -98,6 +98,8 @@ MonoBehaviour:
   _carryYaw: 1
   _platformMissFramesToClear: 3
   _platformMinDelta: 0.0005
+  _platformMaxStepUp: 0.08
+  _platformMaxStepDown: 0.25
   _globalWindEnabled: 1
   _windDriftScale: 0.15
   _windSmoothTime: 0.5
@@ -178,11 +180,11 @@ MonoBehaviour:
   _animator: {fileID: 7681697311616221365}
   _bodyRenderer: {fileID: 7041824029282983363}
   _maleModel: {fileID: 919132149155446097, guid: 64d03e19a47344c4082d5f3794201498, type: 3}
-  _femaleModel: {fileID: 919132149155446097, guid: 8d8759fb497b71644bc3333cf392cd51, type: 3}
+  _femaleModel: {fileID: 919132149155446097, guid: 6f58e137ebb543247b3f4aae72bccda0, type: 3}
   _maleController: {fileID: 22100000, guid: 338e6f98c539c104ab75f7b10ca83003, type: 2}
   _femaleController: {fileID: 22100000, guid: 2b25a6d3b7b061943aaab184f6d4bea6, type: 2}
   _maleMaterial: {fileID: 2100000, guid: 2157c018de5d3c94b9dce93d2adf6326, type: 2}
-  _femaleMaterial: {fileID: 2100000, guid: 6406a184f850ae54ab555641691edbda, type: 2}
+  _femaleMaterial: {fileID: 0}
   _logWarnings: 1
 --- !u!114 &6524090672888431913
 MonoBehaviour:
@@ -200,6 +202,11 @@ MonoBehaviour:
   _deathY: 0
   _respawnDelay: 0.5
   _ownedShipRespawnRadius: 200
+  _rescueDropMin: 4
+  _rescueDropMax: 60
+  _rescueRadius: 12
+  _rescueFallSpeed: 2.5
+  _rescueCooldownSec: 20
   _debugLog: 1
 --- !u!114 &4043363323668554516
 MonoBehaviour:

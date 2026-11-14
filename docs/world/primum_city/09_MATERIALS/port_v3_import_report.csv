@@ -1,0 +1,13 @@
+phase,category,key,value,note
+remap,material,PRIMUM_PORT_V3.embedded,15,added=15; already=0
+remap,material,PRIMUM_PORT_V3.after,15,embedded=0; urpLit=0; null=0
+remap,material,PRIMUM_PORT_V3.embedded,0,added=0; already=0
+remap,material,PRIMUM_PORT_V3.after,15,embedded=0; urpLit=0; null=0
+verify,prefab,primum_port_v3,"MR=216; slots=216; mats=15; urpLit=0; null=0; submesh>4=0; rootScale=1,060; layer8=True; static=False; depth=2; objects=217; merged=26; standalone=3; other=188; size=1608.24x222.85x1600.41",
+verify,standalone,MD2_Deck_Blockout,OK,
+verify,standalone,LP2_Exact_Form_Sheets,OK,
+verify,standalone,UPPER_DOCK_Blockout_Deck,OK,
+verify,prefab,primum_port_v3,"MR=216; slots=216; mats=15; urpLit=0; null=0; submesh>4=0; rootScale=1,060; layer8=True; static=False; depth=2; objects=217; merged=26; standalone=3; other=188; size=1608.24x222.85x1600.41",
+verify,standalone,MD2_Deck_Blockout,OK,
+verify,standalone,LP2_Exact_Form_Sheets,OK,
+verify,standalone,UPPER_DOCK_Blockout_Deck,OK,

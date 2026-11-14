@@ -1,0 +1,10 @@
+phase,category,key,value,note
+remap,material,PRIMUM_PORT_V2.embedded,20,added=20; already=0
+remap,material,PRIMUM_PORT_V2.after,20,embedded=0; urpLit=0; null=0
+remap,material,PASSENGER_CANOPY_WAITING_AREA.embedded,7,added=7; already=0
+remap,material,PASSENGER_CANOPY_WAITING_AREA.after,7,embedded=0; urpLit=0; null=0
+remap,material,40_HUB_WAREHOUSE.embedded,12,added=12; already=0
+remap,material,40_HUB_WAREHOUSE.after,12,embedded=0; urpLit=0; null=0
+verify,prefab,primum_port_v2,"MR=249; slots=249; mats=20; urpLit=0; null=0; submesh>4=0; rootScale=1,060; layer8=True; static=False; depth=2; size=1608.24x222.85x1600.44",
+verify,prefab,PASSENGER_CANOPY_WAITING_AREA,"MR=14; slots=14; mats=7; urpLit=0; null=0; submesh>4=0; rootScale=1,060; layer8=True; static=False; depth=2; size=93.20x11.79x28.69",
+verify,prefab,40_HUB_WAREHOUSE,"MR=27; slots=35; mats=12; urpLit=0; null=0; submesh>4=0; rootScale=1,060; layer8=True; static=False; depth=2; size=119.88x24.57x73.02",

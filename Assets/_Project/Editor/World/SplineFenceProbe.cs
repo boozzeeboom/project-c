@@ -651,6 +651,125 @@ namespace ProjectC.EditorTools
                 Object.DestroyImmediate(strict);
             }
 
+            // ---------- T21: переопределение высоты, Bar ----------
+            {
+                var type = ScriptableObject.CreateInstance<FenceTypeDefinition>();   // height 1.9, postHeight 1.95
+
+                const float target = 1.4f;
+                var scaled = type.ResolveFor(target, 0f);
+
+                float k = target / 1.9f;
+                float expectedPost = 1.95f * k;
+                float expectedTopBar = 1.8f * k;
+
+                var spline = SplineFactory.CreateLinear(new[]
+                {
+                    new float3(0, 0, 0), new float3(10, 0, 0)
+                });
+
+                var path = FencePath.Build(spline, scaled.ToPathSettings());
+                var output = FenceStyleBuilder.Build(path, scaled);
+
+                var mesh = output.sections.Count > 0 ? output.sections[0].mesh : null;
+                Bounds b = mesh != null ? mesh.bounds : default;
+
+                bool ok = scaled != type
+                          && Mathf.Abs(scaled.height - target) < 1e-4f
+                          && Mathf.Abs(scaled.postHeight - expectedPost) < 1e-3f
+                          && Mathf.Abs(scaled.barTopY - expectedTopBar) < 1e-3f
+                          && Mathf.Abs(scaled.colliderHeight - target) < 1e-3f
+                          && Mathf.Abs(scaled.barSize - type.barSize) < 1e-6f
+                          && Mathf.Abs(scaled.postSpacing - type.postSpacing) < 1e-6f
+                          && Mathf.Abs(type.height - 1.9f) < 1e-6f
+                          && Mathf.Abs(type.postHeight - 1.95f) < 1e-6f
+                          && Mathf.Abs(b.max.y - expectedPost) < 0.02f
+                          && output.colliders.Count == 9;
+
+                Check("T21 Bar: высота 1.4 м через переопределение", ok,
+                    $"k={k:F4}, height {scaled.height:F3}, postHeight {scaled.postHeight:F3} (ожидали {expectedPost:F3}), " +
+                    $"barTopY {scaled.barTopY:F3} (ожидали {expectedTopBar:F3}), bounds.max.y {b.max.y:F3}, " +
+                    $"barSize {scaled.barSize:F4} (профиль не тронут), тип цел: height {type.height:F2}/postHeight {type.postHeight:F2}, " +
+                    $"коллайдеров {output.colliders.Count}");
+
+                output.ReleaseMeshes();
+                Object.DestroyImmediate(scaled);
+                Object.DestroyImmediate(type);
+            }
+
+            // ---------- T22: переопределение высоты, Masonry ----------
+            {
+                var type = MakeMasonry();   // height 1.35, postHeight 1.55, capHeight 0.06
+
+                const float target = 2.0f;
+                var scaled = type.ResolveFor(target, 0f);
+
+                float k = target / 1.35f;
+                float expectedTop = 1.55f * k + 0.06f;
+
+                var spline = SplineFactory.CreateLinear(new[]
+                {
+                    new float3(0, 0, 0), new float3(10, 0, 0)
+                });
+
+                var path = FencePath.Build(spline, scaled.ToPathSettings());
+                var output = FenceStyleBuilder.Build(path, scaled);
+
+                var mesh = output.sections.Count > 0 ? output.sections[0].mesh : null;
+                Bounds b = mesh != null ? mesh.bounds : default;
+
+                float wallHeight = 0f;
+                for (int i = 0; i < output.colliders.Count; i++)
+                {
+                    FenceBoxSpec spec = output.colliders[i];
+                    if (spec.name != null && spec.name.StartsWith("BC_wall")) wallHeight = spec.size.y;
+                }
+
+                bool ok = scaled != type
+                          && Mathf.Abs(scaled.height - target) < 1e-4f
+                          && Mathf.Abs(b.max.y - expectedTop) < 0.02f
+                          && Mathf.Abs(wallHeight - target) < 1e-3f
+                          && Mathf.Abs(type.height - 1.35f) < 1e-6f
+                          && Mathf.Abs(type.thickness - 0.25f) < 1e-6f;
+
+                Check("T22 Masonry: высота 2.0 м через переопределение", ok,
+                    $"k={k:F4}, стена {scaled.height:F3} м, коллайдер стены {wallHeight:F3} м, " +
+                    $"bounds.max.y {b.max.y:F3} (ожидали {expectedTop:F3} = столб + оголовок), " +
+                    $"толщина {scaled.thickness:F3} (профиль не тронут), тип цел: height {type.height:F2}/thickness {type.thickness:F2}");
+
+                output.ReleaseMeshes();
+                Object.DestroyImmediate(scaled);
+                Object.DestroyImmediate(type);
+            }
+
+            // ---------- T23: переопределение шага секции ----------
+            {
+                var type = ScriptableObject.CreateInstance<FenceTypeDefinition>();   // postSpacing 2.5
+                var scaled = type.ResolveFor(0f, 1.2f);
+
+                var spline = SplineFactory.CreateLinear(new[]
+                {
+                    new float3(0, 0, 0), new float3(10, 0, 0)
+                });
+
+                var path = FencePath.Build(spline, scaled.ToPathSettings());
+                var output = FenceStyleBuilder.Build(path, scaled);
+
+                // шаг 1.2 на 10 м: столбы 0, 1.2 … 9.6 и торец 10 → 10 столбов + 9 панелей
+                bool ok = scaled != type
+                          && Mathf.Abs(scaled.postSpacing - 1.2f) < 1e-4f
+                          && Mathf.Abs(type.postSpacing - 2.5f) < 1e-6f
+                          && output.sections.Count == 1
+                          && output.colliders.Count == 19;
+
+                Check("T23 Bar: шаг секции 1.2 м через переопределение", ok,
+                    $"postSpacing {scaled.postSpacing:F2} (в типе {type.postSpacing:F2}), секций {output.sections.Count}, " +
+                    $"коллайдеров {output.colliders.Count} (ожидали 19 = 10 столбов + 9 панелей)");
+
+                output.ReleaseMeshes();
+                Object.DestroyImmediate(scaled);
+                Object.DestroyImmediate(type);
+            }
+
             sb.AppendLine();
             sb.AppendLine($"ИТОГО: PASS {pass}, FAIL {fail}");
             return sb.ToString();

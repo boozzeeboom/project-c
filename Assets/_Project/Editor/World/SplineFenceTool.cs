@@ -120,8 +120,7 @@ namespace ProjectC.EditorTools
                 if (fence == null) fence = go.GetComponentInParent<SplineFence>();
                 if (fence == null) continue;
 
-                RemoveGenerated(fence);
-                DeleteGeneratedFolder(GeneratedFolder(fence));
+                Remove(fence);
                 count++;
             }
 
@@ -131,8 +130,21 @@ namespace ProjectC.EditorTools
                 return;
             }
 
-            AssetDatabase.SaveAssets();
             Debug.Log($"[Fence] Сгенерированное снесено у {count} забор(ов).");
+        }
+
+        /// <summary>Сносит сгенерированное одного забора: объекты из сцены + папку мешей. Без диалогов.</summary>
+        public static void Remove(SplineFence fence)
+        {
+            if (fence == null) return;
+
+            RemoveGenerated(fence);
+            DeleteGeneratedFolder(GeneratedFolder(fence));
+
+            AssetDatabase.SaveAssets();
+            EditorSceneManager.MarkSceneDirty(fence.gameObject.scene);
+
+            Debug.Log($"[Fence] «{fence.name}»: сгенерированное снесено.");
         }
 
         // ============================================================
@@ -163,10 +175,26 @@ namespace ProjectC.EditorTools
                 sb.AppendLine($"[Fence] ⚠ {fence.name}: масштаб корня {scale.x:F3}/{scale.y:F3}/{scale.z:F3} ≠ 1 — " +
                               "процедурные графы (object space) поплывут, коллайдеры разъедутся с мешем.");
 
-            FencePath path = fence.BuildPath();
-            FenceBuildOutput output = FenceStyleBuilder.Build(path, fence.type);
+            FenceTypeDefinition type = fence.ResolveType(out bool transient);
+            FencePath path;
+            FenceBuildOutput output;
 
-            sb.AppendLine($"[Fence] {fence.name} → {fence.type.name}: прогонов {path.runs.Count}, " +
+            try
+            {
+                path = fence.BuildPath(type);
+                output = FenceStyleBuilder.Build(path, type);
+            }
+            finally
+            {
+                // Временная копия типа живёт только на время сборки (FenceTypeDefinition.ResolveFor).
+                if (transient) Object.DestroyImmediate(type);
+            }
+
+            string hNote = fence.heightOverride > 0.0005f ? " (переопределено)" : "";
+            string sNote = fence.sectionStepOverride > 0.0005f ? " (переопределено)" : "";
+
+            sb.AppendLine($"[Fence] {fence.name} → {fence.type.name}: высота {fence.EffectiveHeight:F2} м{hNote}, " +
+                          $"шаг секции {fence.EffectiveSectionStep:F2} м{sNote}, прогонов {path.runs.Count}, " +
                           $"источник {path.TotalRunLength:F2} м, секций {output.sections.Count}, " +
                           $"квадов {output.TotalQuads}, треугольников {output.TotalTriangles}, " +
                           $"бокс-коллайдеров {output.colliders.Count}");
@@ -511,7 +539,7 @@ namespace ProjectC.EditorTools
             return null;
         }
 
-        private static FenceTypeDefinition FindDefaultType()
+        public static FenceTypeDefinition FindDefaultType()
         {
             var direct = AssetDatabase.LoadAssetAtPath<FenceTypeDefinition>($"{TypeFolder}/FT_Fence_Bar_Steel.asset");
             if (direct != null) return direct;

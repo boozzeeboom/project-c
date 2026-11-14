@@ -1,9 +1,9 @@
 # 🧱 Spline Fence — генеративный забор по сплайну
 
-**Версия:** 0.2 — дизайн + шаг 1 реализован (2026-11-14)
-**Статус:** ✅ `FencePath` + self-check 12/12 (Play Mode не запускался). Остальное — дизайн.
+**Версия:** 0.3 — реализованы оба типа, краш-фикс, инспектор и переопределения габаритов (2026-11-14)
+**Статус:** ✅ `FencePath` + `Bar` + `Masonry` + editor-инструмент + инспектор; self-check 25/25 (Play Mode не запускался).
 **Рабочая сцена:** `Assets/_Project/Scenes/World/WorldScene_0_0.unity`
-**План меню:** `Tools → ProjectC → World → Spline Fence/…`
+**Как работать:** выделить сплайн с `SplineFence` → инспектор: тип, высота, шаг секции, `ПЕРЕСОБРАТЬ` (§11)
 
 ---
 
@@ -59,6 +59,7 @@
 | Данные типа | `FenceTypeDefinition : ScriptableObject` | Переключение типа = смена ссылки + пересборка. |
 | Адаптивность к углам | **одна метрика «угол излома»**, без пользовательского переключателя | §5. |
 | Коллайдер | `BoxCollider` на панель + на столб, всё в группе `<Fence>_COLLIDER` | §8. |
+| Где задавать высоту и шаг секции | **переопределения на `SplineFence`** (0 = из типа), ассет типа не правится | Один тип на много заборов: правка ассета ради одного забора меняла бы все (§10). |
 
 ---
 
@@ -80,8 +81,9 @@ Assets/_Project/Data/World/Fences/
   FT_Fence_Brick_Block.asset
 
 Assets/_Project/Editor/World/
-  SplineFenceTool.cs    — меню + публичный static API для MCP/CI
-  SplineFenceWindow.cs  — окно: тип, параметры, Rebuild, Dry Run
+  SplineFenceTool.cs    — меню + публичный static API для MCP/CI (Rebuild / Remove)
+  SplineFenceEditor.cs  — инспектор SplineFence: высота, шаг секции, кнопки пересборки
+  SplineFenceProbe.cs   — self-check (T1–T23), меню «0»
 
 Assets/_Project/Generated/Fences/<FenceName>/
   <FenceName>_<section>_mesh.asset
@@ -134,8 +136,9 @@ public class SplineFence : MonoBehaviour
     public FenceTypeDefinition type;
     public int splineIndex = 0;
     public float groundOffset = 0f;
-    public LayerMask groundMask = ~0;
-    public bool autoRebuildOnSplineChange = false;
+    public int colliderLayer;
+    public float heightOverride = 0f;        // 0 — из типа (§11)
+    public float sectionStepOverride = 0f;   // 0 — из типа (§11)
     public string fenceId = "";   // имя ассетов; пусто → имя GameObject
 }
 ```
@@ -401,28 +404,45 @@ if (Physics.Raycast(p + Vector3.up * 50f, Vector3.down, out var hit, 200f, groun
 
 ## 11. Editor UX
 
-**Меню**
+**Меню** (остаётся для пакетных операций и для скриптов/MCP):
 
 ```
-Tools/ProjectC/World/Spline Fence/1. Создать забор из выделенного сплайна     (приоритет 860)
-Tools/ProjectC/World/Spline Fence/2. Пересобрать выделенные                  (861)
-Tools/ProjectC/World/Spline Fence/3. Пересобрать все в сцене                 (862)
-Tools/ProjectC/World/Spline Fence/4. Dry Run (лог без изменений)             (863)
-Tools/ProjectC/World/Spline Fence/5. Снести сгенерированное                  (864)
+Tools/ProjectC/World/Spline Fence/0. Self-check FencePath (лог)                (859)
+Tools/ProjectC/World/Spline Fence/1. Создать забор из выделенного сплайна     (881)
+Tools/ProjectC/World/Spline Fence/2. Пересобрать выделенные                 (882)
+Tools/ProjectC/World/Spline Fence/3. Сухой прогон (без записи в сцену)      (883)
+Tools/ProjectC/World/Spline Fence/5. Снести сгенерированное                 (885)
 ```
 
-**Окно `SplineFenceWindow`** (UI Toolkit — в проекте UI по умолчанию):
-`SplineFence` (readonly, из выделения) · dropdown типа · поля параметров · `Rebuild` / `Dry Run` · сводка: секций, трис, боксов, предупреждения (узкие радиусы, шпильки, масштаб ≠ 1).
+**Инспектор `SplineFence`** — основной способ работы (`Assets/_Project/Editor/World/SplineFenceEditor.cs`, IMGUI, как `BuildSettlementCollidersWindow` и `DialogTreeEditor`). Отдельное окно не понадобилось: окно надо держать открытым и оно теряет объект при смене выделения, а инспектор уже висит на самом сплайне, не закрывается и стоит ровно там, где меняются числа.
+
+* **Тип / Сплайн / Смещение Y** — параметры сборки; если тип не задан — кнопка «Подставить тип по умолчанию».
+* **Высота, м** и **Шаг секции, м** — переопределения конкретного забора; под каждым подпись «итог … · в типе …».
+* **ПЕРЕСОБРАТЬ** / **Сухой прогон** / **Снести сгенерированное** — без похода в Tools, работают и на мультивыделении.
+* **Пересобирать сразу при правке полей** — галочка в `EditorPrefs` (`ProjectC.SplineFence.AutoRebuild`), по умолчанию выключена: на 100 м забора пересборка занимает доли секунды, и тянуть её на каждый шаг драга мышью нельзя. Пересборка на правку идёт только на настоящем событии ввода, не на `Layout`/`Repaint`.
+* **Сводка**: сколько секций и боксов уже лежит в сцене, ошибка при `lossyScale ≠ 1`, текст последней операции.
+* В Play Mode кнопки заблокированы: меши — ассеты, в рантайме генерация не живёт.
+
+**Переопределения высоты и шага.** Ассет типа общий на все заборы (§10), поэтому править его ради одного забора нельзя. `SplineFence.ResolveType(out transient)` зовёт `FenceTypeDefinition.ResolveFor(height, step)`: если переопределять нечего (0 или совпадает с типом) — возвращается сам ассет, иначе — **временная копия** с `HideFlags.HideAndDontSave`, которую `SplineFenceTool.Rebuild` уничтожает в `finally`.
+
+| Поле | Что делает |
+|---|---|
+| `heightOverride` | `k = высота / type.height`; умножаются на `k`: `height`, `postHeight`, `colliderHeight`, `railTopY`, `railBottomY`, `midRailY`, `barTopY`, `barBottomY`. Полотно, столбы, балки, прутки и высота коллайдера садятся на новую высоту пропорционально. **Не** масштабируются толщины и сечения — `postSize`, `railSize`, `barSize`, `barSpacing`, `thickness`, `copingHeight`, `capHeight`, `capSize`: это профиль, а не габарит, забор 1,4 м не должен получить балку 3 см. |
+| `sectionStepOverride` | `postSpacing` копии. Он же — `FencePathSettings.maxStep` (§4.3), то есть шаг кадров пути; поэтому путь и раскладка столбов сходятся при любом шаге. |
+
+Обе величины зажимаются в `SplineFence.OnValidate` (`0` остаётся `0`; иначе 0,3…8 м высоты и 0,2…12 м шага): высота 5 см или шаг 200 м дают молчаливый мусор — вывернутые балки и бесконечную раскладку.
+
+**Переопределение не отменяет адаптивность.** На дуге `Masonry` всё равно ставит лишний столб по `panelChordError` (§5.4), а `Bar` гнёт балки по кадрам (§5.4). Шаг — это верхняя граница, а не приказ.
 
 **Идемпотентность.** «Сгенерированное» = всё, что помечено `FenceSection` (или лежит в `<Fence>_COLLIDER`). Rebuild: собрать в память → валидировать → только потом снести старое и создать новое (не оставить пользователя с пустым забором при ошибке). `Undo.RecordObject` на `SplineFence`, `EditorSceneManager.MarkSceneDirty`, `AssetDatabase` для мешей.
 
-**Автопересборка** — опция `autoRebuildOnSplineChange`, подписка на `Spline.Changed` (событие пакета, `SplineContainer.cs:194`) с дебаунсом; по умолчанию выключена (пересборка на каждый сдвиг узла в тяжёлой сцене — не то, что нужно).
+**Автопересборка по изменению сплайна** — ⏳ опция `autoRebuildOnSplineChange` (подписка на `Spline.Changed`, `SplineContainer.cs:194`, с дебаунсом); пока не сделана — после правки узлов жмите `ПЕРЕСОБРАТЬ` в инспекторе. Автопересборка на правку **полей инспектора** уже есть (см. выше).
 
 **Публичный API для MCP/CI** (как `CombineMeshesToCollider.CombineInto`):
 
 ```csharp
 SplineFenceTool.Rebuild(SplineFence fence, bool dryRun = false);   // без диалогов
-SplineFenceTool.RebuildAllInScene(bool dryRun = false);
+SplineFenceTool.Remove(SplineFence fence);                         // сцена + папка мешей
 ```
 
 ---
@@ -465,6 +485,9 @@ SplineFenceTool.RebuildAllInScene(bool dryRun = false);
 | Сцена | только `WorldScene_0_0.unity`; новых сцен и дублей не создавать |
 | **Два забора с одним именем** → один `EffectiveId` → один путь мешей: второй забор сносил папку и уносил меши первого | уникальный id через `ResolveGeneratedId` (суффикс `_2` в `fence.fenceId`), см. §10 |
 | **Пересборка через `DeleteAsset` папки** → живой `MeshRenderer` остаётся с уничтоженным мешем → culling-джоб Burst падает (`Key: EntityId is not present in the NativeParallelHashMap`, `CullingJob`, `burst_abort`) и редактор умирает | меши обновлять на месте, объекты сносить ДО ассетов; в проекте включён GPU Resident Drawer (`ProjectC_URP.asset: m_GPUResidentDrawerMode: 1`), а BRG такой рендерер не переносит (в логе 13-11 тот же дефект виден текстом: `BatchDrawCommand ... MeshID: <null>`) |
+| **`height` в типе `Bar` ничего не двигает**: балки и прутки заданы абсолютными `railTopY`/`barTopY`/`postHeight` | высоту менять в инспекторе забора (`heightOverride` → пропорциональный `ScaleHeight`), а не в ассете типа. Для `Masonry` `height` — реальная высота полотна |
+| Временная копия типа (`FenceTypeDefinition.ResolveFor`) | она с `HideFlags.HideAndDontSave` и в иерархии не видна; если её не уничтожить — течёт до перезагрузки домена. `SplineFenceTool.Rebuild` убивает её в `finally` — не переносите вызов `Build` из этого блока |
+| Пересборка из `OnInspectorGUI` | только на настоящем событии ввода и только по галочке: на `Layout`/`Repaint` это лишние сборки мешей на каждый кадр инспектора |
 
 Play Mode не запускаю: визуальную проверку делает пользователь.
 
@@ -501,7 +524,7 @@ Play Mode не запускаю: визуальную проверку дела�
    * Меши пишутся в `Assets/_Project/Generated/Fences/<id>/`, коллайдеры в `<id>_COLLIDER`; пересборка идемпотентна (маркер `FenceSection` + пересоздание папки, чужие объекты не трогаются).
    * Ассет типа: `Assets/_Project/Data/World/Fences/FT_Fence_Bar_Steel.asset` (`primary` = `M_PC_Steel_v2`, `secondary` = `M_PC_Steel_v2_Dark`).
    * Замеры (17/17 PASS в self-check): прямая 10 м — 1116 трис, 5 столбов + 4 панели = 9 боксов, bounds `x −0.03…10.03`, `y 0…1.95`, `z ±0.03`; 90° — 2 секции, 19 боксов, столб в узле, торец подрезан; круг R=10 — один столб в шве (52 бокса); дуга R=8 — 6576 трис на 50.3 м (~13k/100 м); UV метричные (`maxU` 2.50 м = шаг кадра, `maxV` 2.50 м), 4 вершины на квад, NaN нет.
-4. ⏳ Коллайдеры `<Fence>_COLLIDER` + idempotent Rebuild — сделано; осталось окно `SplineFenceWindow` и снос/пересборка «всех заборов в открытых сценах».
+4. ✅ Коллайдеры `<Fence>_COLLIDER` + идемпотентный Rebuild — сделано. Пересборка/снос «всех заборов в открытых сценах» — ⏳ не сделано (отдельное окно не понадобилось, см. §11 и шаг 7).
 5. ✅ `MasonryFenceStyle` + правило секций/панелей (§7.2, §7.3) + `FT_Fence_Brick_Block.asset`.
    * `Assets/_Project/Scripts/World/Generation/SplineFence/MasonryFenceStyle.cs` — раскладка (столбы по стрелке хорды, привязка к `brickCell`), секции с собственной ориентацией, шапка/оголовки, боксы на столб и на панель. Подробно — §7.4.
    * `FenceTypeDefinition.cs` — поля кирпичного блока: `brickScale` 5.8, `panelChordError` 0.02, `sectionAlignDeg` 1, `copingHeight` 0.06, `copingOverhang` 0.025, `capSize` 0.45, `capHeight` 0.06 (+ клампы в `OnValidate`).
@@ -521,7 +544,17 @@ Play Mode не запускаю: визуальную проверку дела�
    * `CopyMeshData` — меш-ассет обновляется на месте (`Clear` + `SetVertices/SetNormals/SetUVs/SetTriangles`, `SetDirty`), `Object.DestroyImmediate` только на свежесобранном меше после копирования.
    * `DeleteOrphanAssets(folder, used)` — сироты секций удаляются в конце; `used = null` — «всё в папке» (случай «секций нет» — теперь сцена очищается, а не остаётся со старым забором).
    * Замер регресса (два забора с именем `FenceDup`, Bar, 6 м): первый — id `FenceDup`, `guid 678b3b42…`, `meshEntity 568105589213314132`; второй — авто `FenceDup_2`, своя папка, `guid 90bcb9df…`, первый при этом не тронут; пересборка первого с лишним узлом (2 прогона, 11.91 м) — «обновлено на месте 1, создано 1», `guid` и `meshEntity` те же, `verts` изменились 1392→1368, меш второго не тронут. После сноса — 0 заборов, 0 папок.
-7. ⏳ Проход по факту: масштаб корня, дуга R = 10 м, 90°, шпилька, рельеф; замер трис/DC. (Кирпич и прут уже прогнаны в edit mode — осталось посмотреть глазами в сцене и на реальном рельефе.)
+7. ✅ Инспектор `SplineFence` + переопределения высоты и шага секции (§11) — вместо похода в Tools на каждую правку.
+   * `Assets/_Project/Editor/World/SplineFenceEditor.cs` — IMGUI-инспектор (`[CustomEditor(typeof(SplineFence))]`, `CanEditMultipleObjects`): тип/сплайн/смещение, поля высоты и шага с подписью «итог · в типе», кнопки `ПЕРЕСОБРАТЬ` / `Сухой прогон` / `Снести сгенерированное`, галочка авто-пересборки (`EditorPrefs`), сводка сцены и ошибка при `lossyScale ≠ 1`.
+   * `FenceTypeDefinition.ResolveFor(height, step)` — временная копия типа с `HideFlags.HideAndDontSave` (или сам ассет, если переопределять нечего) + `ScaleHeight`: пропорциональный `k` для `height`, `postHeight`, `colliderHeight`, `railTopY/BottomY`, `midRailY`, `barTopY/BottomY`; толщины и сечения не трогаются.
+   * `SplineFence` — поля `heightOverride`, `sectionStepOverride` (0 = из типа), `ResolveType(out transient)`, `EffectiveHeight/EffectiveSectionStep`, клампы в `OnValidate`; `BuildPath` теперь принимает уже разрешённый тип (шаг тесселяции = `postSpacing` с переопределением).
+   * `SplineFenceTool` — `Rebuild` разрешает тип в `try/finally` и пишет в лог «высота X м (переопределено), шаг секции Y м»; `Remove(fence)` стал публичным (сцена + папка мешей).
+   * Замеры (self-check 25/25, T21–T23 — переопределения):
+     * T21 `Bar` высота 1,4 м — `k=0,7368`, `postHeight` 1,437, `barTopY` 1,326, `bounds.max.y` 1,437, `barSize` 0,012 (профиль цел), тип не мутирован (1,90/1,95), 9 боксов.
+     * T22 `Masonry` высота 2,0 м — `k=1,4815`, стена и `BC_wall.size.y` = 2,000, `bounds.max.y` 2,356 (= столб 2,296 + оголовок 0,06), толщина 0,25 цела.
+     * T23 `Bar` шаг 1,2 м — `postSpacing` 1,20 (в типе 2,50), 10 столбов + 9 панелей = 19 боксов.
+     * Живая сборка (`BootstrapScene`, edit mode, без Play): забор 10 м с `heightOverride` 1,4 и шагом 1,2 — `bounds.max.y` 1,437, 19 боксов, папка `Generated/Fences/FenceCfgProbe`; затем правка на 2,1 м и шаг 0 → «обновлено на месте 1, создано 0», `bounds.max.y` 2,155, 9 боксов, **GUID меш-ассета тот же** (`b245cfee…`); снос — папки нет. Сцена не сохранялась.
+8. ⏳ Проход по факту: масштаб корня, дуга R = 10 м, 90°, шпилька, рельеф; замер трис/DC. (Кирпич и прут уже прогнаны в edit mode — осталось посмотреть глазами в сцене и на реальном рельефе.)
 
 ---
 

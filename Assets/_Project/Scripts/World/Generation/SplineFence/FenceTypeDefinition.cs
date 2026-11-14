@@ -33,7 +33,9 @@ namespace ProjectC.World.Generation
         public Material secondaryMaterial;
 
         [Header("Габариты")]
-        [Tooltip("Высота забора, м.")]
+        [Tooltip("Опорная высота типа, м. Masonry — высота полотна (стены). Bar — ТОЛЬКО номинал, от которого " +
+                 "считается переопределение высоты на SplineFence: балки и прутки заданы абсолютными Y " +
+                 "(railTopY/barTopY/postHeight), поэтому смена этого числа геометрию Bar не меняет.")]
         public float height = 1.9f;
 
         [Tooltip("Толщина полотна для коллайдера, м.")]
@@ -91,6 +93,69 @@ namespace ProjectC.World.Generation
         public float capSize = 0.45f;
 
         public float capHeight = 0.06f;
+
+        // ============================================================
+        // Переопределения конкретного забора
+        // ============================================================
+
+        /// <summary>Границы высоты, м. Ниже 0.3 — уже не забор, выше 8 — уже стена.</summary>
+        public const float MinHeight = 0.3f;
+        public const float MaxHeight = 8f;
+
+        /// <summary>Границы шага секции (расстояния между столбами), м.</summary>
+        public const float MinSectionStep = 0.2f;
+        public const float MaxSectionStep = 12f;
+
+        /// <summary>
+        /// Тип с переопределениями ОДНОГО забора (<see cref="SplineFence.heightOverride"/> /
+        /// <see cref="SplineFence.sectionStepOverride"/>).
+        ///
+        /// Если переопределять нечего (0 или совпадает с типом) — возвращает сам ассет. Иначе — временную
+        /// копию с <see cref="HideFlags.HideAndDontSave"/>: ассет типа общий на все заборы, и править его
+        /// ради одного забора нельзя. Копию обязан уничтожить вызывающий (`Object.DestroyImmediate`).
+        /// </summary>
+        public FenceTypeDefinition ResolveFor(float heightMeters, float stepMeters)
+        {
+            bool changeHeight = heightMeters > 0.0005f && Mathf.Abs(heightMeters - height) > 0.0005f;
+            bool changeStep = stepMeters > 0.0005f && Mathf.Abs(stepMeters - postSpacing) > 0.0005f;
+
+            if (!changeHeight && !changeStep) return this;
+
+            FenceTypeDefinition copy = Instantiate(this);
+            copy.name = name + " (переопределение)";
+            copy.hideFlags = HideFlags.HideAndDontSave;
+
+            if (changeStep)
+                copy.postSpacing = Mathf.Clamp(stepMeters, MinSectionStep, MaxSectionStep);
+
+            if (changeHeight)
+                copy.ScaleHeight(Mathf.Clamp(heightMeters, MinHeight, MaxHeight));
+
+            return copy;
+        }
+
+        /// <summary>
+        /// Тянет вертикальные размеры пропорционально новой высоте: k = target / height.
+        ///
+        /// Масштабируются только высоты и Y-координаты (полотно, столбы, балки, прутки, высота коллайдера).
+        /// Сечения и толщины — postSize, railSize, barSize, barSpacing, thickness, copingHeight, capHeight,
+        /// capSize — остаются как есть: это профиль, а не габарит. Забор 1.4 м не должен получить балку 3 см.
+        /// </summary>
+        private void ScaleHeight(float targetHeight)
+        {
+            float k = targetHeight / Mathf.Max(0.05f, height);
+
+            height = targetHeight;
+            colliderHeight *= k;
+            postHeight *= k;
+
+            railBottomY *= k;
+            railTopY *= k;
+            midRailY *= k;
+
+            barBottomY *= k;
+            barTopY *= k;
+        }
 
         /// <summary>Геометрические параметры извлечения пути из этого типа.</summary>
         public FencePathSettings ToPathSettings()

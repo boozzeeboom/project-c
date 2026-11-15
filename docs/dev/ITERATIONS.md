@@ -11,7 +11,7 @@
 - Скачаны SafeTensors SOMA/G1 с Hugging Face — ~1.47 GB; paper/agreement PDF; checksums SHA256.
 - Скачаны community-референсы: `motionbricks-unity-bridge`, `sa-inbetween` (+ win-x64 releases), `Unity6_motionbricks_test`, `motion-bricks.cpp`.
 - Скачаны Unity tarballs: Sentis 2.6.1 + Burst/Collections/Newtonsoft/App UI.
-- Собраны окружения: официальный `uv`/TensorRT (Python 3.12) и CPU ONNX Runtime venv (Python 3.13).
+- Собраны окружения: официальный `uv`/TensorRT (Python 3.12) и CPU ONNX Runtime venv (Python 3.13); Python 3.12 и `uv.exe` забандлены в `tools\python312` и `tools\uv`.
 - Проверки: официальный `generate_once.py` — PASS (RTX 3090, 26 + 50 кадров); CPU smoke-test — PASS (55–71 ms, `[1,64,366]`).
 - Добавлен `docs/world/MOTIONBRICK_animations/05_LOCAL_RESOURCES.md`; в README/01/02/03/04 добавлены offline-ссылки на `C:\Projects\motion_bricks`.
 **Файлы:**

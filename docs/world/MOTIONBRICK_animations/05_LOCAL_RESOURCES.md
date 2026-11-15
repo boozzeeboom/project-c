@@ -20,8 +20,8 @@ C:\Projects\motion_bricks\tools\cpu_baker\.venv\Scripts\python.exe `
   --model C:\Projects\motion_bricks\motionbricks\motionbricks\assets\onnx\soma\mmm_v6_soma_fp32.onnx
 
 # 3. Официальный TensorRT-путь (venv собран; проверен 2026-11-15)
-uv run python -c "import motionbricks, tensorrt; print(motionbricks.__version__, tensorrt.__version__)"
-uv run python docs/examples/generate_once.py --model soma
+.venv\Scripts\python.exe -c "import motionbricks, tensorrt; print(motionbricks.__version__, tensorrt.__version__)"
+.venv\Scripts\python.exe docs\examples\generate_once.py --model soma
 
 # 4. Проверка целостности
 Get-Content C:\Projects\motion_bricks\checksums\SHA256SUMS.txt
@@ -69,10 +69,12 @@ C:\Projects\motion_bricks\
 ├── unity\packages\               ← Sentis tarball + dependencies (offline UPM)
 ├── papers\                       ← SIGGRAPH/arXiv PDF, NVIDIA Open Model Agreement
 ├── tools\cpu_baker\              ← CPU venv + smoke/inspect scripts
+├── tools\python312\              ← bundled CPython 3.12 (для official .venv)
+├── tools\uv\uv.exe               ← bundled uv 0.13.7
 └── checksums\SHA256SUMS.txt      ← SHA256 ключевых артефактов
 ```
 
-**Общий размер пакета:** ~8.6 GB (из них ~1.5 GB — HF SafeTensors, ~0.4 GB — community releases, ~0.4 GB — Unity tarballs, ~0.7 GB — TensorRT plan cache, ~3 GB — official `.venv`).
+**Общий размер пакета:** ~8.7 GB (из них ~1.5 GB — HF SafeTensors, ~0.4 GB — community releases, ~0.4 GB — Unity tarballs, ~0.7 GB — TensorRT plan cache, ~3 GB — official `.venv`).
 
 ---
 
@@ -182,9 +184,9 @@ Model cards: `models\huggingface\MotionBricks\soma\README.md`, `...\g1\README.md
 | Параметр | Значение |
 |---|---|
 | Venv | `C:\Projects\motion_bricks\motionbricks\.venv` |
-| Python | 3.12 (скачивается `uv`) |
+| Python | 3.12.12, bundled base: `C:\Projects\motion_bricks\tools\python312` |
 | Пакеты | `newton`, `warp-lang`, `tensorrt-cu12 10.8.0.43`, `usd-core`, `imgui-bundle`, ... |
-| Запуск | `cd C:\Projects\motion_bricks\motionbricks; uv run python ...` |
+| Запуск | `cd C:\Projects\motion_bricks\motionbricks; .venv\Scripts\python.exe ...` (или `uv run --offline python ...`) |
 | Проверка | **PASS** 2026-11-15: `uv run python docs/examples/generate_once.py --model soma` → 26 frames (0.87 s) + 50 frames (1.67 s), RTX 3090 24 GB, driver 610.88, CUDA 12.9 |
 
 Плюсы: официальный engine, endpoint correction, максимальное качество.
@@ -192,7 +194,12 @@ Model cards: `models\huggingface\MotionBricks\soma\README.md`, `...\g1\README.md
 
 ### 6.3. `uv`
 
-`uv 0.13.7` установлен глобально; если агент работает в другом профиле — бинарь ищется в `PATH`. Для offline можно использовать `uv run --offline` (кэш `uv` на этой машине).
+`uv 0.13.7` лежит в `C:\Projects\motion_bricks\tools\uv\uv.exe` (копия глобального). Для offline:
+```powershell
+cd C:\Projects\motion_bricks\motionbricks
+C:\Projects\motion_bricks\tools\uv\uv.exe run --offline python -c "import motionbricks; print(motionbricks.__version__)"
+```
+Проверено: `uv run --offline` работает; `uv sync` без сети не запускать (может попытаться обновить lock/venv).
 
 ---
 

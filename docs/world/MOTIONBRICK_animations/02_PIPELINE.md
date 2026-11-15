@@ -211,13 +211,13 @@ Runbook (**offline**, всё уже скачано):
 cd C:\Projects\motion_bricks\motionbricks
 
 # Проверка импорта/версии TensorRT
-uv run python -c "import motionbricks, tensorrt; print(motionbricks.__version__, tensorrt.__version__)"
+.venv\Scripts\python.exe -c "import motionbricks, tensorrt; print(motionbricks.__version__, tensorrt.__version__)"
 
-# Headless-пример: 2 генерации, без viewer (первый запуск строит TensorRT plan)
-uv run python docs/examples/generate_once.py --model soma
+# Headless-пример: 2 генерации, без viewer (план уже закэширован)
+.venv\Scripts\python.exe docs\examples\generate_once.py --model soma
 
 # Scene preview (нужен GL/viewer)
-uv run python -m app.scene_preview --scene assets/scenes/soma_gym.scene.json
+.venv\Scripts\python.exe -m app.scene_preview --scene assets/scenes/soma_gym.scene.json
 
 # HTTP baker: community-реализация уже скачана
 cd C:\Projects\motion_bricks\community\motionbricks-unity-bridge

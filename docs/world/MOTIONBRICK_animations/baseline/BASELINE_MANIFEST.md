@@ -90,6 +90,7 @@ powershell -ExecutionPolicy Bypass -File `
 - Хэши не покрывают `.meta`-файлы. Если Unity пересоздаст `.meta` (например, из-за перемещения ассета), GUID может измениться — это отдельная проверка (`git status`, `git diff --stat`).
 - Хэши не покрывают сцены (`WorldScene_0_0.unity`) — там уже есть пользовательские изменения; для сцен использовать `git diff` и визуальную проверку.
 - **Известный gap:** фактический рантайм-игрок — `Assets/_Project/Prefabs/FloatingOrigin/NetworkPlayer_GlobalPilot.prefab` (его подставляет `GlobalMotionNetworkStartup` из профиля, роль `Spatial`), а baseline защищает `NetworkPlayer.prefab`. Рекомендация: добавить `GlobalPilot` в `baseline_hashes.tsv` отдельным решением (hash на 15.11: `c14c09dcde0ab1dc37ef4a6f83b4aa4503706cfa26da71837cfdbec6fe2b6010`, проверить перед добавлением). **На 15.11 решение отложено**; T-MB03 baseline-файлы и хэши не менял. План и последствия — `11_T-MB03_BAKER_AND_GUARDS.md` §13.3.
+- **T-MB04c (15.11, ночь):** хэш `NetworkPlayer.cs` обновлён **намеренно** после одобренной правки root motion (`MotionBricksLocomotionBridge` + чтение displacement перед единственным `Move`). Пересчитан по §5, обновлён отдельным коммитом; см. [12_T-MB04C_ROOT_MOTION_IN_PLAYER.md](../12_T-MB04C_ROOT_MOTION_IN_PLAYER.md) §7. `NetworkPlayer_GlobalPilot.prefab` по-прежнему вне baseline.
 - Baseline не заменяет коммит/ветку: перед интеграцией всё равно нужен отдельный worktree/branch.
 - Проверка не запускает Unity и не валидирует анимацию; она только ловит случайные изменения файлов.
 

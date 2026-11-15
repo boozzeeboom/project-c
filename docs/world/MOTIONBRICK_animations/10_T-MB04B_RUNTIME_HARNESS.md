@@ -183,10 +183,58 @@ Blender). Это существующая конфигурация проект�
 | baseline 12/12 до/после | **ДА** (§7) |
 | `applyRootMotion` на пробе выключен, направление движения совпадает с клипом | **ДА**, замер (§3.1) |
 | второй `CharacterController.Move` невозможен на игроке | **ДА по коду** (§2.2), компонент на игрока не ставится |
-| скорость 2.00 м/с и отсутствие slide | **клип** — замер валидатора (0.07/0.11 см/кадр); **рантайм** — за пользователем (§4.1) |
-| body swap переживает playback | **код + стенд**; визуал — за пользователем (§4.2) |
-| 2 клиента + F8/F9 | **НЕ ПРОВЕРЕНО** (пользователь) |
+| **root motion на пробе: едет, стопы не шаркают** | **ДА**, Play Mode 15.11 + лог (§5.1) |
+| скорость 2.00 м/с в рантайме | **визуально да**, цифровой замер поездки не снимался (§5.1) |
+| `Stop` → baseline в сессии | **ДА по логу выхода из Play Mode**; пункт меню `Stop on probe` в сессии не нажимался (§5.1) |
+| body swap переживает playback | **код + стенд**; в Play Mode **не проверялся** (§5.1) |
+| 2 клиента + F8/F9 | **частично**: 1 клиент, F8 → ожидаемый отказ `no_rebase_plan`, 0 errors; 2 клиента — нет (§5.1) |
 | root motion внутри `NetworkPlayer` | **НЕ СДЕЛАНО** (осознанно, §2.2) |
+
+### 5.1. Приёмка 15.11, вечер — root motion на пробе (Play Mode, пользователь)
+
+Лог сеанса (MCP-консоль Unity; времена — метки консоли):
+
+```
+19:10:48.715 [T-FO06CY] Controlled rebase completed: translation=(-39936.00, -2560.00, -39936.00); origin=Global(39936, 2560, 39936)
+19:11:43.055 [MotionBricksBakedPlayback] Play 'HumanM@Walk01_Forward' (0,80 s, speed 1,00) на 'HumanM_Model'. Controller не менялся.
+19:11:43.056 [MB-Review] Играю KL Walk01 Forward ... на 'MB_Probe_Player' → Animator 'HumanM_Model'. Root motion: 2,00 м/с. Гейт настроек не менялся.
+19:11:43.666 [MotionBricksBakedPlayback] diag: t=0,81/0,80 s, кость B-upperArm.L:
+             было (19.0, 265.2, 73.2), стало (10.8, 241.7, 70.4), controller=null, humanMotion=True
+19:12:07.949 [T-FO06CZ] Inactive scene roots excluded from rebase scope: DockStation_TestZone, SPAWN_TEST cult
+19:12:07.953 [warning] [T-FO06CY] Controlled rebase rejected: no_rebase_plan:localFocus=(-96.35, -72.64, 138.76)
+19:12:12.986 [warning] [T-FO06CY] Controlled rebase rejected: no_rebase_plan:localFocus=(-96.92, -72.64, 142.76)
+19:12:27.336 [MotionBricksBakedPlayback] Playback остановлен, baseline Animator восстановлен.
+```
+
+Что подтверждено:
+
+- клип взят из FBX KL (`path.fbx::ClipName`), `controller=null`, `humanMotion=True`;
+- кость `B-upperArm.L` повернулась на **24.3°** (пересчёт по логу: `Quaternion.Angle` между
+  `(19.0, 265.2, 73.2)` и `(10.8, 241.7, 70.4)`) — humanoid-клип действительно двигает скелет;
+- время клипа дошло до `t=0,81` при длине `0,80 s` ⇒ петля сработала, кукла не замерла на
+  последнем кадре;
+- выход из Play Mode дал `Playback остановлен, baseline Animator восстановлен` — граф и поза
+  не остаются «залипшими»;
+- ошибок/исключений за сеанс нет (в консоли только сторонние warnings мира).
+
+Визуально (пользователь): **«идёт нормально, кукла не шаркает»** — то есть скорость тела совпадает
+со скоростью клипа, skating не наблюдается.
+
+Про `no_rebase_plan` на F8: это **не ошибка**. После стартового ребейса мир уже стоит у нуля,
+фокус игрока `(-96, -73, 139)` внутри фрейма и в пределах порога, поэтому план ребейса не строится
+и система честно отказывает (`OriginRebasePlan.TryCreate` → `Reject`). Так и описано в
+`PlayerPositionServer.cs` («no_rebase_plan — лишь симптом „фокус уже у нуля“»). Для проверки
+собственно сдвига нужно уехать от нуля (корабль/полёт) и нажать F8 там.
+
+Что в этом сеансе **не** проверялось:
+
+| Пункт | Что нужно |
+|---|---|
+| цифровой замер поездки | `Review/Probe/Start travel measurement` → 3–5 с → `Log travel measurement` (ожидаемо ≈ 2.00 м/с) |
+| `Review/Stop on probe` в сессии | нажать пункт меню (сейчас остановка проверена только выходом из Play Mode) |
+| body swap M→F→M | `Review/Player/Attach + play KL Walk01 on my player` → `Review/Body swap/Body swap → Female` → `→ Male` |
+| 2 клиента | Host + Client, сравнить позиции/анимации, 0 errors в обеих консолях |
+| F8/F9 «по-настоящему» | уехать от нуля, F8 → объект на месте; F9 → возврат |
 
 ## 6. Ограничения, которые остаются
 

@@ -490,4 +490,7 @@ KL `HumanM@Walk01_Forward` — **2.00 м/с**, наш синтезированн
    не двигает ничего и пишет предупреждение. Интеграция в `NetworkPlayer.ProcessMovement` — следующий шаг.
 5. **Baseline 12/12 до и после**; `mode: 0` не менялся.
 
-Открыто: визуал (пользователь), 2 клиента + F8/F9, интеграция root motion в игрока, T-MB03 (baker/IK).
+Открыто: body swap M→F→M, цифровой замер поездки, `Stop on probe` в сессии, 2 клиента + F8/F9,
+интеграция root motion в игрока, T-MB03 (baker/IK).
+Принято 15.11 (Play Mode): root motion на probe едет, стопы не шаркают, `B-upperArm.L` 24.3°, baseline restore —
+лог и разбор в [10 §5.1](10_T-MB04B_RUNTIME_HARNESS.md).

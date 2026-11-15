@@ -2,6 +2,27 @@
 
 ## 15 ноября 2026
 
+**Тикет:** T-MB01A
+
+**Тема:** Offline-пакет MotionBricks для агента интеграции (без сети) + локальные ссылки в доках.
+
+**Что сделано:**
+- Скачан официальный `NVlabs/motionbricks` + Git LFS (ONNX SOMA/G1 FP32/FP16, sample motions, docs, tools) — ~2.3 GB code/artifacts.
+- Скачаны SafeTensors SOMA/G1 с Hugging Face — ~1.47 GB; paper/agreement PDF; checksums SHA256.
+- Скачаны community-референсы: `motionbricks-unity-bridge`, `sa-inbetween` (+ win-x64 releases), `Unity6_motionbricks_test`, `motion-bricks.cpp`.
+- Скачаны Unity tarballs: Sentis 2.6.1 + Burst/Collections/Newtonsoft/App UI.
+- Собраны окружения: официальный `uv`/TensorRT (Python 3.12) и CPU ONNX Runtime venv (Python 3.13).
+- Проверки: официальный `generate_once.py` — PASS (RTX 3090, 26 + 50 кадров); CPU smoke-test — PASS (55–71 ms, `[1,64,366]`).
+- Добавлен `docs/world/MOTIONBRICK_animations/05_LOCAL_RESOURCES.md`; в README/01/02/03/04 добавлены offline-ссылки на `C:\Projects\motion_bricks`.
+**Файлы:**
+- `docs/world/MOTIONBRICK_animations/05_LOCAL_RESOURCES.md` (новый)
+- `docs/world/MOTIONBRICK_animations/README.md`, `01_RESEARCH.md`, `02_PIPELINE.md`, `03_ALTERNATIVES.md`, `04_SOURCES.md`
+- `C:\Projects\motion_bricks\` (вне git: repo, models, community, unity, tools, papers, checksums)
+
+**Проверено:** TensorRT `generate_once.py` PASS; CPU ONNX Runtime PASS; Sentis import/Play Mode не запускались.
+
+## 15 ноября 2026
+
 **Тикет:** T-MB01  
 **Тема:** Research NVIDIA MotionBricks — применимость к Project C, альтернативы и пайплайн интеграции.  
 **Что сделано:**

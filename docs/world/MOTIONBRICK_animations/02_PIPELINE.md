@@ -4,6 +4,7 @@
 > **Статус:** design proposal; код не писался
 > **Область:** Unity 6.5 (`6000.5.2f1`), Windows x64, URP 17.5, NGO 2.13
 > **Главный принцип:** neural-анимация — **косметика и authoring**, не gameplay-authority. Всё, что влияет на бой, сеть и FO, остаётся детерминированным и authored.
+> **Offline:** все команды ниже используют локальный пакет `C:\Projects\motion_bricks`; ссылки на скачивание оставлены как происхождение. См. [05_LOCAL_RESOURCES.md](05_LOCAL_RESOURCES.md).
 
 ---
 
@@ -202,28 +203,49 @@ namespace ProjectC.Animation.MotionBricks
 - Сервер: `POST /generate` (см. community bridge) или прямой вызов `MotionBricksSOMAEngine`.
 - Плюсы: официальный engine, endpoint correction, boundary trim, точное качество.
 - Минусы: Python/CUDA/TensorRT на машине; первый запуск строит TensorRT plan (минуты); последовательная очередь.
+- **Проверено 2026-11-15:** `generate_once.py --model soma` → 26 frames (0.87 s) + 50 frames (1.67 s), RTX 3090 24 GB, driver 610.88, CUDA 12.9.
 
-Runbook:
+Runbook (**offline**, всё уже скачано):
 ```powershell
-git clone https://github.com/NVlabs/motionbricks.git
-cd motionbricks
-git lfs pull
-uv sync
+# Официальный repo + LFS + .venv уже в C:\Projects\motion_bricks\motionbricks
+cd C:\Projects\motion_bricks\motionbricks
+
+# Проверка импорта/версии TensorRT
+uv run python -c "import motionbricks, tensorrt; print(motionbricks.__version__, tensorrt.__version__)"
+
+# Headless-пример: 2 генерации, без viewer (первый запуск строит TensorRT plan)
+uv run python docs/examples/generate_once.py --model soma
+
+# Scene preview (нужен GL/viewer)
 uv run python -m app.scene_preview --scene assets/scenes/soma_gym.scene.json
-# для baker — свой HTTP wrapper поверх MotionBricksSOMAEngine
+
+# HTTP baker: community-реализация уже скачана
+cd C:\Projects\motion_bricks\community\motionbricks-unity-bridge
+# см. README репозитория; сервер запускается из venv official repo
 ```
+
+Если официальный venv не собран/сломан — используйте CPU-путь (вариант B).
 
 #### Вариант B — ONNX Runtime CPU (без NVIDIA)
 
-- Скачать `mmm_v6_soma_fp32.onnx` (758 MB), лицензия NVIDIA Open Model Agreement.
-- Python `onnxruntime` CPU или .NET `Microsoft.ML.OnnxRuntime`.
-- Наш замер: 73–77 ms N=1 на i7-8700; 252–279 ms N=8.
+- Модель уже локально: `C:\Projects\motion_bricks\motionbricks\motionbricks\assets\onnx\soma\mmm_v6_soma_fp32.onnx` (758 MB), лицензия NVIDIA Open Model Agreement.
+- Готовый venv: `C:\Projects\motion_bricks\tools\cpu_baker\.venv` (`onnxruntime 1.32.0`, `numpy`, `onnx`, `fastapi`).
+- Наш замер: 73–77 ms N=1 на i7-8700; 252–279 ms N=8 (onnxruntime 1.32 дал 55–71 ms в повторном smoke-test).
 - Плюсы: без CUDA; детерминированно; просто.
 - Минусы: нет endpoint correction/boundary trim — реализовать самим; качество может отличаться от TensorRT; 758 MB модель.
+
+Проверка:
+```powershell
+C:\Projects\motion_bricks\tools\cpu_baker\.venv\Scripts\python.exe `
+  C:\Projects\motion_bricks\tools\cpu_baker\smoke_test.py `
+  --model C:\Projects\motion_bricks\motionbricks\motionbricks\assets\onnx\soma\mmm_v6_soma_fp32.onnx
+```
+Ожидаемо: `pred_global_motions (1, 64, 366)`, `pred_num_tokens [16]`, ~50–80 ms.
 
 #### Вариант C — CLI `sa-inbetween` / .NET ORT
 
 - Готовый CPU-инструмент, Apache 2.0 code, модель отдельно.
+- Локально: `C:\Projects\motion_bricks\community\sa-inbetween`.
 - Плюсы: не писать свой inference; есть `.saib`/`.pose`.
 - Минусы: 77 joints, свой формат; нужен ретаргет/конвертация; неофициально.
 
@@ -435,9 +457,11 @@ public sealed class BakedRootMotionDriver : MonoBehaviour
 
 | Backend | Плюсы | Минусы | Когда |
 |---|---|---|---|
-| `SentisMotionBricksBackend` | Всё в Unity; кросс-платформа; без Python | 758/380 MB; 6993 узла; latency未知; импорт | Если нужен ship на Windows |
+| `SentisMotionBricksBackend` | Всё в Unity; кросс-платформа; без Python | 758/380 MB; 6993 узла; latency неизвестна; импорт | Если нужен ship на Windows |
 | `OnnxRuntimeMotionBricksBackend` | CPU/DirectML; быстрый CPU; контроль | Нативный plugin; DLL; 758 MB | Если Sentis плох, а runtime нужен |
 | `HttpMotionBricksBackend` | Официальный engine; quality | Python/CUDA; сеть; не ship | Dev/сравнение |
+
+**Offline Sentis:** tarball `C:\Projects\motion_bricks\unity\packages\com.unity.ai.inference-2.6.1.tgz` + зависимости (`burst 1.8.17`, `collections 2.4.3`, `newtonsoft 3.2.1`, `app-ui 1.3.6`). В проекте уже Burst 1.8.29 / Collections 6.5.0 / Newtonsoft 3.2.2 — возможен downgrade-конфликт; ставить только в отдельной ветке/копии проекта, не в main без решения. Подробно — [05_LOCAL_RESOURCES.md](05_LOCAL_RESOURCES.md) §5.
 
 ### 5.2. Scheduler
 
@@ -619,7 +643,8 @@ public sealed class NeuralAnimationSettings : ScriptableObject
 | Тикет | Что | Зависимости |
 |---|---|---|
 | `T-MB01` | Research + decision (этот документ) | — |
-| `T-MB02` | Baker spike: один клип через HTTP/ORT, импорт, playback | T-MB01 |
+| `T-MB01A` | Offline resource pack: repo/ONNX/HF/community/Sentis/venv в `C:\Projects\motion_bricks` | T-MB01 |
+| `T-MB02` | Baker spike: один клип через HTTP/ORT, импорт, playback | T-MB01A |
 | `T-MB03` | Baker MVP: Editor window, settings, metadata, validation | T-MB02 |
 | `T-MB04` | Retarget/IK: SOMA→Humanoid, T-pose, foot IK, equipment | T-MB03 |
 | `T-MB05` | Hybrid primitives: authoring, registry, playback | T-MB04 |

@@ -4,7 +4,9 @@
 > **Статус:** research complete; решение предложено, ждёт подтверждения
 > **Область:** анимация персонажей, Unity 6.5 (`6000.5.2f1`), Windows x64, MMO-sandbox
 > **Тикет:** `T-MB01` (новая серия `T-MB` — MotionBricks; заводится этим документом)
-> **Документы:** [01_RESEARCH.md](01_RESEARCH.md) · [02_PIPELINE.md](02_PIPELINE.md) · [03_ALTERNATIVES.md](03_ALTERNATIVES.md) · [04_SOURCES.md](04_SOURCES.md)
+> **Документы:** [01_RESEARCH.md](01_RESEARCH.md) · [02_PIPELINE.md](02_PIPELINE.md) · [03_ALTERNATIVES.md](03_ALTERNATIVES.md) · [04_SOURCES.md](04_SOURCES.md) · [05_LOCAL_RESOURCES.md](05_LOCAL_RESOURCES.md)
+>
+> **Offline-пакет:** все материалы уже скачаны в **`C:\Projects\motion_bricks`**. Агент интеграции работает без сети — используйте [05_LOCAL_RESOURCES.md](05_LOCAL_RESOURCES.md); внешние ссылки ниже оставлены как происхождение.
 
 ---
 
@@ -19,7 +21,7 @@
 7. **Runtime-эксперимент для одного игрока** возможен только за feature flag и с fallback. Статический аудит ONNX показал: все **51 тип операторов** графа есть в списке поддерживаемых Sentis, но **6993 узла**, динамические размерности и 2480 `Constant` — риск не по «неподдерживаемым операм», а по latency/импорту. Нужен отдельный spike.
 8. **Альтернативы для runtime:** Animancer (Playable API), Motion Matching (MxM / JLPM22), Animation Rigging IK, offline Kimodo/ARDY, video mocap. Рекомендация — гибрид: существующий Animator/Animancer + motion matching для игрока + IK + offline baker для недостающих переходов.
 9. **Решение:** не тащить 758 MB модель в клиент MMO, не заменять Animator у NPC, не использовать neural poses для хитбоксов. Инвестировать в baker только под конкретную анимационную задачу, а не «на всякий случай».
-10. **Что реально проверено:** официальные docs/paper/ONNX-манифест, статический аудит ONNX-графа, CPU-бенчмарк ONNX Runtime, чтение кода проекта. Официальный TensorRT-движок, Sentis-импорт и Play Mode **не запускались** (правило `dont-start-play`).
+10. **Что реально проверено:** официальные docs/paper/ONNX-манифест, статический аудит ONNX-графа, CPU-бенчмарк ONNX Runtime, чтение кода проекта. Официальный TensorRT-движок **запущен** (`generate_once.py`: 26 + 50 кадров на RTX 3090); Sentis-импорт и Play Mode **не запускались** (правило `dont-start-play`).
 
 ---
 
@@ -37,6 +39,7 @@
 | Community Unity bridges | Реальные попытки интеграции, замеры, ограничения |
 | Код Project C | Текущий Animator-пайплайн, CharacterController, NavMeshAgent, FO-контракты |
 | Локальный аудит | ONNX-граф (6993 узла) + ONNX Runtime CPU benchmark |
+| **Локальный offline-пакет** | `C:\Projects\motion_bricks` — official repo/ONNX, HF SafeTensors, community, Unity tarballs, CPU/TensorRT venv, см. [05](05_LOCAL_RESOURCES.md) |
 
 Подробный список — в [04_SOURCES.md](04_SOURCES.md).
 
@@ -176,6 +179,7 @@
 | [02_PIPELINE.md](02_PIPELINE.md) | Пайплайн интеграции: фазы, C#-контракты, baker, runtime, QA, тикеты |
 | [03_ALTERNATIVES.md](03_ALTERNATIVES.md) | Альтернативы и сравнительная матрица |
 | [04_SOURCES.md](04_SOURCES.md) | Аннотированные источники и методология замеров |
+| [05_LOCAL_RESOURCES.md](05_LOCAL_RESOURCES.md) | **Offline-пакет:** локальные пути, модели, venv, Unity-пакеты, checksums |
 
 ---
 

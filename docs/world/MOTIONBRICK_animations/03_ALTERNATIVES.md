@@ -1,7 +1,8 @@
 # T-MB01 — Альтернативы MotionBricks для Project C
 
 > **Дата:** 2026-11-15
-> **Связанные документы:** [README.md](README.md) · [01_RESEARCH.md](01_RESEARCH.md) · [02_PIPELINE.md](02_PIPELINE.md) · [04_SOURCES.md](04_SOURCES.md)
+> **Связанные документы:** [README.md](README.md) · [01_RESEARCH.md](01_RESEARCH.md) · [02_PIPELINE.md](02_PIPELINE.md) · [04_SOURCES.md](04_SOURCES.md) · [05_LOCAL_RESOURCES.md](05_LOCAL_RESOURCES.md)
+> **Offline:** все скачанные материалы — в `C:\Projects\motion_bricks`; см. [05](05_LOCAL_RESOURCES.md).
 > **Цель:** выбрать не «самую крутую технологию», а наименьший риск для MMO-клиента с server-authoritative боем и ограниченным бюджетом.
 
 ---

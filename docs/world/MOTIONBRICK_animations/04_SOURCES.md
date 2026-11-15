@@ -2,6 +2,22 @@
 
 > **Дата доступа:** 2026-11-15
 > **Правило:** официальные источники приоритетнее; community-замеры помечены; непроверенное — помечено.
+> **Offline:** все ключевые источники скачаны в `C:\Projects\motion_bricks`; полный инвентарь и локальные пути — в [05_LOCAL_RESOURCES.md](05_LOCAL_RESOURCES.md).
+
+---
+
+## 0. Локальный mirror (offline)
+
+| Что | Локально |
+|---|---|
+| Официальный repo | `C:\Projects\motion_bricks\motionbricks` |
+| SOMA/G1 ONNX | `C:\Projects\motion_bricks\motionbricks\motionbricks\assets\onnx\` |
+| SOMA/G1 SafeTensors | `C:\Projects\motion_bricks\models\huggingface\MotionBricks` |
+| Paper / agreement | `C:\Projects\motion_bricks\papers\` |
+| Community bridges | `C:\Projects\motion_bricks\community\` |
+| Unity Sentis tarballs | `C:\Projects\motion_bricks\unity\packages\` |
+| CPU venv / scripts | `C:\Projects\motion_bricks\tools\cpu_baker\` |
+| Checksums | `C:\Projects\motion_bricks\checksums\SHA256SUMS.txt` |
 
 ---
 
@@ -112,12 +128,16 @@ FP16: **380 327 058 B**.
 - Times: N=1 73.4/77.3/77.3 ms; N=4 146.3/156.2/156.9 ms; N=8 251.5/255.0/279.3 ms.
 - **Не** измерялись: endpoint correction, boundary trim, decode, retarget, IK, качество.
 
-### 5.4. Что не проверялось
+### 5.4. Что проверено / не проверялось
 
-- Официальный TensorRT runtime (нужен CUDA/TensorRT/Warp/Newton).
+**Проверено:**
+- Официальный TensorRT runtime: `uv run python docs/examples/generate_once.py --model soma` → 26 frames (0.87 s) + 50 frames (1.67 s), RTX 3090 24 GB, driver 610.88, CUDA 12.9.
+- CPU ONNX Runtime smoke-test: `[1,64,366]`, tokens 16, 55–71 ms N=1.
+
+**Не проверялось:**
 - Unity Sentis импорт/инференс.
 - Unity Play Mode.
-- Качество на реальных позах/персонажах.
+- Качество на реальных позах/персонажах Project C.
 - Сетевая синхронизация.
 - Лицензионная экспертиза юристом.
 
@@ -150,8 +170,9 @@ FP16: **380 327 058 B**.
 | 200M params, 30 joints, 30 Hz, 18–58 frames | ✅ Model card/runtime docs |
 | 758/380 MB ONNX | ✅ Локальный `Content-Length` |
 | TensorRT 2.5/1.28 ms на RTX 4090 | ✅ Официальный benchmark |
+| TensorRT `generate_once.py` на RTX 3090 | ✅ Наш прогон: 26 + 50 кадров |
 | Community 2.37 ms/57.5 ms spike/818 MiB | ⚠️ Community, не официально |
-| CPU 73–77 ms N=1 | ✅ Наш локальный замер, random input |
+| CPU 73–77 ms N=1 (55–71 ms на ORT 1.32) | ✅ Наш локальный замер, random input |
 | Sentis op compatibility | ⚠️ Статический аудит, не импорт |
 | Sentis latency | ❌ Не измерена |
 | MMO-scale непригодность | ✅ Архитектурный вывод (не benchmark) |

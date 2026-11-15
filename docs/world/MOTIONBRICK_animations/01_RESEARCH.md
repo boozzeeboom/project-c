@@ -1,8 +1,9 @@
 # T-MB01 — MotionBricks: технический ресерч
 
 > **Дата:** 2026-11-15
-> **Связанные документы:** [README.md](README.md) · [02_PIPELINE.md](02_PIPELINE.md) · [03_ALTERNATIVES.md](03_ALTERNATIVES.md) · [04_SOURCES.md](04_SOURCES.md)
-> **Метод:** чтение официальных docs/paper/ONNX-манифеста, статический аудит ONNX-графа, локальный CPU-бенчмарк ONNX Runtime, чтение кода Project C. Официальный TensorRT-движок и Sentis не запускались.
+> **Связанные документы:** [README.md](README.md) · [02_PIPELINE.md](02_PIPELINE.md) · [03_ALTERNATIVES.md](03_ALTERNATIVES.md) · [04_SOURCES.md](04_SOURCES.md) · [05_LOCAL_RESOURCES.md](05_LOCAL_RESOURCES.md)
+> **Offline:** официальный repo, ONNX, SafeTensors, paper и лицензии лежат в `C:\Projects\motion_bricks` (см. [05](05_LOCAL_RESOURCES.md)).
+> **Метод:** чтение официальных docs/paper/ONNX-манифеста, статический аудит ONNX-графа, локальный CPU-бенчмарк ONNX Runtime, чтение кода Project C. Официальный TensorRT-движок **проверен** (`generate_once.py`, 26 + 50 кадров, RTX 3090); Sentis не запускался (см. [05](05_LOCAL_RESOURCES.md) §10).
 
 ---
 
@@ -80,14 +81,14 @@ MotionBricks — исследовательский проект NVIDIA (SIGGRAP
 
 ### 2.1. Файлы и размеры
 
-| Файл | Размер | Примечание |
-|---|---:|---|
-| `mmm_v6_soma_fp32.onnx` | **757 864 273 B (~758 MB)** | FP32, официальный |
-| `mmm_v6_soma_fp16.onnx` | **380 327 058 B (~380 MB)** | mixed FP16, входы/выходы FP32 |
-| `mmm_v6_g1_fp32.onnx` | ~? | Unitree G1, 29 DoF |
-| `mmm_v6_g1_fp16.onnx` | ~? | Unitree G1 |
+| Файл | Размер | Примечание | Локально |
+|---|---:|---|---|
+| `mmm_v6_soma_fp32.onnx` | **757 864 273 B (~758 MB)** | FP32, официальный | `C:\Projects\motion_bricks\motionbricks\motionbricks\assets\onnx\soma\` |
+| `mmm_v6_soma_fp16.onnx` | **380 327 058 B (~380 MB)** | mixed FP16, входы/выходы FP32 | там же |
+| `mmm_v6_g1_fp32.onnx` | **734 253 102 B (~734 MB)** | Unitree G1, 29 DoF | `...\assets\onnx\unitree_g1\` |
+| `mmm_v6_g1_fp16.onnx` | **368 832 561 B (~369 MB)** | Unitree G1 | там же |
 
-Размеры FP32/FP16 SOMA измерены по `Content-Length` официальных LFS-файлов.
+Размеры измерены по `Content-Length` официальных LFS-файлов; локальные SHA256 — в `C:\Projects\motion_bricks\checksums\SHA256SUMS.txt`.
 
 ### 2.2. Входы (N = batch, обычно 1)
 
@@ -142,7 +143,7 @@ RightLeg, RightShin, RightFoot, RightToeBase
 
 ### 3.1. Метод
 
-- Скачан официальный `mmm_v6_soma_fp32.onnx` (758 MB).
+- Скачан официальный `mmm_v6_soma_fp32.onnx` (758 MB); локальная копия — `C:\Projects\motion_bricks\motionbricks\motionbricks\assets\onnx\soma\mmm_v6_soma_fp32.onnx`.
 - Разобран `onnx.ModelProto` (onnx 1.23.2).
 - Посчитаны узлы, инициализаторы, типы операторов, атрибуты рисковых операторов.
 - Отдельно запущен ONNX Runtime CPU (Python) на случайных/нулевых входах с валидными масками.
@@ -214,7 +215,7 @@ RightLeg, RightShin, RightFoot, RightToeBase
 |---|---|
 | CPU | Intel Core i7-8700, 6 cores / 12 threads |
 | Runtime | ONNX Runtime CPU (Python), `ORT_ENABLE_ALL` |
-| Модель | `mmm_v6_soma_fp32.onnx` (758 MB) |
+| Модель | `mmm_v6_soma_fp32.onnx` (758 MB), локально в `C:\Projects\motion_bricks\motionbricks\motionbricks\assets\onnx\soma\` |
 | Входы | нулевые/rest-подобные позы, валидные маски, все длины 6..16 разрешены |
 | Выход | `pred_num_tokens = 16` (максимум), `[1,64,366]` |
 | N=1 | **73.4 / 77.3 / 77.3 ms** |
@@ -232,6 +233,8 @@ RightLeg, RightShin, RightFoot, RightToeBase
 ---
 
 ## 4. Варианты интеграции в Unity
+
+> **Локальные ресурсы для всех вариантов:** `C:\Projects\motion_bricks` (official repo + ONNX + HF weights + community bridges + Unity tarballs + venv). Подробно — [05_LOCAL_RESOURCES.md](05_LOCAL_RESOURCES.md).
 
 ### 4.1. A. Offline baker (рекомендуется)
 
@@ -274,6 +277,7 @@ Unity → HTTP → Python FastAPI + MotionBricksSOMAEngine (TensorRT) → JSON p
 **Плюсы:** самый быстрый путь к качеству; официальный engine; не нужно портировать модель.
 **Минусы:** Python + CUDA + TensorRT на машине; сеть; не ship; последовательная очередь; задержка LAN.
 **Когда:** прототип, offline baker, сравнение качества.
+**Локально:** `C:\Projects\motion_bricks\community\motionbricks-unity-bridge` (FastAPI server + Unity C# client + Clip Baker).
 
 ### 4.5. E. Baked clips + Animator/Animancer (ship)
 
@@ -470,6 +474,8 @@ q_target_local = q_target_rest * inverse(q_source_rest) * q_source_local
 | Sample motions (BONES BVH/CSV) | NVIDIA Sample Data Evaluation License | Только внутренняя оценка/тест; **не шипить** и не использовать как production-контент |
 | Training data (BONES RP1) | не распространяется | Нет доступа к полному датасету |
 | Community bridges | Apache 2.0 (заявлено) | Проверить и сохранить attribution; неофициально |
+
+**Локально:** `C:\Projects\motion_bricks\papers\nvidia-open-model-agreement-2026-04-02.pdf`; лицензии зависимостей — `C:\Projects\motion_bricks\motionbricks\licenses\`; sample-data license — `C:\Projects\motion_bricks\motionbricks\assets\motions\LICENSE.txt`.
 
 **Практически:**
 - Generated output можно использовать коммерчески (NVIDIA не претендует на ownership), но нужно соблюсти условия agreement.

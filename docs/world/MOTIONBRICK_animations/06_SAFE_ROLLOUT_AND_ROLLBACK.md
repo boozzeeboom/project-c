@@ -2,7 +2,7 @@
 
 > **Дата:** 2026-11-15
 > **Цель:** интегрировать MotionBricks так, чтобы **текущий Animator-пайплайн остался дефолтным**, а откат занимал минуты, а не дни.
-> **Связанные:** [02_PIPELINE.md](02_PIPELINE.md) · [05_LOCAL_RESOURCES.md](05_LOCAL_RESOURCES.md) · [baseline/BASELINE_MANIFEST.md](baseline/BASELINE_MANIFEST.md) · [HANDOFF.md](HANDOFF.md)
+> **Связанные:** [02_PIPELINE.md](02_PIPELINE.md) · [05_LOCAL_RESOURCES.md](05_LOCAL_RESOURCES.md) · [baseline/BASELINE_MANIFEST.md](baseline/BASELINE_MANIFEST.md) · [07](07_T-MB02_WORKTREE_BASELINE_FINDINGS.md) · [08](08_T-MB02_RETARGET_FINDINGS.md) · [09](09_T-MB02_ANALYSIS_AND_NEXT.md) · [HANDOFF.md](HANDOFF.md)
 
 ---
 
@@ -250,8 +250,10 @@ cd C:\Projects\ProjectC_client_motionbricks
 ```
 
 - Main/worktree с пользовательскими изменениями не трогаем.
-- В worktree — чистый HEAD; baseline-хэши анимационных файлов должны совпасть. Пакеты (`Packages/*`) в worktree могут отличаться от working-tree snapshot в main — используйте `check_baseline.ps1 -SkipPackages`; пакеты проверяйте в main отдельно.
-- Если работа идёт в main — **стоп**; сначала worktree.
+- **Worktree — только код и docs.** Контент (`*.prefab`, `*.controller`, `*.anim`, сцены, FBX) в git **не хранится** (Lore VCS), поэтому в worktree его нет; открывать Unity и работать с ассетами нужно в `C:\Projects\ProjectC_client` (main).
+- Baseline-хэши анимационных файлов в worktree проверить нельзя — используйте `check_baseline.ps1 -SkipPackages -SkipContent` (проверяются только скрипты); контентный baseline проверяйте в main.
+- Пакеты (`Packages/*`) в worktree могут отличаться от working-tree snapshot в main — `-SkipPackages`; пакеты проверяйте в main отдельно.
+- Если работа идёт в main — **стоп**; сначала worktree для кода/docs.
 
 ### 7.2. T-MB02 (spike, без изменений prefab/controller)
 

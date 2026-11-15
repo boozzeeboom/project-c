@@ -56,13 +56,13 @@ OK       Assets/_Project/Animations/PlayerAnimation.controller
 BASELINE OK: 12 files match.
 ```
 
-**Если работа идёт в чистом worktree** (создан из HEAD, без пользовательских изменений `Packages/*`), используйте:
+**Если работа идёт в чистом worktree** (создан из HEAD, без пользовательских изменений `Packages/*` и без Lore-контента), используйте:
 ```powershell
 powershell -ExecutionPolicy Bypass -File `
   C:\Projects\ProjectC_client_motionbricks\docs\world\MOTIONBRICK_animations\baseline\check_baseline.ps1 `
-  -SkipPackages
+  -SkipPackages -SkipContent
 ```
-Пакетные хэши в TSV сняты с **текущего рабочего дерева** (там уже удалён Rive); в чистом worktree они могут отличаться. Для пакетов проверяйте `git diff` в main отдельно.
+Пакетные хэши в TSV сняты с **текущего рабочего дерева** (там уже удалён Rive); в чистом worktree они могут отличаться. Для пакетов проверяйте `git diff` в main отдельно. Контент (`*.prefab`, `*.controller`, `*.anim`, сцены) хранится в **Lore**, не в git; в worktree его нет — проверяйте его в `C:\Projects\ProjectC_client`.
 
 Если файл изменён — скрипт покажет `CHANGED`/`MISSING` и вернёт exit code 1. Это **не автоматически** означает ошибку: возможно, изменение намеренное. Но его нужно осознанно принять и обновить baseline отдельным коммитом.
 
@@ -84,6 +84,7 @@ powershell -ExecutionPolicy Bypass -File `
 
 - Хэши считаются по **рабочему дереву**, включая пользовательские изменения на 2026-11-15. Если пользователь продолжит редактировать эти файлы, скрипт будет показывать `CHANGED` — это ожидаемо; нужно синхронизировать baseline с пользователем.
 - `Packages/manifest.json` и `packages-lock.json` — тоже working-tree snapshot (в main уже удалён Rive). В чистом worktree из HEAD они могут отличаться; используйте `-SkipPackages` и проверяйте пакеты в main отдельно.
+- Контент (`*.prefab`, `*.controller`, `*.anim`, сцены) **не хранится в git** (Lore VCS). В worktree этих файлов нет; `check_baseline.ps1` там проверяет только скрипты (`-SkipContent`). Контентный baseline — только в `C:\Projects\ProjectC_client`.
 - Хэши не покрывают `.meta`-файлы. Если Unity пересоздаст `.meta` (например, из-за перемещения ассета), GUID может измениться — это отдельная проверка (`git status`, `git diff --stat`).
 - Хэши не покрывают сцены (`WorldScene_0_0.unity`) — там уже есть пользовательские изменения; для сцен использовать `git diff` и визуальную проверку.
 - Baseline не заменяет коммит/ветку: перед интеграцией всё равно нужен отдельный worktree/branch.

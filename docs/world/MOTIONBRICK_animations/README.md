@@ -23,6 +23,7 @@
 9. **Решение:** не тащить 758 MB модель в клиент MMO, не заменять Animator у NPC, не использовать neural poses для хитбоксов. Инвестировать в baker только под конкретную анимационную задачу, а не «на всякий случай».
 10. **Что реально проверено:** официальные docs/paper/ONNX-манифест, статический аудит ONNX-графа, CPU-бенчмарк ONNX Runtime, чтение кода проекта. Официальный TensorRT-движок **запущен** (`generate_once.py`: 26 + 50 кадров на RTX 3090); Sentis-импорт и Play Mode **не запускались** (правило `dont-start-play`).
 11. **Безопасный откат:** по умолчанию `Mode=Disabled`; baseline-хэши 12 файлов + `check_baseline.ps1`; откат — выключатель → удалить playback → удалить generated-клипы → `git revert` → выбросить worktree. Подробно — [06_SAFE_ROLLOUT_AND_ROLLBACK.md](06_SAFE_ROLLOUT_AND_ROLLBACK.md).
+12. **T-MB02 spike принят:** CPU-бейк → Humanoid `.anim` → `PlayableGraph` playback → baseline restore работает; но это **один** демо-клип (`walk_to_jog`, разворот на месте), 22 кости, без плеч/кистей/пальцев и без foot IK. 100% покрытия нет; см. [09_T-MB02_ANALYSIS_AND_NEXT.md](09_T-MB02_ANALYSIS_AND_NEXT.md).
 
 ---
 
@@ -182,6 +183,9 @@
 | [04_SOURCES.md](04_SOURCES.md) | Аннотированные источники и методология замеров |
 | [05_LOCAL_RESOURCES.md](05_LOCAL_RESOURCES.md) | **Offline-пакет:** локальные пути, модели, venv, Unity-пакеты, checksums |
 | [06_SAFE_ROLLOUT_AND_ROLLBACK.md](06_SAFE_ROLLOUT_AND_ROLLBACK.md) | Безопасная интеграция: режимы, feature flag, изоляция, откат, тест-матрица |
+| [07_T-MB02_WORKTREE_BASELINE_FINDINGS.md](07_T-MB02_WORKTREE_BASELINE_FINDINGS.md) | **T-MB02:** worktree vs Lore-контент, baseline |
+| [08_T-MB02_RETARGET_FINDINGS.md](08_T-MB02_RETARGET_FINDINGS.md) | **T-MB02:** ретаргет, замеры, Play Mode-приёмка, ограничения |
+| [09_T-MB02_ANALYSIS_AND_NEXT.md](09_T-MB02_ANALYSIS_AND_NEXT.md) | **Анализ T-MB02:** 100%? ограничения, NPC, выигрыш, следующие шаги |
 | [baseline/BASELINE_MANIFEST.md](baseline/BASELINE_MANIFEST.md) | Baseline-хэши 12 ключевых файлов + `check_baseline.ps1` |
 | [HANDOFF.md](HANDOFF.md) | Саммари для передачи работы следующему агенту (абсолютные ссылки) |
 

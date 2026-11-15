@@ -10,7 +10,8 @@
 param(
     [string]$Root = "C:\Projects\ProjectC_client",
     [string]$Manifest = (Join-Path $PSScriptRoot "baseline_hashes.tsv"),
-    [switch]$SkipPackages
+    [switch]$SkipPackages,
+    [switch]$SkipContent
 )
 
 if (-not (Test-Path $Manifest)) {
@@ -37,6 +38,14 @@ Get-Content $Manifest | ForEach-Object {
 
     if ($SkipPackages -and $relative -like 'Packages/*') {
         Write-Host "SKIP     $relative (package guard disabled)" -ForegroundColor DarkGray
+        return
+    }
+
+    if ($SkipContent -and (
+        $relative -like 'Assets/_Project/Animations/*' -or
+        $relative -like 'Assets/_Project/Prefabs/*' -or
+        $relative -like 'Assets/_Project/Animation/*')) {
+        Write-Host "SKIP     $relative (content assets live in Lore, check in main)" -ForegroundColor DarkGray
         return
     }
 

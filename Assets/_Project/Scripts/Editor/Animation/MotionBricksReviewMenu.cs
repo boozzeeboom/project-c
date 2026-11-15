@@ -86,7 +86,7 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
 
         [MenuItem("ProjectC/MotionBricks/Review/Player/Attach + play KL Walk01 on my player", priority = 40)]
         public static void PlayOnMyPlayer() =>
-            AttachOnLocalPlayer(AuthoredWalkModel + "::" + AuthoredWalkClip, "KL Walk01 Forward (0.80 s)");
+            AttachOnLocalPlayer(AuthoredWalkModel + "::" + AuthoredWalkClip, "KL Walk01 Forward (0.80 s)", AuthoredWalkSpeed);
 
         [MenuItem("ProjectC/MotionBricks/Review/Player/Stop on my player", priority = 41)]
         public static void StopOnMyPlayer()
@@ -99,7 +99,8 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
             }
 
             playback.StopPlayback();
-            Debug.Log("[MB-Review] Игрок: playback остановлен, baseline Animator восстановлен (экипировка не трогалась).");
+            Debug.Log("[MB-Review] Игрок: playback остановлен, baseline Animator восстановлен; root motion перестал " +
+                      "отдавать смещение (следующий кадр — обычное движение). Экипировка не трогалась.");
         }
 
         [MenuItem("ProjectC/MotionBricks/Review/Player/Detach playback from my player", priority = 42)]
@@ -112,8 +113,78 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
                 return;
             }
 
+            var player = FindLocalPlayer();
+            if (player != null)
+            {
+                foreach (var rootMotion in player.GetComponents<MotionBricksBakedRootMotion>())
+                    Object.Destroy(rootMotion);
+            }
+
             Object.Destroy(playback);
-            Debug.Log("[MB-Review] Игрок: playback удалён с объекта (компонент жил только в этой сессии Play Mode).");
+            Debug.Log("[MB-Review] Игрок: playback и root motion удалены с объекта (компоненты жили только в этой сессии Play Mode).");
+        }
+
+        // === Замер поездки живого игрока (T-MB04c: baked root motion внутри движения) ===
+
+        private static Vector3 _playerTravelOrigin;
+        private static float _playerTravelStartTime;
+        private static bool _playerTravelActive;
+
+        /// <summary>Domain reload может быть выключен: не тащим «активный замер» из прошлого сеанса.</summary>
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetMeasurementsOnPlay()
+        {
+            _travelActive = false;
+            _playerTravelActive = false;
+        }
+
+        [MenuItem("ProjectC/MotionBricks/Review/Player/Start travel measurement", priority = 43)]
+        public static void StartPlayerTravelMeasurement()
+        {
+            if (!RequirePlayMode()) return;
+
+            var player = FindLocalPlayer();
+            if (player == null)
+            {
+                Debug.LogError("[MB-Review] Локальный NetworkPlayer не найден. Войдите в игру и повторите.");
+                return;
+            }
+
+            _playerTravelOrigin = player.transform.position;
+            _playerTravelStartTime = Time.time;
+            _playerTravelActive = true;
+            Debug.Log($"[MB-Review] Замер поездки игрока начат: '{player.name}' в {_playerTravelOrigin:F2}, " +
+                      $"t={_playerTravelStartTime:F2} s. Подождите 3–5 с и вызовите 'Player/Log travel measurement'.");
+        }
+
+        [MenuItem("ProjectC/MotionBricks/Review/Player/Log travel measurement", priority = 44)]
+        public static void LogPlayerTravelMeasurement()
+        {
+            if (!RequirePlayMode()) return;
+            if (!_playerTravelActive)
+            {
+                Debug.LogError("[MB-Review] Замер не начат: сначала 'Player/Start travel measurement'.");
+                return;
+            }
+
+            var player = FindLocalPlayer();
+            if (player == null)
+            {
+                Debug.LogError("[MB-Review] Локальный NetworkPlayer не найден — измерять нечего.");
+                return;
+            }
+
+            Vector3 delta = player.transform.position - _playerTravelOrigin;
+            delta.y = 0f;
+            float elapsed = Time.time - _playerTravelStartTime;
+            float speed = elapsed > 0.01f ? delta.magnitude / elapsed : 0f;
+
+            string state = "root motion не подключён";
+            foreach (var rootMotion in player.GetComponents<MotionBricksBakedRootMotion>())
+                state = $"rootMotion.ClipSpeed={rootMotion.ClipSpeed:F2}, current={rootMotion.CurrentSpeed:F2} м/с";
+
+            Debug.Log($"[MB-Review] Замер поездки игрока: {delta.magnitude:F2} м за {elapsed:F2} s → средняя {speed:F2} м/с. " +
+                      $"Ожидаемо для KL Walk01 — 2.00 м/с. {state}.");
         }
 
         // === Body swap M→F→M через настоящий CharacterCustomisationApplier ===
@@ -257,6 +328,14 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
                   $"guard={playerPlayback.RootMotionGuardActive}"
                 : "[MB-Review] player playback: не подключён");
 
+            var localPlayer = FindLocalPlayer();
+            var playerRootMotion = localPlayer != null ? localPlayer.GetComponent<MotionBricksBakedRootMotion>() : null;
+            Debug.Log(playerRootMotion != null
+                ? $"[MB-Review] player root motion: enabled={playerRootMotion.enabled} " +
+                  $"clipSpeed={playerRootMotion.ClipSpeed:F2} current={playerRootMotion.CurrentSpeed:F2} м/с " +
+                  $"canDrivePlayer={playerRootMotion.CanDrivePlayer} bridgeSources={MotionBricksLocomotionBridge.RegisteredCount}"
+                : $"[MB-Review] player root motion: не подключён (bridgeSources={MotionBricksLocomotionBridge.RegisteredCount})");
+
             var state = CustomisationClientState.Instance;
             Debug.Log(state != null
                 ? $"[MB-Review] bodyType={state.CurrentSnapshot.bodyType} (0=Male, 1=Female), h={state.CurrentSnapshot.heightScale:F2}, w={state.CurrentSnapshot.widthScale:F2}"
@@ -321,7 +400,7 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
             }
         }
 
-        private static void AttachOnLocalPlayer(string clipSpec, string label)
+        private static void AttachOnLocalPlayer(string clipSpec, string label, float clipSpeed)
         {
             if (!RequirePlayMode()) return;
 
@@ -359,8 +438,23 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
             // Если OnEnable уже сыграл клип — не перезапускаем; иначе запускаем явно.
             if (!playback.IsPlaying) playback.TryPlayForReview(clip, 1f);
 
+            // T-MB04c: root motion тоже добавляется в рантайме. Компонент НЕ вызывает Move:
+            // он публикует смещение в MotionBricksLocomotionBridge, а его забирает
+            // NetworkPlayer.ProcessMovement в своём единственном CharacterController.Move.
+            var rootMotion = player.GetComponent<MotionBricksBakedRootMotion>();
+            if (rootMotion == null)
+            {
+                // Одно предупреждение «настройки не назначены» на AddComponent — ожидаемо.
+                rootMotion = player.gameObject.AddComponent<MotionBricksBakedRootMotion>();
+            }
+
+            rootMotion.ConfigureForReview(LoadSettings(), clipSpeed, 0f, true);
+            if (!rootMotion.enabled) rootMotion.enabled = true;
+
             Debug.Log($"[MB-Review] Игрок '{player.name}': playback {(playback.IsPlaying ? "играет" : "НЕ играет")} " +
-                      $"'{clip.name}' на Animator '{playback.TargetAnimator?.name}'. Префаб не менялся, компонент живёт только в сессии.");
+                      $"'{clip.name}' на Animator '{playback.TargetAnimator?.name}'; root motion " +
+                      $"{(rootMotion.enabled ? "включён" : "ВЫКЛЮЧЕН")} на {clipSpeed:F2} м/с " +
+                      $"(Move выполняет только NetworkPlayer.ProcessMovement). Префаб не менялся, компоненты живут только в сессии.");
         }
 
         private static void SwapBody(CharacterBodyType bodyType)

@@ -3,6 +3,7 @@ using Unity.Netcode.Components;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using ProjectC.Combat;  // T-RTC06: PlayerAttacker, PlayerTarget, CombatServer
+using ProjectC.Animation.MotionBricks;  // T-MB04c: baked root motion → единственный Move
 using ProjectC.Core;
 using ProjectC.Equipment;  // T-NPC-12: InCombat
 using ProjectC.Items;
@@ -1390,6 +1391,17 @@ namespace ProjectC.Player
             Vector3 motion = horizontalVel + windVel;
             motion.y += _velocity.y;
             Vector3 controllerMotion = motion * Time.deltaTime + _platformDelta;
+
+            // T-MB04c: baked root motion. Пока клип реально играет и персонаж — owner, мост
+            // отдаёт смещение кадра: горизонталь заменяется смещением клипа (ветер на этот
+            // кадр не применяется, иначе стопы поедут быстрее клипа). Вертикаль (гравитация/
+            // прыжок) и перенос движущейся платформы сохраняются. Move остаётся один — ниже.
+            if (MotionBricksLocomotionBridge.TryConsumeDisplacement(this, out Vector3 bakedDisplacement))
+            {
+                controllerMotion.x = bakedDisplacement.x + _platformDelta.x;
+                controllerMotion.z = bakedDisplacement.z + _platformDelta.z;
+            }
+
             GlobalMotionRuntimeEvidenceProbe.RecordEvent("movement", "CharacterController.Move.before", $"motion={controllerMotion} grounded={_controller.isGrounded} onPlatform={_onPlatform} platformDelta={_platformDelta}");
             _controller.Move(controllerMotion);
             GlobalMotionRuntimeEvidenceProbe.RecordEvent("movement", "CharacterController.Move.after", $"pos={transform.position} grounded={_controller.isGrounded} velocity={_velocity}");

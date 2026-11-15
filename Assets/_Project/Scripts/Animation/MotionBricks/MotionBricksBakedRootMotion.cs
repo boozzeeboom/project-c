@@ -34,8 +34,15 @@
 //      transform (риск №3 ревью T-MB04a).
 //   3. HipsDelta читается в LateUpdate — после humanoid-пасса Animator. Чтение в Update даёт позу
 //      прошлого кадра (риск №5 ревью T-MB04a).
+//
+// T-MB04c — движение игрока:
+//   На объекте с NetworkPlayer компонент по-прежнему НЕ вызывает CharacterController.Move.
+//   Вместо предупреждения он публикует посчитанное смещение в MotionBricksLocomotionBridge,
+//   откуда его забирает NetworkPlayer.ProcessMovement и применяет в своём единственном Move.
+//   Одно место расчёта, один Move. DefaultExecutionOrder ставит компонент раньше NetworkPlayer,
+//   чтобы тот читал смещение текущего кадра, а не прошлого.
 
-using ProjectC.Player;   // CharacterCustomisationApplier (BodySwapped), NetworkPlayer (запрет второго Move)
+using ProjectC.Player;   // CharacterCustomisationApplier (BodySwapped), NetworkPlayer (мост движения)
 using UnityEngine;
 
 namespace ProjectC.Animation.MotionBricks
@@ -51,6 +58,8 @@ namespace ProjectC.Animation.MotionBricks
 
     [DisallowMultipleComponent]
     [AddComponentMenu("ProjectC/Animation/MotionBricks Baked Root Motion")]
+    // Раньше NetworkPlayer (порядок 0): смещение кадра должно быть готово до его ProcessMovement.
+    [DefaultExecutionOrder(-100)]
     public sealed class MotionBricksBakedRootMotion : MonoBehaviour
     {
         [Header("Gate")]
@@ -91,13 +100,45 @@ namespace ProjectC.Animation.MotionBricks
         private NetworkPlayer _networkPlayer;
         private Animator _animator;
         private bool _warnedNoMover;
-        private bool _warnedPlayerOwner;
+        private bool _loggedBridgePublish;
         private float _currentSpeed;
         private bool _hasPrev;
         private Vector3 _prevHips;
         private Vector3 _pendingHipsDelta;
+        private Vector3 _bridgeDisplacement;
 
         public float CurrentSpeed => _currentSpeed;
+
+        /// <summary>NetworkPlayer, которому принадлежит источник (null — обычный объект/проба).</summary>
+        public NetworkPlayer BoundPlayer => _networkPlayer;
+
+        /// <summary>
+        /// Может ли источник вести движение игрока в этом кадре: гейт настроек + реально играющий
+        /// playback. Проверяется мостом у NetworkPlayer, поэтому смена mode на лету тоже учтена.
+        /// </summary>
+        public bool CanDrivePlayer
+        {
+            get
+            {
+                if (_networkPlayer == null || !isActiveAndEnabled) return false;
+                if (_playback == null || !_playback.IsPlaying) return false;
+                if (_settings == null || !_settings.allowPlayer) return false;
+
+                bool allowed = _settings.AllowsPlayback;
+#if UNITY_EDITOR
+                allowed |= MotionBricksBakedPlayback.ReviewOverride;
+#endif
+                return allowed;
+            }
+        }
+
+        /// <summary>Забрать смещение кадра (после чтения обнуляется: второй потребитель получит ноль).</summary>
+        public Vector3 ConsumeBridgeDisplacement()
+        {
+            Vector3 value = _bridgeDisplacement;
+            _bridgeDisplacement = Vector3.zero;
+            return value;
+        }
 
         /// <summary>Скорость под клип, м/с. Ноль — безопасный дефолт (компонент инертен).</summary>
         public float ClipSpeed
@@ -114,7 +155,9 @@ namespace ProjectC.Animation.MotionBricks
 
             _hasPrev = false;
             _pendingHipsDelta = Vector3.zero;
+            _bridgeDisplacement = Vector3.zero;
             _currentSpeed = 0f;
+            _loggedBridgePublish = false;
 
             if (_settings == null)
             {
@@ -139,15 +182,22 @@ namespace ProjectC.Animation.MotionBricks
 
             ResolveAnimator();
             ResolveHips();
+
+            // T-MB04c: на сетевом персонаже смещение публикуется в мост (Move делает NetworkPlayer).
+            if (_networkPlayer != null) MotionBricksLocomotionBridge.Register(this);
         }
 
         private void OnDisable()
         {
             if (_applier != null) _applier.BodySwapped -= OnBodySwapped;
 
+            MotionBricksLocomotionBridge.Unregister(this);
+
             _hasPrev = false;
             _pendingHipsDelta = Vector3.zero;
+            _bridgeDisplacement = Vector3.zero;
             _currentSpeed = 0f;
+            _loggedBridgePublish = false;
         }
 
         private void Update()
@@ -171,6 +221,10 @@ namespace ProjectC.Animation.MotionBricks
                 : ConsumeHipsDelta(playing);
 
             if (_source != MotionBricksRootMotionSource.HipsDelta) _pendingHipsDelta = Vector3.zero;
+
+            // Смещение живёт ровно один кадр: если источник ничего не дал, мост не должен
+            // отдать прошлое смещение (иначе персонаж «докатится» после Stop).
+            _bridgeDisplacement = Vector3.zero;
 
             if (displacement.sqrMagnitude > 0f) Apply(displacement);
         }
@@ -250,19 +304,21 @@ namespace ProjectC.Animation.MotionBricks
 
         private void Apply(Vector3 displacement)
         {
-            // T-MB04b, HARD: на сетевом персонаже этот компонент не двигает НИЧЕГО.
+            // T-MB04c, HARD: на сетевом персонаже этот компонент не двигает НИЧЕГО.
             // NetworkPlayer.ProcessMovement уже вызывает CharacterController.Move — второй Move
-            // дал бы двойную скорость и рассинхрон с NetworkTransform. Движение игрока встраивается
-            // в его movement; здесь только запрет и внятный лог.
+            // дал бы двойную скорость и рассинхрон с NetworkTransform. Смещение публикуется
+            // в мост, откуда его забирает тот же ProcessMovement (единственный Move).
             if (_networkPlayer != null)
             {
-                if (!_warnedPlayerOwner)
+                _bridgeDisplacement = displacement;
+
+                if (_logVerbose && !_loggedBridgePublish)
                 {
-                    _warnedPlayerOwner = true;
-                    Debug.LogWarning("[MotionBricksBakedRootMotion] Компонент на сетевом персонаже: CharacterController.Move " +
-                                     "отсюда НЕ вызывается (иначе двойное движение). Смещение клипа должно быть встроено " +
-                                     "в NetworkPlayer.ProcessMovement.", this);
+                    _loggedBridgePublish = true;
+                    Debug.Log("[MotionBricksBakedRootMotion] Смещение клипа уходит в NetworkPlayer.ProcessMovement " +
+                              "через MotionBricksLocomotionBridge; CharacterController.Move отсюда не вызывается.", this);
                 }
+
                 return;
             }
 
@@ -341,6 +397,24 @@ namespace ProjectC.Animation.MotionBricks
         }
 
         // === Ручные проверки в Editor ===
+
+#if UNITY_EDITOR
+        /// <summary>
+        /// T-MB04c: собрать компонент, добавленный в рантайме из меню Review (приёмка на живом
+        /// NetworkPlayer: компонент живёт только в сессии Play Mode, префаб не трогается).
+        /// Гейт не ослабляется — работает тот же ReviewOverride, что и у playback.
+        /// </summary>
+        public void ConfigureForReview(MotionBricksRuntimeSettings settings, float clipSpeed,
+                                       float acceleration, bool logVerbose)
+        {
+            _settings = settings;
+            _source = MotionBricksRootMotionSource.ClipSpeed;
+            _clipSpeed = Mathf.Max(0f, clipSpeed);
+            _acceleration = Mathf.Max(0f, acceleration);
+            _allowTransformFallback = false;
+            _logVerbose = logVerbose;
+        }
+#endif
 
         [ContextMenu("MotionBricks/Log Speed")]
         private void ContextLog() =>

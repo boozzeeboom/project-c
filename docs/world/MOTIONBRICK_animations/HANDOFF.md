@@ -2,13 +2,14 @@
 
 > **Для:** следующего агента/разработчика, который делает интеграцию.
 > **Дата:** 2026-11-15
-> **Статус:** research + offline pack + safe rollout + **T-MB02 spike** + **T-MB04b accepted** + **T-MB03 done**; production-интеграции ещё нет.
+> **Статус:** research + offline pack + safe rollout + **T-MB02 spike** + **T-MB04b accepted** + **T-MB03 done** + **T-MB04c code + runtime measurement (visual pending)**; production-интеграции ещё нет.
 > **Главное правило:** текущий Animator — дефолт; MotionBricks — additive, off by default, с откатом в минуты.
 > **Main:** код и docs импортированы в `main` коммитом `934ecdf6`; `MotionBricksRuntimeSettings.asset` в main — `mode: 0` (Disabled). `feature/motionbricks` — backup/история, не мержить слепо (в ветке `mode: 1`).
 > **T-MB02:** `bake → import → playback` работает; качество/IK/покрытие — T-MB03/04. См. [07](07_T-MB02_WORKTREE_BASELINE_FINDINGS.md) · [08](08_T-MB02_RETARGET_FINDINGS.md) · [09](09_T-MB02_ANALYSIS_AND_NEXT.md).
 > **T-MB04a (историческая):** рабочая forward-walk — авторский клип KL; метрики/руки/baseline подтверждены. Runtime-тест root motion и body swap закрыты в T-MB04b; см. [10](10_T-MB04B_RUNTIME_HARNESS.md).
 > **T-MB04b (вечер 15.11): ✅ принят.** Root motion на probe: **2.00 м/с** (`30,42 м / 15,21 s`), стопы не шаркают, `Stop`→baseline. Body swap Male→Female→Male на живом игроке — штатный путь 1/1; body swap при **активном playback** проверен на probe с настоящим applier — playback и root motion перепривязываются, кость двигается (18.8°/29.6°). Осталось вне тикета (в чек-лист T-MB08): 2 клиента, F8/F9 от нуля. Второй `CharacterController.Move` запрещён кодом; интеграция в `NetworkPlayer` — отдельный шаг.
 > **T-MB03 (ночь 15.11): ✅ сделано** — бейкер собирает задания с диска, batch + валидация + `*.bake.report.json`; тазовый foot IK стал контактно-осознанным (размах таза 15.7 → 11.7 см при hover 4 / penetration 1 см); `applyRootMotion` guard с учётом `SkillAnimationPlayer`; GUID/ссылки при перепёке сохранены. Подробности и замеры — [11](11_T-MB03_BAKER_AND_GUARDS.md). Baseline 12/12, Play Mode не запускался.
+> **T-MB04c (ночь 15.11): код + runtime-замер** — новый `MotionBricksLocomotionBridge`: `MotionBricksBakedRootMotion` на `NetworkPlayer` не вызывает `Move`, а публикует displacement; `NetworkPlayer.ProcessMovement` забирает его перед **единственным** `_controller.Move`. Baseline-файл `NetworkPlayer.cs` изменён с одобрения; хэш обновлён отдельным коммитом. Один контролируемый прогон Play Mode (по разрешению пользователя): поездка **33.13 м / 16.56 с = 2.00 м/с**, `Stop` → стоп, body swap Female→Male с перепривязкой playback/скелета, 0 errors. Визуал/экипировка — за пользователем: [12](12_T-MB04C_ROOT_MOTION_IN_PLAYER.md) §6.1.
 > **Найдено:** фактический рантайм-игрок — `NetworkPlayer_GlobalPilot.prefab` (подставляет `GlobalMotionNetworkStartup` из профиля), baseline защищает `NetworkPlayer.prefab`. Новое тело после свапа приходит с FBX-дефолтами Animator (`applyRootMotion=true`, `CullUpdateTransforms`) — для будущих root-motion клипов нужен гард (T-MB03/05).
 
 ---
@@ -117,7 +118,7 @@
 | `T-MB02` | ✅ done | Испечь **один** клип, импортировать, проиграть на scene-объекте (приёмка 15.11 - `HANDOFF §9`) |
 | `T-MB04a` | ✅ historical | KL walk/метрики/руки/root motion code; закрыт T-MB04b |
 | `T-MB04b` | ✅ accepted | root motion **2.00 м/с**, `Stop`→baseline, body swap (в т.ч. при активном playback) — приняты. Вне тикета → T-MB08: 2 клиента, F8/F9 от нуля, экипировка отдельным глазом |
-| `T-MB04c` | ⬜ next | Интеграция root motion в `NetworkPlayer.ProcessMovement` под feature flag; правка baseline-файла — только с одобрения. **Одобрение на 15.11 не дано** (передача анализа другому агенту); готовый план — [11 §13.2](11_T-MB03_BAKER_AND_GUARDS.md) |
+| `T-MB04c` | ✅ code + runtime; visual pending | Root motion встроен в движение игрока: `MotionBricksLocomotionBridge` + публикация из `MotionBricksBakedRootMotion`; `ProcessMovement` забирает displacement перед единственным `Move`. Замер 2.00 м/с, Stop→стоп, body swap с перепривязкой; визуал — [12 §6](12_T-MB04C_ROOT_MOTION_IN_PLAYER.md). |
 | `T-MB03` | ✅ done | Baker MVP: discovery/batch/validation/metadata; контактный pelvis foot IK; guard `applyRootMotion`; `SaveClipInPlace` с проверкой GUID — [11](11_T-MB03_BAKER_AND_GUARDS.md) |
 | `T-MB05` | ⬜ | Hybrid primitives: authoring/registry/playback |
 | `T-MB06` | ⬜ optional | Sentis import + benchmark (timebox) |
@@ -222,7 +223,7 @@
 4. **Foot IK / pelvis.** Для KL метрики в допуске (slide 0.07/0.11 см/кадр, подъём 0.036 м). T-MB03: тазовый IK стал контактно-осознанным (`PelvisSmooth`): на `WalkForward_Male` размах таза 15.7 → 11.7 см при hover 4 / penetration 1 см; «2 см» тазовым IK недостижимы, пока опорная стопа клипа гуляет на 15.7 см — кандидат на 2-bone IK в T-MB05. См. [11 §5](11_T-MB03_BAKER_AND_GUARDS.md).
 5. **`MotionBricksRuntimeSettings.mode`** в main — `0` (Disabled) ✓; probe `MB_Probe_Player` остаётся в `WorldScene_0_0` как dev-объект (разрешённая ветка).
 6. **Body swap M↔F — стенд готов.** Playback добавляется в рантайме на живого игрока; свап идёт через настоящий `CharacterCustomisationApplier` (штатный путь `CustomisationClientState`, при неподписанном applier — прямой вызов `ApplyBodyType` из меню). Визуал — за пользователем; `NetworkPlayer.prefab` не тронут.
-7. **Root motion — на probe, не на игроке.** `MotionBricksBakedRootMotion` стоит на `MB_Probe_Player`: `_clipSpeed = 2.00`, `_acceleration = 0`, `_allowTransformFallback = true`. На сетевом персонаже компонент **запрещён кодом** (второй `CharacterController.Move` невозможен); полноценная интеграция в `NetworkPlayer.ProcessMovement` — отдельный шаг, требует правки baseline-файла `NetworkPlayer.cs`.
+7. **Root motion — probe и игрок.** На probe `MotionBricksBakedRootMotion` двигает transform через `_allowTransformFallback` (2.00 м/с, T-MB04b). На сетевом персонаже он Move не вызывает: публикует смещение в `MotionBricksLocomotionBridge`, а `NetworkPlayer.ProcessMovement` применяет его в своём единственном `_controller.Move` (T-MB04c, [12](12_T-MB04C_ROOT_MOTION_IN_PLAYER.md)). Play Mode-проверка игрока — за пользователем.
 8. **Network/FO** (2 clients, F8/F9) не тестировались.
 9. **Sentis 2.6.1 конфликт версий:** Burst 1.8.17 / Collections 2.4.3 / Newtonsoft 3.2.1 vs проект 1.8.29 / 6.5.0 / 3.2.2. Не ставить в main.
 10. **Sentis import** 6993-узлового ONNX не проверен; нужен T-MB06.
@@ -297,6 +298,28 @@
 - **Передача 15.11:** T-MB04c **не начат** — одобрения на правку `NetworkPlayer.cs` нет (пользователь
   отдаёт анализ другому агенту); готовый план «мост + один Move» — [11 §13.2](11_T-MB03_BAKER_AND_GUARDS.md).
   Добавление `NetworkPlayer_GlobalPilot.prefab` в baseline — решение отложено (см. [11 §13.3](11_T-MB03_BAKER_AND_GUARDS.md)).
+
+**Обновление 15.11, ночь (T-MB04c):**
+- `MotionBricksLocomotionBridge` — статический реестр активных `MotionBricksBakedRootMotion` и
+  `TryConsumeDisplacement(NetworkPlayer, out Vector3)`. Гейт: `mode != Disabled` (или `ReviewOverride`),
+  `allowPlayer`, `player.IsOwner`, `playback.IsPlaying`; иначе `false` → baseline-движение.
+- `MotionBricksBakedRootMotion` на объекте с `NetworkPlayer` больше не пишет warning «нельзя», а публикует
+  смещение в мост; `[DefaultExecutionOrder(-100)]` гарантирует, что смещение готово до `ProcessMovement`.
+  На probe путь не изменился (`CharacterController`/transform fallback).
+- `NetworkPlayer.ProcessMovement`: +11 строк — если мост дал displacement, горизонталь кадра = baked
+  displacement + `_platformDelta`; вертикаль/гравитация/платформа сохраняются. `_controller.Move` остался один.
+- Меню: `Player/Attach + play KL Walk01 on my player` теперь ставит и root motion (2.00 м/с, ускорение 0);
+  добавлены `Player/Start|Log travel measurement`; `Log harness state` печатает `player root motion` и
+  `bridgeSources`. `Detach` убирает оба компонента.
+- Baseline: `NetworkPlayer.cs` — **CHANGED** (намеренно, с одобрения), хэш `9cc44bf7…`; `baseline_hashes.tsv`
+  обновлён **отдельным коммитом**; до/после обновления — 12/12.
+- **Runtime (один прогон агента по разрешению пользователя):** Host через штатный
+  `GlobalMotionPilotRuntime.StartPilotHost()`; attach → поездка **33.13 м / 16.56 с = 2.00 м/с**,
+  `isGrounded`, forward +Z; `Stop` → позиция не меняется 20 с; body swap Female→Male при активном
+  playback — `PlayerAnimation_Female/Default`, playback/`B-hips` перепривязаны, 0 errors. Визуал
+  T-pose/экипировки — за пользователем. Детали и оговорка про culling — [12 §6.1](12_T-MB04C_ROOT_MOTION_IN_PLAYER.md).
+- Приёмка пользователем — [12](12_T-MB04C_ROOT_MOTION_IN_PLAYER.md) §6 (в первую очередь глазами:
+  стопы не шаркают, T-pose при свапе нет, экипировка на месте).
 
 ---
 

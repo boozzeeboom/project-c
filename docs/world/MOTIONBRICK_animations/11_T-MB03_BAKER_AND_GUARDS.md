@@ -332,17 +332,18 @@ PASS  каст: Stop не перетирает флаг скилла
 5. `ProjectC/MotionBricks/Bake/Bake + validate all discovered` → «испечено 2, ошибок 0»; GUID
    стабильны; оба клипа FAIL по оси/асимметрии/развороту — это контент, не пайплайн (§6).
 
-### 13.2. T-MB04c — готовый план (одобрения нет)
+### 13.2. T-MB04c — план (реализован, см. [12](12_T-MB04C_ROOT_MOTION_IN_PLAYER.md))
 
-Если тикет одобрят, правка минимальная и без второго `CharacterController.Move`:
+Одобрение на правку `NetworkPlayer.cs` получено 15.11 (ночь); план ниже выполнен. Замер Play Mode: поездка **2.00 м/с**, `Stop` → стоп, body swap Female→Male с перепривязкой ([12 §6.1](12_T-MB04C_ROOT_MOTION_IN_PLAYER.md)); визуал T-pose/экипировки — за пользователем.
 
 1. **Новый runtime-файл** `Assets/_Project/Scripts/Animation/MotionBricks/MotionBricksLocomotionBridge.cs`:
    реестр активных `MotionBricksBakedRootMotion` (регистрация в `OnEnable`/`OnDisable`, без
-   `GetComponent` в кадре) + `TryGetDisplacement(NetworkPlayer, out Vector3)`.
+   `GetComponent` в кадре) + `TryConsumeDisplacement(NetworkPlayer, out Vector3)` (чтение одноразовое:
+   после выдачи смещение обнуляется).
    Гейт тот же: `MotionBricksRuntimeSettings.mode != Disabled`, `allowPlayer`, `player.IsOwner`.
 2. **`MotionBricksBakedRootMotion`**: на объекте с `NetworkPlayer` по-прежнему НЕ вызывает `Move`;
    вместо предупреждения публикует посчитанное смещение в мост (одно место расчёта).
-3. **`NetworkPlayer.ProcessMovement`** (~8 строк перед формированием `controllerMotion`):
+3. **`NetworkPlayer.ProcessMovement`** (+11 строк перед записью `CharacterController.Move.before`):
    если мост дал смещение — горизонталь этого кадра = baked-смещение (ветер на кадр выключается),
    затем идёт существующий единственный `_controller.Move`. Никаких новых `Move`, `NetworkTransform`
    и контроллер не меняются.
@@ -405,7 +406,7 @@ PASS  каст: Stop не перетирает флаг скилла
 | T-MB04a | ✅ historical |
 | T-MB04b | ✅ accepted |
 | T-MB03 | ✅ done (pipeline; quality FAIL остаётся) |
-| T-MB04c root motion в NetworkPlayer | ⬜ next, нужно одобрение |
+| T-MB04c root motion в NetworkPlayer | ✅ code + runtime; visual pending — [12](12_T-MB04C_ROOT_MOTION_IN_PLAYER.md) |
 | T-MB05 hybrid/2-bone IK/NPC pool | ⬜ |
 | T-MB08 2 clients/F8-F9/equipment/go-no-go | ⬜ |
 | T-MB06/07 runtime neural | ⬜ optional |
@@ -415,7 +416,7 @@ PASS  каст: Stop не перетирает флаг скилла
 ### 14.4. Следующему агенту
 
 1. Не трогать baseline-файлы без одобрения; `check_baseline.ps1` → 12/12.
-2. T-MB04c: root motion в `NetworkPlayer.ProcessMovement` под feature flag; один `CharacterController.Move`; после — baseline с обновлённым хэшем отдельным коммитом.
+2. T-MB04c: root motion в `NetworkPlayer.ProcessMovement` под feature flag; один `CharacterController.Move`; после — baseline с обновлённым хэшем отдельным коммитом. **Сделано, см. [12](12_T-MB04C_ROOT_MOTION_IN_PLAYER.md); Play Mode — за пользователем.**
 3. T-MB05: 2-bone IK, `loop:false`/нециклический IK, NPC baked pool/hybrid primitives.
 4. T-MB08: 2 clients, F8/F9 от нуля, equipment, каст скилла во время playback, go/no-go.
 5. Отдельное решение: добавить `NetworkPlayer_GlobalPilot.prefab` в baseline.

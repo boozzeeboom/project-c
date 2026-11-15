@@ -89,6 +89,7 @@ powershell -ExecutionPolicy Bypass -File `
 - Контент (`*.prefab`, `*.controller`, `*.anim`, сцены) **не хранится в git** (Lore VCS). В worktree этих файлов нет; `check_baseline.ps1` там проверяет только скрипты (`-SkipContent`). Контентный baseline — только в `C:\Projects\ProjectC_client`.
 - Хэши не покрывают `.meta`-файлы. Если Unity пересоздаст `.meta` (например, из-за перемещения ассета), GUID может измениться — это отдельная проверка (`git status`, `git diff --stat`).
 - Хэши не покрывают сцены (`WorldScene_0_0.unity`) — там уже есть пользовательские изменения; для сцен использовать `git diff` и визуальную проверку.
+- **Известный gap:** фактический рантайм-игрок — `Assets/_Project/Prefabs/FloatingOrigin/NetworkPlayer_GlobalPilot.prefab` (его подставляет `GlobalMotionNetworkStartup` из профиля, роль `Spatial`), а baseline защищает `NetworkPlayer.prefab`. Рекомендация: добавить `GlobalPilot` в `baseline_hashes.tsv` отдельным решением (hash на 15.11: `c14c09dcde0ab1dc37ef4a6f83b4aa4503706cfa26da71837cfdbec6fe2b6010`, проверить перед добавлением).
 - Baseline не заменяет коммит/ветку: перед интеграцией всё равно нужен отдельный worktree/branch.
 - Проверка не запускает Unity и не валидирует анимацию; она только ловит случайные изменения файлов.
 

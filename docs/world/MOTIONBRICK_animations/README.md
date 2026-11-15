@@ -24,7 +24,7 @@
 10. **Что реально проверено:** официальные docs/paper/ONNX-манифест, статический аудит ONNX-графа, CPU-бенчмарк ONNX Runtime, чтение кода проекта. Официальный TensorRT-движок **запущен** (`generate_once.py`: 26 + 50 кадров на RTX 3090); Sentis-импорт и Play Mode **не запускались** (правило `dont-start-play`).
 11. **Безопасный откат:** по умолчанию `Mode=Disabled`; baseline-хэши 12 файлов + `check_baseline.ps1`; откат — выключатель → удалить playback → удалить generated-клипы → `git revert` → выбросить worktree. Подробно — [06_SAFE_ROLLOUT_AND_ROLLBACK.md](06_SAFE_ROLLOUT_AND_ROLLBACK.md).
 12. **T-MB02 spike принят:** CPU-бейк → Humanoid `.anim` → `PlayableGraph` playback → baseline restore работает; но это **один** демо-клип (`walk_to_jog`, разворот на месте), 22 кости, без плеч/кистей/пальцев и без foot IK. 100% покрытия нет; см. [09_T-MB02_ANALYSIS_AND_NEXT.md](09_T-MB02_ANALYSIS_AND_NEXT.md).
-13. **T-MB04a:** рабочая ходьба — KL `HumanM@Walk01_Forward` (2.00 м/с), метрики в допуске; root motion `MotionBricksBakedRootMotion` написан, но **в рантайме не проверен** и в сцену не подключён. Body swap — блокер; 2 clients/F8/F9 — за пользователем. Код/docs в main (`934ecdf6`), settings `mode: 0`.
+13. **T-MB04b accepted:** root motion на probe — **2.00 м/с** (`30,42 м / 15,21 s`), `Stop`→baseline; body swap Male→Female→Male на игроке и при активном playback на probe; baseline 12/12. Остаточные долги: `NetworkPlayer_GlobalPilot.prefab` не в baseline, root motion не интегрирован в `NetworkPlayer.ProcessMovement`, `applyRootMotion` после свапа, 2 clients/F8/F9 — T-MB08. Код/docs в main, settings `mode: 0`; см. [10](10_T-MB04B_RUNTIME_HARNESS.md).
 
 ---
 

@@ -2,6 +2,25 @@
 
 ## 15 ноября 2026
 
+**Тикет:** T-MB04b
+
+**Тема:** MotionBricks root motion на probe, body swap и стенд приёмки.
+
+**Что сделано:**
+- Root motion: `MotionBricksBakedRootMotion` — `LateUpdate` для `HipsDelta`, ребind после `BodySwapped`, guard против второго `CharacterController.Move` (`NetworkPlayer`).
+- Приёмка: probe едет 2.00 м/с (`30,42 м / 15,21 s`), `Stop`→baseline; body swap Male→Female→Male на живом игроке (1/1, без reflection); body swap при активном playback на probe (playback/hips перепривязаны, 18.8°/29.6°).
+- Baseline 12/12; сцена после теста чистая, `git diff` по сцене пуст; compile 0 errors.
+- Найдено: фактический игрок — `NetworkPlayer_GlobalPilot.prefab` (не в baseline); новое тело после свапа несёт `applyRootMotion=true`; root motion в `NetworkPlayer` не интегрирован.
+
+**Файлы:**
+- `Assets/_Project/Scripts/Animation/MotionBricks/MotionBricksBakedRootMotion.cs`, `MotionBricksBakedPlayback.cs`
+- `Assets/_Project/Scripts/Editor/Animation/MotionBricksReviewMenu.cs`
+- `docs/world/MOTIONBRICK_animations/10_T-MB04B_RUNTIME_HARNESS.md`, `HANDOFF.md`, `README.md`, `09_T-MB02_ANALYSIS_AND_NEXT.md`
+
+**Проверено:** Play Mode (пользователь + один прогон агента по разрешению); 2 clients/F8-F9 от нуля/equipment — отложены в T-MB08.
+
+## 15 ноября 2026
+
 **Тикет:** T-MB02 / T-MB04a
 
 **Тема:** MotionBricks: baked playback, retarget, KL walk, root motion; перенос кода/docs в main.

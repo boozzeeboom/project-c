@@ -410,4 +410,50 @@ BASELINE OK: 12 files match.
 | Probe | `WorldScene_0_0 / WorldRoot_0_0 / MB_Probe_Player` |
 | Baseline check | `C:\Projects\ProjectC_client\docs\world\MOTIONBRICK_animations\baseline\check_baseline.ps1` |
 
+## 10. Аудит следующего шага (15.11, вечер)
+
+### 10.1. Что принято
+
+T-MB04b закрыт обоснованно: root motion на probe даёт **2.00 м/с** (`30,42 м / 15,21 s`), `Stop` возвращает baseline, body swap Male→Female→Male на живом игроке идёт штатным путём 1/1, body swap при активном playback проверен на probe с настоящим `CharacterCustomisationApplier` (перепривязка playback/`B-hips`, 18.8°/29.6°). Baseline 12/12, сцена после теста чистая, компиляция 0 errors.
+
+### 10.2. Остаточные риски / долги
+
+| # | Риск | Почему важно | Куда |
+|---|---|---|---|
+| 1 | **Baseline защищает не тот prefab.** Фактический рантайм-игрок — `NetworkPlayer_GlobalPilot.prefab` (подставляет `GlobalMotionNetworkStartup` из профиля, роль `Spatial`), а `baseline_hashes.tsv` содержит `NetworkPlayer.prefab`. | Случайная правка реального игрока не будет поймана baseline. | Отдельное решение: добавить `GlobalPilot` в baseline (hash `c14c09dc...` на 15.11). |
+| 2 | **Root motion не интегрирован в `NetworkPlayer`.** Компонент на игроке намеренно ничего не двигает; нужен `NetworkPlayer.ProcessMovement`. | Без этого игрок не может ехать от baked-клипа; только probe. | `T-MB04c`, правка baseline-файла — с одобрения. |
+| 3 | **Body swap + активный playback на реальном `GlobalPilot` не проверен.** Проверен на probe с временным applier; event-путь тот же, но комбинация «игрок + playback + swap» — нет. | Может вылезти порядок инициализации/экипировка. | `T-MB08` / `T-MB04c`. |
+| 4 | **После свапа новое тело несёт FBX-дефолты Animator:** `applyRootMotion = true`, `cullingMode = CullUpdateTransforms`. | На in-place KL безвредно; для клипа с переносом корня — двойное движение. | Guard в `T-MB03`/`T-MB05`: выключать/восстанавливать `applyRootMotion` на время playback, с оглядкой на `SkillAnimationPlayer`. |
+| 5 | **2 клиента, F8/F9 от нуля, экипировка** не проверены. | Сеть/FO/equipment — часть production-приёмки. | Чек-лист `T-MB08`. |
+| 6 | **`MotionBricksRuntimeSettings.asset` не в git** (Lore, `mode: 0`). | При отсутствии ассета playback fail-closed; это ок, но нужно помнить. | Документировано; не коммитить asset без `.meta`. |
+| 7 | **Generated `.anim`/`.f32`/`.saib` не в git**, `.anim` ignored; sample poses eval-only. | Воспроизводимость через baker; для релиза — свои seed/target. | `T-MB03` + лицензионная гигиена. |
+| 8 | **`tmp_tmb04_*.bat`** в корне main. | Временные файлы, не коммитить. | Удалить после проверки. |
+
+### 10.3. Где мы по плану
+
+| Этап | Статус |
+|---|---|
+| T-MB01 / 01A / 01B | ✅ |
+| T-MB02 spike | ✅ |
+| T-MB04a | ✅ historical |
+| T-MB04b | ✅ accepted |
+| T-MB04c (root motion в игрока) | ⬜ next |
+| T-MB03 (baker/pelvis IK/applyRootMotion guard) | ⬜ next |
+| T-MB05 (hybrid primitives/NPC pool) | ⬜ |
+| T-MB08 (2 clients/F8-F9/equipment/go-no-go) | ⬜ |
+| T-MB06/07 (runtime neural) | ⬜ optional |
+
+До go/no-go остаётся **3 обязательных шага**: `T-MB04c` → `T-MB03` → `T-MB08`; `T-MB05` — если нужен NPC/hybrid pool; `T-MB06/07` — только при продуктовой необходимости.
+
+### 10.4. Порядок для следующего агента
+
+1. **Не трогать baseline-файлы без одобрения.** Начать с `check_baseline.ps1` → 12/12.
+2. **T-MB03:** generalize baker (no hardcoded `WalkToJog`), batch/validation, pelvis foot IK (15.8 см vs 2 см), guard `applyRootMotion` после body swap, `SaveClipInPlace`.
+3. **T-MB04c:** root motion в `NetworkPlayer.ProcessMovement` под feature flag; только после решения по правке baseline-файла.
+4. **T-MB08:** 2 clients, F8/F9 от нуля, equipment, go/no-go.
+5. **Отдельное решение:** добавить `NetworkPlayer_GlobalPilot.prefab` в baseline.
+6. **Пользователь:** Play Mode/визуал; агент не запускает Play Mode сам, кроме явно разрешённого прогона.
+
+---
+
 *Связанные: [09_T-MB02_ANALYSIS_AND_NEXT.md](09_T-MB02_ANALYSIS_AND_NEXT.md) · [06_SAFE_ROLLOUT_AND_ROLLBACK.md](06_SAFE_ROLLOUT_AND_ROLLBACK.md) · [HANDOFF.md](HANDOFF.md)*

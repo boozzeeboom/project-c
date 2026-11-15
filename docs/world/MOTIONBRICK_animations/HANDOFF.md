@@ -2,11 +2,11 @@
 
 > **Для:** следующего агента/разработчика, который делает интеграцию.
 > **Дата:** 2026-11-15
-> **Статус:** research + offline pack + safe rollout + **T-MB02 spike** + **T-MB04a code** готовы; production-интеграции ещё нет.
+> **Статус:** research + offline pack + safe rollout + **T-MB02 spike** + **T-MB04b accepted**; production-интеграции ещё нет.
 > **Главное правило:** текущий Animator — дефолт; MotionBricks — additive, off by default, с откатом в минуты.
 > **Main:** код и docs импортированы в `main` коммитом `934ecdf6`; `MotionBricksRuntimeSettings.asset` в main — `mode: 0` (Disabled). `feature/motionbricks` — backup/история, не мержить слепо (в ветке `mode: 1`).
 > **T-MB02:** `bake → import → playback` работает; качество/IK/покрытие — T-MB03/04. См. [07](07_T-MB02_WORKTREE_BASELINE_FINDINGS.md) · [08](08_T-MB02_RETARGET_FINDINGS.md) · [09](09_T-MB02_ANALYSIS_AND_NEXT.md).
-> **T-MB04a (вечер 15.11):** рабочая forward-walk — авторский клип KL; все метрики опоры в допуске, `B-upperArm.L` двигается (23.7°), baseline восстанавливается; root motion написан (`MotionBricksBakedRootMotion`, в сцену намеренно не подключён). Открыто: runtime-тест root motion, body swap при активном playback, 2 клиента / F8 / F9. Подробности — [09](09_T-MB02_ANALYSIS_AND_NEXT.md).
+> **T-MB04a (историческая):** рабочая forward-walk — авторский клип KL; метрики/руки/baseline подтверждены. Runtime-тест root motion и body swap закрыты в T-MB04b; см. [10](10_T-MB04B_RUNTIME_HARNESS.md).
 > **T-MB04b (вечер 15.11): ✅ принят.** Root motion на probe: **2.00 м/с** (`30,42 м / 15,21 s`), стопы не шаркают, `Stop`→baseline. Body swap Male→Female→Male на живом игроке — штатный путь 1/1; body swap при **активном playback** проверен на probe с настоящим applier — playback и root motion перепривязываются, кость двигается (18.8°/29.6°). Осталось вне тикета (в чек-лист T-MB08): 2 клиента, F8/F9 от нуля. Второй `CharacterController.Move` запрещён кодом; интеграция в `NetworkPlayer` — отдельный шаг.
 > **Найдено:** фактический рантайм-игрок — `NetworkPlayer_GlobalPilot.prefab` (подставляет `GlobalMotionNetworkStartup` из профиля), baseline защищает `NetworkPlayer.prefab`. Новое тело после свапа приходит с FBX-дефолтами Animator (`applyRootMotion=true`, `CullUpdateTransforms`) — для будущих root-motion клипов нужен гард (T-MB03/05).
 
@@ -36,7 +36,7 @@
 | T-MB04a body swap | ✅ Male→Female→Male на живом игроке (1/1, штатный путь); при активном playback — проверено на probe с настоящим applier: перепривязка playback и `B-hips`, кость 18.8°/29.6° (§5.2–5.3) |
 | Baseline animation files | ✅ `check_baseline.ps1` - 12/12 match (main); worktree `-SkipContent` - 4 scripts |
 | Sentis import | ❌ не проверялся; конфликт версий Burst/Collections/Newtonsoft |
-| Unity Play Mode | ❌ не запускался (правило `dont-start-play`) |
+| Unity Play Mode | ✅ T-MB04b: пользователь + один прогон агента по разрешению; агент сам Play Mode не запускает |
 
 ---
 
@@ -98,7 +98,7 @@
    Test-Path C:\Projects\motion_bricks\motionbricks\.venv\Scripts\python.exe
    Test-Path C:\Projects\motion_bricks\tools\cpu_baker\.venv\Scripts\python.exe
    ```
-5. Начать `T-MB04a` runtime acceptance / `T-MB03` — код и Unity-ассеты в main; baseline до/после.
+5. Начать `T-MB03` (baker/pelvis IK/applyRootMotion guard) и `T-MB08` (2 clients/F8-F9/equipment) — код и Unity-ассеты в main; baseline до/после.
 
 **Main vs worktree:** main теперь содержит код/docs и Lore-контент; worktree не содержит контента и оставлен только как backup. Не открывать два Unity на одном проекте; не копировать контент в worktree.
 
@@ -112,9 +112,10 @@
 | `T-MB01A` | ✅ done | Offline resource pack + local links |
 | `T-MB01B` | ✅ done | Safe rollout/rollback + baseline manifest + handoff |
 | `T-MB02` | ✅ done | Испечь **один** клип, импортировать, проиграть на scene-объекте (приёмка 15.11 - `HANDOFF §9`) |
-| `T-MB04a` | ⚠️ code done | KL walk/метрики/руки/root motion code; runtime-тест — пользователь |
+| `T-MB04a` | ✅ historical | KL walk/метрики/руки/root motion code; закрыт T-MB04b |
 | `T-MB04b` | ✅ accepted | root motion **2.00 м/с**, `Stop`→baseline, body swap (в т.ч. при активном playback) — приняты. Вне тикета → T-MB08: 2 клиента, F8/F9 от нуля, экипировка отдельным глазом |
-| `T-MB03` | ⬜ next | Baker MVP: generalize, batch, metadata, validation; фикс pelvis foot IK |
+| `T-MB04c` | ⬜ next | Интеграция root motion в `NetworkPlayer.ProcessMovement` под feature flag; правка baseline-файла — только с одобрения |
+| `T-MB03` | ⬜ next | Baker MVP: generalize, batch, metadata, validation; фикс pelvis foot IK; guard `applyRootMotion` после body swap |
 | `T-MB05` | ⬜ | Hybrid primitives: authoring/registry/playback |
 | `T-MB06` | ⬜ optional | Sentis import + benchmark (timebox) |
 | `T-MB07` | ⬜ optional | Runtime experiment (only after go) |

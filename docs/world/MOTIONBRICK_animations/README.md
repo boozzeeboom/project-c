@@ -191,6 +191,7 @@
 | [09_T-MB02_ANALYSIS_AND_NEXT.md](09_T-MB02_ANALYSIS_AND_NEXT.md) | **Анализ T-MB02:** 100%? ограничения, NPC, выигрыш, следующие шаги |
 | [10_T-MB04B_RUNTIME_HARNESS.md](10_T-MB04B_RUNTIME_HARNESS.md) | **T-MB04b:** root motion на probe, body swap на живом игроке, стенд и порядок приёмки |
 | [11_T-MB03_BAKER_AND_GUARDS.md](11_T-MB03_BAKER_AND_GUARDS.md) | **T-MB03:** discovery/batch/validation, pelvis IK, applyRootMotion guard, GUID |
+| [12_T-MB04C_ROOT_MOTION_IN_PLAYER.md](12_T-MB04C_ROOT_MOTION_IN_PLAYER.md) | **T-MB04c:** root motion в `NetworkPlayer` через bridge, замер 2.00 м/с, body swap |
 | [baseline/BASELINE_MANIFEST.md](baseline/BASELINE_MANIFEST.md) | Baseline-хэши 12 ключевых файлов + `check_baseline.ps1` |
 | [HANDOFF.md](HANDOFF.md) | Саммари для передачи работы следующему агенту (абсолютные ссылки) |
 

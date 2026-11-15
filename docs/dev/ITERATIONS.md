@@ -2,6 +2,28 @@
 
 ## 15 ноября 2026
 
+**Тикет:** T-MB04c
+
+**Тема:** Baked root motion внутри движения `NetworkPlayer` (bridge, один Move).
+
+**Что сделано:**
+- `MotionBricksLocomotionBridge` — реестр активных источников + `TryConsumeDisplacement(NetworkPlayer)`; гейт fail-closed, одноразовое чтение.
+- `MotionBricksBakedRootMotion` на `NetworkPlayer` не вызывает `Move`, публикует displacement; `[DefaultExecutionOrder(-100)]`; `ConfigureForReview`.
+- `NetworkPlayer.ProcessMovement` +11 строк: горизонталь кадра = baked displacement + платформа; вертикаль/гравитация сохранены; `_controller.Move` остался один.
+- Review-меню: attach/root motion 2.00 м/с, замер поездки игрока, harness-лог `canDrivePlayer/bridgeSources`.
+- Runtime (один прогон по разрешению): 33.126 м / 16.563 с = 2.00 м/с; Stop→стоп; body swap Female→Male с перепривязкой; 0 errors.
+- Baseline `NetworkPlayer.cs` обновлён отдельным коммитом: `a9a89c46…` → `9cc44bf7…`; после — 12/12.
+
+**Файлы:**
+- `Assets/_Project/Scripts/Animation/MotionBricks/MotionBricksLocomotionBridge.cs`, `MotionBricksBakedRootMotion.cs`
+- `Assets/_Project/Scripts/Player/NetworkPlayer.cs`
+- `Assets/_Project/Scripts/Editor/Animation/MotionBricksReviewMenu.cs`
+- `docs/world/MOTIONBRICK_animations/12_T-MB04C_ROOT_MOTION_IN_PLAYER.md`, `HANDOFF.md`, `README.md`, `11`, `BASELINE_MANIFEST.md`
+
+**Проверено:** Play Mode (агент по разрешению); визуал T-pose/экипировки — за пользователем; 2 clients/F8-F9/каст — T-MB08; Play Mode сохранил позицию в `ShipPositions.json` (side effect).
+
+## 15 ноября 2026
+
 **Тикет:** T-MB03
 
 **Тема:** MotionBricks baker без хардкода, batch/validation, pelvis IK, applyRootMotion guard.

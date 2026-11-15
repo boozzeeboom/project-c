@@ -210,6 +210,7 @@ BASELINE FAILED: 1 of 12 files changed/missing.
 | 7 | **`NetworkPlayer_GlobalPilot.prefab` вне baseline.** | Отдельное решение |
 | 8 | **Culling после body swap:** новое тело приходит с `CullUpdateTransforms`; если камера далеко, поза на костях замирает (движение при этом работает). Фикс — `AlwaysAnimate` для локального игрока/камеры — отдельным решением, не в T-MB04c. | T-MB05/T-MB08 |
 | 9 | `tmp_tmb04_*.bat` в корне — temp, не коммитить. | Удалить |
+| 10 | **Побочный эффект Play Mode:** сессия сохранила позицию в `ShipPositions.json` (`players[0] ≈ (-95.9, -99.0, -16.1)`) — ушли с платформы и упали. | MainMenu → debug «Delete Character Position Saves» или отойти/респавниться; не коммитить сейв |
 
 ---
 

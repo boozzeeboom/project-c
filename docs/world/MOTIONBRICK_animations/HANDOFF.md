@@ -225,7 +225,7 @@
 4. **Foot IK / pelvis.** Для KL метрики в допуске (slide 0.07/0.11 см/кадр, подъём 0.036 м). T-MB03: тазовый IK стал контактно-осознанным (`PelvisSmooth`): на `WalkForward_Male` размах таза 15.7 → 11.7 см при hover 4 / penetration 1 см; «2 см» тазовым IK недостижимы, пока опорная стопа клипа гуляет на 15.7 см — кандидат на 2-bone IK в T-MB05. См. [11 §5](11_T-MB03_BAKER_AND_GUARDS.md).
 5. **`MotionBricksRuntimeSettings.mode`** в main — `0` (Disabled) ✓; probe `MB_Probe_Player` остаётся в `WorldScene_0_0` как dev-объект (разрешённая ветка).
 6. **Body swap M↔F — стенд готов.** Playback добавляется в рантайме на живого игрока; свап идёт через настоящий `CharacterCustomisationApplier` (штатный путь `CustomisationClientState`, при неподписанном applier — прямой вызов `ApplyBodyType` из меню). Визуал — за пользователем; `NetworkPlayer.prefab` не тронут.
-7. **Root motion — probe и игрок.** На probe `MotionBricksBakedRootMotion` двигает transform через `_allowTransformFallback` (2.00 м/с, T-MB04b). На сетевом персонаже он Move не вызывает: публикует смещение в `MotionBricksLocomotionBridge`, а `NetworkPlayer.ProcessMovement` применяет его в своём единственном `_controller.Move` (T-MB04c, [12](12_T-MB04C_ROOT_MOTION_IN_PLAYER.md)). Play Mode-проверка игрока — за пользователем.
+7. **Root motion — probe и игрок.** На probe `MotionBricksBakedRootMotion` двигает transform через `_allowTransformFallback` (2.00 м/с, T-MB04b). На сетевом персонаже он Move не вызывает: публикует смещение в `MotionBricksLocomotionBridge`, а `NetworkPlayer.ProcessMovement` применяет его в своём единственном `_controller.Move` (T-MB04c, [12](12_T-MB04C_ROOT_MOTION_IN_PLAYER.md)). Контролируемый прогон агента по разрешению: 2.00 м/с, Stop→стоп, body swap Female→Male с перепривязкой; визуал/T-pose/экипировка — за пользователем.
 8. **Network/FO** (2 clients, F8/F9) не тестировались.
 9. **Sentis 2.6.1 конфликт версий:** Burst 1.8.17 / Collections 2.4.3 / Newtonsoft 3.2.1 vs проект 1.8.29 / 6.5.0 / 3.2.2. Не ставить в main.
 10. **Sentis import** 6993-узлового ONNX не проверен; нужен T-MB06.
@@ -233,6 +233,7 @@
 12. **Play Mode/визуал** — только пользователь.
 13. **Лицензии:** sample motions eval-only; модели — NVIDIA Open Model Agreement; attribution.
 14. **`tmp_tmb04_*.bat`** в корне main — temp-файлы; удалить после проверки, не коммитить.
+15. **Побочный эффект T-MB04c Play Mode:** сессия сохранила позицию в `ShipPositions.json` (`players[0] ≈ (-95.9, -99.0, -16.1)`); если не нужна — MainMenu → debug «Delete Character Position Saves» или respawn. Сейв не коммитить.
 
 **Обновление 15.11, вечер (T-MB04a):**
 - main содержит код/docs (`934ecdf6`); `MotionBricksRuntimeSettings.asset` — `mode: 0`; baseline 10/10.

@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-11-15 (T-FO06L follow-up — каталог пилота: репарент чинится окном bake)
+
+**Задача:** Пилот перестал стартовать с `scene_preparation:authored_parent_binding_mismatch` после правок `WorldScene_0_0`; bake-окно такой дрейф не чинило.
+
+**Результат:** Сверка каталога с живым деревом (146 маркеров = 61 Bootstrap + 85 WorldScene_0_0, лишних/пропавших нет): единственное расхождение — `WorldRoot_0_0/DockStation_Primium` (`837a3910…:2099880783:0`), в каталоге корень, в сцене — под `WorldRoot_0_0` (`…:14177344:0`). Исправлено `entry` + `observation` парой, освежено 50 устаревших `layoutHash` и `dependencyHash` обеих сцен, пересчитан digest профиля. Окно `BakePilotSceneCatalog` теперь получает структурный дрейф отдельным разделом и само правит `entry`+`observation` для `Unmanaged`-записей, а управляемые блокирует с причиной (родитель без записи, `Exclude`/`ReplaceWithNetworkPrefab`, цикл, `ParentLocal` без родителя).
+
+**Проверка:** `check_compile_errors` — 0; после правки: compile=True, digestOk=True, 146/146, parent mismatch/obs drift/hash drift = 0. Round-trip тест применения в Edit Mode (искусственный «корень» для `[MetaRequirementRegistry]` → скан `reparent=1` → «Применить» вернуло живое значение, `BootstrapScene` в git не изменилась). Play Mode — NOT RUN (старт пилота за пользователем).
+
+**Файлы:** `Assets/_Project/Editor/FloatingOrigin/BakePilotSceneCatalog.cs`, `Assets/_Project/Prefabs/FloatingOrigin/GlobalMotionPilotSceneCatalog.asset`, `Assets/_Project/Prefabs/FloatingOrigin/GlobalMotionPilotProfile.asset`, `docs/world/floatingorigin/04H_SCENE_CATALOG_AND_LIFECYCLE.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-09-29 (T-CROWD-00 — теория подключаемых мозгов толпы)
 
 **Задача:** Только анализ (без кода): как наполнить «Гигант» (~150 из 300) и города (тысячи), чтобы не лечь по сети/серверу/рендеру; механизм «пнул → бьют», «поговорил → герой»; ресёрч BDO-мобов 100+ и челленджа «2000 умных NPC».

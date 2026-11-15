@@ -97,3 +97,19 @@ Compile: **No compile errors**. Результаты: `04H_STATIC_VALIDATION.jso
 Следующая часть T-FO04 — native scene-source binding и безопасный spawn/retire executor с контролем этой pre-start границы, загрузочной транзакцией и genuine prepared-content receipts в согласовании с T-FO05–08. Утверждение реального scene scope, missing-component/dirty blockers и обследование unloaded scenes остаются отдельными обязательными пунктами. Каталог-asset/profile, baked IDs, source provider и world shift пока не включать.
 
 Один commit кода/meta/отчётов/roadmap/существующего `Assets/_Project/Docs/ITERATIONS.md`. Temp runner, несвязанный LiberationSans fallback и исторические G/F artifacts не включаются/не переписываются.
+
+## 7. Bake-окно пилота: структурный дрейф чинится сам (T-FO06L follow-up, 2026-11-15)
+
+**Симптом.** После серии правок `WorldScene_0_0` пилот отказывал в старте: `[T-FO06L] Pilot global startup refused: scene_preparation:authored_parent_binding_mismatch`. Место — `GlobalSceneNativeExecutor.BuildPreparation` (первая петля по `plan.SpawnOrder`), т.е. отказ происходит до любой расстановки. Сообщение объект не называет, поэтому источник расхождения ищется сверкой каталога с живым деревом.
+
+**Причина.** Каталог был запечён до правок сцены. Проверка живёт на паре «живой ближайший предок-маркер» ↔ `entry.parentSourceId`, и она fail-closed. В конкретном случае `WorldRoot_0_0/DockStation_Primium` (`837a3910185f2b9478ce71df025ccc7c:2099880783:0`) был заведён под `WorldRoot_0_0` (`...:14177344:0`), а каталог считал его корнем; дополнительно устарели 50 `layoutHash` и `dependencyHash` обеих сцен (каталог отставал не только по родителю).
+
+**Граница, которую не покрывало окно.** `BakePilotSceneCatalog.ScanCatalog` складывал такой дрейф в `errors` («Structural drift, нужен ручной разбор») и **пропускал запись**, поэтому ни `ApplySelected`, ни повторный скан её не закрывали: `entry` и `observation` правились только вручную, а digest без окна не пересчитать. В итоге «нормальный» путь bake не доводил каталог до состояния, в котором пилот стартует.
+
+**Что теперь делает окно.** Структурный дрейф — отдельный раздел «Структурный дрейф — репарент/корень/сетевость» с превью `parent old → new`, `isRoot`, `isNetworkObject` и текстом существующего `reviewNote`. Применение правит `entry.parentSourceId` и `observation.parentSourceId/isRoot/isNetworkObject` **парой** (их равенство и проверяет компилятор), а `layoutHash`/`dependencyHash`/digest закрываются теми же шагами, что и раньше.
+
+Автопочинка разрешена только там, где репарент меняет лишь бухгалтерию идентичности, то есть у `Unmanaged` (исполнитель такие источники не размещает, не активирует и не спавнит). Блокируются с причиной: управляемая запись (`PreserveContent`/`SceneNetworkObject`/`ReplaceWithNetworkPrefab`/`Exclude`) — репарент меняет позу/активацию; новый родитель без записи в каталоге; родитель `Exclude`/`ReplaceWithNetworkPrefab` (компилятор отвергнет); цикл; `poseKind=ParentLocal` без родителя. Заблокированные записи не отмечаются автоматически, а попытка применить отмеченную блокирует весь батч.
+
+**Проверка (ручная, Edit Mode).** Round-trip на фикстуре: `entry`+`observation` объекта `336a190646b19bc46b22dd4e78f99800:1181311400:0` (`[MetaRequirementRegistry]` под `Toasts_and_meta`) искусственно возвращены в «корень» → скан показал `reparent=1` без красной ошибки и с корректным `newParentName` → «Применить» вернуло `entry`/`observation` к живому значению, `TryCompile=True`, `TryMatchDigest=True`, `entries=146`. Изменений в `BootstrapScene.unity` после применения нет (`git status` чист по этой сцене).
+
+**Ограничение, которое осталось.** Скан по-прежнему показывает как «новые» все корневые объекты без маркера (на 2026-11-15 — 14 штук: меню/UI/кубы/пробы), хотя такие объекты вне FO-скоупа и старт пилота не блокируют. Это шум списка, а не расхождение каталога.

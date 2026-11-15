@@ -19,6 +19,11 @@ namespace ProjectC.EditorTools.FloatingOrigin
     /// T-FO06L follow-up: скан также находит записи, чей объект исчез из сохранённой сцены,
     /// и применение может их удалить. Без этого каталог навсегда сохранял фантомные sourceId,
     /// а пилот отказывал в старте с catalog_markers_bound_mismatch.
+    /// T-FO06L follow-up 2: структурный дрейф (репарент/корень/сетевость) больше не «ручной разбор»
+    /// в красных ошибках: для Unmanaged-записей каталог догоняется автоматически (entry + observation,
+    /// пилот затем стартует), для управляемых репарент меняет позу/активацию — запись блокируется
+    /// с причиной. Раньше такое расхождение не чинилось ничем, кроме правки ассета руками, и старт
+    /// падал с authored_parent_binding_mismatch.
     /// </summary>
     public sealed class BakePilotSceneCatalog : EditorWindow
     {
@@ -39,11 +44,13 @@ namespace ProjectC.EditorTools.FloatingOrigin
                 var fresh = new List<NewItem>();
                 var missing = new List<MissingItem>();
                 var stale = new List<StaleItem>();
+                var moved = new List<ReparentItem>();
                 var errors = new List<string>();
-                ScanCatalog(fresh, missing, stale, errors, out var digest);
+                ScanCatalog(fresh, missing, stale, moved, errors, out var digest);
                 var sb = new System.Text.StringBuilder();
-                sb.Append($"new={fresh.Count} missing={missing.Count} stale={stale.Count} errors={errors.Count} digest={digest}");
+                sb.Append($"new={fresh.Count} missing={missing.Count} reparent={moved.Count} stale={stale.Count} errors={errors.Count} digest={digest}");
                 foreach (var n in fresh) sb.Append($" | NEW:{n.name}[{System.IO.Path.GetFileName(n.scenePath)}]");
+                foreach (var r in moved) sb.Append($" | REPARENT:{r.name}{((r.Blocked) ? "(blocked:" + r.blockedReason + ")" : "")}");
                 foreach (var m in missing) sb.Append($" | MISSING:{m.sourceId}{(m.Blocked ? "(blocked)" : "")}");
                 foreach (var s in stale) sb.Append($" | STALE:{s.name}[{s.kind}]");
                 foreach (var e in errors) sb.Append($" | ERR:{e}");
@@ -79,9 +86,27 @@ namespace ProjectC.EditorTools.FloatingOrigin
             public bool Blocked => !string.IsNullOrEmpty(blockedReason);
         }
 
+        /// <summary>
+        /// Структурный дрейф: живая сцена и наблюдение расходятся по ближайшему предку-маркеру, корневости
+        /// или сетевости. Для Unmanaged-записей это только бухгалтерия идентичности (исполнитель объект
+        /// не трогает) — каталог догоняется автоматически. Для управляемых репарент меняет позу и
+        /// активацию, поэтому запись блокируется до ручного разбора.
+        /// </summary>
+        private sealed class ReparentItem
+        {
+            public bool selected;
+            public GameObject go;
+            public string name, scenePath, sceneGuid, sourceId, reviewNote, newParentName;
+            public string oldParent, newParent;
+            public bool oldIsRoot, newIsRoot, oldIsNO, newIsNO;
+            public string blockedReason;
+            public bool Blocked => !string.IsNullOrEmpty(blockedReason);
+        }
+
         private Vector2 _scroll;
         private readonly List<NewItem> _newItems = new List<NewItem>();
         private readonly List<MissingItem> _missingItems = new List<MissingItem>();
+        private readonly List<ReparentItem> _reparentItems = new List<ReparentItem>();
         private readonly List<StaleItem> _staleItems = new List<StaleItem>();
         private readonly List<string> _errors = new List<string>();
         private string _status = "Не сканировано. Нажми «Сканировать».";
@@ -97,11 +122,11 @@ namespace ProjectC.EditorTools.FloatingOrigin
 
             if (GUILayout.Button("Сканировать (read-only)", GUILayout.Height(28)))
             {
-                _newItems.Clear(); _missingItems.Clear(); _staleItems.Clear(); _errors.Clear();
+                _newItems.Clear(); _missingItems.Clear(); _staleItems.Clear(); _reparentItems.Clear(); _errors.Clear();
                 try
                 {
-                    ScanCatalog(_newItems, _missingItems, _staleItems, _errors, out var digest);
-                    _status = $"Скан: новых={_newItems.Count}, пропавших={_missingItems.Count}, stale={_staleItems.Count}, ошибок={_errors.Count}, digest={digest}";
+                    ScanCatalog(_newItems, _missingItems, _staleItems, _reparentItems, _errors, out var digest);
+                    _status = $"Скан: новых={_newItems.Count}, пропавших={_missingItems.Count}, структурный дрейф={_reparentItems.Count}, stale={_staleItems.Count}, ошибок={_errors.Count}, digest={digest}";
                     _scanned = true;
                 }
                 catch (Exception ex) { _status = "EXCEPTION: " + ex.Message; }
@@ -152,6 +177,24 @@ namespace ProjectC.EditorTools.FloatingOrigin
                 EditorGUILayout.EndVertical();
             }
 
+            EditorGUILayout.LabelField($"Структурный дрейф — репарент/корень/сетевость ({_reparentItems.Count})", EditorStyles.boldLabel);
+            foreach (var rep in _reparentItems)
+            {
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                EditorGUILayout.BeginHorizontal();
+                rep.selected = EditorGUILayout.Toggle(rep.selected, GUILayout.Width(18));
+                EditorGUILayout.LabelField($"{rep.name}  [{System.IO.Path.GetFileName(rep.scenePath)}]", EditorStyles.boldLabel);
+                EditorGUILayout.EndHorizontal();
+                EditorGUILayout.LabelField("parent: " + ShowParent(rep.oldParent) + " → " + ShowParent(rep.newParent) +
+                    (rep.newParent.Length == 0 ? "" : " (" + rep.newParentName + ")"), EditorStyles.miniLabel);
+                if (rep.oldIsRoot != rep.newIsRoot) EditorGUILayout.LabelField($"isRoot: {rep.oldIsRoot} → {rep.newIsRoot}", EditorStyles.miniLabel);
+                if (rep.oldIsNO != rep.newIsNO) EditorGUILayout.LabelField($"isNetworkObject: {rep.oldIsNO} → {rep.newIsNO}", EditorStyles.miniLabel);
+                if (!string.IsNullOrWhiteSpace(rep.reviewNote))
+                    EditorGUILayout.LabelField("reviewNote (не меняется): " + rep.reviewNote, EditorStyles.wordWrappedMiniLabel);
+                if (rep.Blocked) EditorGUILayout.HelpBox("Автопочинка запрещена: " + rep.blockedReason, MessageType.Error);
+                EditorGUILayout.EndVertical();
+            }
+
             EditorGUILayout.LabelField($"Stale (обновить хэши) ({_staleItems.Count})", EditorStyles.boldLabel);
             foreach (var stale in _staleItems)
             {
@@ -173,7 +216,7 @@ namespace ProjectC.EditorTools.FloatingOrigin
             {
                 try { _status = ApplySelected(); }
                 catch (Exception ex) { _status = "EXCEPTION: " + ex.Message; }
-                if (_status.StartsWith("OK", StringComparison.Ordinal)) { _newItems.Clear(); _missingItems.Clear(); _staleItems.Clear(); }
+                if (_status.StartsWith("OK", StringComparison.Ordinal)) { _newItems.Clear(); _missingItems.Clear(); _staleItems.Clear(); _reparentItems.Clear(); }
                 _scanned = false; // заставить пересканировать после мутации
             }
             GUI.enabled = true;
@@ -181,10 +224,34 @@ namespace ProjectC.EditorTools.FloatingOrigin
 
         private static string Short(string hex) => hex.Length <= 12 ? hex : hex.Substring(0, 12);
 
-        private static void ScanCatalog(List<NewItem> fresh, List<MissingItem> missingItems, List<StaleItem> stale, List<string> errors, out string digest)
+        private static string ShowParent(string parentSourceId) => string.IsNullOrEmpty(parentSourceId) ? "<root>" : parentSourceId;
+
+        /// <summary>Имя живого объекта по sourceId — только для читаемого превью репарента.</summary>
+        private static string NameBySourceId(Dictionary<GameObject, string> ids, string sourceId)
+        {
+            foreach (var pair in ids)
+                if (pair.Value == sourceId) return pair.Key == null ? sourceId : pair.Key.name;
+            return sourceId;
+        }
+
+        /// <summary>Не даёт сделать запись потомком самой себя через цепочку parentSourceId.</summary>
+        private static bool IsSelfOrAncestor(string candidateParent, string sourceId, Dictionary<string, GlobalSceneEntry> entries)
+        {
+            var cursor = candidateParent;
+            for (int guard = 0; guard < 4096 && !string.IsNullOrEmpty(cursor); guard++)
+            {
+                if (cursor == sourceId) return true;
+                if (!entries.TryGetValue(cursor, out var entry)) return false;
+                cursor = entry.parentSourceId;
+            }
+            return false;
+        }
+
+        private static void ScanCatalog(List<NewItem> fresh, List<MissingItem> missingItems, List<StaleItem> stale,
+            List<ReparentItem> reparent, List<string> errors, out string digest)
         {
             digest = "?";
-            fresh.Clear(); missingItems.Clear(); stale.Clear(); errors.Clear();
+            fresh.Clear(); missingItems.Clear(); stale.Clear(); reparent.Clear(); errors.Clear();
             var catalog = AssetDatabase.LoadAssetAtPath<GlobalMotionSceneCatalog>(CatalogPath);
             var profile = AssetDatabase.LoadAssetAtPath<GlobalMotionNetworkProfile>(ProfilePath);
             if (catalog == null) throw new InvalidOperationException("Каталог не найден: " + CatalogPath);
@@ -194,6 +261,10 @@ namespace ProjectC.EditorTools.FloatingOrigin
                 digest = "MISMATCH (починить до bake!)";
             else
                 digest = "match";
+
+            // Пары entry/observation живут в одном каталоге: репарент обязан править обе половины.
+            var entryByIdScan = new Dictionary<string, GlobalSceneEntry>(StringComparer.Ordinal);
+            foreach (var storedEntry in catalog.Data.entries) if (storedEntry != null) entryByIdScan[storedEntry.sourceId] = storedEntry;
 
             foreach (var source in catalog.Data.scenes)
             {
@@ -253,13 +324,41 @@ namespace ProjectC.EditorTools.FloatingOrigin
                     }
                     string liveHash = AuditGlobalSceneCatalog.LayoutHash(go, out bool missing);
                     if (missing) errors.Add("Missing script в сабтри: " + sid + " (" + go.name + ")");
-                    // Структурный дрейф (родитель/корень/сетевость) — не чиним автоматически:
-                    // у entry есть парные поля, тут нужен разбор вручную.
+                    // T-FO06L follow-up 2: структурный дрейф — запись на автопочинку, а не красная ошибка.
+                    // Unmanaged: исполнитель объект не трогает, поэтому расхождение — только идентичность.
+                    // Управляемые: репарент меняет позу/активацию, автопочинка запрещена.
                     if (stored.parentSourceId != parentSid || stored.isRoot != isRoot || stored.isNetworkObject != isNO)
                     {
-                        errors.Add($"Structural drift, нужен ручной разбор: {go.name} ({sid}): " +
-                            $"parent [{stored.parentSourceId}]→[{parentSid}], root {stored.isRoot}→{isRoot}, no {stored.isNetworkObject}→{isNO}");
-                        continue;
+                        var moved = new ReparentItem
+                        {
+                            go = go, name = go.name, scenePath = source.assetPath, sceneGuid = source.sceneGuid, sourceId = sid,
+                            oldParent = stored.parentSourceId, newParent = parentSid,
+                            newParentName = parentSid.Length == 0 ? "<root>" : NameBySourceId(ids, parentSid),
+                            oldIsRoot = stored.isRoot, newIsRoot = isRoot, oldIsNO = stored.isNetworkObject, newIsNO = isNO,
+                        };
+                        GlobalSceneEntry selfEntry;
+                        if (!entryByIdScan.TryGetValue(sid, out selfEntry)) moved.blockedReason = "нет записи каталога для " + sid;
+                        else
+                        {
+                            moved.reviewNote = selfEntry.reviewNote;
+                            if (selfEntry.treatment != GlobalSceneTreatment.Unmanaged)
+                                moved.blockedReason = "управляемая запись (" + selfEntry.treatment + "): репарент меняет позу/активацию — разбор вручную";
+                            else if (selfEntry.poseKind == GlobalScenePoseKind.ParentLocal && parentSid.Length == 0)
+                                moved.blockedReason = "poseKind=ParentLocal без родителя — компилятор это отвергнет";
+                        }
+                        if (!moved.Blocked && parentSid.Length != 0)
+                        {
+                            GlobalSceneEntry parentEntry;
+                            if (!entryByIdScan.TryGetValue(parentSid, out parentEntry))
+                                moved.blockedReason = "у нового родителя " + parentSid + " нет записи в каталоге — сначала запеки родителя";
+                            else if ((parentEntry.treatment == GlobalSceneTreatment.Exclude || parentEntry.treatment == GlobalSceneTreatment.ReplaceWithNetworkPrefab) &&
+                                     (selfEntry == null || selfEntry.treatment != GlobalSceneTreatment.Exclude))
+                                moved.blockedReason = "новый родитель " + parentEntry.treatment + " — компилятор это отвергнет";
+                            else if (IsSelfOrAncestor(parentSid, sid, entryByIdScan))
+                                moved.blockedReason = "новый родитель вкладывается в сам объект (цикл)";
+                        }
+                        moved.selected = !moved.Blocked;
+                        reparent.Add(moved);
                     }
                     if (stored.layoutHash != liveHash)
                         stale.Add(new StaleItem
@@ -322,7 +421,10 @@ namespace ProjectC.EditorTools.FloatingOrigin
             var selNew = _newItems.FindAll(i => i.selected);
             var selStale = _staleItems.FindAll(i => i.selected);
             var selMissing = _missingItems.FindAll(i => i.selected);
-            if (selNew.Count == 0 && selStale.Count == 0 && selMissing.Count == 0) return "Нечего применять: ничего не отмечено.";
+            var selReparent = _reparentItems.FindAll(i => i.selected);
+            if (selNew.Count == 0 && selStale.Count == 0 && selMissing.Count == 0 && selReparent.Count == 0) return "Нечего применять: ничего не отмечено.";
+            foreach (var item in selReparent)
+                if (item.Blocked) return "Отказ: " + item.name + " — " + item.blockedReason;
             foreach (var item in selNew)
             {
                 if (string.IsNullOrWhiteSpace(item.reviewNote)) return $"Отказ: пустой reviewNote у {item.name}.";
@@ -346,6 +448,26 @@ namespace ProjectC.EditorTools.FloatingOrigin
             {
                 var purgeError = PurgeMissing(data, selMissing, entriesById, touchedScenes);
                 if (purgeError != null) return purgeError;
+            }
+
+            // 0b. Структурный дрейф: каталог догоняет живое дерево. Entry и observation правятся парой —
+            // компилятор требует их равенства, а их расхождение и есть authored_parent_binding_mismatch.
+            foreach (var item in selReparent)
+            {
+                var movedSource = FindSource(data, item.sceneGuid);
+                if (movedSource == null) return "Отказ: нет блока сцены " + item.scenePath;
+                GlobalSceneObservation observation = null;
+                foreach (var candidate in movedSource.observations)
+                    if (candidate != null && candidate.sourceId == item.sourceId) { observation = candidate; break; }
+                if (observation == null) return "Отказ: observation пропал: " + item.name;
+                if (!entriesById.TryGetValue(item.sourceId, out var movedEntry)) return "Отказ: запись пропала: " + item.name;
+                if (movedEntry.poseKind == GlobalScenePoseKind.ParentLocal && item.newParent.Length == 0)
+                    return "Отказ: " + item.name + " — poseKind=ParentLocal без родителя.";
+                observation.parentSourceId = item.newParent;
+                observation.isRoot = item.newIsRoot;
+                observation.isNetworkObject = item.newIsNO;
+                movedEntry.parentSourceId = item.newParent;
+                touchedScenes.Add(item.scenePath);
             }
 
             // 1. Маркеры.
@@ -449,7 +571,7 @@ namespace ProjectC.EditorTools.FloatingOrigin
             if (!GlobalSceneCatalogCompiler.TryCompile(catalog.Data, out var plan2, out _)
                 || !GlobalSceneCatalogCompiler.TryMatchDigest(plan2, profile.SceneLayoutDigest, out _))
                 return "Откат (Ctrl+Z): digest не сошёлся после применения.";
-            return $"OK: +{selNew.Count} записей, stale закрыто: {selStale.Count}, entries={plan2.SpawnOrder.Count}, digest={hex.Substring(0, 16)}...";
+            return $"OK: +{selNew.Count} записей, структурный дрейф закрыт: {selReparent.Count}, stale закрыто: {selStale.Count}, entries={plan2.SpawnOrder.Count}, digest={hex.Substring(0, 16)}...";
         }
 
         /// <summary>

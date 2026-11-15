@@ -234,7 +234,8 @@ namespace ProjectC.EditorTools
 
             EnsureFolder(folder);
 
-            var usedAssets = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+            var pending = new List<PendingSection>(output.sections.Count);
+            var createdAssets = new List<string>();
             int createdMeshes = 0, updatedMeshes = 0;
 
             for (int i = 0; i < output.sections.Count; i++)
@@ -245,7 +246,6 @@ namespace ProjectC.EditorTools
 
                 string baseName = SanitizeName(section.name);
                 string assetPath = $"{folder}/{baseName}.asset";
-                usedAssets.Add(assetPath);
 
                 // 2. Существующий меш обновляем НА МЕСТЕ (объект и GUID живут), только
                 //    недостающий создаём: иначе рендереры остались бы с уничтоженным мешем.
@@ -263,10 +263,76 @@ namespace ProjectC.EditorTools
                     built.name = baseName;
                     AssetDatabase.CreateAsset(built, assetPath);
                     mesh = built;
+                    createdAssets.Add(assetPath);
                     createdMeshes++;
                 }
 
-                var go = new GameObject(baseName);
+                pending.Add(new PendingSection
+                {
+                    name = baseName,
+                    assetPath = assetPath,
+                    mesh = mesh,
+                    localPosition = section.localPosition,
+                    localRotation = section.localRotation,
+                    materials = section.materials
+                });
+            }
+
+            // 3. Новые меш-ассеты дописывает импорт ПОСЛЕ этого колбэка (в логе: «[WorkerN] Imported …
+            //    Fence_runX_sN.asset»). Рендерер, поставленный в том же кадре, попадает в
+            //    BatchRendererGroup с ещё не импортированным мешем — именно так падает culling-джоб
+            //    GPU Resident Drawer (краш 2026-11-15: `Key: EntityId is not present in the
+            //    NativeParallelHashMap`, `CullingJob`, `burst_abort`). Поэтому импорт форсируем
+            //    синхронно, а объекты ставим следующим кадром.
+            for (int i = 0; i < createdAssets.Count; i++)
+                AssetDatabase.ImportAsset(createdAssets[i], ImportAssetOptions.ForceSynchronousImport);
+
+            AssetDatabase.SaveAssets();
+            EditorSceneManager.MarkSceneDirty(fence.gameObject.scene);
+
+            Undo.CollapseUndoOperations(undoGroup);
+
+            EnqueueSpawn(fence, id, pending, output.colliders.ToArray());
+
+            sb.AppendLine($"[Fence] Меши: обновлено на месте {updatedMeshes}, создано {createdMeshes}; " +
+                          $"id «{id}»");
+            sb.AppendLine($"[Fence] Пересобрано: {folder}");
+            sb.AppendLine("[Fence] Секции и коллайдеры ставятся в сцену следующим кадром — после импорта мешей.");
+            return sb.ToString();
+        }
+
+        // ============================================================
+        // Постановка секций: следующим кадром, когда импорт мешей уже завершён
+        // ============================================================
+
+        /// <summary>Секция, чей меш-ассет записан и импортирован; объект появится в сцене в delayCall.</summary>
+        private struct PendingSection
+        {
+            public string name;
+            public string assetPath;
+            public Mesh mesh;
+            public Vector3 localPosition;
+            public Quaternion localRotation;
+            public Material[] materials;
+        }
+
+        private static void EnqueueSpawn(SplineFence fence, string id, List<PendingSection> sections, FenceBoxSpec[] colliders)
+        {
+            EditorApplication.delayCall += () => Spawn(fence, id, sections, colliders);
+        }
+
+        private static void Spawn(SplineFence fence, string id, List<PendingSection> sections, FenceBoxSpec[] colliders)
+        {
+            if (fence == null) return;
+
+            int undoGroup = Undo.GetCurrentGroup();
+            Undo.SetCurrentGroupName($"Забор «{fence.name}»: секции");
+
+            for (int i = 0; i < sections.Count; i++)
+            {
+                PendingSection section = sections[i];
+
+                var go = new GameObject(section.name);
                 Undo.RegisterCreatedObjectUndo(go, "Fence section");
 
                 go.transform.SetParent(fence.transform, false);
@@ -275,7 +341,7 @@ namespace ProjectC.EditorTools
                 go.transform.localScale = Vector3.one;
                 go.layer = fence.gameObject.layer;
 
-                go.AddComponent<MeshFilter>().sharedMesh = mesh;
+                go.AddComponent<MeshFilter>().sharedMesh = section.mesh;
 
                 var renderer = go.AddComponent<MeshRenderer>();
                 renderer.sharedMaterials = section.materials;
@@ -295,22 +361,23 @@ namespace ProjectC.EditorTools
             colliderRoot.layer = fence.colliderLayer;
             colliderRoot.AddComponent<FenceSection>().owner = fence;
 
-            for (int i = 0; i < output.colliders.Count; i++)
-                CreateCollider(output.colliders[i], colliderRoot.transform, fence.colliderLayer);
+            for (int i = 0; i < colliders.Length; i++)
+                CreateCollider(colliders[i], colliderRoot.transform, fence.colliderLayer);
 
-            // 3. Меши, которые больше не нужны этому забору, сносим ТОЛЬКО теперь — когда
-            //    в сцене не осталось ни одного рендерера, который их держит.
-            DeleteOrphanAssets(folder, usedAssets);
+            // 4. Меши, которые больше не нужны этому забору, сносим ТОЛЬКО теперь — когда
+            //    рендереры новой сборки уже стоят в сцене.
+            var usedAssets = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < sections.Count; i++) usedAssets.Add(sections[i].assetPath);
+
+            DeleteOrphanAssets($"{GeneratedRoot}/{id}", usedAssets);
 
             Undo.CollapseUndoOperations(undoGroup);
 
             AssetDatabase.SaveAssets();
             EditorSceneManager.MarkSceneDirty(fence.gameObject.scene);
 
-            sb.AppendLine($"[Fence] Меши: обновлено на месте {updatedMeshes}, создано {createdMeshes}; " +
-                          $"id «{id}»");
-            sb.AppendLine($"[Fence] Пересобрано: {folder}");
-            return sb.ToString();
+            Debug.Log($"[Fence] «{fence.name}»: в сцену добавлено секций {sections.Count}, " +
+                      $"бокс-коллайдеров {colliders.Length}.");
         }
 
         // ============================================================

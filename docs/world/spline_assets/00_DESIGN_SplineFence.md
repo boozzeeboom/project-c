@@ -1,6 +1,6 @@
 # 🧱 Spline Fence — генеративный забор по сплайну
 
-**Версия:** 0.3 — реализованы оба типа, краш-фикс, инспектор и переопределения габаритов (2026-11-14)
+**Версия:** 0.4 — оба типа, краш-фиксы 14.11 (меши) и 15.11 (двухфазная пересборка), инспектор и переопределения габаритов (2026-11-15)
 **Статус:** ✅ `FencePath` + `Bar` + `Masonry` + editor-инструмент + инспектор; self-check 25/25 (Play Mode не запускался).
 **Рабочая сцена:** `Assets/_Project/Scenes/World/WorldScene_0_0.unity`
 **Как работать:** выделить сплайн с `SplineFence` → инспектор: тип, высота, шаг секции, `ПЕРЕСОБРАТЬ` (§11)
@@ -445,6 +445,11 @@ SplineFenceTool.Rebuild(SplineFence fence, bool dryRun = false);   // без д�
 SplineFenceTool.Remove(SplineFence fence);                         // сцена + папка мешей
 ```
 
+**`Rebuild` больше не ставит объекты синхронно** (§16 шаг 8): меши пишутся и импортируются в текущем
+колбэке, а секции и коллайдеры появляются в сцене в `EditorApplication.delayCall` — следующим кадром.
+Кто вызывает `Rebuild` из MCP/CI, обязан дождаться конца кадра (или сверить `GetComponentsInChildren<FenceSection>()`),
+прежде чем читать сцену. `Undo` даёт два шага: «Пересборка забора «X»» (снос + меши) и «Забор «X»: секции» (постановка).
+
 ---
 
 ## 12. Бюджет
@@ -484,7 +489,8 @@ SplineFenceTool.Remove(SplineFence fence);                         // сцена
 | ProBuilder-умолчание «все вершины белые» | не касается нас, пока не используем ProBuilder (`EdgeMaskBaker.cs:42`) |
 | Сцена | только `WorldScene_0_0.unity`; новых сцен и дублей не создавать |
 | **Два забора с одним именем** → один `EffectiveId` → один путь мешей: второй забор сносил папку и уносил меши первого | уникальный id через `ResolveGeneratedId` (суффикс `_2` в `fence.fenceId`), см. §10 |
-| **Пересборка через `DeleteAsset` папки** → живой `MeshRenderer` остаётся с уничтоженным мешем → culling-джоб Burst падает (`Key: EntityId is not present in the NativeParallelHashMap`, `CullingJob`, `burst_abort`) и редактор умирает | меши обновлять на месте, объекты сносить ДО ассетов; в проекте включён GPU Resident Drawer (`ProjectC_URP.asset: m_GPUResidentDrawerMode: 1`), а BRG такой рендерер не переносит (в логе 13-11 тот же дефект виден текстом: `BatchDrawCommand ... MeshID: <null>`) |
+| **Пересборка через `DeleteAsset` папки** → живой `MeshRenderer` остаётся с уничтоженным мешем → culling-джоб Burst падает (`Key: EntityId is not present in the NativeParallelHashMap`, `CullingJob`, `burst_abort`) и редактор умирает | меши обновлять на месте, объекты сносить ДО ассетов; в проекте включён GPU Resident Drawer (`ProjectC_URP.asset: m_GPUResidentDrawerMode: 1`), а BRG такой рендерер не переносит (в логе 13-11 тот же дефект виден текстом: `BatchDrawCommand ... MeshID: <null>`). **GRD не выключать**: он несёт 2 129 из 2 229 DC города (T-CULL01 Stage 8) — чинится инструмент, а не рендер-путь |
+| **Рендереры поставлены в том же колбэке, пока меш-ассеты ещё импортируются** → GRD ловит `EntityId`, которого нет в его `MeshInfo`: `System.ArgumentException: Key: UnityEngine.EntityId is not present in the NativeParallelHashMap` из Burst `UnityEngine.Rendering.CullingJob` (`burst_abort`), рядом — второй `NullReferenceException` из Burst-джоба со стеком `ManagedTempMemScope::~ManagedTempMemScope`. Ловится и когда меши не «пропадают», а **создаются** | импорт новых мешей форсировать синхронно, объекты ставить `EditorApplication.delayCall` — §16 шаг 8 |
 | **`height` в типе `Bar` ничего не двигает**: балки и прутки заданы абсолютными `railTopY`/`barTopY`/`postHeight` | высоту менять в инспекторе забора (`heightOverride` → пропорциональный `ScaleHeight`), а не в ассете типа. Для `Masonry` `height` — реальная высота полотна |
 | Временная копия типа (`FenceTypeDefinition.ResolveFor`) | она с `HideFlags.HideAndDontSave` и в иерархии не видна; если её не уничтожить — течёт до перезагрузки домена. `SplineFenceTool.Rebuild` убивает её в `finally` — не переносите вызов `Build` из этого блока |
 | Пересборка из `OnInspectorGUI` | только на настоящем событии ввода и только по галочке: на `Layout`/`Repaint` это лишние сборки мешей на каждый кадр инспектора |
@@ -554,7 +560,15 @@ Play Mode не запускаю: визуальную проверку дела�
      * T22 `Masonry` высота 2,0 м — `k=1,4815`, стена и `BC_wall.size.y` = 2,000, `bounds.max.y` 2,356 (= столб 2,296 + оголовок 0,06), толщина 0,25 цела.
      * T23 `Bar` шаг 1,2 м — `postSpacing` 1,20 (в типе 2,50), 10 столбов + 9 панелей = 19 боксов.
      * Живая сборка (`BootstrapScene`, edit mode, без Play): забор 10 м с `heightOverride` 1,4 и шагом 1,2 — `bounds.max.y` 1,437, 19 боксов, папка `Generated/Fences/FenceCfgProbe`; затем правка на 2,1 м и шаг 0 → «обновлено на месте 1, создано 0», `bounds.max.y` 2,155, 9 боксов, **GUID меш-ассета тот же** (`b245cfee…`); снос — папки нет. Сцена не сохранялась.
-8. ⏳ Проход по факту: масштаб корня, дуга R = 10 м, 90°, шпилька, рельеф; замер трис/DC. (Кирпич и прут уже прогнаны в edit mode — осталось посмотреть глазами в сцене и на реальном рельефе.)
+8. ✅ Краш-фикс 2026-11-15 — двухфазная пересборка (было: рендереры ставились в том кадре, где меш-ассеты ещё импортировались → `CullingJob` / `burst_abort`).
+   * Лог `Crash_2026-11-15_052018667`: `System.ArgumentException: Key: UnityEngine.EntityId is not present in the NativeParallelHashMap` из Burst `UnityEngine.Rendering.CullingJob`, плюс второй `NullReferenceException` из Burst-джоба (`ManagedTempMemScope::~ManagedTempMemScope`). Триггер — `ПЕРЕСОБРАТЬ` (`SplineFenceEditor.Run` :213), забор «Spline», «обновлено на месте 0, создано 42».
+   * Механизм виден по порядку строк: `[Fence] … создано 42` → `[Worker3/4] Imported … Fence_run1_s*.asset` → `Asset Pipeline Refresh` → падение джоба. Рендереры уже стояли в сцене, пока импорт дописывал их меши.
+   * `SplineFenceTool.Rebuild` теперь: `RemoveGenerated` → запись/обновление мешей на месте → `AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport)` для новых → `SaveAssets` → `EnqueueSpawn(fence, id, pending, colliders)`. Сцену в этом колбэке не трогает.
+   * `Spawn` (в `EditorApplication.delayCall`): секции (`FenceSection` + `MeshFilter` + `MeshRenderer`), коллайдер-рут `<id>_COLLIDER` с боксами, затем `DeleteOrphanAssets` (`used` строится из `PendingSection.assetPath`), свой undo-шаг «Забор «X»: секции», `MarkSceneDirty`, лог «в сцену добавлено секций N, бокс-коллайдеров M».
+   * GRD оставлен включённым (`m_GPUResidentDrawerMode: 1`, occlusion in cameras = 1) — решение от 15.11; откат GRD не применялся.
+   * Проверка (edit mode, `WorldScene_0_0`, забор «Забор_стыковка-паром-л», `FT_Fence_Brick_Block`, высота 3,50 м, шаг секции 5,00 м): 1 прогон, источник 165,94 м, 44 секции, 2664 трис, 111 боксов; «обновлено на месте 44, создано 0», id `Spline_2`, папка `Generated/Fences/Spline_2`; затем `[Fence] «Забор_стыковка-паром-л»: в сцену добавлено секций 44, бокс-коллайдеров 111` — краша нет.
+   * Хвост: если между `Rebuild` и `delayCall` случится domain reload, постановка теряется (забор остаётся без секций) — лечится повторной пересборкой.
+9. ⏳ Проход по факту: масштаб корня, дуга R = 10 м, 90°, шпилька, рельеф; замер трис/DC. (Кирпич и прут уже прогнаны в edit mode — осталось посмотреть глазами в сцене и на реальном рельефе.)
 
 ---
 

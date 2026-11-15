@@ -9,18 +9,22 @@
 //                          (см. tools/extract_soma_bind.py).
 //
 // Выход (в той же папке):
-//   <ClipBase>.anim           — Transform-кривые localRotation на кости + localPosition на B-hips.
-//   <ClipBase>_Humanoid.anim  — мышечные кривые (RootT/RootQ + HumanTrait.MuscleName).
+//   <ClipBase>.anim             — Transform-кривые localRotation на кости + localPosition на B-hips.
+//   <ClipBase>_Humanoid.anim    — мышечные кривые (RootT/RootQ + HumanTrait.MuscleName).
+//   <ClipBase>.bake.report.json — метаданные: хэши сырья, настройки, foot IK, результат валидатора.
+//
+// T-MB03: конкретный клип больше НЕ захардкожен. Задания собираются с диска
+// (MotionBricksBakeJob.Discover): папка + `*_30fps.f32` + `soma_bind.f32` = задание.
+// Поведение переопределяется sidecar'ом `<ClipBase>.bake.config.json`.
 //
 // РЕТАРГЕТ — перенос ПОЛНОГО МИРОВОГО ПОВОРОТА кости (R_pose · R_bind⁻¹), а не локальной дельты
 // и не одного swing: локальные оси источника и рига не совпадают (uAngle 90°), а FromToRotation
 // теряет качение и раздаёт каждому суставу случайную скрутку (T-MB02, 08 §3).
 //
 // Ключицы (B-shoulder.L/R) переносятся отдельным каналом: у SOMA джойнты 11 (shoulder) и 12
-// (upperArm) практически совпадают, поэтому цепочка 11->12 вырождена (swing 173-179°, знак
-// переворачивается в середине цикла). Берётся направление chest->upperArm (3->12 / 3->40),
-// это реальный вектор ключицы; амплитуда ограничена MaxClavicleDeg, качение ключицы не переносится
-// (его в источнике нет). Без этого B-shoulder.L/R вообще не двигались (T-MB04a: 0,0°).
+// (upperArm) практически совпадают, поэтому цепочка 11->12 вырождена. Берётся направление
+// chest->shoulder (3->11 / 3->39), это реальный вектор ключицы; амплитуда ограничена
+// MaxClavicleDeg, качение ключицы не переносится.
 //
 // Правило: НЕ трогаем prefab/controller; клип живёт в Generated/, играется MotionBricksBakedPlayback.
 
@@ -34,138 +38,123 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
 {
     public static class MotionBricksSpikeBaker
     {
-        // === Вход/выход ===
+        // === Пути/константы ===
 
-        private const string ModelPath = "Assets/Kevin Iglesias/Human Animations/Models/HumanM_Model.fbx";
-        private const string GeneratedRoot = "Assets/_Project/Animations/Generated/MotionBricks";
+        private const string ModelPath = MotionBricksBakePaths.ModelPath;
+        private const string GeneratedRoot = MotionBricksBakePaths.GeneratedRoot;
+        private const string RestFile = MotionBricksBakePaths.RestFile;
 
-        // Опорная поза — НАСТОЯЩАЯ bind-поза SOMA. Файл soma_rest.f32 из комплекта sa-inbetween
-        // для этого НЕ годится: tools/make_pose_library.py создаёт его копированием произвольного
-        // кадра библиотеки (combat_quickstep_1_0), т.е. это не rest, а боевой шаг.
-        private const string RestFile = "soma_bind.f32";
-
-        private const int Joints = 77;
-        private const int FloatsPerJoint = 7;
-        private const float Fps = 30f;
-
-        /// <summary>true — горизонтальное смещение корня убирается (движение делает код/NavMesh).</summary>
-        private const bool BakeInPlace = true;
+        private const int Joints = MotionBricksBakePaths.Joints;
+        private const int FloatsPerJoint = MotionBricksBakePaths.FloatsPerJoint;
+        private const float Fps = MotionBricksBakePaths.Fps;
 
         /// <summary>Разворот модели вокруг Y, если SOMA-форвард не совпал с Unity. Градусы.</summary>
         private const float YawOffsetDeg = 0f;
 
         /// <summary>
-        /// Предел отклонения ключицы, градусы. chest->upperArm в SOMA — реальный вектор,
+        /// Предел отклонения ключицы, градусы. chest->shoulder в SOMA — реальный вектор,
         /// но он включает и качание плеча; без предела ключица начинает «пожимать» на бегу.
         /// </summary>
         private const float MaxClavicleDeg = 18f;
 
-        // === Задания на бейк (T-MB03: никаких хардкодов конкретного клипа в логике) ===
-
-        private sealed class BakeJob
-        {
-            public string PrimitiveId;
-            public string BodyType;
-            public string RawFile;
-            public string ClipBase;
-            public string Label;
-
-            /// <summary>
-            /// Прижать опорную стопу к земле (тазовая часть foot IK). Для walk/run — да.
-            /// Для прыжка/полёта — нет, иначе таз будет «прилипать» к полу.
-            /// </summary>
-            public bool GroundFeet = true;
-
-            public string SourceFolder => GeneratedRoot + "/" + PrimitiveId + "/" + BodyType;
-            public string RawPath => SourceFolder + "/" + RawFile;
-            public string ClipOut => SourceFolder + "/" + ClipBase + ".anim";
-            public string HumanoidClipOut => SourceFolder + "/" + ClipBase + "_Humanoid.anim";
-        }
-
-        private static readonly BakeJob WalkForwardJob = new BakeJob
-        {
-            PrimitiveId = "walk_forward",
-            BodyType = "Male",
-            RawFile = "WalkForward_Male_30fps.f32",
-            ClipBase = "WalkForward_Male",
-            Label = "WalkForward (Male)",
-        };
-
-        private static readonly BakeJob WalkToJogJob = new BakeJob
-        {
-            PrimitiveId = "walk_to_jog",
-            BodyType = "Male",
-            RawFile = "WalkToJog_Male_30fps.f32",
-            ClipBase = "WalkToJog_Male",
-            Label = "WalkToJog (Male)",
-        };
-
-        // Иерархия SOMA (77 джойнтов), индекс -> родитель. Источник: sa-inbetween src/SA.Inbetween.Engine/Kernels.cs.
-        private static readonly int[] Parents =
-        {
-            -1, 0, 1, 2, 3, 4, 5, 6, 6, 6, 6, 3, 11, 12, 13, 14, 15, 16, 17, 14, 19, 20, 21, 22, 14, 24, 25, 26, 27, 14,
-            29, 30, 31, 32, 14, 34, 35, 36, 37, 3, 39, 40, 41, 42, 43, 44, 45, 42, 47, 48, 49, 50, 42, 52, 53, 54, 55, 42,
-            57, 58, 59, 60, 42, 62, 63, 64, 65, 0, 67, 68, 69, 70, 0, 72, 73, 74, 75,
-        };
-
-        // pose-индекс SOMA -> имя кости рига HumanM_Model.
-        // Пропущены Spine2(2) и Neck2(5): у рига одна spine- и одна neck-кость.
-        private static readonly (int Pose, string Bone)[] BoneMap =
-        {
-            (0, "B-hips"), (1, "B-spine"), (3, "B-chest"), (4, "B-neck"), (6, "B-head"), (8, "B-jaw"),
-            (11, "B-shoulder.L"), (12, "B-upperArm.L"), (13, "B-forearm.L"), (14, "B-hand.L"),
-            (39, "B-shoulder.R"), (40, "B-upperArm.R"), (41, "B-forearm.R"), (42, "B-hand.R"),
-            (67, "B-thigh.L"), (68, "B-shin.L"), (69, "B-foot.L"), (70, "B-toe.L"),
-            (72, "B-thigh.R"), (73, "B-shin.R"), (74, "B-foot.R"), (75, "B-toe.R"),
-        };
-
-        // Цепочки для переноса полного мирового поворота: (кость, дочерний джойнт) в индексах pose.
-        // Дочерний джойнт — ближайший ОТОБРАЖЁННЫЙ: у spine роль ребёнка играет chest (j2/Spine2 пропущен).
-        private static readonly (int Bone, int Child)[] Segments =
-        {
-            (0, 1), (1, 3), (3, 4), (4, 6),
-            (12, 13), (13, 14),
-            (40, 41), (41, 42),
-            (67, 68), (68, 69), (69, 70),
-            (72, 73), (73, 74), (74, 75),
-        };
-
-        // Ключицы: (грудной джойнт, плечевой джойнт, кость рига). Направление chest->shoulderJoint.
-        // Именно 3->11 / 3->39, НЕ 3->12: джойнт upperArm уводится собственной амплитудой руки
-        // (в ходьбе 75°), и направление chest->upperArm мерит размах руки, а не ключицу —
-        // после клампа это давало постоянный «выкрут» и мышцу Shoulder Front-Back за −1..1.
-        // chest->shoulder — реальный вектор 0.240 м, меняется на 22°/20° за цикл.
-        private static readonly (int Chest, int Arm, string Bone)[] Clavicles =
-        {
-            (3, 11, "B-shoulder.L"),
-            (3, 39, "B-shoulder.R"),
-        };
-
-        // Цепочка руки, которая наследует поворот ключицы (плечо, предплечье, кисть).
-        // Индексируется так же, как Clavicles. Если прокрутить только плечо, предплечье
-        // и кисть остались бы в абсолютной ориентации и локоть «ломается» на угол ключицы.
-        private static readonly int[][] ClavicleChains =
-        {
-            new[] { 12, 13, 14 },
-            new[] { 40, 41, 42 },
-        };
-
         // === Меню ===
 
-        [MenuItem("ProjectC/MotionBricks/Bake/Walk Forward (Male)")]
-        public static void BakeWalkForwardMale() => Bake(WalkForwardJob);
+        [MenuItem("ProjectC/MotionBricks/Bake/Walk Forward (Male)", priority = 0)]
+        public static void BakeWalkForwardMale() => BakeFound("walk_forward", "Male");
 
-        [MenuItem("ProjectC/MotionBricks/Bake/WalkToJog (Male)")]
-        public static void BakeWalkToJogMale() => Bake(WalkToJogJob);
+        [MenuItem("ProjectC/MotionBricks/Bake/WalkToJog (Male)", priority = 1)]
+        public static void BakeWalkToJogMale() => BakeFound("walk_to_jog", "Male");
+
+        /// <summary>T-MB03: batch по всему, что найдено на диске. Сырьё не трогается.</summary>
+        [MenuItem("ProjectC/MotionBricks/Bake/All discovered clips (batch)", priority = 10)]
+        public static void BakeAllDiscovered() => BakeAll(validate: false, logJobs: true);
+
+        /// <summary>T-MB03: batch + замер каждого humanoid-клипа и отчёт в метаданных.</summary>
+        [MenuItem("ProjectC/MotionBricks/Bake/Bake + validate all discovered", priority = 11)]
+        public static void BakeAllDiscoveredAndValidate() => BakeAll(validate: true, logJobs: true);
+
+        [MenuItem("ProjectC/MotionBricks/Bake/List discovered clips", priority = 12)]
+        public static void ListDiscovered()
+        {
+            var jobs = MotionBricksBakeJob.Discover();
+            if (jobs.Count == 0)
+            {
+                Debug.LogWarning($"[MB-Bake] В '{GeneratedRoot}' нет ни одного задания " +
+                                 $"(нужны <primitive>/<body>/{RestFile} и *{MotionBricksBakePaths.RawSuffix}).");
+                return;
+            }
+
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine($"[MB-Bake] Найдено заданий: {jobs.Count}");
+            foreach (var job in jobs) sb.AppendLine("  • " + job);
+            Debug.Log(sb.ToString());
+        }
 
         // === Оркестрация ===
 
-        private static void Bake(BakeJob job)
+        private static void BakeFound(string primitiveId, string bodyType)
         {
+            var job = MotionBricksBakeJob.Find(primitiveId, bodyType);
+            if (job == null)
+            {
+                Debug.LogError($"[MB-Bake] Нет задания '{primitiveId}/{bodyType}' в '{GeneratedRoot}'. " +
+                               "Нужны папка, soma_bind.f32 и *_30fps.f32.");
+                return;
+            }
+
+            Bake(job, validate: true);
+        }
+
+        private static void BakeAll(bool validate, bool logJobs)
+        {
+            var jobs = MotionBricksBakeJob.Discover();
+            if (jobs.Count == 0)
+            {
+                Debug.LogWarning($"[MB-Bake] В '{GeneratedRoot}' нет ни одного задания — печь нечего.");
+                return;
+            }
+
+            if (logJobs)
+            {
+                Debug.Log($"[MB-Bake] Batch: заданий {jobs.Count} (validate={validate})");
+                foreach (var job in jobs) Debug.Log("  • " + job);
+            }
+
+            int ok = 0, failed = 0, validationPassed = 0, validationFailed = 0;
+            foreach (var job in jobs)
+            {
+                var outcome = Bake(job, validate);
+                if (outcome == null) { failed++; continue; }
+                ok++;
+
+                if (validate && outcome.Validation != null && outcome.Validation.Ran)
+                {
+                    if (outcome.Validation.Pass) validationPassed++;
+                    else validationFailed++;
+                }
+            }
+
+            string summary = $"[MB-Bake] Batch завершён: испечено {ok}, ошибок {failed}" +
+                             (validate ? $"; валидация PASS {validationPassed}, FAIL {validationFailed}" : string.Empty);
+            if (failed > 0 || validationFailed > 0) Debug.LogError(summary);
+            else Debug.Log(summary);
+        }
+
+        public sealed class BakeOutcome
+        {
+            public MotionBricksBakeReport Report;
+            public MotionBricksValidationReport Validation;
+        }
+
+        /// <summary>Испечь одно задание. Возвращает null при ошибке входа.</summary>
+        public static BakeOutcome Bake(MotionBricksBakeJob job, bool validate)
+        {
+            if (job == null) return null;
+
             if (Parents.Length != Joints)
             {
                 Debug.LogError($"[MB-Bake] Parents.Length={Parents.Length}, ожидалось {Joints}.");
-                return;
+                return null;
             }
 
             string rawPath = job.RawPath;
@@ -174,7 +163,7 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
             if (!File.Exists(rawPath) || !File.Exists(restPath))
             {
                 Debug.LogError($"[MB-Bake] {job.Label}: не найдены входные файлы: {rawPath} / {restPath}");
-                return;
+                return null;
             }
 
             float[] raw = ReadFloats(rawPath);
@@ -184,13 +173,13 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
             if (raw.Length % frameFloats != 0)
             {
                 Debug.LogError($"[MB-Bake] {job.RawFile}: {raw.Length} float не делится на {frameFloats}.");
-                return;
+                return null;
             }
 
             if (rest.Length != frameFloats)
             {
                 Debug.LogError($"[MB-Bake] {RestFile}: {rest.Length} float, ожидалось {frameFloats}.");
-                return;
+                return null;
             }
 
             int frameCount = raw.Length / frameFloats;
@@ -199,8 +188,30 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
             if (modelAsset == null)
             {
                 Debug.LogError($"[MB-Bake] Модель не найдена: {ModelPath}");
-                return;
+                return null;
             }
+
+            var report = new MotionBricksBakeReport
+            {
+                schema = MotionBricksBakePaths.ReportSchema,
+                generatedUtc = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+                modelPath = ModelPath,
+                restFile = RestFile,
+                restSha256 = MotionBricksHashing.Sha256(restPath),
+                sourceFile = job.RawFile,
+                sourceSha256 = MotionBricksHashing.Sha256(rawPath),
+                sourceFrames = frameCount,
+                sourceDurationSeconds = frameCount / Fps,
+                joints = Joints,
+                floatsPerJoint = FloatsPerJoint,
+                bakeInPlace = job.BakeInPlace,
+                groundFeet = job.GroundFeet,
+                yawOffsetDeg = YawOffsetDeg,
+                maxClavicleDeg = MaxClavicleDeg,
+            };
+
+            var warnings = new List<string>();
+            var outcome = new BakeOutcome { Report = report };
 
             var holder = new GameObject("__MB_Bake_Tmp");
             holder.hideFlags = HideFlags.HideAndDontSave;
@@ -211,19 +222,98 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
                 inst.transform.localRotation = Quaternion.identity;
                 inst.transform.localScale = Vector3.one;
 
-                BuildClip(inst.transform, raw, rest, frameCount, job);
+                var clips = BuildClips(inst.transform, raw, rest, frameCount, job, report, warnings);
+                if (clips == null) return null;
+
+                report.genericClip = SaveWithReport(clips.Generic, job.ClipOut);
+                report.humanoidClip = clips.Humanoid != null
+                    ? SaveWithReport(clips.Humanoid, job.HumanoidClipOut)
+                    : new MotionBricksBakeReportClip { path = job.HumanoidClipOut };
             }
             finally
             {
                 UnityEngine.Object.DestroyImmediate(holder);
             }
 
-            AssetDatabase.SaveAssets();
+            if (validate)
+            {
+                var validation = MotionBricksClipValidator.ValidateJob(job);
+                outcome.Validation = validation;
+                CopyValidation(report.validation, validation);
+            }
+
+            report.warnings = warnings.ToArray();
+            WriteReport(job, report);
+
+            Debug.Log($"[MB-Bake] OK ({job.Label}): {job.ClipOut}\n" +
+                      $"  отчёт: {job.ReportPath}\n" +
+                      $"  foot IK: {report.footIk.mode}, таз {report.footIk.bobBeforeCm:F1} → {report.footIk.bobAfterCm:F1} см, " +
+                      $"hover {report.footIk.hoverCm:F1} см, penetration {report.footIk.penetrationCm:F1} см\n" +
+                      $"  GUID: generic {DescribeGuid(report.genericClip)}, humanoid {DescribeGuid(report.humanoidClip)}\n" +
+                      (validate && outcome.Validation != null && outcome.Validation.Ran
+                          ? $"  валидация: {(outcome.Validation.Pass ? "PASS" : "FAIL")}" +
+                            (outcome.Validation.Pass ? string.Empty : $" — {string.Join("; ", outcome.Validation.Failures)}")
+                          : "  валидация: не запускалась") +
+                      (warnings.Count > 0 ? $"\n  предупреждений: {warnings.Count} (см. отчёт)" : string.Empty));
+
+            return outcome;
+        }
+
+        private static string DescribeGuid(MotionBricksBakeReportClip clip) =>
+            string.IsNullOrEmpty(clip.guid)
+                ? "нет"
+                : $"{clip.guid} ({(clip.guidStable ? "стабилен" : "СМЕНИЛСЯ")})";
+
+        private static void CopyValidation(MotionBricksBakeReportValidation target, MotionBricksValidationReport source)
+        {
+            if (target == null || source == null) return;
+
+            target.ran = source.Ran;
+            target.pass = source.Pass;
+            target.label = source.Label;
+            target.failures = source.Failures.ToArray();
+            target.hipsYMin = source.HipsYMin;
+            target.hipsYMax = source.HipsYMax;
+            target.stanceHoverM = source.StanceHover;
+            target.penetrationM = source.Penetration;
+            target.footSlideMaxM = source.FootSlideMax;
+            target.contactFrames = source.ContactFramesL + source.ContactFramesR;
+            target.speedL = source.SpeedL;
+            target.speedR = source.SpeedR;
+            target.impliedSpeed = source.ImpliedSpeed;
+            target.speedAsymmetry = source.SpeedAsymmetry;
+            target.axisErrorDeg = source.AxisErrorDeg;
+            target.yawDriftDeg = source.YawDriftDeg;
+            target.clavicleLDeg = source.ClavicleLDeg;
+            target.clavicleRDeg = source.ClavicleRDeg;
+            target.armLDeg = source.ArmLDeg;
+            target.armRDeg = source.ArmRDeg;
+        }
+
+        private static void WriteReport(MotionBricksBakeJob job, MotionBricksBakeReport report)
+        {
+            try
+            {
+                MotionBricksHashing.WriteUtf8(job.ReportPath, JsonUtility.ToJson(report, true));
+                AssetDatabase.ImportAsset(job.ReportPath);
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[MB-Bake] {job.ReportPath}: отчёт не записан ({e.Message}). Клипы испечены.");
+            }
         }
 
         // === Основная сборка ===
 
-        private static void BuildClip(Transform root, float[] raw, float[] rest, int frameCount, BakeJob job)
+        private sealed class BuiltClips
+        {
+            public AnimationClip Generic;
+            public AnimationClip Humanoid;
+        }
+
+        private static BuiltClips BuildClips(
+            Transform root, float[] raw, float[] rest, int frameCount,
+            MotionBricksBakeJob job, MotionBricksBakeReport report, List<string> warnings)
         {
             // 1. Rest-мир рига и карта «кость -> pose-индекс».
             var restWorld = new Dictionary<Transform, Quaternion>();
@@ -244,7 +334,7 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
             if (missing.Count > 0)
             {
                 Debug.LogError($"[MB-Bake] В риге не найдены кости: {string.Join(", ", missing)}. Клип не создан.");
-                return;
+                return null;
             }
 
             // 2. Направления костей в bind-позе источника.
@@ -258,36 +348,35 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
                 var seg = Segments[i];
                 restDir[i] = (restPos[seg.Child] - restPos[seg.Bone]).normalized;
                 if (restDir[i].sqrMagnitude < 0.5f)
-                    Debug.LogWarning($"[MB-Bake] В bind-позе вырожденная цепочка {seg.Bone}->{seg.Child}.");
+                    warnings.Add($"в bind-позе вырожденная цепочка {seg.Bone}->{seg.Child}");
             }
 
-            // 2b. Опорные направления ключиц: chest -> плечевой джойнт (в SOMA это реальный вектор,
-            //     в отличие от shoulder -> upperArm, где джойнты почти совпадают).
+            // 2b. Опорные направления ключиц: chest -> плечевой джойнт.
             var clavRestDir = new Vector3[Clavicles.Length];
             for (int c = 0; c < Clavicles.Length; c++)
             {
                 var clav = Clavicles[c];
                 clavRestDir[c] = (restPos[clav.Arm] - restPos[clav.Chest]).normalized;
                 if (clavRestDir[c].sqrMagnitude < 0.5f)
-                    Debug.LogWarning($"[MB-Bake] В bind-позе вырожденная ключица {clav.Bone}.");
+                    warnings.Add($"в bind-позе вырожденная ключица {clav.Bone}");
             }
 
             // 3. Локальные повороты рига по кадрам.
             var hips = boneByPose[0];
             Vector3 restHipsLocal = hips.localPosition;
 
-            // 3b. Foot IK (тазовая часть): прижать НИЖНЮЮ стопу к её rest-высоте.
-            //     Причина: rotation-only ретаргет сохраняет углы суставов, но нога рига короче
-            //     SOMA (reach 0.852 м против 0.940 м, −9.4%), поэтому при одинаковой высоте таза
-            //     стопа остаётся примерно на 10 см выше земли (T-MB04a: опорная 0.265 при rest 0.128).
-            //     Опускаем таз на разницу — суставы не трогаем, стойка остаётся авторской.
+            // 3b. Foot IK (тазовая часть). Причина: rotation-only ретаргет сохраняет углы суставов,
+            //     но нога рига короче SOMA (reach 0.852 против 0.940 м, −9.4%), поэтому при
+            //     одинаковой высоте таза стопа остаётся ~10 см выше земли.
+            //     T-MB03: контакт держится ДОПУСКОМ (MotionBricksFootIk), а не прижатием каждого кадра.
             Transform footL = FindDeep(root, "B-foot.L");
             Transform footR = FindDeep(root, "B-foot.R");
             float groundFootY = footL != null && footR != null
                 ? Mathf.Min(footL.position.y, footR.position.y)
                 : 0f;
             bool groundFeet = job.GroundFeet && footL != null && footR != null;
-            float groundCorrMax = 0f, groundCorrMin = 0f;
+            if (!groundFeet && job.GroundFeet)
+                warnings.Add("foot IK запрошен, но в риге нет B-foot.L/R — таз не прижимается");
 
             var locals = new Dictionary<Transform, Quaternion[]>();
             foreach (Transform t in poseByTransform.Keys) locals[t] = new Quaternion[frameCount];
@@ -299,6 +388,8 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
             Quaternion yawInv = Quaternion.Inverse(yaw);
 
             var hipsOffsets = new List<Vector3>(frameCount);
+            var lowestFootY = new float[frameCount];
+            var stanceFoot = new int[frameCount];
             Vector3 restRootUnity = ToUnityPos(rest[0], rest[1], rest[2]);
 
             var deltaByPose = new Dictionary<int, Quaternion>(Segments.Length);
@@ -378,24 +469,64 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
 
                 Vector3 rootUnity = ToUnityPos(frameBuf[0], frameBuf[1], frameBuf[2]);
                 Vector3 offset = rootUnity - restRootUnity;
-                if (BakeInPlace) { offset.x = 0f; offset.z = 0f; }
+                if (job.BakeInPlace) { offset.x = 0f; offset.z = 0f; }
 
-                // Foot IK-подтяжка таза: сначала считаем кадр с текущим смещением, затем
-                // опускаем таз на столько, чтобы нижняя стопа встала на rest-высоту.
+                // T-MB03: при включённом foot IK вертикаль источника не тащим в таз — иначе
+                // она борется с контактом (T-MB04a давал размах таза 15.8 см). Высоту таза
+                // определяет земля, а не root Y источника.
+                if (groundFeet) offset.y = 0f;
+
                 worldPos.Clear();
                 EvalFrame(root, Quaternion.identity, Vector3.zero, f, deltaByPose, clavByPose,
                     restWorld, poseByTransform, locals, worldPos, hips, restHipsLocal + yaw * offset);
 
                 if (groundFeet)
                 {
-                    float lowest = Mathf.Min(worldPos[footL].y, worldPos[footR].y);
-                    float correction = groundFootY - lowest;
-                    offset.y += correction;
-                    groundCorrMax = Mathf.Max(groundCorrMax, correction);
-                    groundCorrMin = Mathf.Min(groundCorrMin, correction);
+                    float yL = worldPos[footL].y;
+                    float yR = worldPos[footR].y;
+                    stanceFoot[f] = yL <= yR ? 0 : 1;
+                    lowestFootY[f] = Mathf.Min(yL, yR);
                 }
 
                 hipsOffsets.Add(offset);
+            }
+
+            // 3c. Решаем высоту таза ПОСЛЕ кадров: нужен весь диапазон, чтобы сгладить кривую
+            //     в допуске контакта (а не прижимать каждую стопу по отдельности).
+            MotionBricksFootIkResult footIk = null;
+            if (groundFeet)
+            {
+                footIk = MotionBricksFootIk.Solve(lowestFootY, groundFootY, MotionBricksFootIkMode.PelvisSmooth);
+                for (int f = 0; f < frameCount; f++)
+                    hipsOffsets[f] += Vector3.up * footIk.Corrections[f];
+
+                report.footIk.mode = footIk.Mode.ToString();
+                report.footIk.bobBeforeCm = footIk.BobBefore * 100f;
+                report.footIk.bobAfterCm = footIk.BobAfter * 100f;
+                report.footIk.hoverCm = footIk.HoverMax * 100f;
+                report.footIk.penetrationCm = footIk.PenetrationMax * 100f;
+                report.footIk.iterations = footIk.Iterations;
+                report.footIk.contactInTolerance = footIk.ContactInTolerance;
+                report.footIk.correctionMinCm = Min(footIk.Corrections) * 100f;
+                report.footIk.correctionMaxCm = Max(footIk.Corrections) * 100f;
+
+                report.footIk.lowestFootYCm = new float[frameCount];
+                report.footIk.correctionsCm = new float[frameCount];
+                for (int f = 0; f < frameCount; f++)
+                {
+                    report.footIk.lowestFootYCm[f] = lowestFootY[f] * 100f;
+                    report.footIk.correctionsCm[f] = footIk.Corrections[f] * 100f;
+                }
+
+                report.footIk.stanceFoot = stanceFoot;
+
+                if (!footIk.ContactInTolerance)
+                    warnings.Add($"foot IK вне допуска: hover {footIk.HoverMax * 100f:F1} см, " +
+                                 $"penetration {footIk.PenetrationMax * 100f:F1} см");
+            }
+            else
+            {
+                report.footIk.mode = MotionBricksFootIkMode.Off.ToString();
             }
 
             // 4. Кривые localRotation.
@@ -455,16 +586,10 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
             clip.EnsureQuaternionContinuity();
 
             // 6. Humanoid-вариант (мышцы) — то, что реально играется на Humanoid-аватаре.
-            //    Горизонталь уже убрана (in-place), но ВЕРТИКАЛЬ таза обязана уйти в клип:
-            //    в источнике таз проседает до 27 см за цикл, и без этого смещения мышцы
-            //    сгибают ноги при неподвижном тазе — обе стопы отрываются от земли
-            //    (T-MB04a: опорная стопа уходила на 0,399 м при rest 0,128).
-            BakeHumanoidClip(root, locals, frameCount, job, hips, restHipsLocal, hipsOffsets, yaw);
+            AnimationClip humanoid = BakeHumanoidClip(root, locals, frameCount, job, hips, restHipsLocal,
+                hipsOffsets, yaw, report, warnings);
 
-            // 7. Сохранение — НА МЕСТЕ: Delete+Create даёт ассету новый GUID и обнуляет
-            // ссылки на клип в сцене (проверено: MB_Probe_Player._clip становился null после перепёка).
-            SaveClipInPlace(clip, job.ClipOut);
-
+            // 7. Диагностика ретаргета.
             float minD = 0f, maxD = 0f;
             foreach (var d in hipsOffsets)
             {
@@ -483,20 +608,23 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
                     degenerate.Add($"{Segments[i].Bone}->{Segments[i].Child} {segSwingMax[i]:F1}° @f{segSwingFrame[i]}");
             }
 
+            if (degenerate.Count > 0)
+                warnings.Add("вырожденный swing: " + string.Join(", ", degenerate));
+
             var clavText = new List<string>();
             for (int c = 0; c < Clavicles.Length; c++) clavText.Add($"{Clavicles[c].Bone} {clavMaxAngle[c]:F1}°");
 
-            Debug.Log($"[MB-Bake] OK ({job.Label}): {job.ClipOut}\n" +
-                      $"  кадров {frameCount}, fps {Fps:F0}, длина {clip.length:F3} s\n" +
+            Debug.Log($"[MB-Bake] ретаргет ({job.Label}): кадров {frameCount}, fps {Fps:F0}, длина {clip.length:F3} s\n" +
                       $"  костей с кривыми {locals.Count}, цепочек {Segments.Length}, ключиц {Clavicles.Length} (лимит {MaxClavicleDeg:F0}°)\n" +
                       $"  swing: средний {meanSwing:F1}°, макс {swingMax:F1}°; плечо в источнике макс {armSwingMax:F1}°\n" +
                       $"  ключицы (макс поворот): {string.Join(", ", clavText)}\n" +
-                      (degenerate.Count > 0 ? $"  вырожденный swing: {string.Join(", ", degenerate)}\n" : string.Empty) +
-                      $"  таз: rest y={restHipsLocal.y:F3}, вертикальный размах {minD:F3}..{maxD:F3} m, in-place={BakeInPlace}\n" +
-                      (groundFeet
-                          ? $"  foot IK (таз): опора в rest y={groundFootY:F3}, коррекция {groundCorrMin:F3}..{groundCorrMax:F3} m\n"
+                      $"  таз: rest y={restHipsLocal.y:F3}, вертикальный размах {minD:F3}..{maxD:F3} m, in-place={job.BakeInPlace}\n" +
+                      (footIk != null
+                          ? $"  foot IK (таз): {footIk.Summary}, опора в rest y={groundFootY:F3}\n"
                           : "  foot IK: выключен для этого задания\n") +
                       $"  yaw offset {YawOffsetDeg:F1}°, модель {ModelPath}");
+
+            return new BuiltClips { Generic = clip, Humanoid = humanoid };
         }
 
         // === Humanoid-бейк (мышцы) ===
@@ -505,22 +633,26 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
         /// Тот же ретаргет, но выход — мускульные кривые Humanoid: RootT/RootQ + 95 мышц.
         /// Поза снимается с уже собранного скелета через HumanPoseHandler, поэтому
         /// bone->muscle маппинг, rest-ориентации и нормировку скрутки делает сам Unity.
+        /// Возвращает готовый клип (сохранение — в Bake, чтобы отчёт знал GUID).
         /// </summary>
-        private static void BakeHumanoidClip(
+        private static AnimationClip BakeHumanoidClip(
             Transform root,
             Dictionary<Transform, Quaternion[]> locals,
             int frameCount,
-            BakeJob job,
+            MotionBricksBakeJob job,
             Transform hips,
             Vector3 restHipsLocal,
             List<Vector3> hipsOffsets,
-            Quaternion yaw)
+            Quaternion yaw,
+            MotionBricksBakeReport report,
+            List<string> warnings)
         {
             var animator = root.GetComponentInChildren<Animator>(true);
             if (animator == null || animator.avatar == null || !animator.avatar.isHuman)
             {
                 Debug.LogError("[MB-Bake] Humanoid-бейк пропущен: у модели нет Animator с Humanoid-аватаром.");
-                return;
+                warnings.Add("humanoid-клип не испечён: нет Humanoid-аватара");
+                return null;
             }
 
             var bones = new List<Transform>(locals.Keys);
@@ -536,7 +668,7 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
                 {
                     for (int i = 0; i < bones.Count; i++) bones[i].localRotation = locals[bones[i]][f];
 
-                    // Тазовая трансляция (in-place) — без неё HumanPose.bodyPosition.y не меняется.
+                    // Тазовая трансляция (in-place + foot IK) — без неё HumanPose.bodyPosition.y не меняется.
                     if (hips != null) hips.localPosition = restHipsLocal + yaw * hipsOffsets[f];
 
                     var pose = new HumanPose { muscles = new float[muscleCount] };
@@ -566,6 +698,9 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
 
                 if (mn < -1.001f || mx > 1.001f) outOfRange.Add($"{HumanTrait.MuscleName[m]} {mn:F2}..{mx:F2}");
             }
+
+            if (outOfRange.Count > 0)
+                warnings.Add($"мышц вне [-1..1]: {outOfRange.Count} — {string.Join(", ", outOfRange)}");
 
             var clip = new AnimationClip { frameRate = Fps, legacy = false };
 
@@ -605,31 +740,75 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
 
             clip.EnsureQuaternionContinuity();
 
-            SaveClipInPlace(clip, job.HumanoidClipOut);
+            Debug.Log($"[MB-Bake] Humanoid-клип ({job.Label}): кадров {frameCount}, " +
+                      $"кривых {7 + muscleCount} (root 7 + мышц {muscleCount}), " +
+                      $"bodyPosition.y {bodyPos[0].y:F3}..{bodyPos[frameCount - 1].y:F3} m");
 
-            Debug.Log($"[MB-Bake] Humanoid-клип: {job.HumanoidClipOut}\n" +
-                      $"  кадров {frameCount}, кривых {7 + muscleCount} (root 7 + мышц {muscleCount})\n" +
-                      $"  мышц вне [-1..1]: {outOfRange.Count}" +
-                      (outOfRange.Count > 0 ? $" — {string.Join(", ", outOfRange)}\n" : "\n") +
-                      $"  bodyPosition.y {bodyPos[0].y:F3}..{bodyPos[frameCount - 1].y:F3} m");
+            return clip;
         }
 
-        // === Ретаргет одного кадра (обход иерархии рига) ===
+        // === Сохранение ===
+
+        private struct ClipSaveInfo
+        {
+            public string GuidBefore;
+            public string Guid;
+            public bool GuidStable;
+            public int CurveCount;
+            public float Length;
+            public float FrameRate;
+            public bool HumanMotion;
+        }
 
         /// <summary>
         /// Сохранить запечённый клип, не ломая ссылки из сцен и префабов.
         /// Если ассет уже существует — кривые перезаписываются на месте (GUID и fileID те же),
         /// иначе создаётся новый ассет. Delete+Create нельзя: сцена держит ссылку по GUID.
+        /// T-MB03: GUID сверяется явно и попадает в отчёт (`guidStable`).
         /// </summary>
-        private static void SaveClipInPlace(AnimationClip baked, string path)
+        private static MotionBricksBakeReportClip SaveWithReport(AnimationClip baked, string path)
         {
+            var info = SaveClipInPlace(baked, path);
+            return new MotionBricksBakeReportClip
+            {
+                path = path,
+                guid = info.Guid,
+                guidBefore = info.GuidBefore,
+                guidStable = info.GuidStable,
+                curveCount = info.CurveCount,
+                lengthSeconds = info.Length,
+                frameCount = info.FrameRate > 0.01f ? Mathf.RoundToInt(info.Length * info.FrameRate) + 1 : 0,
+                frameRate = info.FrameRate,
+                humanMotion = info.HumanMotion,
+            };
+        }
+
+        private static ClipSaveInfo SaveClipInPlace(AnimationClip baked, string path)
+        {
+            var info = new ClipSaveInfo();
+
             var existing = AssetDatabase.LoadAssetAtPath<AnimationClip>(path);
             if (existing == null)
             {
                 AssetDatabase.CreateAsset(baked, path);
                 AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
-                return;
+
+                var created = AssetDatabase.LoadAssetAtPath<AnimationClip>(path);
+                if (created != null)
+                {
+                    info.Guid = AssetDatabase.AssetPathToGUID(path);
+                    info.GuidBefore = string.Empty;
+                    info.GuidStable = true; // новый ассет: сравнивать не с чем
+                    info.CurveCount = AnimationUtility.GetCurveBindings(created).Length;
+                    info.Length = created.length;
+                    info.FrameRate = created.frameRate;
+                    info.HumanMotion = created.humanMotion;
+                }
+
+                return info;
             }
+
+            info.GuidBefore = AssetDatabase.AssetPathToGUID(path);
 
             existing.ClearCurves();
             existing.frameRate = baked.frameRate;
@@ -645,7 +824,23 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
 
             EditorUtility.SetDirty(existing);
             AssetDatabase.SaveAssets();
+
+            info.Guid = AssetDatabase.AssetPathToGUID(path);
+            info.GuidStable = !string.IsNullOrEmpty(info.Guid) &&
+                              string.Equals(info.GuidBefore, info.Guid, StringComparison.Ordinal);
+            info.CurveCount = AnimationUtility.GetCurveBindings(existing).Length;
+            info.Length = existing.length;
+            info.FrameRate = existing.frameRate;
+            info.HumanMotion = existing.humanMotion;
+
+            if (!info.GuidStable)
+                Debug.LogWarning($"[MB-Bake] {path}: GUID изменился ({info.GuidBefore} → {info.Guid}); " +
+                                 "ссылки из сцены могли потеряться.");
+
+            return info;
         }
+
+        // === Ретаргет одного кадра (обход иерархии рига) ===
 
         private static void EvalFrame(
             Transform t,
@@ -775,5 +970,66 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
             Buffer.BlockCopy(bytes, 0, values, 0, bytes.Length);
             return values;
         }
+
+        private static float Min(float[] values)
+        {
+            float m = float.MaxValue;
+            foreach (float v in values) m = Mathf.Min(m, v);
+            return values.Length > 0 ? m : 0f;
+        }
+
+        private static float Max(float[] values)
+        {
+            float m = float.MinValue;
+            foreach (float v in values) m = Mathf.Max(m, v);
+            return values.Length > 0 ? m : 0f;
+        }
+
+        // Иерархия SOMA (77 джойнтов), индекс -> родитель. Источник: sa-inbetween src/SA.Inbetween.Engine/Kernels.cs.
+        private static readonly int[] Parents =
+        {
+            -1, 0, 1, 2, 3, 4, 5, 6, 6, 6, 6, 3, 11, 12, 13, 14, 15, 16, 17, 14, 19, 20, 21, 22, 14, 24, 25, 26, 27, 14,
+            29, 30, 31, 32, 14, 34, 35, 36, 37, 3, 39, 40, 41, 42, 43, 44, 45, 42, 47, 48, 49, 50, 42, 52, 53, 54, 55, 42,
+            57, 58, 59, 60, 42, 62, 63, 64, 65, 0, 67, 68, 69, 70, 0, 72, 73, 74, 75,
+        };
+
+        // pose-индекс SOMA -> имя кости рига HumanM_Model.
+        // Пропущены Spine2(2) и Neck2(5): у рига одна spine- и одна neck-кость.
+        private static readonly (int Pose, string Bone)[] BoneMap =
+        {
+            (0, "B-hips"), (1, "B-spine"), (3, "B-chest"), (4, "B-neck"), (6, "B-head"), (8, "B-jaw"),
+            (11, "B-shoulder.L"), (12, "B-upperArm.L"), (13, "B-forearm.L"), (14, "B-hand.L"),
+            (39, "B-shoulder.R"), (40, "B-upperArm.R"), (41, "B-forearm.R"), (42, "B-hand.R"),
+            (67, "B-thigh.L"), (68, "B-shin.L"), (69, "B-foot.L"), (70, "B-toe.L"),
+            (72, "B-thigh.R"), (73, "B-shin.R"), (74, "B-foot.R"), (75, "B-toe.R"),
+        };
+
+        // Цепочки для переноса полного мирового поворота: (кость, дочерний джойнт) в индексах pose.
+        // Дочерний джойнт — ближайший ОТОБРАЖЁННЫЙ: у spine роль ребёнка играет chest (j2/Spine2 пропущен).
+        private static readonly (int Bone, int Child)[] Segments =
+        {
+            (0, 1), (1, 3), (3, 4), (4, 6),
+            (12, 13), (13, 14),
+            (40, 41), (41, 42),
+            (67, 68), (68, 69), (69, 70),
+            (72, 73), (73, 74), (74, 75),
+        };
+
+        // Ключицы: (грудной джойнт, плечевой джойнт, кость рига). Направление chest->shoulderJoint.
+        // Именно 3->11 / 3->39, НЕ 3->12: джойнт upperArm уводится собственной амплитудой руки
+        // (в ходьбе 75°), и направление chest->upperArm мерит размах руки, а не ключицу.
+        private static readonly (int Chest, int Arm, string Bone)[] Clavicles =
+        {
+            (3, 11, "B-shoulder.L"),
+            (3, 39, "B-shoulder.R"),
+        };
+
+        // Цепочка руки, которая наследует поворот ключицы (плечо, предплечье, кисть).
+        // Индексируется так же, как Clavicles.
+        private static readonly int[][] ClavicleChains =
+        {
+            new[] { 12, 13, 14 },
+            new[] { 40, 41, 42 },
+        };
     }
 }

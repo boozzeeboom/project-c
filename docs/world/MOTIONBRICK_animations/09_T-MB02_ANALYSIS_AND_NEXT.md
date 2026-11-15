@@ -502,3 +502,30 @@ KL `HumanM@Walk01_Forward` — **2.00 м/с**, наш синтезированн
 **T-MB04b закрыт.** Вне тикета (чек-лист T-MB08): 2 клиента, F8/F9 от нуля, отдельная проверка экипировки.
 **Важно:** рантайм-игрок — `NetworkPlayer_GlobalPilot.prefab`, baseline защищает `NetworkPlayer.prefab`;
 новое тело после свапа несёт FBX-дефолты Animator (`applyRootMotion=true`) — гард на T-MB03/05.
+
+---
+
+## T-MB03, ночь 15.11 — бейкер, foot IK, guard (закрыто)
+
+Подробно и с цифрами — [11_T-MB03_BAKER_AND_GUARDS.md](11_T-MB03_BAKER_AND_GUARDS.md). Коротко:
+
+1. **Хардкод клипов убран.** `MotionBricksBakeJob.Discover()` собирает задания с диска
+   (`<primitive>/<body>/*_30fps.f32` + `soma_bind.f32`), sidecar `<ClipBase>.bake.config.json`
+   задаёт `groundFeet`/`bakeInPlace`/`clipSpeed`/`label`. Добавили папку — клип попал в batch.
+2. **Batch + validation + metadata.** `Bake + validate all discovered` печёт все задания, меряет
+   humanoid-клипы и пишет `<ClipBase>.bake.report.json` (SHA256 сырья, настройки, foot-IK трасса,
+   метрики, GUID до/после). Валидатор получил `MotionBricksValidationReport` и batch-сводку.
+3. **Pelvis foot IK.** Было «прижать нижнюю стопу каждый кадр» (размах таза 15.7 см). Стало
+   `PelvisSmooth`: самая гладкая кривая таза в коридоре контакта (hover ≤ 3 см, penetration ≤ 1 см).
+   `WalkForward_Male` 15.73 → 11.73 см, `WalkToJog_Male` 5.10 → 1.10 см; A/B без IK — 22.41 см.
+   «2 см» тазовым IK недостижимы, пока опорная стопа клипа гуляет на 15.7 см; 2-bone IK ног —
+   отдельный шаг (кандидат в T-MB05).
+4. **applyRootMotion guard.** Playback выключает флаг на время графа и возвращает после; после
+   body swap берёт новый Animator (FBX `true`) и выключает; во время каста `SkillAnimationPlayer`
+   флаг не перетирается. Self-test 6/6 без Play Mode.
+5. **SaveClipInPlace.** GUID стабилен на трёх перепёках, ссылка `MB_Probe_Player._clip` жива.
+6. **Baseline 12/12** до/после; baseline-файлы не менялись; Play Mode не запускался.
+
+Осталось: качество синтезированных клипов (axis/asymmetry FAIL — контент), 5 мышц вне `[-1..1]`
+(долг ретаргета), Play Mode-проверка guard'а/каста (T-MB08), T-MB04c.
+

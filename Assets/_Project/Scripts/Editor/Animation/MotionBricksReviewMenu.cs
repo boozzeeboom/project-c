@@ -238,7 +238,9 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
             foreach (var playback in FindPlaybacksOnProbe())
             {
                 Debug.Log($"[MB-Review] probe '{playback.name}': clip={(playback.CurrentClip != null ? playback.CurrentClip.name : "null")} " +
-                          $"playing={playback.IsPlaying} animator={(playback.TargetAnimator != null ? playback.TargetAnimator.name : "null")}");
+                          $"playing={playback.IsPlaying} animator={(playback.TargetAnimator != null ? playback.TargetAnimator.name : "null")} " +
+                          $"applyRootMotion={(playback.TargetAnimator != null ? playback.TargetAnimator.applyRootMotion.ToString() : "-")} " +
+                          $"guard={playback.RootMotionGuardActive}");
 
                 foreach (var rootMotion in playback.GetComponents<MotionBricksBakedRootMotion>())
                 {
@@ -250,7 +252,9 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
             var playerPlayback = FindLocalPlayerPlayback();
             Debug.Log(playerPlayback != null
                 ? $"[MB-Review] player playback: clip={(playerPlayback.CurrentClip != null ? playerPlayback.CurrentClip.name : "null")} " +
-                  $"playing={playerPlayback.IsPlaying} animator={(playerPlayback.TargetAnimator != null ? playerPlayback.TargetAnimator.name : "null")}"
+                  $"playing={playerPlayback.IsPlaying} animator={(playerPlayback.TargetAnimator != null ? playerPlayback.TargetAnimator.name : "null")} " +
+                  $"applyRootMotion={(playerPlayback.TargetAnimator != null ? playerPlayback.TargetAnimator.applyRootMotion.ToString() : "-")} " +
+                  $"guard={playerPlayback.RootMotionGuardActive}"
                 : "[MB-Review] player playback: не подключён");
 
             var state = CustomisationClientState.Instance;

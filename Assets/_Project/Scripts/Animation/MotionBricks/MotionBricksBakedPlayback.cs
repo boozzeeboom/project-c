@@ -52,9 +52,21 @@ namespace ProjectC.Animation.MotionBricks
         private CharacterCustomisationApplier _applier;
         private SkillAnimationPlayer _skillPlayer;
 
+        // T-MB03: applyRootMotion guard. После body swap новое тело приходит из FBX со своими
+        // дефолтами Animator (applyRootMotion = true), а не с override'ами префаба. На in-place
+        // клипе это безвредно, но для клипа с переносом корня Animator сложил бы своё движение
+        // с движением персонажа (двойная скорость). Держим флаг выключенным на время playback
+        // и возвращаем прежнее значение после; за каст отвечает SkillAnimationPlayer.
+        private bool _rootMotionGuardActive;
+        private bool _savedApplyRootMotion;
+        private Animator _rootMotionGuardAnimator;
+
         public bool IsPlaying => _hasGraph && _graph.IsValid() && _graph.IsPlaying();
         public Animator TargetAnimator => _animator;
         public AnimationClip CurrentClip => _clip;
+
+        /// <summary>Держит ли playback флаг applyRootMotion выключенным прямо сейчас.</summary>
+        public bool RootMotionGuardActive => _rootMotionGuardActive;
 
 #if UNITY_EDITOR
         /// <summary>
@@ -227,6 +239,10 @@ namespace ProjectC.Animation.MotionBricks
             _clip = clip;
             _speed = Mathf.Max(0f, speed);
 
+            // T-MB03: до старта графа — чтобы первый же кадр клипа не применился Animator'ом
+            // как root motion. Возврат — в StopPlayback.
+            ApplyRootMotionGuard();
+
             _graph = PlayableGraph.Create("MotionBricksBaked");
             _graph.SetTimeUpdateMode(DirectorUpdateMode.GameTime);
 
@@ -268,6 +284,61 @@ namespace ProjectC.Animation.MotionBricks
                 _animator.Rebind();
                 _animator.Update(0f);
             }
+
+            // Возврат флага — после Rebind/Update(0): baseline-поза восстанавливается ещё
+            // под гардом, иначе первый кадр baseline-клипа мог бы дать root motion.
+            RestoreRootMotionGuard();
+        }
+
+        // === applyRootMotion guard (T-MB03) ===
+
+        private void ApplyRootMotionGuard()
+        {
+            if (_animator == null) return;
+            if (_rootMotionGuardActive && _rootMotionGuardAnimator == _animator) return;
+
+            // Другая модель (body swap) — сначала вернуть флаг прежнему Animator'у.
+            RestoreRootMotionGuard();
+
+            _savedApplyRootMotion = _animator.applyRootMotion;
+            _rootMotionGuardAnimator = _animator;
+            _rootMotionGuardActive = true;
+
+            if (!_animator.applyRootMotion) return;
+
+            _animator.applyRootMotion = false;
+            if (_logVerbose)
+                Debug.Log($"[MotionBricksBakedPlayback] applyRootMotion: true → false на '{_animator.name}' " +
+                          "(иначе Animator сложил бы перенос корня клипа с движением персонажа).", this);
+        }
+
+        private void RestoreRootMotionGuard()
+        {
+            if (!_rootMotionGuardActive) return;
+
+            Animator animator = _rootMotionGuardAnimator;
+            _rootMotionGuardActive = false;
+            _rootMotionGuardAnimator = null;
+
+            // Animator уничтожен вместе с телом (body swap) — возвращать нечему.
+            if (animator == null) return;
+
+            // Во время каста флагом владеет SkillAnimationPlayer: он сам сохраняет и
+            // восстанавливает applyRootMotion вокруг каста. Не перетираем его состояние.
+            if (_skillPlayer != null && _skillPlayer.IsCasting)
+            {
+                if (_logVerbose)
+                    Debug.Log("[MotionBricksBakedPlayback] applyRootMotion не тронут: идёт каст " +
+                              "SkillAnimationPlayer (флаг принадлежит ему).", this);
+                return;
+            }
+
+            if (animator.applyRootMotion == _savedApplyRootMotion) return;
+
+            animator.applyRootMotion = _savedApplyRootMotion;
+            if (_logVerbose)
+                Debug.Log($"[MotionBricksBakedPlayback] applyRootMotion восстановлен в " +
+                          $"{_savedApplyRootMotion} на '{animator.name}'.", this);
         }
 
         // === Internals ===

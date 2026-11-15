@@ -2,12 +2,13 @@
 
 > **Для:** следующего агента/разработчика, который делает интеграцию.
 > **Дата:** 2026-11-15
-> **Статус:** research + offline pack + safe rollout + **T-MB02 spike** + **T-MB04b accepted**; production-интеграции ещё нет.
+> **Статус:** research + offline pack + safe rollout + **T-MB02 spike** + **T-MB04b accepted** + **T-MB03 done**; production-интеграции ещё нет.
 > **Главное правило:** текущий Animator — дефолт; MotionBricks — additive, off by default, с откатом в минуты.
 > **Main:** код и docs импортированы в `main` коммитом `934ecdf6`; `MotionBricksRuntimeSettings.asset` в main — `mode: 0` (Disabled). `feature/motionbricks` — backup/история, не мержить слепо (в ветке `mode: 1`).
 > **T-MB02:** `bake → import → playback` работает; качество/IK/покрытие — T-MB03/04. См. [07](07_T-MB02_WORKTREE_BASELINE_FINDINGS.md) · [08](08_T-MB02_RETARGET_FINDINGS.md) · [09](09_T-MB02_ANALYSIS_AND_NEXT.md).
 > **T-MB04a (историческая):** рабочая forward-walk — авторский клип KL; метрики/руки/baseline подтверждены. Runtime-тест root motion и body swap закрыты в T-MB04b; см. [10](10_T-MB04B_RUNTIME_HARNESS.md).
 > **T-MB04b (вечер 15.11): ✅ принят.** Root motion на probe: **2.00 м/с** (`30,42 м / 15,21 s`), стопы не шаркают, `Stop`→baseline. Body swap Male→Female→Male на живом игроке — штатный путь 1/1; body swap при **активном playback** проверен на probe с настоящим applier — playback и root motion перепривязываются, кость двигается (18.8°/29.6°). Осталось вне тикета (в чек-лист T-MB08): 2 клиента, F8/F9 от нуля. Второй `CharacterController.Move` запрещён кодом; интеграция в `NetworkPlayer` — отдельный шаг.
+> **T-MB03 (ночь 15.11): ✅ сделано** — бейкер собирает задания с диска, batch + валидация + `*.bake.report.json`; тазовый foot IK стал контактно-осознанным (размах таза 15.7 → 11.7 см при hover 4 / penetration 1 см); `applyRootMotion` guard с учётом `SkillAnimationPlayer`; GUID/ссылки при перепёке сохранены. Подробности и замеры — [11](11_T-MB03_BAKER_AND_GUARDS.md). Baseline 12/12, Play Mode не запускался.
 > **Найдено:** фактический рантайм-игрок — `NetworkPlayer_GlobalPilot.prefab` (подставляет `GlobalMotionNetworkStartup` из профиля), baseline защищает `NetworkPlayer.prefab`. Новое тело после свапа приходит с FBX-дефолтами Animator (`applyRootMotion=true`, `CullUpdateTransforms`) — для будущих root-motion клипов нужен гард (T-MB03/05).
 
 ---
@@ -34,6 +35,7 @@
 | T-MB04a KL forward walk | ✅ 2.00 м/с, foot slide 0.07/0.11 см/кадр, подъём 0.036 м, руки 23.7°, baseline restore |
 | T-MB04a root motion | ✅ **2.00 м/с** в рантайме (`30,42 м / 15,21 s`), стопы не шаркают, `Stop`→baseline (§5.1–5.3 [10](10_T-MB04B_RUNTIME_HARNESS.md)) |
 | T-MB04a body swap | ✅ Male→Female→Male на живом игроке (1/1, штатный путь); при активном playback — проверено на probe с настоящим applier: перепривязка playback и `B-hips`, кость 18.8°/29.6° (§5.2–5.3) |
+| T-MB03 baker/IK/guard | ✅ discovery с диска, batch+validate, `*.bake.report.json`; foot IK hover 4 / penetration 1 см при размахе таза 11.7 см; guard 6/6; GUID стабилен — [11](11_T-MB03_BAKER_AND_GUARDS.md) |
 | Baseline animation files | ✅ `check_baseline.ps1` - 12/12 match (main); worktree `-SkipContent` - 4 scripts |
 | Sentis import | ❌ не проверялся; конфликт версий Burst/Collections/Newtonsoft |
 | Unity Play Mode | ✅ T-MB04b: пользователь + один прогон агента по разрешению; агент сам Play Mode не запускает |
@@ -115,7 +117,7 @@
 | `T-MB04a` | ✅ historical | KL walk/метрики/руки/root motion code; закрыт T-MB04b |
 | `T-MB04b` | ✅ accepted | root motion **2.00 м/с**, `Stop`→baseline, body swap (в т.ч. при активном playback) — приняты. Вне тикета → T-MB08: 2 клиента, F8/F9 от нуля, экипировка отдельным глазом |
 | `T-MB04c` | ⬜ next | Интеграция root motion в `NetworkPlayer.ProcessMovement` под feature flag; правка baseline-файла — только с одобрения |
-| `T-MB03` | ⬜ next | Baker MVP: generalize, batch, metadata, validation; фикс pelvis foot IK; guard `applyRootMotion` после body swap |
+| `T-MB03` | ✅ done | Baker MVP: discovery/batch/validation/metadata; контактный pelvis foot IK; guard `applyRootMotion`; `SaveClipInPlace` с проверкой GUID — [11](11_T-MB03_BAKER_AND_GUARDS.md) |
 | `T-MB05` | ⬜ | Hybrid primitives: authoring/registry/playback |
 | `T-MB06` | ⬜ optional | Sentis import + benchmark (timebox) |
 | `T-MB07` | ⬜ optional | Runtime experiment (only after go) |
@@ -216,7 +218,7 @@
 1. **Сид-клип `walk_to_jog` — разворот на месте.** Для рабочей ходьбы используется авторский KL `HumanM@Walk01_Forward`; синтезированный `WalkForward_Male` (0.54 м/с) пока не motion-consistent.
 2. **Плечи не анимируются.** `B-shoulder.L/R` наследуют грудь; `11→12`/`39→40` degenerate swing.
 3. **Руки — закрыто для KL.** `B-upperArm.L` двигается на 23.7° в LateUpdate при `controller = null`; для синтезированных клипов проверить отдельно.
-4. **Foot IK / pelvis.** Для KL метрики в допуске (slide 0.07/0.11 см/кадр, подъём 0.036 м), но тазовый foot IK в бейкере пережимает стопу (размах таза 15.8 см против 2 см) — T-MB03.
+4. **Foot IK / pelvis.** Для KL метрики в допуске (slide 0.07/0.11 см/кадр, подъём 0.036 м). T-MB03: тазовый IK стал контактно-осознанным (`PelvisSmooth`): на `WalkForward_Male` размах таза 15.7 → 11.7 см при hover 4 / penetration 1 см; «2 см» тазовым IK недостижимы, пока опорная стопа клипа гуляет на 15.7 см — кандидат на 2-bone IK в T-MB05. См. [11 §5](11_T-MB03_BAKER_AND_GUARDS.md).
 5. **`MotionBricksRuntimeSettings.mode`** в main — `0` (Disabled) ✓; probe `MB_Probe_Player` остаётся в `WorldScene_0_0` как dev-объект (разрешённая ветка).
 6. **Body swap M↔F — стенд готов.** Playback добавляется в рантайме на живого игрока; свап идёт через настоящий `CharacterCustomisationApplier` (штатный путь `CustomisationClientState`, при неподписанном applier — прямой вызов `ApplyBodyType` из меню). Визуал — за пользователем; `NetworkPlayer.prefab` не тронут.
 7. **Root motion — на probe, не на игроке.** `MotionBricksBakedRootMotion` стоит на `MB_Probe_Player`: `_clipSpeed = 2.00`, `_acceleration = 0`, `_allowTransformFallback = true`. На сетевом персонаже компонент **запрещён кодом** (второй `CharacterController.Move` невозможен); полноценная интеграция в `NetworkPlayer.ProcessMovement` — отдельный шаг, требует правки baseline-файла `NetworkPlayer.cs`.
@@ -271,6 +273,26 @@
   На текущем in-place KL-клипе дрейфа нет (`Body.localPosition = (0,0,0)` за 16 с), но для клипа
   с переносом корня это даст двойное движение — нужен гард на playback (выключить/восстановить
   `applyRootMotion` с учётом `SkillAnimationPlayer`).
+
+**Обновление 15.11, ночь (T-MB03):**
+- Бейкер больше не знает конкретных клипов: `MotionBricksBakeJob.Discover()` собирает задания из
+  `Generated/MotionBricks/<primitive>/<body>/*_30fps.f32` (+ `soma_bind.f32`); необязательный
+  sidecar `<ClipBase>.bake.config.json` задаёт `groundFeet`/`bakeInPlace`/`clipSpeed`/`label`.
+- Меню: `Bake/All discovered clips (batch)`, `Bake/Bake + validate all discovered`,
+  `Bake/List discovered clips`, `Validate/All discovered clips (batch)`, `Bake/Foot IK self-test`,
+  `Bake/applyRootMotion guard self-test`. Старые точечные пункты сохранены.
+- Метаданные: `<ClipBase>.bake.report.json` — SHA256 сырья/bind-позы, настройки, покадровая
+  foot-IK трасса, метрики валидатора, GUID до/после (`guidStable`).
+- Foot IK: `PelvisSmooth` вместо «прижать каждый кадр». `WalkForward_Male` 15.73 → 11.73 см
+  (hover 4.0 / penetration 1.0 при порогах 5/2), `WalkToJog_Male` 5.10 → 1.10 см. A/B без IK:
+  22.41 см. Валидатор не ослаблялся; оба синтезированных клипа по-прежнему FAIL по оси/асимметрии —
+  это контент, не пайплайн.
+- `applyRootMotion` guard: playback выключает флаг на время графа и возвращает после; при body swap
+  перепривязывается; во время каста `SkillAnimationPlayer` флаг не перетирает. Self-test 6/6 без
+  Play Mode.
+- `SaveClipInPlace`: GUID всех четырёх клипов стабилен на трёх перепёках; ссылка `MB_Probe_Player._clip`
+  в `WorldScene_0_0` жива.
+- Baseline 12/12 до/после; Play Mode не запускался. Подробности — [11](11_T-MB03_BAKER_AND_GUARDS.md).
 
 ---
 

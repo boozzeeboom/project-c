@@ -423,7 +423,7 @@ T-MB04b закрыт обоснованно: root motion на probe даёт **2
 | 1 | **Baseline защищает не тот prefab.** Фактический рантайм-игрок — `NetworkPlayer_GlobalPilot.prefab` (подставляет `GlobalMotionNetworkStartup` из профиля, роль `Spatial`), а `baseline_hashes.tsv` содержит `NetworkPlayer.prefab`. | Случайная правка реального игрока не будет поймана baseline. | Отдельное решение: добавить `GlobalPilot` в baseline (hash `c14c09dc...` на 15.11). |
 | 2 | **Root motion не интегрирован в `NetworkPlayer`.** Компонент на игроке намеренно ничего не двигает; нужен `NetworkPlayer.ProcessMovement`. | Без этого игрок не может ехать от baked-клипа; только probe. | `T-MB04c`, правка baseline-файла — с одобрения. |
 | 3 | **Body swap + активный playback на реальном `GlobalPilot` не проверен.** Проверен на probe с временным applier; event-путь тот же, но комбинация «игрок + playback + swap» — нет. | Может вылезти порядок инициализации/экипировка. | `T-MB08` / `T-MB04c`. |
-| 4 | **После свапа новое тело несёт FBX-дефолты Animator:** `applyRootMotion = true`, `cullingMode = CullUpdateTransforms`. | На in-place KL безвредно; для клипа с переносом корня — двойное движение. | Guard в `T-MB03`/`T-MB05`: выключать/восстанавливать `applyRootMotion` на время playback, с оглядкой на `SkillAnimationPlayer`. |
+| 4 | **После свапа новое тело несёт FBX-дефолты Animator:** `applyRootMotion = true`, `cullingMode = CullUpdateTransforms`. | На in-place KL безвредно; для клипа с переносом корня — двойное движение. | **Закрыто в T-MB03**: guard в `MotionBricksBakedPlayback` (self-test 6/6), см. [11 §7](11_T-MB03_BAKER_AND_GUARDS.md); визуальная проверка на живом игроке — T-MB08 |
 | 5 | **2 клиента, F8/F9 от нуля, экипировка** не проверены. | Сеть/FO/equipment — часть production-приёмки. | Чек-лист `T-MB08`. |
 | 6 | **`MotionBricksRuntimeSettings.asset` не в git** (Lore, `mode: 0`). | При отсутствии ассета playback fail-closed; это ок, но нужно помнить. | Документировано; не коммитить asset без `.meta`. |
 | 7 | **Generated `.anim`/`.f32`/`.saib` не в git**, `.anim` ignored; sample poses eval-only. | Воспроизводимость через baker; для релиза — свои seed/target. | `T-MB03` + лицензионная гигиена. |
@@ -438,7 +438,7 @@ T-MB04b закрыт обоснованно: root motion на probe даёт **2
 | T-MB04a | ✅ historical |
 | T-MB04b | ✅ accepted |
 | T-MB04c (root motion в игрока) | ⬜ next |
-| T-MB03 (baker/pelvis IK/applyRootMotion guard) | ⬜ next |
+| T-MB03 (baker/pelvis IK/applyRootMotion guard) | ✅ done — [11](11_T-MB03_BAKER_AND_GUARDS.md) |
 | T-MB05 (hybrid primitives/NPC pool) | ⬜ |
 | T-MB08 (2 clients/F8-F9/equipment/go-no-go) | ⬜ |
 | T-MB06/07 (runtime neural) | ⬜ optional |

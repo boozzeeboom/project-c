@@ -49,6 +49,7 @@
 
 | Коммит | Что |
 |---|---|
+| `87102426` | `T-MB05`: 2-bone leg IK, non-cyclic pelvis/`loop:false`, humanoid T-поза fix, metrics/docs |
 | `5425bc62` | `T-MB04c`: update the reviewed `NetworkPlayer.cs` baseline hash (12/12) |
 | `e33cc216` | `T-MB04c`: baked root motion through the locomotion bridge, runtime measurement, docs |
 | `90180758` | `T-MB03`: discovery baker, batch/validation/metadata, contact-aware pelvis foot IK, applyRootMotion guard, guard/IK self-tests |

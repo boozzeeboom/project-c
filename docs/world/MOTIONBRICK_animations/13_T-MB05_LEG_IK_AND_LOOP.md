@@ -3,6 +3,7 @@
 > **Дата:** 2026-11-16
 > **Ветка:** `main`
 > **HEAD до работ:** `0fa9ae42` (`T-MB04c: audit notes, save side effect and plan status`)
+> **Коммит:** `87102426`
 > **Статус:** код + замеры готовы; baseline 12/12; Play Mode **не запускался**. Визуал (стопы/колени/T-pose) — за пользователем.
 > **Связанные:** [11_T-MB03_BAKER_AND_GUARDS.md](11_T-MB03_BAKER_AND_GUARDS.md) · [12_T-MB04C_ROOT_MOTION_IN_PLAYER.md](12_T-MB04C_ROOT_MOTION_IN_PLAYER.md) · [06_SAFE_ROLLOUT_AND_ROLLBACK.md](06_SAFE_ROLLOUT_AND_ROLLBACK.md) · [baseline/BASELINE_MANIFEST.md](baseline/BASELINE_MANIFEST.md) · [HANDOFF.md](HANDOFF.md) · design: `docs/dev/T-MB05_LEG_IK_LOOP_DESIGN.md`
 

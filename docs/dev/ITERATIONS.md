@@ -19,7 +19,7 @@
 - `docs/world/MOTIONBRICK_animations/README.md`, `01_RESEARCH.md`, `02_PIPELINE.md`, `03_ALTERNATIVES.md`, `04_SOURCES.md`
 - `C:\Projects\motion_bricks\` (вне git: repo, models, community, unity, tools, papers, checksums)
 
-**Проверено:** TensorRT `generate_once.py` PASS; CPU ONNX Runtime PASS; Sentis import/Play Mode не запускались.
+**Проверено:** TensorRT `generate_once.py` PASS (26 + 50 кадров); CPU ONNX Runtime PASS (55–71 ms); `sa-inbetween` CLI `generate` PASS (50 frames) + `inspect` OK; Sentis import/Play Mode не запускались.
 
 ## 15 ноября 2026
 

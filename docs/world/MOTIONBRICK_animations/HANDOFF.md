@@ -43,6 +43,7 @@
 
 | Коммит | Что |
 |---|---|
+| `ddbc51f0` | `T-MB04b`: probe root motion, body-swap harness, no-duplicate-Move guard |
 | `934ecdf6` | `T-MB02/T-MB04a`: import code and docs into main (settings stay Disabled) |
 | `cd4133d9` | `T-MB04a`: handoff index row for the working-clip commit |
 | `1d3ff3e6` | `T-MB02`: analysis, coverage limits and next-step plan |

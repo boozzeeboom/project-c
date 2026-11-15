@@ -472,3 +472,22 @@ KL `HumanM@Walk01_Forward` — **2.00 м/с**, наш синтезированн
 | Handoff | `C:\Projects\ProjectC_client\docs\world\MOTIONBRICK_animations\HANDOFF.md` |
 | Baseline | `C:\Projects\ProjectC_client\docs\world\MOTIONBRICK_animations\baseline\check_baseline.ps1` |
 | Offline pack | `C:\Projects\motion_bricks\README.md` |
+
+---
+
+## T-MB04b, вечер 15.11 — стенд приёмки собран
+
+Подробности и порядок приёмки — [10_T-MB04B_RUNTIME_HARNESS.md](10_T-MB04B_RUNTIME_HARNESS.md).
+Коротко, что изменилось против состояния выше:
+
+1. **Root motion подключён к probe**: `_clipSpeed = 2.00`, `_acceleration = 0`, `_allowTransformFallback = true`.
+   Направление проверено замером: «носок−стопа» = `(0.028, 0, 1.000)`, `dot` с `transform.forward` = 1.000.
+2. **У Animator пробы выключен `applyRootMotion`** (был включён) и поставлен `AlwaysAnimate`: иначе Animator
+   сам применял root-кривые клипа и складывал движение с нашим; на `NetworkPlayer` в baseline `applyRootMotion = 0`.
+3. **Body swap проверяется на живом игроке**, а не на пробе: playback добавляется `AddComponent` в сессии
+   Play Mode, свап идёт через настоящий `CharacterCustomisationApplier`. Префаб и baseline-скрипты не менялись.
+4. **Второй `CharacterController.Move` запрещён кодом**: на объекте/в родителях есть `NetworkPlayer` → компонент
+   не двигает ничего и пишет предупреждение. Интеграция в `NetworkPlayer.ProcessMovement` — следующий шаг.
+5. **Baseline 12/12 до и после**; `mode: 0` не менялся.
+
+Открыто: визуал (пользователь), 2 клиента + F8/F9, интеграция root motion в игрока, T-MB03 (baker/IK).

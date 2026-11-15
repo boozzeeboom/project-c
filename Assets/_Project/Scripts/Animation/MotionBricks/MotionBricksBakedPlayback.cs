@@ -63,6 +63,14 @@ namespace ProjectC.Animation.MotionBricks
         /// Продовые объекты остаются под гейтом — гейт не ослаблен, обход явный и редакторный.
         /// </summary>
         public static bool ReviewOverride;
+
+        /// <summary>
+        /// Флаг живёт только сеанс Play Mode. Если в проекте выключен domain reload, статика
+        /// переезжает между сеансами — и тогда probe сам начинает играть «в обход гейта» без
+        /// команды. Сброс на старте Play Mode делает поведение предсказуемым в любом режиме.
+        /// </summary>
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetReviewOverrideOnPlay() => ReviewOverride = false;
 #endif
 
         // === Lifecycle ===
@@ -291,6 +299,23 @@ namespace ProjectC.Animation.MotionBricks
 #if UNITY_EDITOR
         /// <summary>Приёмка спайка: играть клип в обход гейта (только из меню Review, только редактор).</summary>
         public bool TryPlayForReview(AnimationClip clip, float speed = 1f) => TryPlayInternal(clip, speed, true);
+
+        /// <summary>
+        /// T-MB04b: собрать компонент, добавленный в рантайме руками из меню Review
+        /// (приёмка на живом NetworkPlayer: playback вешается на сессию, префаб не трогается).
+        /// Гейт не ослабляется: обход всё равно включается только через ReviewOverride.
+        /// </summary>
+        public void ConfigureForReview(MotionBricksRuntimeSettings settings, Animator animator, AnimationClip clip,
+                                       float speed, bool loop, bool logVerbose)
+        {
+            _settings = settings;
+            _animator = animator;
+            _clip = clip;
+            _playOnEnable = true;
+            _speed = Mathf.Max(0f, speed);
+            _loop = loop;
+            _logVerbose = logVerbose;
+        }
 #endif
 
         [ContextMenu("MotionBricks/Stop")]

@@ -4,7 +4,7 @@
 > **Статус:** research complete; решение предложено, ждёт подтверждения
 > **Область:** анимация персонажей, Unity 6.5 (`6000.5.2f1`), Windows x64, MMO-sandbox
 > **Тикет:** `T-MB01` (новая серия `T-MB` — MotionBricks; заводится этим документом)
-> **Документы:** [01_RESEARCH.md](01_RESEARCH.md) · [02_PIPELINE.md](02_PIPELINE.md) · [03_ALTERNATIVES.md](03_ALTERNATIVES.md) · [04_SOURCES.md](04_SOURCES.md) · [05_LOCAL_RESOURCES.md](05_LOCAL_RESOURCES.md) · [06_SAFE_ROLLOUT_AND_ROLLBACK.md](06_SAFE_ROLLOUT_AND_ROLLBACK.md) · [HANDOFF.md](HANDOFF.md)
+> **Документы:** [01_RESEARCH.md](01_RESEARCH.md) · [02_PIPELINE.md](02_PIPELINE.md) · [03_ALTERNATIVES.md](03_ALTERNATIVES.md) · [04_SOURCES.md](04_SOURCES.md) · [05_LOCAL_RESOURCES.md](05_LOCAL_RESOURCES.md) · [06_SAFE_ROLLOUT_AND_ROLLBACK.md](06_SAFE_ROLLOUT_AND_ROLLBACK.md) · [10_T-MB04B_RUNTIME_HARNESS.md](10_T-MB04B_RUNTIME_HARNESS.md) · [HANDOFF.md](HANDOFF.md)
 >
 > **Offline-пакет:** все материалы уже скачаны в **`C:\Projects\motion_bricks`**. Агент интеграции работает без сети — используйте [05_LOCAL_RESOURCES.md](05_LOCAL_RESOURCES.md); внешние ссылки ниже оставлены как происхождение.
 
@@ -187,6 +187,7 @@
 | [07_T-MB02_WORKTREE_BASELINE_FINDINGS.md](07_T-MB02_WORKTREE_BASELINE_FINDINGS.md) | **T-MB02:** worktree vs Lore-контент, baseline |
 | [08_T-MB02_RETARGET_FINDINGS.md](08_T-MB02_RETARGET_FINDINGS.md) | **T-MB02:** ретаргет, замеры, Play Mode-приёмка, ограничения |
 | [09_T-MB02_ANALYSIS_AND_NEXT.md](09_T-MB02_ANALYSIS_AND_NEXT.md) | **Анализ T-MB02:** 100%? ограничения, NPC, выигрыш, следующие шаги |
+| [10_T-MB04B_RUNTIME_HARNESS.md](10_T-MB04B_RUNTIME_HARNESS.md) | **T-MB04b:** root motion на probe, body swap на живом игроке, стенд и порядок приёмки |
 | [baseline/BASELINE_MANIFEST.md](baseline/BASELINE_MANIFEST.md) | Baseline-хэши 12 ключевых файлов + `check_baseline.ps1` |
 | [HANDOFF.md](HANDOFF.md) | Саммари для передачи работы следующему агенту (абсолютные ссылки) |
 

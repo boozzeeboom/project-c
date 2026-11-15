@@ -7,6 +7,7 @@
 > **Main:** код и docs импортированы в `main` коммитом `934ecdf6`; `MotionBricksRuntimeSettings.asset` в main — `mode: 0` (Disabled). `feature/motionbricks` — backup/история, не мержить слепо (в ветке `mode: 1`).
 > **T-MB02:** `bake → import → playback` работает; качество/IK/покрытие — T-MB03/04. См. [07](07_T-MB02_WORKTREE_BASELINE_FINDINGS.md) · [08](08_T-MB02_RETARGET_FINDINGS.md) · [09](09_T-MB02_ANALYSIS_AND_NEXT.md).
 > **T-MB04a (вечер 15.11):** рабочая forward-walk — авторский клип KL; все метрики опоры в допуске, `B-upperArm.L` двигается (23.7°), baseline восстанавливается; root motion написан (`MotionBricksBakedRootMotion`, в сцену намеренно не подключён). Открыто: runtime-тест root motion, body swap при активном playback, 2 клиента / F8 / F9. Подробности — [09](09_T-MB02_ANALYSIS_AND_NEXT.md).
+> **T-MB04b (вечер 15.11):** root motion подключён к probe (`_clipSpeed = 2.00`, `_acceleration = 0`, transform fallback), меню приёмки расширено (поездка, замер скорости, playback на живом игроке, body swap M→F→M). Body swap проверяется на настоящем `CharacterCustomisationApplier` без правки префаба. Второй `CharacterController.Move` запрещён кодом; интеграция в `NetworkPlayer` не сделана. Подробности — [10](10_T-MB04B_RUNTIME_HARNESS.md).
 
 ---
 
@@ -30,8 +31,8 @@
 | T-MB02 bake → import → playback | ✅ `WalkToJog_Male_Humanoid`, `PlayableGraph`, controller=null; baseline restore |
 | T-MB02 Play Mode acceptance | ✅ пользователь: поза корректная, конечности не вывернуты; это разворот на месте (свойство seed) |
 | T-MB04a KL forward walk | ✅ 2.00 м/с, foot slide 0.07/0.11 см/кадр, подъём 0.036 м, руки 23.7°, baseline restore |
-| T-MB04a root motion | ⚠️ код написан, в сцену/префаб не подключён; runtime-тест — пользователь |
-| T-MB04a body swap | ❌ блокер: playback только на пробе, applier только на персонаже |
+| T-MB04a root motion | ✅ код подключён к probe (§3.1 [10](10_T-MB04B_RUNTIME_HARNESS.md)); runtime-визуал — пользователь |
+| T-MB04a body swap | ⚠️ стенд готов (playback на живом игроке + настоящий applier); визуал — пользователь |
 | Baseline animation files | ✅ `check_baseline.ps1` - 12/12 match (main); worktree `-SkipContent` - 4 scripts |
 | Sentis import | ❌ не проверялся; конфликт версий Burst/Collections/Newtonsoft |
 | Unity Play Mode | ❌ не запускался (правило `dont-start-play`) |
@@ -104,8 +105,8 @@
 | `T-MB01A` | ✅ done | Offline resource pack + local links |
 | `T-MB01B` | ✅ done | Safe rollout/rollback + baseline manifest + handoff |
 | `T-MB02` | ✅ done | Испечь **один** клип, импортировать, проиграть на scene-объекте (приёмка 15.11 - `HANDOFF §9`) |
-| `T-MB04a` | ⚠️ code done | KL walk/метрики/руки/root motion code; **runtime-тест root motion — пользователь**; body swap — блокер |
-| `T-MB04b` | ⬜ next | Body swap test harness, интеграция root motion в `NetworkPlayer`, 2 clients, F8/F9 |
+| `T-MB04a` | ⚠️ code done | KL walk/метрики/руки/root motion code; runtime-тест — пользователь |
+| `T-MB04b` | ⚠️ harness ready | probe root motion (2.00 м/с), playback на живом игроке, body swap M→F→M; визуал + 2 clients + F8/F9 — пользователь |
 | `T-MB03` | ⬜ next | Baker MVP: generalize, batch, metadata, validation; фикс pelvis foot IK |
 | `T-MB05` | ⬜ | Hybrid primitives: authoring/registry/playback |
 | `T-MB06` | ⬜ optional | Sentis import + benchmark (timebox) |
@@ -209,8 +210,8 @@
 3. **Руки — закрыто для KL.** `B-upperArm.L` двигается на 23.7° в LateUpdate при `controller = null`; для синтезированных клипов проверить отдельно.
 4. **Foot IK / pelvis.** Для KL метрики в допуске (slide 0.07/0.11 см/кадр, подъём 0.036 м), но тазовый foot IK в бейкере пережимает стопу (размах таза 15.8 см против 2 см) — T-MB03.
 5. **`MotionBricksRuntimeSettings.mode`** в main — `0` (Disabled) ✓; probe `MB_Probe_Player` остаётся в `WorldScene_0_0` как dev-объект (разрешённая ветка).
-6. **Body swap M↔F — блокер:** `CharacterCustomisationApplier` есть только у персонажа, playback — только у пробы; сценарий не проверить без variant prefab/applier на пробе.
-7. **Root motion — код есть, runtime не проверен.** `MotionBricksBakedRootMotion` не подключён; при подключении к `NetworkPlayer` будет **двойное** `CharacterController.Move` — интегрировать в movement, не вешать отдельным компонентом.
+6. **Body swap M↔F — стенд готов.** Playback добавляется в рантайме на живого игрока; свап идёт через настоящий `CharacterCustomisationApplier` (штатный путь `CustomisationClientState`, при неподписанном applier — прямой вызов `ApplyBodyType` из меню). Визуал — за пользователем; `NetworkPlayer.prefab` не тронут.
+7. **Root motion — на probe, не на игроке.** `MotionBricksBakedRootMotion` стоит на `MB_Probe_Player`: `_clipSpeed = 2.00`, `_acceleration = 0`, `_allowTransformFallback = true`. На сетевом персонаже компонент **запрещён кодом** (второй `CharacterController.Move` невозможен); полноценная интеграция в `NetworkPlayer.ProcessMovement` — отдельный шаг, требует правки baseline-файла `NetworkPlayer.cs`.
 8. **Network/FO** (2 clients, F8/F9) не тестировались.
 9. **Sentis 2.6.1 конфликт версий:** Burst 1.8.17 / Collections 2.4.3 / Newtonsoft 3.2.1 vs проект 1.8.29 / 6.5.0 / 3.2.2. Не ставить в main.
 10. **Sentis import** 6993-узлового ONNX не проверен; нужен T-MB06.
@@ -226,6 +227,19 @@
 - `WalkToJog_Male_Humanoid` остаётся на пробе; для ходьбы использовать `ProjectC/MotionBricks/Review/Play KL Walk01 Forward on probe`.
 - `MotionBricksBakedRootMotion` — новый файл, не подключён; `_clipSpeed = 0` (инертен). Runtime-тест — пользователь.
 - `feature/motionbricks` — backup; в ветке settings `mode: 1`, в main `mode: 0`; не мержить слепо.
+
+**Обновление 15.11, вечер (T-MB04b):**
+- Probe: `MotionBricksBakedRootMotion` с `_clipSpeed = 2.00`, `_acceleration = 0`, `_allowTransformFallback = true`;
+  Animator пробы — `applyRootMotion = false`, `cullingMode = AlwaysAnimate` (раньше root motion был включён и мог
+  складываться с нашим движением). Проверено: лицо модели = +Z = `transform.forward`.
+- Меню: `Review/Play KL Walk01 Forward on probe`, `Review/Probe/Start|Log travel measurement`,
+  `Review/Player/Attach + play KL Walk01 on my player`, `Review/Body swap/Body swap → Female|Male`,
+  `Review/Focus probe in Scene view`, `Review/Log harness state`.
+- Body swap — на живом игроке: playback добавляется `AddComponent` в сессии Play Mode (префаб не меняется),
+  свап идёт через настоящий `CharacterCustomisationApplier`; при неподписанном applier меню вызывает его
+  `ApplyBodyType` напрямую (только редактор).
+- `MotionBricksBakedRootMotion` перепривязывается на `BodySwapped` и читает таз в `LateUpdate`.
+- `NetworkPlayer.cs` **не менялся**: интеграция root motion в movement — следующий шаг после подтверждения.
 
 ---
 

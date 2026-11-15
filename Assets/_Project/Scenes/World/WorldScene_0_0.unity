@@ -233236,6 +233236,14 @@ PrefabInstance:
       propertyPath: m_Enabled
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 5866666021909216657, guid: 2faa610713d3b3c439473daa55e8c60a, type: 3}
+      propertyPath: m_CullingMode
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5866666021909216657, guid: 2faa610713d3b3c439473daa55e8c60a, type: 3}
+      propertyPath: m_ApplyRootMotion
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6027369803899018324, guid: 2faa610713d3b3c439473daa55e8c60a, type: 3}
       propertyPath: m_LocalRotation.w
       value: 0.1937925
@@ -1252646,6 +1252654,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1186159359}
   - component: {fileID: 1186159360}
+  - component: {fileID: 1186159361}
   m_Layer: 0
   m_Name: MB_Probe_Player
   m_TagString: Untagged
@@ -1252662,7 +1252671,7 @@ Transform:
   m_GameObject: {fileID: 1186159358}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 39839, y: 2533, z: 40007}
+  m_LocalPosition: {x: 39836.16, y: 2489.64, z: 40020.61}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1252683,9 +1252692,31 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Animation.MotionBricks.MotionBricksBakedPlayback
   _settings: {fileID: 11400000, guid: 34e9eee72a9bb7a4eb8d87011f419f1c, type: 2}
   _animator: {fileID: 450887748}
-  _clip: {fileID: 0}
+  _clip: {fileID: 7400000, guid: 971e390ab04243343815da4e8c79c0a7, type: 2}
   _playOnEnable: 1
   _speed: 1
+  _loop: 1
+  _logVerbose: 1
+--- !u!114 &1186159361
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1186159358}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f419e1fb0666104bb36a44d758bb500, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Animation.MotionBricks.MotionBricksBakedRootMotion
+  _settings: {fileID: 11400000, guid: 34e9eee72a9bb7a4eb8d87011f419f1c, type: 2}
+  _source: 0
+  _clipSpeed: 2
+  _acceleration: 0
+  _hips: {fileID: 0}
+  _hipsDeltaWorldSpace: 1
+  _maxDeltaPerFrame: 0.5
+  _allowTransformFallback: 1
   _logVerbose: 1
 --- !u!1001 &1186396092
 PrefabInstance:

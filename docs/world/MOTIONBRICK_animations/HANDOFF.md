@@ -7,7 +7,8 @@
 > **Main:** код и docs импортированы в `main` коммитом `934ecdf6`; `MotionBricksRuntimeSettings.asset` в main — `mode: 0` (Disabled). `feature/motionbricks` — backup/история, не мержить слепо (в ветке `mode: 1`).
 > **T-MB02:** `bake → import → playback` работает; качество/IK/покрытие — T-MB03/04. См. [07](07_T-MB02_WORKTREE_BASELINE_FINDINGS.md) · [08](08_T-MB02_RETARGET_FINDINGS.md) · [09](09_T-MB02_ANALYSIS_AND_NEXT.md).
 > **T-MB04a (вечер 15.11):** рабочая forward-walk — авторский клип KL; все метрики опоры в допуске, `B-upperArm.L` двигается (23.7°), baseline восстанавливается; root motion написан (`MotionBricksBakedRootMotion`, в сцену намеренно не подключён). Открыто: runtime-тест root motion, body swap при активном playback, 2 клиента / F8 / F9. Подробности — [09](09_T-MB02_ANALYSIS_AND_NEXT.md).
-> **T-MB04b (вечер 15.11):** root motion на probe **принят визуально** (Play Mode 15.11: кукла едет, стопы не шаркают, `B-upperArm.L` 24.3°, baseline restore; лог — [10 §5.1](10_T-MB04B_RUNTIME_HARNESS.md)). Открыто: цифровой замер поездки, `Stop on probe` в сессии, body swap M→F→M, 2 клиента + F8/F9. Второй `CharacterController.Move` запрещён кодом; интеграция в `NetworkPlayer` не сделана. Подробности — [10](10_T-MB04B_RUNTIME_HARNESS.md).
+> **T-MB04b (вечер 15.11):** root motion на probe **принят визуально** (Play Mode: кукла едет, стопы не шаркают, baseline restore; лог — [10 §5.1–5.2](10_T-MB04B_RUNTIME_HARNESS.md)); `Stop on probe` нажат в сессии — baseline восстановлен; body swap Male→Female→Male **выполняется** штатным путём (1/1). Открыто: body swap при **активном playback на игроке**, цифровой замер поездки, 2 клиента, F8/F9 от нуля. Второй `CharacterController.Move` запрещён кодом; интеграция в `NetworkPlayer` не сделана.
+> **Найдено:** фактический рантайм-игрок — `NetworkPlayer_GlobalPilot.prefab` (его подставляет `GlobalMotionNetworkStartup` из профиля), а baseline защищает `NetworkPlayer.prefab`. Учитывать при интеграции в игрока.
 
 ---
 
@@ -31,8 +32,8 @@
 | T-MB02 bake → import → playback | ✅ `WalkToJog_Male_Humanoid`, `PlayableGraph`, controller=null; baseline restore |
 | T-MB02 Play Mode acceptance | ✅ пользователь: поза корректная, конечности не вывернуты; это разворот на месте (свойство seed) |
 | T-MB04a KL forward walk | ✅ 2.00 м/с, foot slide 0.07/0.11 см/кадр, подъём 0.036 м, руки 23.7°, baseline restore |
-| T-MB04a root motion | ✅ код подключён к probe; **Play Mode 15.11: едет, не шаркает**, baseline restore (§5.1 [10](10_T-MB04B_RUNTIME_HARNESS.md)) |
-| T-MB04a body swap | ⚠️ стенд готов (playback на живом игроке + настоящий applier); визуал ещё не проверялся |
+| T-MB04a root motion | ✅ код подключён к probe; **Play Mode: едет, не шаркает**, `Stop`→baseline (§5.1–5.2 [10](10_T-MB04B_RUNTIME_HARNESS.md)) |
+| T-MB04a body swap | ⚠️ Male→Female→Male выполняется (1/1, штатный путь); **playback при свапе не проверен** — он был на пробе, не на игроке (§5.2) |
 | Baseline animation files | ✅ `check_baseline.ps1` - 12/12 match (main); worktree `-SkipContent` - 4 scripts |
 | Sentis import | ❌ не проверялся; конфликт версий Burst/Collections/Newtonsoft |
 | Unity Play Mode | ❌ не запускался (правило `dont-start-play`) |
@@ -110,7 +111,7 @@
 | `T-MB01B` | ✅ done | Safe rollout/rollback + baseline manifest + handoff |
 | `T-MB02` | ✅ done | Испечь **один** клип, импортировать, проиграть на scene-объекте (приёмка 15.11 - `HANDOFF §9`) |
 | `T-MB04a` | ⚠️ code done | KL walk/метрики/руки/root motion code; runtime-тест — пользователь |
-| `T-MB04b` | ⚠️ partially accepted | root motion на probe — **принят** (визуал + лог); открыто: body swap M→F→M, цифровой замер поездки, `Stop on probe`, 2 clients, F8/F9 от нуля |
+| `T-MB04b` | ⚠️ partially accepted | root motion + `Stop on probe` — **приняты**; body swap выполняется, но **playback при свапе не проверен**; открыто: цифровой замер поездки, 2 clients, F8/F9 от нуля |
 | `T-MB03` | ⬜ next | Baker MVP: generalize, batch, metadata, validation; фикс pelvis foot IK |
 | `T-MB05` | ⬜ | Hybrid primitives: authoring/registry/playback |
 | `T-MB06` | ⬜ optional | Sentis import + benchmark (timebox) |
@@ -244,11 +245,21 @@
   `ApplyBodyType` напрямую (только редактор).
 - `MotionBricksBakedRootMotion` перепривязывается на `BodySwapped` и читает таз в `LateUpdate`.
 - `NetworkPlayer.cs` **не менялся**: интеграция root motion в movement — следующий шаг после подтверждения.
-- **Приёмка 15.11 (Play Mode, пользователь):** `Play 'HumanM@Walk01_Forward'` на `MB_Probe_Player`,
+- **Приёмка 15.11 (Play Mode, пользователь), сеанс 1:** `Play 'HumanM@Walk01_Forward'` на `MB_Probe_Player`,
   `B-upperArm.L` 24.3°, `controller=null`, `humanMotion=True`, петля сработала (`t=0,81/0,80`);
   визуально «идёт нормально, кукла не шаркает»; выход из Play Mode → «baseline Animator восстановлен».
-  F8 у нуля даёт ожидаемый `Controlled rebase rejected: no_rebase_plan` (фокус уже у нуля), это не ошибка.
-  Ещё не проверено: body swap M→F→M, цифровой замер поездки, `Stop on probe` в сессии, 2 клиента, F8/F9 от нуля.
+- **Сеанс 2:** `Stop on probe` нажат — baseline восстановлен; `B-upperArm.L` 14.5°;
+  body swap Male→Female→Male на живом игроке — `Applied bodyType=` и `отреагировало applier'ов 1/1`
+  (штатный путь, без reflection); модели — из `NetworkPlayer_GlobalPilot.prefab`
+  (male `testing`, female `PC_Char_Adjudicator_Female_APOSE_v01_Rigged_Humanoid`).
+  Ходьба после свапа визуально та же — ожидаемо (humanoid-ретаргет, тот же контроллер), T-pose нет.
+  F8 ×7 у нуля → ожидаемый `no_rebase_plan`, ошибок нет.
+- **Ещё не проверено:** body swap при **активном playback на игроке** (playback был на пробе),
+  цифровой замер поездки, 2 клиента (консоль второго не снималась), F8/F9 от нуля.
+- **Найдено:** `check_baseline.ps1` защищает `NetworkPlayer.prefab`, но рантайм-игрок — 
+  `NetworkPlayer_GlobalPilot.prefab` (подставляется `GlobalMotionNetworkStartup` из профиля,
+  роль `Spatial`). Для будущей интеграции playback/root motion в игрока целиться в GlobalPilot
+  и, вероятно, добавить его в baseline отдельным решением.
 
 ---
 

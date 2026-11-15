@@ -492,5 +492,8 @@ KL `HumanM@Walk01_Forward` — **2.00 м/с**, наш синтезированн
 
 Открыто: body swap M→F→M, цифровой замер поездки, `Stop on probe` в сессии, 2 клиента + F8/F9,
 интеграция root motion в игрока, T-MB03 (baker/IK).
-Принято 15.11 (Play Mode): root motion на probe едет, стопы не шаркают, `B-upperArm.L` 24.3°, baseline restore —
-лог и разбор в [10 §5.1](10_T-MB04B_RUNTIME_HARNESS.md).
+Принято 15.11 (Play Mode): root motion на probe едет, стопы не шаркают, `B-upperArm.L` 24.3°, baseline restore;
+`Stop on probe` восстанавливает baseline; body swap Male→Female→Male выполняется штатным путём (1/1).
+Логи и разбор — [10 §5.1–5.2](10_T-MB04B_RUNTIME_HARNESS.md).
+Осталось: body swap при активном playback на игроке, цифровой замер поездки, 2 клиента, F8/F9 от нуля.
+**Важно:** рантайм-игрок — `NetworkPlayer_GlobalPilot.prefab`, baseline защищает `NetworkPlayer.prefab`.

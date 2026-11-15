@@ -79,7 +79,8 @@ private void Apply(Vector3 displacement)
 
 Поэтому playback **добавляется в рантайме** на живого локального игрока из меню Review
 (`AddComponent` + `ConfigureForReview`). Префаб, контроллер и baseline-скрипты не меняются;
-компонент живёт только в сессии Play Mode.
+компонент живёт только в сессии Play Mode. Бонус: стенд не зависит от того, какой префаб реально
+спавнится (см. §2.4 — это `NetworkPlayer_GlobalPilot.prefab`, а не `NetworkPlayer.prefab`).
 
 ### 2.4. Body swap: честный обход одной проблемы
 
@@ -96,9 +97,20 @@ private void Apply(Vector3 displacement)
 
 Лог меню печатает, сколько applier'ов отреагировало штатно и сколько пришлось вызвать напрямую.
 
-Модели для свапа берутся из `NetworkPlayer.prefab` (`testing.fbx` / `1_5.fbx`, legacy-ассеты
-Blender). Это существующая конфигурация проекта, не наша правка: приёмка проверяет, что
-**playback и экипировка переживают свап**, а не финальный арт персонажа.
+Модели для свапа берутся из префаба, который реально спавнится. Это **не** `NetworkPlayer.prefab`:
+`GlobalMotionNetworkStartup.TryApplyProfilePlayerPrefab` подменяет `NetworkConfig.PlayerPrefab` на
+единственный prefab с ролью `Spatial` из `GlobalMotionNetworkProfile` — им является
+`Assets/_Project/Prefabs/FloatingOrigin/NetworkPlayer_GlobalPilot.prefab`.
+
+| Префаб | `_maleModel` | `_femaleModel` | `_femaleMaterial` |
+|---|---|---|---|
+| `NetworkPlayer.prefab` (baseline, Edit-Mode PlayerPrefab) | `testing.fbx` | `1_5.fbx` | `Character_17866748877224_Material` |
+| `NetworkPlayer_GlobalPilot.prefab` (**фактический игрок в рантайме**) | `testing.fbx` | `PC_Char_Adjudicator_Female_APOSE_v01_Rigged_Humanoid.fbx` | `null` |
+
+Это существующая конфигурация проекта, не наша правка: приёмка проверяет, что **playback и
+экипировка переживают свап**, а не финальный арт персонажа. Отдельный риск на будущее:
+`check_baseline.ps1` защищает `NetworkPlayer.prefab`, но рантайм-игрок — `NetworkPlayer_GlobalPilot.prefab`,
+которого в baseline нет (рекомендация — добавить, но это отдельное решение по baseline).
 
 ---
 
@@ -183,11 +195,13 @@ Blender). Это существующая конфигурация проект�
 | baseline 12/12 до/после | **ДА** (§7) |
 | `applyRootMotion` на пробе выключен, направление движения совпадает с клипом | **ДА**, замер (§3.1) |
 | второй `CharacterController.Move` невозможен на игроке | **ДА по коду** (§2.2), компонент на игрока не ставится |
-| **root motion на пробе: едет, стопы не шаркают** | **ДА**, Play Mode 15.11 + лог (§5.1) |
-| скорость 2.00 м/с в рантайме | **визуально да**, цифровой замер поездки не снимался (§5.1) |
-| `Stop` → baseline в сессии | **ДА по логу выхода из Play Mode**; пункт меню `Stop on probe` в сессии не нажимался (§5.1) |
-| body swap переживает playback | **код + стенд**; в Play Mode **не проверялся** (§5.1) |
-| 2 клиента + F8/F9 | **частично**: 1 клиент, F8 → ожидаемый отказ `no_rebase_plan`, 0 errors; 2 клиента — нет (§5.1) |
+| **root motion на пробе: едет, стопы не шаркают** | **ДА**, Play Mode 15.11 + лог (§5.1, §5.2) |
+| скорость 2.00 м/с в рантайме | **визуально да**, цифровой замер поездки не снимался (§5.2) |
+| `Stop` → baseline в сессии | **ДА**, пункт меню `Stop on probe` нажат 19:18:59 (§5.2) |
+| body swap выполняется на живом игроке | **ДА**, Male→Female→Male, штатный путь 1/1 (§5.2) |
+| body swap при **активном playback** | **НЕ ПРОВЕРЕНО**: playback был на пробе, не на игроке (§5.2) |
+| 2 клиента | **НЕ ПРОВЕРЕНО** (host+client шёл, консоль второго клиента не снималась) |
+| F8/F9 | F8 у нуля — ожидаемый `no_rebase_plan`, 0 errors; сдвиг/F9 не проверены (§5.2) |
 | root motion внутри `NetworkPlayer` | **НЕ СДЕЛАНО** (осознанно, §2.2) |
 
 ### 5.1. Приёмка 15.11, вечер — root motion на пробе (Play Mode, пользователь)
@@ -226,7 +240,7 @@ Blender). Это существующая конфигурация проект�
 `PlayerPositionServer.cs` («no_rebase_plan — лишь симптом „фокус уже у нуля“»). Для проверки
 собственно сдвига нужно уехать от нуля (корабль/полёт) и нажать F8 там.
 
-Что в этом сеансе **не** проверялось:
+Что в сеансе №1 **не** проверялось (часть закрыта в §5.2):
 
 | Пункт | Что нужно |
 |---|---|
@@ -235,6 +249,50 @@ Blender). Это существующая конфигурация проект�
 | body swap M→F→M | `Review/Player/Attach + play KL Walk01 on my player` → `Review/Body swap/Body swap → Female` → `→ Male` |
 | 2 клиента | Host + Client, сравнить позиции/анимации, 0 errors в обеих консолях |
 | F8/F9 «по-настоящему» | уехать от нуля, F8 → объект на месте; F9 → возврат |
+
+### 5.2. Приёмка 15.11, вечер №2 — Stop, body swap, F8 (Play Mode, пользователь)
+
+Что делал пользователь: повторный прогон probe, `Stop on probe`, body swap Female→Male, несколько F8.
+Два клиента в этом сеансе не снимались (host+client шёл, но консоль второго клиента не проверялась).
+
+```
+19:18:50.080 [MotionBricksBakedPlayback] Play 'HumanM@Walk01_Forward' (0,80 s, speed 1,00) на 'HumanM_Model'
+19:18:50.625 diag: t=0,71/0,80 s, кость B-upperArm.L: было (17.8, 258.4, 72.7), стало (10.8, 245.9, 73.4)
+19:18:59.866 [MB-Review] Probe: playback остановлен, baseline Animator восстановлен (1 шт.)
+19:19:18.605 [MotionBricksBakedPlayback] Play 'HumanM@Walk01_Forward' ... (повторный запуск)
+19:19:27.843 [CharacterCustomisationApplier] Applied bodyType=Female
+             (model='PC_Char_Adjudicator_Female_APOSE_v01_Rigged_Humanoid', mat='null', ctrl='PlayerAnimation_Female')
+19:19:27.845 [MB-Review] Body swap → Female: снапшот применён, отреагировало applier'ов 1/1
+19:19:50.368 [CharacterCustomisationApplier] Applied bodyType=Male
+             (model='testing', mat='male_character_game_ready_rigged_Material', ctrl='PlayerAnimation_Default')
+19:19:50.370 [MB-Review] Body swap → Male: снапшот применён, отреагировало applier'ов 1/1
+19:20:08.274 [MotionBricksBakedPlayback] Playback остановлен, baseline Animator восстановлен
+```
+
+Подтверждено:
+
+- **`Stop on probe` теперь нажат в сессии** — `playback остановлен, baseline Animator восстановлен (1 шт.)`.
+  Это тот самый путь `StopPlayback()` → `graph.Stop/Destroy` → `Rebind/Update(0)`.
+- **Body swap на живом игроке выполняется** и идёт **штатным путём**: `отреагировало applier'ов 1/1`,
+  reflection-fallback не понадобился. Модели — из фактического рантайм-префаба
+  (`NetworkPlayer_GlobalPilot.prefab`, см. §2.4): male `testing`, female `PC_Char_Adjudicator_...`.
+- Ходьба после свапа визуально та же (пользователь: «различий в ходьбе не видел») — это **ожидаемо**:
+  оба тела humanoid, контроллер один и тот же, ретаргет сохраняет походку. T-pose/вывернутых
+  конечностей не было.
+- **F8** нажимался 7 раз (19:19:37…19:20:05) — каждый раз `Controlled rebase rejected:
+  no_rebase_plan:localFocus≈(-88..-97, -70..-72, 134..157)`, т.е. фокус уже у нуля. Это **не ошибка**
+  (см. §5.1); ошибок/исключений в консоли нет.
+- Диагностика скелета: `B-upperArm.L` повернулась на **14.5°** (пересчёт `Quaternion.Angle` по логу) —
+  humanoid-клип снова двигает кость.
+
+Чего этот сеанс **не** доказал:
+
+| Пункт | Почему | Что нужно |
+|---|---|---|
+| Body swap при активном playback | playback играл на **пробе**, на игрока его не вешали (в логе нет `[MB-Review] Игрок ... playback`) | `Review/Player/Attach + play KL Walk01 on my player` → `Body swap → Female` → `→ Male`; в логе после свапа должен появиться новый `Play 'HumanM@Walk01_Forward'` |
+| Цифровой замер поездки (п.2) | не запускался | `Review/Probe/Start|Log travel measurement` |
+| 2 клиента | консоль второго клиента не снималась | Host + Client, обе консоли: 0 errors, позиции/анимации совпадают |
+| F8/F9 от нуля | фокус у нуля, ребейз честно отклонён | уехать от нуля (корабль), F8 → объект на месте; F9 → возврат |
 
 ## 6. Ограничения, которые остаются
 

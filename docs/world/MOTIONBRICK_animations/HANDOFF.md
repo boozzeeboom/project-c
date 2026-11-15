@@ -44,6 +44,7 @@
 
 | Коммит | Что |
 |---|---|
+| `d7235bfe` | `T-MB04b`: ticket closed — travel 2.00 m/s, body swap with active playback, findings |
 | `1441e51b` | `T-MB04b`: Stop/body-swap/F8 session log + runtime player prefab finding |
 | `2c35a903` | `T-MB04b`: play-mode acceptance of probe root motion (logs + status) |
 | `eb4c87e8` | `T-MB04b`: bring-probe convenience and single-play ordering in the review menu |

@@ -311,4 +311,68 @@ PASS  каст: Stop не перетирает флаг скилла
 
 ---
 
+## 13. Передача следующему агенту (15.11, ночь)
+
+### 13.1. Состояние на момент передачи
+
+- **T-MB03 закрыт** на уровне кода/замеров: коммиты `90180758` (код + доки) и `a971fddb`
+  (строка в индексе HANDOFF).
+- **Baseline 12/12**; `MotionBricksRuntimeSettings.mode: 0`; сцена `WorldScene_0_0` не менялась;
+  Play Mode агентом **не запускался**.
+- T-MB04c **не начат**: пользователь 15.11 передал анализ другому агенту, одобрения на правку
+  `NetworkPlayer.cs` нет. Ничего из baseline-файлов не тронуто.
+
+Всё воспроизводится в Edit Mode, без Play Mode:
+
+1. `powershell -ExecutionPolicy Bypass -File docs\world\MOTIONBRICK_animations\baseline\check_baseline.ps1`
+   → `BASELINE OK: 12 files match`.
+2. `ProjectC/MotionBricks/Bake/Foot IK self-test` → 4 PASS, `ИТОГ: PASS`.
+3. `ProjectC/MotionBricks/Bake/applyRootMotion guard self-test` → 6 PASS, `ИТОГ: PASS`.
+4. `ProjectC/MotionBricks/Bake/List discovered clips` → 2 задания (`walk_forward`, `walk_to_jog`).
+5. `ProjectC/MotionBricks/Bake/Bake + validate all discovered` → «испечено 2, ошибок 0»; GUID
+   стабильны; оба клипа FAIL по оси/асимметрии/развороту — это контент, не пайплайн (§6).
+
+### 13.2. T-MB04c — готовый план (одобрения нет)
+
+Если тикет одобрят, правка минимальная и без второго `CharacterController.Move`:
+
+1. **Новый runtime-файл** `Assets/_Project/Scripts/Animation/MotionBricks/MotionBricksLocomotionBridge.cs`:
+   реестр активных `MotionBricksBakedRootMotion` (регистрация в `OnEnable`/`OnDisable`, без
+   `GetComponent` в кадре) + `TryGetDisplacement(NetworkPlayer, out Vector3)`.
+   Гейт тот же: `MotionBricksRuntimeSettings.mode != Disabled`, `allowPlayer`, `player.IsOwner`.
+2. **`MotionBricksBakedRootMotion`**: на объекте с `NetworkPlayer` по-прежнему НЕ вызывает `Move`;
+   вместо предупреждения публикует посчитанное смещение в мост (одно место расчёта).
+3. **`NetworkPlayer.ProcessMovement`** (~8 строк перед формированием `controllerMotion`):
+   если мост дал смещение — горизонталь этого кадра = baked-смещение (ветер на кадр выключается),
+   затем идёт существующий единственный `_controller.Move`. Никаких новых `Move`, `NetworkTransform`
+   и контроллер не меняются.
+4. **Baseline:** после правки `NetworkPlayer.cs` пересчитать только его хэш и обновить
+   `baseline_hashes.tsv` ОТДЕЛЬНЫМ коммитом по процедуре `BASELINE_MANIFEST.md` §5.
+5. **Приёмка:** baseline PASS (с обновлённым хэшем); игрок едет от baked root motion; второго
+   `Move` нет; `Stop` → baseline; body swap на `GlobalPilot` без T-pose/потери экипировки.
+6. **Риски:** `ClipSpeed` едет по `transform.forward` и не учитывает ввод — для MVP допустимо
+   только когда playback управляет движением; `HipsDelta` для клипов с переносом корня — отдельный
+   шаг после того, как появятся такие клипы.
+
+### 13.3. Отдельные решения (сознательно не сделаны)
+
+| Решение | Статус на 15.11 |
+|---|---|
+| Добавить `NetworkPlayer_GlobalPilot.prefab` в `baseline_hashes.tsv` | **Отложено пользователем.** Хэш на 15.11 `c14c09dcde0ab1dc37ef4a6f83b4aa4503706cfa26da71837cfdbec6fe2b6010`; добавить только после пересчёта и отдельным коммитом (BASELINE_MANIFEST §4) |
+| 2-bone IK ног (цель — размах таза ~2 см) | Кандидат в T-MB05; сейчас тазовый IK упирается в качество клипа (§5.3). Только после визуальной приёмки |
+| Удалить `tmp_tmb04_*.bat` из корня | Не коммитились; удалить при удобном случае |
+
+### 13.4. Что проверить пользователю в Play Mode (когда будет сессия T-MB08)
+
+1. `Review/Log harness state` → в логе `applyRootMotion=...` и `guard=...`.
+2. `Review/Player/Attach + play KL Walk01 on my player` → при FBX-дефолте в логе
+   `applyRootMotion: true → false`; `Review/Player/Stop on my player` → `applyRootMotion восстановлен`.
+3. Каст скилла при активном playback → playback не стартует во время каста; после каста флаг
+   и анимация возвращаются (агент проверил только self-test без Play Mode).
+4. `Review/Body swap/Body swap → Female|Male` при активном playback → перепривязка, T-pose нет,
+   экипировка на месте.
+5. 2 клиента, F8/F9 от нуля, equipment (чек-лист T-MB08).
+
+---
+
 *Связанные: [10_T-MB04B_RUNTIME_HARNESS.md](10_T-MB04B_RUNTIME_HARNESS.md) · [09_T-MB02_ANALYSIS_AND_NEXT.md](09_T-MB02_ANALYSIS_AND_NEXT.md) · [06_SAFE_ROLLOUT_AND_ROLLBACK.md](06_SAFE_ROLLOUT_AND_ROLLBACK.md) · [HANDOFF.md](HANDOFF.md)*

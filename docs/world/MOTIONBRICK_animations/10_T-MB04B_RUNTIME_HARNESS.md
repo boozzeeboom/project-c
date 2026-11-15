@@ -437,7 +437,7 @@ T-MB04b закрыт обоснованно: root motion на probe даёт **2
 | T-MB02 spike | ✅ |
 | T-MB04a | ✅ historical |
 | T-MB04b | ✅ accepted |
-| T-MB04c (root motion в игрока) | ⬜ next |
+| T-MB04c (root motion в игрока) | ⬜ next — одобрение на 15.11 не дано, план в [11 §13.2](11_T-MB03_BAKER_AND_GUARDS.md) |
 | T-MB03 (baker/pelvis IK/applyRootMotion guard) | ✅ done — [11](11_T-MB03_BAKER_AND_GUARDS.md) |
 | T-MB05 (hybrid primitives/NPC pool) | ⬜ |
 | T-MB08 (2 clients/F8-F9/equipment/go-no-go) | ⬜ |

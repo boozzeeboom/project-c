@@ -117,7 +117,7 @@
 | `T-MB02` | ✅ done | Испечь **один** клип, импортировать, проиграть на scene-объекте (приёмка 15.11 - `HANDOFF §9`) |
 | `T-MB04a` | ✅ historical | KL walk/метрики/руки/root motion code; закрыт T-MB04b |
 | `T-MB04b` | ✅ accepted | root motion **2.00 м/с**, `Stop`→baseline, body swap (в т.ч. при активном playback) — приняты. Вне тикета → T-MB08: 2 клиента, F8/F9 от нуля, экипировка отдельным глазом |
-| `T-MB04c` | ⬜ next | Интеграция root motion в `NetworkPlayer.ProcessMovement` под feature flag; правка baseline-файла — только с одобрения |
+| `T-MB04c` | ⬜ next | Интеграция root motion в `NetworkPlayer.ProcessMovement` под feature flag; правка baseline-файла — только с одобрения. **Одобрение на 15.11 не дано** (передача анализа другому агенту); готовый план — [11 §13.2](11_T-MB03_BAKER_AND_GUARDS.md) |
 | `T-MB03` | ✅ done | Baker MVP: discovery/batch/validation/metadata; контактный pelvis foot IK; guard `applyRootMotion`; `SaveClipInPlace` с проверкой GUID — [11](11_T-MB03_BAKER_AND_GUARDS.md) |
 | `T-MB05` | ⬜ | Hybrid primitives: authoring/registry/playback |
 | `T-MB06` | ⬜ optional | Sentis import + benchmark (timebox) |
@@ -294,6 +294,9 @@
 - `SaveClipInPlace`: GUID всех четырёх клипов стабилен на трёх перепёках; ссылка `MB_Probe_Player._clip`
   в `WorldScene_0_0` жива.
 - Baseline 12/12 до/после; Play Mode не запускался. Подробности — [11](11_T-MB03_BAKER_AND_GUARDS.md).
+- **Передача 15.11:** T-MB04c **не начат** — одобрения на правку `NetworkPlayer.cs` нет (пользователь
+  отдаёт анализ другому агенту); готовый план «мост + один Move» — [11 §13.2](11_T-MB03_BAKER_AND_GUARDS.md).
+  Добавление `NetworkPlayer_GlobalPilot.prefab` в baseline — решение отложено (см. [11 §13.3](11_T-MB03_BAKER_AND_GUARDS.md)).
 
 ---
 

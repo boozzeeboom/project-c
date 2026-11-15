@@ -4,6 +4,7 @@
 > **Ветка:** `feature/motionbricks` (worktree `C:\Projects\ProjectC_client_motionbricks`)
 > **HEAD:** `dc038728` (`T-MB01B: add commit index to handoff`)
 > **Статус:** worktree создан, baseline проверен; обнаружен **разрыв в плане T-MB01B** (см. §3). Код интеграции не писался.
+> **Историческая заметка:** после T-MB04a код/docs импортированы в main (`934ecdf6`); main — основная ветка. Worktree оставлен как backup и не содержит Lore-контента.
 
 ---
 

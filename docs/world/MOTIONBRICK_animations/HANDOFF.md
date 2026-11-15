@@ -2,10 +2,11 @@
 
 > **Для:** следующего агента/разработчика, который делает интеграцию.
 > **Дата:** 2026-11-15
-> **Статус:** research + offline pack + safe rollout + **T-MB02 spike** готовы; production-интеграции ещё нет.
+> **Статус:** research + offline pack + safe rollout + **T-MB02 spike** + **T-MB04a code** готовы; production-интеграции ещё нет.
 > **Главное правило:** текущий Animator — дефолт; MotionBricks — additive, off by default, с откатом в минуты.
+> **Main:** код и docs импортированы в `main` коммитом `934ecdf6`; `MotionBricksRuntimeSettings.asset` в main — `mode: 0` (Disabled). `feature/motionbricks` — backup/история, не мержить слепо (в ветке `mode: 1`).
 > **T-MB02:** `bake → import → playback` работает; качество/IK/покрытие — T-MB03/04. См. [07](07_T-MB02_WORKTREE_BASELINE_FINDINGS.md) · [08](08_T-MB02_RETARGET_FINDINGS.md) · [09](09_T-MB02_ANALYSIS_AND_NEXT.md).
-> **T-MB04a (вечер 15.11):** рабочая forward-walk — авторский клип KL; все метрики опоры в допуске, `B-upperArm.L` двигается (23.7°), baseline восстанавливается; root motion написан (`MotionBricksBakedRootMotion`, в сцену намеренно не подключён). Открыто: body swap при активном playback, 2 клиента / F8 / F9. Подробности — [09](09_T-MB02_ANALYSIS_AND_NEXT.md).
+> **T-MB04a (вечер 15.11):** рабочая forward-walk — авторский клип KL; все метрики опоры в допуске, `B-upperArm.L` двигается (23.7°), baseline восстанавливается; root motion написан (`MotionBricksBakedRootMotion`, в сцену намеренно не подключён). Открыто: runtime-тест root motion, body swap при активном playback, 2 клиента / F8 / F9. Подробности — [09](09_T-MB02_ANALYSIS_AND_NEXT.md).
 
 ---
 
@@ -28,7 +29,10 @@
 | CPU CLI `sa-inbetween` | ✅ `generate` → 50 frames; `inspect` OK (`demo_walk_to_jog.saib`) |
 | T-MB02 bake → import → playback | ✅ `WalkToJog_Male_Humanoid`, `PlayableGraph`, controller=null; baseline restore |
 | T-MB02 Play Mode acceptance | ✅ пользователь: поза корректная, конечности не вывернуты; это разворот на месте (свойство seed) |
-| Baseline animation files | ✅ `check_baseline.ps1` — 12/12 match (main); worktree `-SkipContent` — 4 scripts |
+| T-MB04a KL forward walk | ✅ 2.00 м/с, foot slide 0.07/0.11 см/кадр, подъём 0.036 м, руки 23.7°, baseline restore |
+| T-MB04a root motion | ⚠️ код написан, в сцену/префаб не подключён; runtime-тест — пользователь |
+| T-MB04a body swap | ❌ блокер: playback только на пробе, applier только на персонаже |
+| Baseline animation files | ✅ `check_baseline.ps1` - 12/12 match (main); worktree `-SkipContent` - 4 scripts |
 | Sentis import | ❌ не проверялся; конфликт версий Burst/Collections/Newtonsoft |
 | Unity Play Mode | ❌ не запускался (правило `dont-start-play`) |
 
@@ -38,6 +42,9 @@
 
 | Коммит | Что |
 |---|---|
+| `934ecdf6` | `T-MB02/T-MB04a`: import code and docs into main (settings stay Disabled) |
+| `cd4133d9` | `T-MB04a`: handoff index row for the working-clip commit |
+| `1d3ff3e6` | `T-MB02`: analysis, coverage limits and next-step plan |
 | `0ed2e66c` | `T-MB04a`: KL walk as the working clip, stance metric off the clip ground rail, root motion |
 | `10431e23` | `T-MB02`: close out - acceptance results, DoD checklist, baseline re-run |
 | `b58eeaec` | `T-MB02`: handoff index rows for the playback diagnostics fixes |
@@ -67,27 +74,25 @@
    - `C:\Projects\ProjectC_client\docs\world\MOTIONBRICK_animations\06_SAFE_ROLLOUT_AND_ROLLBACK.md`
    - `C:\Projects\ProjectC_client\docs\world\MOTIONBRICK_animations\02_PIPELINE.md` (§3–§7)
    - `C:\Projects\ProjectC_client\docs\world\MOTIONBRICK_animations\05_LOCAL_RESOURCES.md`
-2. Создать worktree:
+2. Работаем в **main**:
    ```powershell
    cd C:\Projects\ProjectC_client
-   git worktree add C:\Projects\ProjectC_client_motionbricks -b feature/motionbricks
    ```
-3. Запустить baseline check:
+   `feature/motionbricks` — backup/история; не мержить слепо (в ветке `MotionBricksRuntimeSettings.asset` `mode: 1`, в main — `mode: 0`).
+3. Запустить baseline check в main:
    ```powershell
-   # worktree = только код/docs; контент (prefab/controller/anim/сцены) живёт в Lore/main.
    powershell -ExecutionPolicy Bypass -File `
-     C:\Projects\ProjectC_client_motionbricks\docs\world\MOTIONBRICK_animations\baseline\check_baseline.ps1 `
-     -SkipPackages -SkipContent
+     C:\Projects\ProjectC_client\docs\world\MOTIONBRICK_animations\baseline\check_baseline.ps1
    ```
-   Контентный baseline и пакеты проверяйте в `C:\Projects\ProjectC_client` (main).
+   Ожидаемо `BASELINE OK: 12 files match`; пакеты проверить `git diff -- Packages`.
 4. Убедиться, что локальные ресурсы на месте:
    ```powershell
    Test-Path C:\Projects\motion_bricks\motionbricks\.venv\Scripts\python.exe
    Test-Path C:\Projects\motion_bricks\tools\cpu_baker\.venv\Scripts\python.exe
    ```
-5. Начать `T-MB03/04` (код/docs — в worktree; Unity-ассеты — в main).
+5. Начать `T-MB04a` runtime acceptance / `T-MB03` — код и Unity-ассеты в main; baseline до/после.
 
-**Worktree vs main:** worktree не содержит Lore-контента — в нём нет сцен, префабов, контроллеров, `.anim`, FBX. Открывать Unity и делать импорт/playback нужно в `C:\Projects\ProjectC_client`; код и docs коммитить в `feature/motionbricks`. Не копировать контент во второй worktree и не открывать два Unity на одном проекте.
+**Main vs worktree:** main теперь содержит код/docs и Lore-контент; worktree не содержит контента и оставлен только как backup. Не открывать два Unity на одном проекте; не копировать контент в worktree.
 
 ---
 
@@ -98,9 +103,10 @@
 | `T-MB01` | ✅ done | Research/decision |
 | `T-MB01A` | ✅ done | Offline resource pack + local links |
 | `T-MB01B` | ✅ done | Safe rollout/rollback + baseline manifest + handoff |
-| `T-MB02` | ✅ done | Испечь **один** клип, импортировать, проиграть на scene-объекте (приёмка 15.11 — `HANDOFF §9`) |
-| `T-MB03` | ⬜ | Baker MVP: Editor window, metadata, validation |
-| `T-MB04` | ⬜ | Retarget/IK: SOMA→Humanoid, T-pose, foot IK, equipment |
+| `T-MB02` | ✅ done | Испечь **один** клип, импортировать, проиграть на scene-объекте (приёмка 15.11 - `HANDOFF §9`) |
+| `T-MB04a` | ⚠️ code done | KL walk/метрики/руки/root motion code; **runtime-тест root motion — пользователь**; body swap — блокер |
+| `T-MB04b` | ⬜ next | Body swap test harness, интеграция root motion в `NetworkPlayer`, 2 clients, F8/F9 |
+| `T-MB03` | ⬜ next | Baker MVP: generalize, batch, metadata, validation; фикс pelvis foot IK |
 | `T-MB05` | ⬜ | Hybrid primitives: authoring/registry/playback |
 | `T-MB06` | ⬜ optional | Sentis import + benchmark (timebox) |
 | `T-MB07` | ⬜ optional | Runtime experiment (only after go) |
@@ -198,34 +204,28 @@
 
 ## 8. Открытые вопросы / блокеры
 
-1. **Сид-клип — разворот на месте.** `walk_to_jog` в источнике даёт root yaw ≈197° и XZ 0.06 м; для ходьбы нужен forward-walk seed (T-MB04).
+1. **Сид-клип `walk_to_jog` — разворот на месте.** Для рабочей ходьбы используется авторский KL `HumanM@Walk01_Forward`; синтезированный `WalkForward_Male` (0.54 м/с) пока не motion-consistent.
 2. **Плечи не анимируются.** `B-shoulder.L/R` наследуют грудь; `11→12`/`39→40` degenerate swing.
-3. **Руки под вопросом.** `diag` по `B-upperArm.L` не меняется, хотя muscle-кривые рук меняются на 0.26–0.30; проверить на forward-walk.
-4. **Foot IK нет.** `footRY` до 0.299 при rest 0.128; стопа висит; нужен IK-слой.
-5. **`MotionBricksRuntimeSettings.mode = 1`** и probe `MB_Probe_Player` в `WorldScene_0_0`; перед завершением/мержем — `Disabled`/удалить probe из production-сцены.
-6. **Body swap M↔F** на player-префабе не тестирован; подписка на `BodySwapped` есть.
-7. **Network/FO** (2 clients, F8/F9) не тестировались.
-8. **Sentis 2.6.1 конфликт версий:** Burst 1.8.17 / Collections 2.4.3 / Newtonsoft 3.2.1 vs проект 1.8.29 / 6.5.0 / 3.2.2. Не ставить в main.
-9. **Sentis import** 6993-узлового ONNX не проверен; нужен T-MB06.
-10. **`Animator.CrossFade` не играет произвольный клип:** для MVP использовать `PlayableGraph`/`AnimationClipPlayable` или Animancer.
-11. **Play Mode/визуал** — только пользователь.
-12. **Лицензии:** sample motions eval-only; модели — NVIDIA Open Model Agreement; attribution.
+3. **Руки — закрыто для KL.** `B-upperArm.L` двигается на 23.7° в LateUpdate при `controller = null`; для синтезированных клипов проверить отдельно.
+4. **Foot IK / pelvis.** Для KL метрики в допуске (slide 0.07/0.11 см/кадр, подъём 0.036 м), но тазовый foot IK в бейкере пережимает стопу (размах таза 15.8 см против 2 см) — T-MB03.
+5. **`MotionBricksRuntimeSettings.mode`** в main — `0` (Disabled) ✓; probe `MB_Probe_Player` остаётся в `WorldScene_0_0` как dev-объект (разрешённая ветка).
+6. **Body swap M↔F — блокер:** `CharacterCustomisationApplier` есть только у персонажа, playback — только у пробы; сценарий не проверить без variant prefab/applier на пробе.
+7. **Root motion — код есть, runtime не проверен.** `MotionBricksBakedRootMotion` не подключён; при подключении к `NetworkPlayer` будет **двойное** `CharacterController.Move` — интегрировать в movement, не вешать отдельным компонентом.
+8. **Network/FO** (2 clients, F8/F9) не тестировались.
+9. **Sentis 2.6.1 конфликт версий:** Burst 1.8.17 / Collections 2.4.3 / Newtonsoft 3.2.1 vs проект 1.8.29 / 6.5.0 / 3.2.2. Не ставить в main.
+10. **Sentis import** 6993-узлового ONNX не проверен; нужен T-MB06.
+11. **`Animator.CrossFade` не играет произвольный клип:** для MVP использовать `PlayableGraph`/`AnimationClipPlayable` или Animancer.
+12. **Play Mode/визуал** — только пользователь.
+13. **Лицензии:** sample motions eval-only; модели — NVIDIA Open Model Agreement; attribution.
+14. **`tmp_tmb04_*.bat`** в корне main — temp-файлы; удалить после проверки, не коммитить.
 
 **Обновление 15.11, вечер (T-MB04a):**
-- пп. 1–4 закрыты для рабочего клипа: ходьба — авторский KL (ось vs лицо 0.1°, опора 2.00 / 2.00 м/с,
-  асимметрия 0 %, slide 0.07 / 0.11 см/кадр, подъём стопы над землёй клипа 0.036); `B-upperArm.L`
-  двигается на 23.7° в LateUpdate при `controller = null`;
-- п. 5 актуален частично: `MotionBricksRuntimeSettings.mode = Disabled` ✓; `MB_Probe_Player` остаётся
-  в `WorldScene_0_0` — это разрешённая брифом ветка;
-- **п. 6 стал блокером:** `CharacterCustomisationApplier` есть только у настоящего персонажа, а
-  `MotionBricksBakedPlayback` — только у пробы. Сценарий «свап при активном playback» нельзя проверить
-  без правки `NetworkPlayer.prefab` (запрещено) либо без applier на пробе (материалы + сокеты).
-  Обработчик `OnBodySwapped` подтверждён только чтением кода;
-- п. 7 по-прежнему проверяет только пользователь;
-- новое: `MotionBricksBakedRootMotion` написан, никуда не подключён, в рантайме не проверялся.
-  Замеренные скорости для настройки: KL Walk01 — 2.00 м/с, наш синтезированный WalkForward — 0.54 м/с;
-- новое: тазовый foot IK пережимает стопу (подъём 0.000 при размахе таза 0.780..0.938 = 15.8 см против
-  2 см у эталона) — таз утягивается вниз, это T-MB03.
+- main содержит код/docs (`934ecdf6`); `MotionBricksRuntimeSettings.asset` — `mode: 0`; baseline 10/10.
+- KL Walk01: ось vs лицо 0.1°, опора 2.00 / 2.00 м/с, асимметрия 0 %, slide 0.07 / 0.11 см/кадр,
+  подъём 0.036 м; `B-upperArm.L` 23.7° в LateUpdate.
+- `WalkToJog_Male_Humanoid` остаётся на пробе; для ходьбы использовать `ProjectC/MotionBricks/Review/Play KL Walk01 Forward on probe`.
+- `MotionBricksBakedRootMotion` — новый файл, не подключён; `_clipSpeed = 0` (инертен). Runtime-тест — пользователь.
+- `feature/motionbricks` — backup; в ветке settings `mode: 1`, в main `mode: 0`; не мержить слепо.
 
 ---
 

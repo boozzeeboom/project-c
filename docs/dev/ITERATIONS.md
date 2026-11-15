@@ -2,6 +2,26 @@
 
 ## 15 ноября 2026
 
+**Тикет:** T-MB02 / T-MB04a
+
+**Тема:** MotionBricks: baked playback, retarget, KL walk, root motion; перенос кода/docs в main.
+
+**Что сделано:**
+- T-MB02: CPU-бейк SOMA → Humanoid `.anim`, `PlayableGraph` playback; ретаргет world-delta; baseline restore; Play Mode-приёмка пользователя.
+- T-MB04a: рабочая ходьба — KL `HumanM@Walk01_Forward` (2.00 м/с); метрики foot slide 0.07/0.11 см/кадр, подъём 0.036 м, руки 23.7°; `MotionBricksBakedRootMotion` (ClipSpeed/HipsDelta, `_clipSpeed=0` по умолчанию, в сцену не подключён).
+- Код/docs импортированы в main коммитом `934ecdf6`; `MotionBricksRuntimeSettings.asset` в main — `mode: 0` (Disabled). `feature/motionbricks` — backup; в ветке `mode: 1`.
+- Docs: 07/08/09, HANDOFF/README/06/baseline обновлены; `check_baseline.ps1` получил `-SkipContent` для worktree.
+
+**Файлы:**
+- `Assets/_Project/Scripts/Animation/MotionBricks/MotionBricksBakedPlayback.cs`
+- `Assets/_Project/Scripts/Animation/MotionBricks/MotionBricksBakedRootMotion.cs`
+- `Assets/_Project/Scripts/Editor/Animation/MotionBricksSpikeBaker.cs`, `MotionBricksClipProbe.cs`, `MotionBricksClipValidator.cs`, `MotionBricksReviewMenu.cs`
+- `docs/world/MOTIONBRICK_animations/07-09`, `HANDOFF.md`, `README.md`, `06_SAFE_ROLLOUT_AND_ROLLBACK.md`, `baseline/*`
+
+**Проверено:** compile — no errors; baseline 10/10; Play Mode root motion **NOT RUN**; body swap — блокер (playback на пробе, applier на персонаже); 2 clients/F8/F9 — за пользователем.
+
+## 15 ноября 2026
+
 **Тикет:** T-MB01B
 
 **Тема:** Безопасная интеграция MotionBricks: baseline-хэши, режимы/feature flag, откат, handoff.

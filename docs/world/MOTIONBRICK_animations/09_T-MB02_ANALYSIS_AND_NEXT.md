@@ -417,3 +417,58 @@ KL `HumanM@Walk01_Forward` — **2.00 м/с**, наш синтезированн
    0.780..0.938 = 15.8 см против 2 см у эталона) — таз утягивается вниз.
 5. **Синтез собственной ходьбы** отложен: нужен motion-consistent контекст (4 кадра реальной каденции),
    библиотечные позы — четыре соседних кадра одного мгновения.
+
+---
+
+## Ревью T-MB04a и статус ветки (анализ, не код)
+
+### Что сделано хорошо
+
+- `MotionBricksBakedRootMotion` изолирован: `_clipSpeed = 0` по умолчанию, гейт тот же, без `CharacterController` transform не двигает, в префабы/сцены не подключён.
+- `ClipSpeed` для in-place клипов и `HipsDelta` для будущих root-motion клипов — правильное разделение.
+- KL `HumanM@Walk01_Forward` как рабочая ходьба: 2.00 м/с, foot slide 0.07/0.11 см/кадр, подъём 0.036 м, руки 23.7° — это уже похоже на валидируемый клип, а не демо-разворот.
+- Review-меню обходит гейт только в Editor (`ReviewOverride`), не меняя `mode=Disabled`; это безопасно.
+- Baseline 10/10; пакеты не менялись.
+- Код и docs импортированы в main коммитом `934ecdf6`; `MotionBricksRuntimeSettings.asset` в main — `mode: 0` (Disabled), probe остаётся в `WorldScene_0_0` как dev-объект.
+
+### Риски, которые ещё не закрыты
+
+1. **Root motion не проверен в рантайме.** Компонент ни к чему не подключён; проба стоит. Это не баг, но и не доказательство.
+2. **Двойное движение, если просто повесить компонент на `NetworkPlayer`.** `NetworkPlayer` уже вызывает `CharacterController.Move`; `MotionBricksBakedRootMotion` вызывает его ещё раз. Для игрока root motion нужно **встраивать в существующий movement**, а не добавлять отдельный компонент. Для пробы — можно.
+3. **Body swap — блокер, а не задача.** `MotionBricksBakedPlayback` подписан на `BodySwapped`, но `MotionBricksBakedRootMotion` кэширует `_hips` и не перепривязывается. После M↔F старый hips/Animator может остаться. Нужен test harness (вариант prefab, не baseline) или applier на пробе.
+4. **`ClipSpeed` едет по `transform.forward`.** Для камеро-относительного движения/поворота это может не совпадать с направлением клипа. Нужно кормить фактическую скорость/heading или использовать `HipsDelta`.
+5. **`HipsDelta` читается в `Update`.** Animator обновляет позу в `Update`/humanoid pass; возможен лаг на кадр/джиттер. Проверять в `LateUpdate`/после Animator.
+6. **2 клиента + F8/F9** не проверены; `_maxDeltaPerFrame` защищает от rebase, но это не тест.
+7. **Пельвис-foot IK** пережимает стопу (размах таза 15.8 см против 2 см) — T-MB03.
+8. **На пробе висит `WalkToJog_Male_Humanoid`.** Без Review-меню кукла играет демо-разворот; следующий агент должен использовать `ProjectC/MotionBricks/Review/Play KL Walk01 Forward on probe`.
+9. **`tmp_tmb04_*.bat`** в корне main — временные файлы; удалить после проверки (не коммитить).
+
+### Ветка / main
+
+- **Main теперь основной:** `934ecdf6` содержит MotionBricks code/docs; `MotionBricksRuntimeSettings.asset` в main — `mode: 0`; baseline 10/10.
+- **`feature/motionbricks` — backup/история**, не мержить слепо: в ветке `MotionBricksRuntimeSettings.asset` имеет `mode: 1`, а docs/код уже импортированы в main. Если ветка понадобится — только точечно, с сохранением main `mode: 0`.
+- Worktree больше не нужен для кода; Unity-контент — в main (Lore), baseline check — в main. Worktree можно оставить как backup или удалить после подтверждения.
+
+### Следующий порядок
+
+1. **Пользователь:** root motion на пробе — добавить `MotionBricksBakedRootMotion`, `_settings` = main asset, `_clipSpeed = 2.00`, Review KL Walk01; критерий: кукла едет, стопы не скользят, `Stop` → baseline.
+2. **Решение по body swap:** variant prefab `NetworkPlayer_MB_Test` (не baseline) с playback+root motion+applier, либо applier на пробе. Без этого T-MB04a не закрыт.
+3. **Интеграция root motion в `NetworkPlayer`** — только после теста на пробе; не добавлять второй `CharacterController.Move`.
+4. **T-MB03:** убрать хардкод `WalkToJog`, batch/validation, исправить pelvis foot IK (15.8 см).
+5. **2 клиента + F8/F9** — пользователь.
+6. **T-MB08 go/no-go** — после 3–5 клипов, не после одного KL.
+
+### Абсолютные ссылки (main)
+
+| Что | Путь |
+|---|---|
+| Root motion | `C:\Projects\ProjectC_client\Assets\_Project\Scripts\Animation\MotionBricks\MotionBricksBakedRootMotion.cs` |
+| Playback | `C:\Projects\ProjectC_client\Assets\_Project\Scripts\Animation\MotionBricks\MotionBricksBakedPlayback.cs` |
+| Settings (mode=0) | `C:\Projects\ProjectC_client\Assets\_Project\Settings\MotionBricks\MotionBricksRuntimeSettings.asset` |
+| Review menu | `C:\Projects\ProjectC_client\Assets\_Project\Scripts\Editor\Animation\MotionBricksReviewMenu.cs` |
+| Validator | `C:\Projects\ProjectC_client\Assets\_Project\Scripts\Editor\Animation\MotionBricksClipValidator.cs` |
+| Spike baker | `C:\Projects\ProjectC_client\Assets\_Project\Scripts\Editor\Animation\MotionBricksSpikeBaker.cs` |
+| T-MB04a section | `C:\Projects\ProjectC_client\docs\world\MOTIONBRICK_animations\09_T-MB02_ANALYSIS_AND_NEXT.md` |
+| Handoff | `C:\Projects\ProjectC_client\docs\world\MOTIONBRICK_animations\HANDOFF.md` |
+| Baseline | `C:\Projects\ProjectC_client\docs\world\MOTIONBRICK_animations\baseline\check_baseline.ps1` |
+| Offline pack | `C:\Projects\motion_bricks\README.md` |

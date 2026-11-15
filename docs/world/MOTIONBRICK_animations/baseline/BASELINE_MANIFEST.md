@@ -56,7 +56,9 @@ OK       Assets/_Project/Animations/PlayerAnimation.controller
 BASELINE OK: 12 files match.
 ```
 
-**Если работа идёт в чистом worktree** (создан из HEAD, без пользовательских изменений `Packages/*` и без Lore-контента), используйте:
+**Основная ветка — main.** После T-MB04a код/docs MotionBricks импортированы в `C:\Projects\ProjectC_client` (`934ecdf6`); здесь baseline проверяется полностью (12/12). `feature/motionbricks` — backup/история.
+
+Если когда-либо используется чистый worktree (без Lore-контента), там:
 ```powershell
 powershell -ExecutionPolicy Bypass -File `
   C:\Projects\ProjectC_client_motionbricks\docs\world\MOTIONBRICK_animations\baseline\check_baseline.ps1 `

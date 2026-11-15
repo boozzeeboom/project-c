@@ -17,7 +17,7 @@
 7. **Никаких изменений** в `Packages/manifest.json`, `NpcBrain`, `Combat`, `SkillAnimationPlayer`, `NetworkTransform` без отдельного решения.
 8. **Body swap M↔F** — обязательный тест: новый компонент должен подписаться на `CharacterCustomisationApplier.BodySwapped`, иначе female-модель получит T-pose/старый Animator.
 9. **Combat не трогаем:** `OnAttackImpact` и hit window остаются authored; neural-позы не используются для хитбоксов.
-10. **Merge только после go/no-go** и подтверждения пользователя; до этого — отдельная ветка/worktree.
+10. **Код/docs уже в main** (`934ecdf6`); runtime-фичу не включать до go/no-go и подтверждения пользователя. `feature/motionbricks` — backup, не мержить слепо.
 
 ---
 
@@ -241,23 +241,20 @@ log once: "MotionBricks disabled; baseline Animator restored."
 
 ## 7. Безопасный порядок работ
 
-### 7.1. Worktree / branch
+### 7.1. Main / branch
 
 ```powershell
 cd C:\Projects\ProjectC_client
-git worktree add C:\Projects\ProjectC_client_motionbricks -b feature/motionbricks
-cd C:\Projects\ProjectC_client_motionbricks
 ```
 
-- Main/worktree с пользовательскими изменениями не трогаем.
-- **Worktree — только код и docs.** Контент (`*.prefab`, `*.controller`, `*.anim`, сцены, FBX) в git **не хранится** (Lore VCS), поэтому в worktree его нет; открывать Unity и работать с ассетами нужно в `C:\Projects\ProjectC_client` (main).
-- Baseline-хэши анимационных файлов в worktree проверить нельзя — используйте `check_baseline.ps1 -SkipPackages -SkipContent` (проверяются только скрипты); контентный baseline проверяйте в main.
-- Пакеты (`Packages/*`) в worktree могут отличаться от working-tree snapshot в main — `-SkipPackages`; пакеты проверяйте в main отдельно.
-- Если работа идёт в main — **стоп**; сначала worktree для кода/docs.
+- **Main — основная ветка:** код и docs MotionBricks импортированы коммитом `934ecdf6`; контент (`*.prefab`, `*.controller`, `*.anim`, сцены, FBX) живёт в main/Lore.
+- **`feature/motionbricks` — backup/история.** Не мержить слепо: в ветке `MotionBricksRuntimeSettings.asset` `mode: 1`, в main — `mode: 0`; код/docs уже в main. Если ветка нужна — только точечно, с сохранением main `mode: 0`.
+- Baseline в main: `check_baseline.ps1` → 12/12. Если когда-либо используется worktree — там `-SkipPackages -SkipContent` (только скрипты), контент проверять в main.
+- Не открывать два Unity на одном проекте; worktree не содержит Lore-контента.
 
 ### 7.2. T-MB02 (spike, без изменений prefab/controller)
 
-1. `check_baseline.ps1` → PASS (в чистом worktree — с `-SkipPackages`).
+1. `check_baseline.ps1` в main → PASS (12/12).
 2. Испечь **один** клип через CPU CLI/ONNX (см. [05](05_LOCAL_RESOURCES.md)).
 3. Импортировать `.anim` в `Generated/MotionBricks/`.
 4. На **scene-объекте** (не prefab) добавить `MotionBricksBakedPlayback`; `Animator` — текущий.
@@ -355,7 +352,7 @@ cd C:\Projects\ProjectC_client_motionbricks
 
 ## 10. Merge / go-no-go
 
-- До go/no-go — **не мержить** в main; работать в `feature/motionbricks`.
+- Код/docs MotionBricks уже в main (`934ecdf6`); **runtime-фичу не включать** до go/no-go. `feature/motionbricks` — backup/история, не мержить слепо (в ветке `mode: 1`).
 - Merge только после:
   1. baseline check PASS;
   2. T-MB02/03/04/05 PASS;

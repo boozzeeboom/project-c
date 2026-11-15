@@ -30,6 +30,19 @@
 
 ---
 
+## 2.1. Коммиты
+
+| Коммит | Что |
+|---|---|
+| `c6806dd9` | `T-MB01B`: safe rollout, baseline guard, handoff |
+| `3c2bb7d4` | `T-MB01A`: offline verification results |
+| `711c70e3` | `T-MB01A`: sa-inbetween CLI/poses + Sentis deps |
+| `036e79bc` | `T-MB01A`: self-contained official venv (python312 + uv) |
+| `cf4f8b75` | `T-MB01A`: offline resource pack + local links |
+| `c3ea92aa` | `T-MB01`: research + decision |
+
+---
+
 ## 3. С чего начать (первые 30 минут)
 
 1. Прочитать:

@@ -7,8 +7,8 @@
 > **Main:** код и docs импортированы в `main` коммитом `934ecdf6`; `MotionBricksRuntimeSettings.asset` в main — `mode: 0` (Disabled). `feature/motionbricks` — backup/история, не мержить слепо (в ветке `mode: 1`).
 > **T-MB02:** `bake → import → playback` работает; качество/IK/покрытие — T-MB03/04. См. [07](07_T-MB02_WORKTREE_BASELINE_FINDINGS.md) · [08](08_T-MB02_RETARGET_FINDINGS.md) · [09](09_T-MB02_ANALYSIS_AND_NEXT.md).
 > **T-MB04a (вечер 15.11):** рабочая forward-walk — авторский клип KL; все метрики опоры в допуске, `B-upperArm.L` двигается (23.7°), baseline восстанавливается; root motion написан (`MotionBricksBakedRootMotion`, в сцену намеренно не подключён). Открыто: runtime-тест root motion, body swap при активном playback, 2 клиента / F8 / F9. Подробности — [09](09_T-MB02_ANALYSIS_AND_NEXT.md).
-> **T-MB04b (вечер 15.11):** root motion на probe **принят визуально** (Play Mode: кукла едет, стопы не шаркают, baseline restore; лог — [10 §5.1–5.2](10_T-MB04B_RUNTIME_HARNESS.md)); `Stop on probe` нажат в сессии — baseline восстановлен; body swap Male→Female→Male **выполняется** штатным путём (1/1). Открыто: body swap при **активном playback на игроке**, цифровой замер поездки, 2 клиента, F8/F9 от нуля. Второй `CharacterController.Move` запрещён кодом; интеграция в `NetworkPlayer` не сделана.
-> **Найдено:** фактический рантайм-игрок — `NetworkPlayer_GlobalPilot.prefab` (его подставляет `GlobalMotionNetworkStartup` из профиля), а baseline защищает `NetworkPlayer.prefab`. Учитывать при интеграции в игрока.
+> **T-MB04b (вечер 15.11): ✅ принят.** Root motion на probe: **2.00 м/с** (`30,42 м / 15,21 s`), стопы не шаркают, `Stop`→baseline. Body swap Male→Female→Male на живом игроке — штатный путь 1/1; body swap при **активном playback** проверен на probe с настоящим applier — playback и root motion перепривязываются, кость двигается (18.8°/29.6°). Осталось вне тикета (в чек-лист T-MB08): 2 клиента, F8/F9 от нуля. Второй `CharacterController.Move` запрещён кодом; интеграция в `NetworkPlayer` — отдельный шаг.
+> **Найдено:** фактический рантайм-игрок — `NetworkPlayer_GlobalPilot.prefab` (подставляет `GlobalMotionNetworkStartup` из профиля), baseline защищает `NetworkPlayer.prefab`. Новое тело после свапа приходит с FBX-дефолтами Animator (`applyRootMotion=true`, `CullUpdateTransforms`) — для будущих root-motion клипов нужен гард (T-MB03/05).
 
 ---
 
@@ -32,8 +32,8 @@
 | T-MB02 bake → import → playback | ✅ `WalkToJog_Male_Humanoid`, `PlayableGraph`, controller=null; baseline restore |
 | T-MB02 Play Mode acceptance | ✅ пользователь: поза корректная, конечности не вывернуты; это разворот на месте (свойство seed) |
 | T-MB04a KL forward walk | ✅ 2.00 м/с, foot slide 0.07/0.11 см/кадр, подъём 0.036 м, руки 23.7°, baseline restore |
-| T-MB04a root motion | ✅ код подключён к probe; **Play Mode: едет, не шаркает**, `Stop`→baseline (§5.1–5.2 [10](10_T-MB04B_RUNTIME_HARNESS.md)) |
-| T-MB04a body swap | ⚠️ Male→Female→Male выполняется (1/1, штатный путь); **playback при свапе не проверен** — он был на пробе, не на игроке (§5.2) |
+| T-MB04a root motion | ✅ **2.00 м/с** в рантайме (`30,42 м / 15,21 s`), стопы не шаркают, `Stop`→baseline (§5.1–5.3 [10](10_T-MB04B_RUNTIME_HARNESS.md)) |
+| T-MB04a body swap | ✅ Male→Female→Male на живом игроке (1/1, штатный путь); при активном playback — проверено на probe с настоящим applier: перепривязка playback и `B-hips`, кость 18.8°/29.6° (§5.2–5.3) |
 | Baseline animation files | ✅ `check_baseline.ps1` - 12/12 match (main); worktree `-SkipContent` - 4 scripts |
 | Sentis import | ❌ не проверялся; конфликт версий Burst/Collections/Newtonsoft |
 | Unity Play Mode | ❌ не запускался (правило `dont-start-play`) |
@@ -112,7 +112,7 @@
 | `T-MB01B` | ✅ done | Safe rollout/rollback + baseline manifest + handoff |
 | `T-MB02` | ✅ done | Испечь **один** клип, импортировать, проиграть на scene-объекте (приёмка 15.11 - `HANDOFF §9`) |
 | `T-MB04a` | ⚠️ code done | KL walk/метрики/руки/root motion code; runtime-тест — пользователь |
-| `T-MB04b` | ⚠️ partially accepted | root motion + `Stop on probe` — **приняты**; body swap выполняется, но **playback при свапе не проверен**; открыто: цифровой замер поездки, 2 clients, F8/F9 от нуля |
+| `T-MB04b` | ✅ accepted | root motion **2.00 м/с**, `Stop`→baseline, body swap (в т.ч. при активном playback) — приняты. Вне тикета → T-MB08: 2 клиента, F8/F9 от нуля, экипировка отдельным глазом |
 | `T-MB03` | ⬜ next | Baker MVP: generalize, batch, metadata, validation; фикс pelvis foot IK |
 | `T-MB05` | ⬜ | Hybrid primitives: authoring/registry/playback |
 | `T-MB06` | ⬜ optional | Sentis import + benchmark (timebox) |
@@ -255,12 +255,20 @@
   (male `testing`, female `PC_Char_Adjudicator_Female_APOSE_v01_Rigged_Humanoid`).
   Ходьба после свапа визуально та же — ожидаемо (humanoid-ретаргет, тот же контроллер), T-pose нет.
   F8 ×7 у нуля → ожидаемый `no_rebase_plan`, ошибок нет.
-- **Ещё не проверено:** body swap при **активном playback на игроке** (playback был на пробе),
-  цифровой замер поездки, 2 клиента (консоль второго не снималась), F8/F9 от нуля.
-- **Найдено:** `check_baseline.ps1` защищает `NetworkPlayer.prefab`, но рантайм-игрок — 
+- **Сеанс 3 (закрытие):** поездка — `30,42 м / 15,21 s = 2,00 м/с`; body swap при **активном playback**
+  проверен на probe с настоящим `CharacterCustomisationApplier` (временный компонент, в сцену не сохранён):
+  после `ApplyBodyType(Female/Male)` — новый `Play 'HumanM@Walk01_Forward'`, `MotionBricksBakedRootMotion`
+  перепривязался к новой `B-hips`, кость двигалась на 18.8°/29.6°. Play Mode остановлен, сцена не изменена.
+- **Вне тикета (чек-лист T-MB08):** 2 клиента, F8/F9 от нуля, отдельная визуальная проверка экипировки.
+- **Найдено:** `check_baseline.ps1` защищает `NetworkPlayer.prefab`, но рантайм-игрок —
   `NetworkPlayer_GlobalPilot.prefab` (подставляется `GlobalMotionNetworkStartup` из профиля,
   роль `Spatial`). Для будущей интеграции playback/root motion в игрока целиться в GlobalPilot
   и, вероятно, добавить его в baseline отдельным решением.
+- **Найдено (для T-MB03/05):** новое тело после свапа приходит с FBX-дефолтами Animator
+  (`applyRootMotion = true`, `cullingMode = CullUpdateTransforms`), а не с override'ами префаба.
+  На текущем in-place KL-клипе дрейфа нет (`Body.localPosition = (0,0,0)` за 16 с), но для клипа
+  с переносом корня это даст двойное движение — нужен гард на playback (выключить/восстановить
+  `applyRootMotion` с учётом `SkillAnimationPlayer`).
 
 ---
 

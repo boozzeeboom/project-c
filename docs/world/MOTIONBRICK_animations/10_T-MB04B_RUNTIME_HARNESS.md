@@ -3,7 +3,9 @@
 > **Дата:** 2026-11-15 (вечер)
 > **Ветка:** `main` (основная)
 > **HEAD до работ:** `7301bf62` (`T-MB04a: analysis, main-primary handoff and runtime acceptance notes`)
-> **Статус:** код и стенд готовы; Play Mode не запускался (правило `dont-start-play`) — визуальная приёмка за пользователем.
+> **Статус:** **✅ T-MB04b принят 15.11** (Play Mode, пользователь + один прогон агента по разрешению пользователя).
+> Root motion — 2.00 м/с, стопы не шаркают, `Stop`→baseline; body swap (в т.ч. при активном playback) — штатный
+> путь, перепривязка playback/`B-hips`. Вне тикета → чек-лист T-MB08: 2 клиента, F8/F9 от нуля, экипировка.
 > **Связанные:** [09](09_T-MB02_ANALYSIS_AND_NEXT.md) · [06](06_SAFE_ROLLOUT_AND_ROLLBACK.md) · [HANDOFF.md](HANDOFF.md) · [baseline/](baseline/)
 
 ---
@@ -195,13 +197,14 @@ private void Apply(Vector3 displacement)
 | baseline 12/12 до/после | **ДА** (§7) |
 | `applyRootMotion` на пробе выключен, направление движения совпадает с клипом | **ДА**, замер (§3.1) |
 | второй `CharacterController.Move` невозможен на игроке | **ДА по коду** (§2.2), компонент на игрока не ставится |
-| **root motion на пробе: едет, стопы не шаркают** | **ДА**, Play Mode 15.11 + лог (§5.1, §5.2) |
-| скорость 2.00 м/с в рантайме | **визуально да**, цифровой замер поездки не снимался (§5.2) |
-| `Stop` → baseline в сессии | **ДА**, пункт меню `Stop on probe` нажат 19:18:59 (§5.2) |
+| **root motion на пробе: едет, стопы не шаркают** | **ДА**, Play Mode + лог (§5.1–5.3) |
+| скорость 2.00 м/с в рантайме | **ДА**: `30,42 м / 15,21 s = 2,00 м/с` (§5.3) |
+| `Stop` → baseline в сессии | **ДА**, `Stop on probe` нажат 19:18:59 и 19:36:37 (§5.2, §5.3) |
 | body swap выполняется на живом игроке | **ДА**, Male→Female→Male, штатный путь 1/1 (§5.2) |
-| body swap при **активном playback** | **НЕ ПРОВЕРЕНО**: playback был на пробе, не на игроке (§5.2) |
-| 2 клиента | **НЕ ПРОВЕРЕНО** (host+client шёл, консоль второго клиента не снималась) |
-| F8/F9 | F8 у нуля — ожидаемый `no_rebase_plan`, 0 errors; сдвиг/F9 не проверены (§5.2) |
+| body swap при **активном playback** | **ДА** на probe с настоящим applier: playback/root motion перепривязались, кость 18.8°/29.6° (§5.3) |
+| экипировка при свапе | **отдельно не проверялась**: `CharacterEquipmentVisualApplier` не менялся, подписан на `BodySwapped` в `Awake`; визуально пропажи не отмечено |
+| 2 клиента | **отложено** решением пользователя → в чек-лист T-MB08 |
+| F8/F9 | F8 у нуля — ожидаемый `no_rebase_plan`, 0 errors; сдвиг/F9 — в чек-лист T-MB08 |
 | root motion внутри `NetworkPlayer` | **НЕ СДЕЛАНО** (осознанно, §2.2) |
 
 ### 5.1. Приёмка 15.11, вечер — root motion на пробе (Play Mode, пользователь)
@@ -293,6 +296,66 @@ private void Apply(Vector3 displacement)
 | Цифровой замер поездки (п.2) | не запускался | `Review/Probe/Start|Log travel measurement` |
 | 2 клиента | консоль второго клиента не снималась | Host + Client, обе консоли: 0 errors, позиции/анимации совпадают |
 | F8/F9 от нуля | фокус у нуля, ребейз честно отклонён | уехать от нуля (корабль), F8 → объект на месте; F9 → возврат |
+
+### 5.3. Приёмка 15.11, вечер №3 — замер поездки и body swap при активном playback
+
+**Замер поездки (пользователь, 19:36):**
+
+```
+19:36:05.724 [MB-Review] Замер поездки начат: probe в (-99.84, -70.36, 193.13), t=38,76 s
+19:36:26.287 [MB-Review] Замер поездки: 30,42 м за 15,21 s → средняя 2,00 м/с.
+             Ожидаемо для KL Walk01 — 2.00 м/с. rootMotion.ClipSpeed=2,00, current=2,00
+19:36:37.074 [MB-Review] Probe: playback остановлен, baseline Animator восстановлен (1 шт.)
+```
+
+Итог: рантайм-скорость **2.00 м/с** ровно совпадает с замером валидатора (2.00 м/с) и с
+`_clipSpeed`; skating не наблюдался. Пункт «цифровой замер поездки» закрыт.
+
+**Body swap при активном playback (агент, по разрешению пользователя, 19:40–19:42).**
+
+Метод: в Play Mode на probe добавлен **временный** `CharacterCustomisationApplier` (в сцену не
+сохраняется), привязаны KL-модели `HumanM_Model`/`HumanF_Model` и override-контроллеры; KL играет
+через меню; затем вызван настоящий `ApplyBodyType` — тот же метод и то же событие `BodySwapped`,
+что и на живом игроке. После теста Play Mode остановлен, `transform` пробы возвращён в зафиксированную
+точку `(39836.16, 2489.64, 40020.61)`, сцена чистая (`git diff` по сцене пуст); временный applier
+жил только в сессии.
+
+Female:
+
+```
+19:40:23.247 [MotionBricksBakedPlayback] Play 'HumanM@Walk01_Forward' ... на 'Body'
+19:40:23.248 [MotionBricksBakedRootMotion] Body swap → новый Animator 'Body', таз 'B-hips'. История дельты сброшена.
+19:40:23.249 [CharacterCustomisationApplier] Applied bodyType=Female (model='HumanF_Model', ctrl='PlayerAnimation_Female')
+19:42:05.126 diag: (13.4, 242.9, 69.3) → (15.4, 262.2, 74.9) = 18.8°, controller=PlayerAnimation_Female
+```
+
+Male:
+
+```
+19:42:16.972 [MotionBricksBakedPlayback] Play 'HumanM@Walk01_Forward' ... на 'Body'
+19:42:16.973 [MotionBricksBakedRootMotion] Body swap → новый Animator 'Body', таз 'B-hips'. История дельты сброшена.
+19:42:16.974 [CharacterCustomisationApplier] Applied bodyType=Male (model='HumanM_Model', ctrl='PlayerAnimation_Default')
+19:42:17.564 diag: (18.8, 271.7, 72.9) → (11.5, 242.4, 70.1) = 29.6°, controller=PlayerAnimation_Default
+```
+
+Вывод: playback **перепривязывается** к новому Animator и продолжает играть клип; root motion
+перепривязывается к новой `B-hips`; скелет реально двигается в обе стороны (18.8° / 29.6°);
+T-pose и ошибок нет.
+
+**Побочная находка (важно для будущих root-motion клипов).** Новое тело приходит из FBX со своими
+дефолтами Animator — `cullingMode = CullUpdateTransforms`, `applyRootMotion = true`, — а не с
+override'ами префаба (`applyRootMotion = 0`):
+
+- на probe это дало «замороженную» позу, пока не выставлен `AlwaysAnimate`: probe в 40 км от
+  камеры, Animator culled. На живом игроке камера рядом, поэтому поза обновляется;
+- `applyRootMotion = true` на текущем KL-клипе ничего не двигает: `Body.localPosition = (0,0,0)`
+  за 16 с (клип in-place, RootT без смещения). Но для будущего клипа с переносом корня
+  (`HipsDelta`, `BakeInPlace = false`) это даст **двойное** движение: Animator применит root motion
+  к `Visual_Model/Body`, а компонент — к игроку.
+
+Задача-гард на T-MB03/05: при старте playback выставлять `applyRootMotion = false` и возвращать
+прежнее значение после остановки (учитывая, что `SkillAnimationPlayer` тоже сохраняет/восстанавливает
+этот флаг во время каста).
 
 ## 6. Ограничения, которые остаются
 

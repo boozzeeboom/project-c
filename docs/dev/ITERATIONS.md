@@ -1,5 +1,24 @@
 # Iterations
 
+## 15 ноября 2026
+
+**Тикет:** T-MB01  
+**Тема:** Research NVIDIA MotionBricks — применимость к Project C, альтернативы и пайплайн интеграции.  
+**Что сделано:**
+- Прочитаны официальные paper/docs/ONNX-манифест/лицензии; разобрана архитектура (SOMA 30 joints, root/pose/decoder, Smart Primitives).
+- Сделан статический аудит ONNX-графа: opset 17, 6993 узла, 434 initializer, 51 тип операторов; все типы есть в Sentis 2.6.1 (импорт не проверялся).
+- Локальный CPU benchmark ONNX Runtime (i7-8700): 73–77 ms N=1, 146–157 ms N=4, 252–279 ms N=8 (random input, без качества).
+- Сверен с текущим пайплайном проекта: Humanoid Avatar, `applyRootMotion=0`, `CharacterController`, NPC `NavMeshAgent`, `T-INP-08` Animation Events, FO-контракты.
+- Решение: runtime-модель в MMO-клиент не тащить; применимо как offline baker + hybrid Smart Primitives; runtime neural — только experimental/feature flag.
+**Файлы:**
+- `docs/world/MOTIONBRICK_animations/README.md`
+- `docs/world/MOTIONBRICK_animations/01_RESEARCH.md`
+- `docs/world/MOTIONBRICK_animations/02_PIPELINE.md`
+- `docs/world/MOTIONBRICK_animations/03_ALTERNATIVES.md`
+- `docs/world/MOTIONBRICK_animations/04_SOURCES.md`
+
+**Проверено:** статический аудит ONNX + CPU benchmark; Play Mode/Unity Sentis/официальный TensorRT не запускались (правило `dont-start-play`).
+
 ## 06 ноября 2026
 
 **Тикет:** T-HOUSE01  

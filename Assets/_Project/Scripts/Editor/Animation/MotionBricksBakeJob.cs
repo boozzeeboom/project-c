@@ -7,7 +7,7 @@
 // Добавили новую папку с сырым клипом — он появился в batch-бейке без правки кода.
 //
 // Необязательный sidecar `<ClipBase>.bake.config.json` переопределяет поведение:
-//   { "groundFeet": false, "bakeInPlace": false, "clipSpeed": 0.0, "label": "Jump" }
+//   { "groundFeet": false, "legIk": false, "loop": false, "bakeInPlace": false, "clipSpeed": 0.0, "label": "Jump" }
 // `clipSpeed` справочная: сколько м/с должен давать контроллер, чтобы стопы не скользили.
 
 using System;
@@ -22,8 +22,14 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
     [Serializable]
     public sealed class MotionBricksBakeConfig
     {
-        /// <summary>Прижимать опорную стопу к земле (тазовый foot IK). Для прыжка/полёта — false.</summary>
+        /// <summary>Прижимать опорную стопу к земле. Для прыжка/полёта — false.</summary>
         public bool groundFeet = true;
+
+        /// <summary>T-MB05: 2-bone IK ног (таз гладкий, колено ставит стопу). false — прежний PelvisSmooth.</summary>
+        public bool legIk = true;
+
+        /// <summary>T-MB05: клип играется в петлю. false — one-shot: шов не сглаживается, clip loopTime=false.</summary>
+        public bool loop = true;
 
         /// <summary>Выбрасывать горизонталь корня. false — клип несёт перенос (root motion).</summary>
         public bool bakeInPlace = true;
@@ -44,6 +50,8 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
         public string ClipBase;
 
         public bool GroundFeet = true;
+        public bool LegIk = true;
+        public bool Loop = true;
         public bool BakeInPlace = true;
         public float ClipSpeed;
         public string Label;
@@ -59,7 +67,8 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
         public string ReportPath => SourceFolder + "/" + ClipBase + ".bake.report.json";
 
         public override string ToString() =>
-            $"{PrimitiveId}/{BodyType}/{ClipBase} (groundFeet={GroundFeet}, inPlace={BakeInPlace}, config={ConfigSource})";
+            $"{PrimitiveId}/{BodyType}/{ClipBase} (groundFeet={GroundFeet}, legIk={LegIk}, loop={Loop}, " +
+            $"inPlace={BakeInPlace}, config={ConfigSource})";
 
         // === Обнаружение ===
 
@@ -143,6 +152,8 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
                 if (config == null) return;
 
                 GroundFeet = config.groundFeet;
+                LegIk = config.legIk;
+                Loop = config.loop;
                 BakeInPlace = config.bakeInPlace;
                 ClipSpeed = Mathf.Max(0f, config.clipSpeed);
                 Label = config.label;
@@ -170,6 +181,6 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
         public const float Fps = 30f;
 
         /// <summary>Версия формата отчёта/логики бейка. Меняется вместе с поведением.</summary>
-        public const int ReportSchema = 2;
+        public const int ReportSchema = 3;
     }
 }

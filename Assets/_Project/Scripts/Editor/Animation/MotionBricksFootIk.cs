@@ -34,6 +34,18 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
 
         /// <summary>Самая гладкая кривая таза в допуске контакта (по умолчанию).</summary>
         PelvisSmooth = 2,
+
+        /// <summary>T-MB05: таз по достижимости + 2-bone IK ног ставит стопу (контакт).</summary>
+        LegIk = 3,
+    }
+
+    /// <summary>Результат гладкой кривой таза с верхней границей достижимости (T-MB05).</summary>
+    public sealed class MotionBricksPelvisCurveResult
+    {
+        public float[] Corrections = new float[0];
+        public float Range;
+        public int Iterations;
+        public bool Cyclic = true;
     }
 
     public sealed class MotionBricksFootIkResult
@@ -54,6 +66,9 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
         public float PenetrationMax;
 
         public int Iterations;
+
+        /// <summary>Шов клипа сглаживался как петля (true) или начало/конец независимы (false).</summary>
+        public bool Cyclic = true;
 
         public bool ContactInTolerance =>
             HoverMax <= MotionBricksFootIk.AllowHover + 1e-4f &&
@@ -81,9 +96,9 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
         /// `groundY` — земля клипа (минимум по кадрам, как её меряет валидатор).
         /// </summary>
         public static MotionBricksFootIkResult Solve(
-            float[] lowestFootY, float groundY, MotionBricksFootIkMode mode)
+            float[] lowestFootY, float groundY, MotionBricksFootIkMode mode, bool cyclic = true)
         {
-            var result = new MotionBricksFootIkResult { Mode = mode };
+            var result = new MotionBricksFootIkResult { Mode = mode, Cyclic = cyclic };
             int n = lowestFootY != null ? lowestFootY.Length : 0;
             if (n == 0 || mode == MotionBricksFootIkMode.Off) return result;
 
@@ -130,8 +145,8 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
                     // Проекция Гаусса–Зейделя: сглаживаем к соседям, затем возвращаем в коридор.
                     for (int f = 0; f < n; f++)
                     {
-                        int prev = (f - 1 + n) % n;
-                        int next = (f + 1) % n;
+                        int prev = cyclic ? (f - 1 + n) % n : Mathf.Max(0, f - 1);
+                        int next = cyclic ? (f + 1) % n : Mathf.Min(n - 1, f + 1);
                         float target = (c[prev] + c[f] + c[next]) / 3f;
                         float clamped = Mathf.Clamp(target, lo[f], hi[f]);
                         change = Mathf.Max(change, Mathf.Abs(clamped - c[f]));
@@ -153,6 +168,58 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
                 if (-error > result.PenetrationMax) result.PenetrationMax = -error;
             }
 
+            return result;
+        }
+
+        /// <summary>
+        /// T-MB05: гладкая кривая таза с ЦЕЛЕВОЙ формой (естественный bob) и ВЕРХНЕЙ границей
+        /// достижимости. В отличие от <see cref="Solve"/>, не прижимает таз к каждой стопе:
+        /// контакт обеспечивает 2-bone IK ног, а таз остаётся настолько высоко, насколько
+        /// позволяет выпрямление опорной ноги. `upperBound[f]` — максимально допустимый сдвиг
+        /// таза (0 = rest-высота; отрицательное — обязательно опустить).
+        /// </summary>
+        public static MotionBricksPelvisCurveResult SolveCurve(
+            float[] target, float[] upperBound, bool cyclic)
+        {
+            var result = new MotionBricksPelvisCurveResult { Cyclic = cyclic };
+            int n = upperBound != null ? upperBound.Length : 0;
+            if (n == 0) return result;
+
+            var hi = new float[n];
+            var c = new float[n];
+            const float floor = -0.5f;
+
+            for (int f = 0; f < n; f++)
+            {
+                hi[f] = Mathf.Min(0f, upperBound[f]);
+                float wanted = target != null && f < target.Length ? target[f] : hi[f];
+                c[f] = Mathf.Clamp(Mathf.Min(wanted, hi[f]), floor, hi[f]);
+            }
+
+            if (n > 1)
+            {
+                int iterations = 0;
+                for (; iterations < MaxIterations; iterations++)
+                {
+                    float change = 0f;
+                    for (int f = 0; f < n; f++)
+                    {
+                        int prev = cyclic ? (f - 1 + n) % n : Mathf.Max(0, f - 1);
+                        int next = cyclic ? (f + 1) % n : Mathf.Min(n - 1, f + 1);
+                        float smooth = (c[prev] + c[f] + c[next]) / 3f;
+                        float clamped = Mathf.Clamp(smooth, floor, hi[f]);
+                        change = Mathf.Max(change, Mathf.Abs(clamped - c[f]));
+                        c[f] = clamped;
+                    }
+
+                    if (change < Convergence) break;
+                }
+
+                result.Iterations = iterations;
+            }
+
+            result.Corrections = c;
+            result.Range = Max(c) - Min(c);
             return result;
         }
 
@@ -210,6 +277,41 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
             var alternation = new float[frames];
             for (int f = 0; f < frames; f++) alternation[f] = ground + ((f / 4) % 2 == 0 ? 0f : 0.03f);
             Check("смена опоры", alternation, ground, expectBobAfter: -1f, expectMaxBobAfter: 0.03f, failures);
+
+            // 5. T-MB05: one-shot профиль (все кадры на земле, последний +10 см). Нециклический
+            //    решатель не должен тянуть начало к концу через шов.
+            var oneShotProfile = new float[frames];
+            for (int f = 0; f < frames; f++) oneShotProfile[f] = ground;
+            oneShotProfile[frames - 1] = ground + 0.10f;
+            var cyclicRamp = Solve(oneShotProfile, ground, MotionBricksFootIkMode.PelvisSmooth, cyclic: true);
+            var oneShotRamp = Solve(oneShotProfile, ground, MotionBricksFootIkMode.PelvisSmooth, cyclic: false);
+            bool seamOk = oneShotRamp.Corrections[0] > -0.002f &&
+                          oneShotRamp.Corrections[frames - 1] < -0.05f &&
+                          cyclicRamp.Corrections[0] < -0.005f &&
+                          oneShotRamp.ContactInTolerance &&
+                          cyclicRamp.ContactInTolerance;
+            if (!seamOk) failures.Add("one-shot: шов тянет начало/конец");
+            Debug.Log($"  {(seamOk ? "PASS" : "FAIL")}  one-shot шов: начало cyclic {cyclicRamp.Corrections[0] * 100f:F1} / " +
+                      $"non-cyclic {oneShotRamp.Corrections[0] * 100f:F1} см, конец {oneShotRamp.Corrections[frames - 1] * 100f:F1} см " +
+                      $"(hover {oneShotRamp.HoverMax * 100f:F1}, penetration {oneShotRamp.PenetrationMax * 100f:F1})");
+
+            // 6. T-MB05: кривая таза с верхней границей. Проверяем, что она не поднимается выше
+            //    достижимости и что non-cyclic не тянет первый кадр к последнему.
+            var upper = new float[frames];
+            for (int f = 0; f < frames; f++) upper[f] = 0f;
+            upper[frames - 1] = -0.10f;
+            var cyclicCurve = SolveCurve(null, upper, cyclic: true);
+            var oneShotCurve = SolveCurve(null, upper, cyclic: false);
+            bool curveOk = true;
+            for (int f = 0; f < frames; f++)
+                if (oneShotCurve.Corrections[f] > upper[f] + 1e-4f) curveOk = false;
+            curveOk &= oneShotCurve.Corrections[0] > -0.002f &&
+                       cyclicCurve.Corrections[0] < -0.005f &&
+                       oneShotCurve.Corrections[frames - 1] <= -0.09f;
+            if (!curveOk) failures.Add("кривая таза: граница/шов нарушены");
+            Debug.Log($"  {(curveOk ? "PASS" : "FAIL")}  кривая таза: начало cyclic {cyclicCurve.Corrections[0] * 100f:F1} / " +
+                      $"non-cyclic {oneShotCurve.Corrections[0] * 100f:F1} см, последний {oneShotCurve.Corrections[frames - 1] * 100f:F1} см, " +
+                      $"размах {oneShotCurve.Range * 100f:F1} см");
 
             if (failures.Count == 0) Debug.Log("  ИТОГ: PASS (все профили в допуске контакта)");
             else Debug.LogError($"  ИТОГ: FAIL — {string.Join("; ", failures)}");

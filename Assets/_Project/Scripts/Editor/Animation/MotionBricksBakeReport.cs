@@ -33,6 +33,7 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
 
         public bool bakeInPlace;
         public bool groundFeet;
+        public bool loop = true;
         public float yawOffsetDeg;
         public float maxClavicleDeg;
 
@@ -47,10 +48,20 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
     public sealed class MotionBricksBakeReportFootIk
     {
         public string mode;
+        public bool legIk;
+        public bool sourceBobApplied;
+        public float sourceBobCm;
+        public int reachLimitedFrames;
+        public float maxResidualCm;
+        public float kneeBendMaxDeg;
         public float bobBeforeCm;
         public float bobAfterCm;
         public float hoverCm;
         public float penetrationCm;
+
+        /// <summary>T-MB05: те же метрики ДО humanoid-конверсии (сырая поза ретаргета), см.</summary>
+        public float poseHoverCm;
+        public float posePenetrationCm;
         public float correctionMinCm;
         public float correctionMaxCm;
         public int iterations;
@@ -74,6 +85,7 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
         public int frameCount;
         public float frameRate;
         public bool humanMotion;
+        public bool loopTime;
     }
 
     [Serializable]

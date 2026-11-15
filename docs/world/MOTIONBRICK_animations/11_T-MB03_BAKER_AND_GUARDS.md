@@ -407,7 +407,7 @@ PASS  каст: Stop не перетирает флаг скилла
 | T-MB04b | ✅ accepted |
 | T-MB03 | ✅ done (pipeline; quality FAIL остаётся) |
 | T-MB04c root motion в NetworkPlayer | ✅ code + runtime; visual pending — [12](12_T-MB04C_ROOT_MOTION_IN_PLAYER.md) |
-| T-MB05 hybrid/2-bone IK/NPC pool | ⬜ |
+| T-MB05 hybrid/2-bone IK/NPC pool | ✅ 2-bone IK + loop:false — [13](13_T-MB05_LEG_IK_AND_LOOP.md); NPC pool — отдельно |
 | T-MB08 2 clients/F8-F9/equipment/go-no-go | ⬜ |
 | T-MB06/07 runtime neural | ⬜ optional |
 
@@ -418,6 +418,7 @@ PASS  каст: Stop не перетирает флаг скилла
 1. Не трогать baseline-файлы без одобрения; `check_baseline.ps1` → 12/12.
 2. T-MB04c: root motion в `NetworkPlayer.ProcessMovement` под feature flag; один `CharacterController.Move`; после — baseline с обновлённым хэшем отдельным коммитом. **Сделано, см. [12](12_T-MB04C_ROOT_MOTION_IN_PLAYER.md); Play Mode — за пользователем.**
 3. T-MB05: 2-bone IK, `loop:false`/нециклический IK, NPC baked pool/hybrid primitives.
+   **2-bone IK и `loop:false` сделаны** ([13](13_T-MB05_LEG_IK_AND_LOOP.md)); NPC pool — отдельно.
 4. T-MB08: 2 clients, F8/F9 от нуля, equipment, каст скилла во время playback, go/no-go.
 5. Отдельное решение: добавить `NetworkPlayer_GlobalPilot.prefab` в baseline.
 

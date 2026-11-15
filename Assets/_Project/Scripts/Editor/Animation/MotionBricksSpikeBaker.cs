@@ -1,4 +1,4 @@
-// Project C: T-MB03/T-MB04a — бейкер клипов MotionBricks (SOMA -> Unity .anim).
+// Project C: T-MB03/T-MB04a/T-MB05 — бейкер клипов MotionBricks (SOMA -> Unity .anim).
 //
 // Вход (лежит в Assets/<GeneratedRoot>/<primitiveId>/<bodyType>/):
 //   <ClipBase>_30fps.f32 — N кадров x 77 джойнтов x 7 float (tx,ty,tz,qx,qy,qz,qw),
@@ -56,6 +56,12 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
         /// но он включает и качание плеча; без предела ключица начинает «пожимать» на бегу.
         /// </summary>
         private const float MaxClavicleDeg = 18f;
+
+        /// <summary>
+        /// T-MB05: если вертикаль корня источника гуляет больше этого, таз за ней не ведём —
+        /// это не походка, а «прыжок» синтеза. Хорошая ходьба (~2 см) проходит.
+        /// </summary>
+        private const float MaxSourceBobForLegIk = 0.06f;
 
         // === Меню ===
 
@@ -194,6 +200,7 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
             var report = new MotionBricksBakeReport
             {
                 schema = MotionBricksBakePaths.ReportSchema,
+                ticket = "T-MB05",
                 generatedUtc = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"),
                 modelPath = ModelPath,
                 restFile = RestFile,
@@ -206,6 +213,7 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
                 floatsPerJoint = FloatsPerJoint,
                 bakeInPlace = job.BakeInPlace,
                 groundFeet = job.GroundFeet,
+                loop = job.Loop,
                 yawOffsetDeg = YawOffsetDeg,
                 maxClavicleDeg = MaxClavicleDeg,
             };
@@ -229,6 +237,8 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
                 report.humanoidClip = clips.Humanoid != null
                     ? SaveWithReport(clips.Humanoid, job.HumanoidClipOut)
                     : new MotionBricksBakeReportClip { path = job.HumanoidClipOut };
+                report.genericClip.loopTime = job.Loop;
+                report.humanoidClip.loopTime = job.Loop;
             }
             finally
             {
@@ -240,6 +250,19 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
                 var validation = MotionBricksClipValidator.ValidateJob(job);
                 outcome.Validation = validation;
                 CopyValidation(report.validation, validation);
+
+                // Что видит игрок — метрики humanoid-клипа, а не сырой позы ретаргета.
+                // Пороги валидатора: hover ≤ 5 см, penetration ≤ 2 см.
+                if (validation != null && validation.Ran)
+                {
+                    report.footIk.poseHoverCm = report.footIk.hoverCm;
+                    report.footIk.posePenetrationCm = report.footIk.penetrationCm;
+                    report.footIk.hoverCm = validation.StanceHover * 100f;
+                    report.footIk.penetrationCm = validation.Penetration * 100f;
+                    report.footIk.contactInTolerance =
+                        validation.StanceHover <= 0.05f + 1e-4f &&
+                        validation.Penetration <= 0.02f + 1e-4f;
+                }
             }
 
             report.warnings = warnings.ToArray();
@@ -248,7 +271,8 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
             Debug.Log($"[MB-Bake] OK ({job.Label}): {job.ClipOut}\n" +
                       $"  отчёт: {job.ReportPath}\n" +
                       $"  foot IK: {report.footIk.mode}, таз {report.footIk.bobBeforeCm:F1} → {report.footIk.bobAfterCm:F1} см, " +
-                      $"hover {report.footIk.hoverCm:F1} см, penetration {report.footIk.penetrationCm:F1} см\n" +
+                      $"humanoid hover {report.footIk.hoverCm:F1} см, penetration {report.footIk.penetrationCm:F1} см " +
+                      $"(raw pose {report.footIk.poseHoverCm:F1} / {report.footIk.posePenetrationCm:F1})\n" +
                       $"  GUID: generic {DescribeGuid(report.genericClip)}, humanoid {DescribeGuid(report.humanoidClip)}\n" +
                       (validate && outcome.Validation != null && outcome.Validation.Ran
                           ? $"  валидация: {(outcome.Validation.Pass ? "PASS" : "FAIL")}" +
@@ -371,12 +395,21 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
             //     T-MB03: контакт держится ДОПУСКОМ (MotionBricksFootIk), а не прижатием каждого кадра.
             Transform footL = FindDeep(root, "B-foot.L");
             Transform footR = FindDeep(root, "B-foot.R");
+            Transform thighL = FindDeep(root, "B-thigh.L");
+            Transform thighR = FindDeep(root, "B-thigh.R");
+            Transform shinL = FindDeep(root, "B-shin.L");
+            Transform shinR = FindDeep(root, "B-shin.R");
             float groundFootY = footL != null && footR != null
                 ? Mathf.Min(footL.position.y, footR.position.y)
                 : 0f;
             bool groundFeet = job.GroundFeet && footL != null && footR != null;
             if (!groundFeet && job.GroundFeet)
                 warnings.Add("foot IK запрошен, но в риге нет B-foot.L/R — таз не прижимается");
+
+            bool legIk = groundFeet && job.LegIk &&
+                         thighL != null && thighR != null && shinL != null && shinR != null;
+            if (groundFeet && job.LegIk && !legIk)
+                warnings.Add("leg IK запрошен, но в риге нет B-thigh/B-shin — остаётся тазовый PelvisSmooth");
 
             var locals = new Dictionary<Transform, Quaternion[]>();
             foreach (Transform t in poseByTransform.Keys) locals[t] = new Quaternion[frameCount];
@@ -390,6 +423,9 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
             var hipsOffsets = new List<Vector3>(frameCount);
             var lowestFootY = new float[frameCount];
             var stanceFoot = new int[frameCount];
+            var sourceRootY = new float[frameCount];
+            var legL = new LegFrame[frameCount];
+            var legR = new LegFrame[frameCount];
             Vector3 restRootUnity = ToUnityPos(rest[0], rest[1], rest[2]);
 
             var deltaByPose = new Dictionary<int, Quaternion>(Segments.Length);
@@ -408,6 +444,7 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
             float armSwingMax = 0f;
 
             var worldPos = new Dictionary<Transform, Vector3>(restWorld.Count);
+            var worldRot = new Dictionary<Transform, Quaternion>(restWorld.Count);
 
             for (int f = 0; f < frameCount; f++)
             {
@@ -474,11 +511,15 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
                 // T-MB03: при включённом foot IK вертикаль источника не тащим в таз — иначе
                 // она борется с контактом (T-MB04a давал размах таза 15.8 см). Высоту таза
                 // определяет земля, а не root Y источника.
+                // T-MB05: вертикаль источника запоминаем: если она правдоподобна (≤ 6 см),
+                // leg IK вернёт её как естественный bob таза.
+                sourceRootY[f] = offset.y;
                 if (groundFeet) offset.y = 0f;
 
                 worldPos.Clear();
+                worldRot.Clear();
                 EvalFrame(root, Quaternion.identity, Vector3.zero, f, deltaByPose, clavByPose,
-                    restWorld, poseByTransform, locals, worldPos, hips, restHipsLocal + yaw * offset);
+                    restWorld, poseByTransform, locals, worldPos, worldRot, hips, restHipsLocal + yaw * offset);
 
                 if (groundFeet)
                 {
@@ -488,17 +529,35 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
                     lowestFootY[f] = Mathf.Min(yL, yR);
                 }
 
+                if (legIk)
+                {
+                    legL[f] = CaptureLeg(thighL, shinL, footL, worldPos, worldRot);
+                    legR[f] = CaptureLeg(thighR, shinR, footR, worldPos, worldRot);
+                }
+
                 hipsOffsets.Add(offset);
             }
 
-            // 3c. Решаем высоту таза ПОСЛЕ кадров: нужен весь диапазон, чтобы сгладить кривую
-            //     в допуске контакта (а не прижимать каждую стопу по отдельности).
+            // 3c. Высота таза. T-MB03 (fallback): PelvisSmooth держит контакт, опуская таз.
+            //     T-MB05 (default): таз идёт по достижимости + естественному bob, а стопу
+            //     ставит аналитический 2-bone IK ноги.
             MotionBricksFootIkResult footIk = null;
             if (groundFeet)
             {
-                footIk = MotionBricksFootIk.Solve(lowestFootY, groundFootY, MotionBricksFootIkMode.PelvisSmooth);
-                for (int f = 0; f < frameCount; f++)
-                    hipsOffsets[f] += Vector3.up * footIk.Corrections[f];
+                if (legIk)
+                {
+                    footIk = SolveLegIk(frameCount, job, groundFootY, lowestFootY, stanceFoot,
+                        sourceRootY, legL, legR,
+                        thighL, shinL, footL, thighR, shinR, footR,
+                        hipsOffsets, locals, worldRot, report, warnings);
+                }
+                else
+                {
+                    footIk = MotionBricksFootIk.Solve(lowestFootY, groundFootY,
+                        MotionBricksFootIkMode.PelvisSmooth, cyclic: job.Loop);
+                    for (int f = 0; f < frameCount; f++)
+                        hipsOffsets[f] += Vector3.up * footIk.Corrections[f];
+                }
 
                 report.footIk.mode = footIk.Mode.ToString();
                 report.footIk.bobBeforeCm = footIk.BobBefore * 100f;
@@ -584,10 +643,14 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
             clip.SetCurve(hipsPath, typeof(Transform), "localPosition.z", posCurves[2]);
 
             clip.EnsureQuaternionContinuity();
+            ApplyLoopSettings(clip, job.Loop);
 
             // 6. Humanoid-вариант (мышцы) — то, что реально играется на Humanoid-аватаре.
-            AnimationClip humanoid = BakeHumanoidClip(root, locals, frameCount, job, hips, restHipsLocal,
-                hipsOffsets, yaw, report, warnings);
+            //    Сэмплируем УЖЕ СОБРАННЫЙ generic-клип на временном инстансе БЕЗ Animator:
+            //    Animator с Humanoid-аватаром перехватывает generic-кривые, и humanoid-клип
+            //    получался T-позой (T-MB05).
+            AnimationClip humanoid = BakeHumanoidClip(clip, frameCount, job, warnings);
+            if (humanoid != null) ApplyLoopSettings(humanoid, job.Loop);
 
             // 7. Диагностика ретаргета.
             float minD = 0f, maxD = 0f;
@@ -620,69 +683,318 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
                       $"  ключицы (макс поворот): {string.Join(", ", clavText)}\n" +
                       $"  таз: rest y={restHipsLocal.y:F3}, вертикальный размах {minD:F3}..{maxD:F3} m, in-place={job.BakeInPlace}\n" +
                       (footIk != null
-                          ? $"  foot IK (таз): {footIk.Summary}, опора в rest y={groundFootY:F3}\n"
+                          ? $"  foot IK ({footIk.Mode}): {footIk.Summary} (сырая поза), опора в rest y={groundFootY:F3}" +
+                            (footIk.Mode == MotionBricksFootIkMode.LegIk
+                                ? $", колено до {report.footIk.kneeBendMaxDeg:F0}°, bob источника {report.footIk.sourceBobCm:F1} см " +
+                                  $"({(report.footIk.sourceBobApplied ? "применён" : "отклонён")}), " +
+                                  $"reach-limited {report.footIk.reachLimitedFrames} кадров\n"
+                                : "\n")
                           : "  foot IK: выключен для этого задания\n") +
                       $"  yaw offset {YawOffsetDeg:F1}°, модель {ModelPath}");
 
             return new BuiltClips { Generic = clip, Humanoid = humanoid };
         }
 
+        // === T-MB05: 2-bone leg IK ===
+
+        private struct LegFrame
+        {
+            public Vector3 Hip;
+            public Vector3 Knee;
+            public Vector3 Foot;
+            public Quaternion ThighRotation;
+            public Quaternion ShinRotation;
+            public Quaternion FootRotation;
+            public Vector3 BendForward;
+            public bool Valid;
+        }
+
+        private struct LegIkFrameOutcome
+        {
+            public float FootY;
+            public float Residual;
+            public float KneeBendDeg;
+            public bool ReachLimited;
+            public bool Applied;
+        }
+
+        private static LegFrame CaptureLeg(
+            Transform thigh, Transform shin, Transform foot,
+            Dictionary<Transform, Vector3> worldPos, Dictionary<Transform, Quaternion> worldRot)
+        {
+            var leg = new LegFrame();
+            if (thigh == null || shin == null || foot == null) return leg;
+
+            if (!worldPos.TryGetValue(thigh, out leg.Hip) ||
+                !worldPos.TryGetValue(shin, out leg.Knee) ||
+                !worldPos.TryGetValue(foot, out leg.Foot) ||
+                !worldRot.TryGetValue(thigh, out leg.ThighRotation) ||
+                !worldRot.TryGetValue(shin, out leg.ShinRotation) ||
+                !worldRot.TryGetValue(foot, out leg.FootRotation))
+                return leg;
+
+            // Плоскость сгиба колена: forward таза (горизонтальный). Если таз повёрнут
+            // вместе с клипом, колено всё равно сгибается вперёд персонажа.
+            Quaternion parentRot = WorldRotation(thigh.parent, worldRot);
+            Vector3 forward = parentRot * Vector3.forward;
+            forward.y = 0f;
+            leg.BendForward = forward.sqrMagnitude > 1e-6f ? forward.normalized : Vector3.forward;
+            leg.Valid = true;
+            return leg;
+        }
+
+        /// <summary>
+        /// Максимальный сдвиг таза (≤ 0), при котором опорная нога ещё дотягивается до земли.
+        /// Больше 0 — таз можно не опускать; SolveCurve всё равно ограничит нулём.
+        /// </summary>
+        private static float RequiredLowering(LegFrame leg, float groundY)
+        {
+            if (!leg.Valid) return 0f;
+
+            float l1 = (leg.Knee - leg.Hip).magnitude;
+            float l2 = (leg.Foot - leg.Knee).magnitude;
+            float maxReach = l1 + l2;
+            float horiz = new Vector2(leg.Foot.x - leg.Hip.x, leg.Foot.z - leg.Hip.z).magnitude;
+
+            if (horiz >= maxReach)
+                return groundY - leg.Foot.y; // даже прямая нога не достаёт: честный residual ниже
+
+            float vMax = Mathf.Sqrt(maxReach * maxReach - horiz * horiz);
+            return groundY - leg.Hip.y + vMax;
+        }
+
+        private static MotionBricksFootIkResult SolveLegIk(
+            int frameCount,
+            MotionBricksBakeJob job,
+            float groundY,
+            float[] lowestFootY,
+            int[] stanceFoot,
+            float[] sourceRootY,
+            LegFrame[] legL,
+            LegFrame[] legR,
+            Transform thighL, Transform shinL, Transform footL,
+            Transform thighR, Transform shinR, Transform footR,
+            List<Vector3> hipsOffsets,
+            Dictionary<Transform, Quaternion[]> locals,
+            Dictionary<Transform, Quaternion> worldRot,
+            MotionBricksBakeReport report,
+            List<string> warnings)
+        {
+            // Естественный bob: вертикаль корня источника. Для синтезированного «прыжка»
+            // (22 см) таз за ней не ведём — это не походка, а артефакт клипа.
+            float srcMin = Min(sourceRootY);
+            float srcMax = Max(sourceRootY);
+            float srcRange = srcMax - srcMin;
+            float srcMean = 0f;
+            for (int f = 0; f < frameCount; f++) srcMean += sourceRootY[f];
+            srcMean /= Mathf.Max(1, frameCount);
+            bool applyBob = srcRange <= MaxSourceBobForLegIk;
+
+            var target = new float[frameCount];
+            var upper = new float[frameCount];
+            var raw = new float[frameCount];
+
+            for (int f = 0; f < frameCount; f++)
+            {
+                target[f] = applyBob ? sourceRootY[f] - srcMean : 0f;
+                raw[f] = groundY - lowestFootY[f];
+                LegFrame stance = stanceFoot[f] == 0 ? legL[f] : legR[f];
+                upper[f] = RequiredLowering(stance, groundY);
+            }
+
+            var curve = MotionBricksFootIk.SolveCurve(target, upper, job.Loop);
+            for (int f = 0; f < frameCount; f++)
+                hipsOffsets[f] += Vector3.up * curve.Corrections[f];
+
+            float hover = 0f, penetration = 0f, maxResidual = 0f, maxKnee = 0f;
+            int reachLimitedFrames = 0;
+
+            for (int f = 0; f < frameCount; f++)
+            {
+                float pelvisOffset = curve.Corrections[f];
+                bool plantL = stanceFoot[f] == 0;
+
+                LegIkFrameOutcome outL = ApplyLegIkFrame(legL[f], plantL, pelvisOffset, groundY,
+                    locals, worldRot, f, thighL, shinL, footL);
+                LegIkFrameOutcome outR = ApplyLegIkFrame(legR[f], !plantL, pelvisOffset, groundY,
+                    locals, worldRot, f, thighR, shinR, footR);
+
+                if (outL.ReachLimited) reachLimitedFrames++;
+                if (outR.ReachLimited) reachLimitedFrames++;
+                maxResidual = Mathf.Max(maxResidual, Mathf.Abs(outL.Residual));
+                maxResidual = Mathf.Max(maxResidual, Mathf.Abs(outR.Residual));
+                maxKnee = Mathf.Max(maxKnee, Mathf.Max(outL.KneeBendDeg, outR.KneeBendDeg));
+
+                float lowest = Mathf.Min(outL.FootY, outR.FootY);
+                hover = Mathf.Max(hover, lowest - groundY);
+                penetration = Mathf.Max(penetration, groundY - lowest);
+            }
+
+            var result = new MotionBricksFootIkResult
+            {
+                Mode = MotionBricksFootIkMode.LegIk,
+                Corrections = curve.Corrections,
+                BobBefore = Max(raw) - Min(raw),
+                BobAfter = curve.Range,
+                HoverMax = hover,
+                PenetrationMax = penetration,
+                Iterations = curve.Iterations,
+                Cyclic = curve.Cyclic,
+            };
+
+            report.footIk.legIk = true;
+            report.footIk.sourceBobApplied = applyBob;
+            report.footIk.sourceBobCm = srcRange * 100f;
+            report.footIk.reachLimitedFrames = reachLimitedFrames;
+            report.footIk.maxResidualCm = maxResidual * 100f;
+            report.footIk.kneeBendMaxDeg = maxKnee;
+
+            if (reachLimitedFrames > 0)
+                warnings.Add($"leg IK: цель недостижима в {reachLimitedFrames} кадрах, " +
+                             $"макс residual {maxResidual * 100f:F1} см (стопа выше земли)");
+            if (!result.ContactInTolerance)
+                warnings.Add($"leg IK вне допуска: hover {hover * 100f:F1} см, " +
+                             $"penetration {penetration * 100f:F1} см");
+
+            return result;
+        }
+
+        /// <summary>
+        /// Поставить одну ногу на groundY (или хотя бы не ниже) и переписать её locals.
+        /// Маховая стопа выше земли не трогается — иначе походка станет «лунной».
+        /// </summary>
+        private static LegIkFrameOutcome ApplyLegIkFrame(
+            LegFrame leg, bool plant, float pelvisOffset, float groundY,
+            Dictionary<Transform, Quaternion[]> locals,
+            Dictionary<Transform, Quaternion> worldRot,
+            int frame, Transform thigh, Transform shin, Transform foot)
+        {
+            var outcome = new LegIkFrameOutcome { FootY = leg.Foot.y + pelvisOffset };
+            if (!leg.Valid) return outcome;
+
+            float currentY = leg.Foot.y + pelvisOffset;
+            float targetY = plant ? groundY : Mathf.Max(currentY, groundY);
+
+            // Маховая стопа уже выше земли — не трогаем.
+            if (!plant && targetY <= currentY + 1e-5f) return outcome;
+
+            Vector3 offset = Vector3.up * pelvisOffset;
+            MotionBricksLegIkResult solved = MotionBricksLegIk.Solve(
+                leg.Hip + offset, leg.Knee + offset, leg.Foot + offset,
+                leg.ThighRotation, leg.ShinRotation, leg.FootRotation,
+                targetY, leg.BendForward);
+
+            if (!solved.Solved) return outcome;
+
+            if (locals.TryGetValue(thigh, out Quaternion[] thighFrames) && frame < thighFrames.Length)
+                thighFrames[frame] = Quaternion.Inverse(WorldRotation(thigh.parent, worldRot)) * solved.ThighRotation;
+            if (locals.TryGetValue(shin, out Quaternion[] shinFrames) && frame < shinFrames.Length)
+                shinFrames[frame] = Quaternion.Inverse(solved.ThighRotation) * solved.ShinRotation;
+            if (locals.TryGetValue(foot, out Quaternion[] footFrames) && frame < footFrames.Length)
+                footFrames[frame] = Quaternion.Inverse(solved.ShinRotation) * solved.FootRotation;
+
+            worldRot[thigh] = solved.ThighRotation;
+            worldRot[shin] = solved.ShinRotation;
+            worldRot[foot] = solved.FootRotation;
+
+            outcome.FootY = solved.Foot.y;
+            outcome.Residual = solved.Residual;
+            outcome.KneeBendDeg = solved.KneeBendDeg;
+            outcome.ReachLimited = solved.ReachLimited;
+            outcome.Applied = true;
+            return outcome;
+        }
+
+        private static Quaternion WorldRotation(Transform t, Dictionary<Transform, Quaternion> worldRot)
+        {
+            if (t != null && worldRot.TryGetValue(t, out Quaternion value)) return value;
+            return Quaternion.identity;
+        }
+
         // === Humanoid-бейк (мышцы) ===
 
         /// <summary>
         /// Тот же ретаргет, но выход — мускульные кривые Humanoid: RootT/RootQ + 95 мышц.
-        /// Поза снимается с уже собранного скелета через HumanPoseHandler, поэтому
-        /// bone->muscle маппинг, rest-ориентации и нормировку скрутки делает сам Unity.
+        /// Поза снимается с УЖЕ СОБРАННОГО generic-клипа на временном инстансе БЕЗ Animator:
+        /// Animator с Humanoid-аватаром перехватывает generic-кривые и не даёт их применить
+        /// (T-MB05: humanoid-клип получался T-позой). HumanPoseHandler нужен только Avatar.
         /// Возвращает готовый клип (сохранение — в Bake, чтобы отчёт знал GUID).
         /// </summary>
         private static AnimationClip BakeHumanoidClip(
-            Transform root,
-            Dictionary<Transform, Quaternion[]> locals,
+            AnimationClip genericClip,
             int frameCount,
             MotionBricksBakeJob job,
-            Transform hips,
-            Vector3 restHipsLocal,
-            List<Vector3> hipsOffsets,
-            Quaternion yaw,
-            MotionBricksBakeReport report,
             List<string> warnings)
         {
-            var animator = root.GetComponentInChildren<Animator>(true);
-            if (animator == null || animator.avatar == null || !animator.avatar.isHuman)
+            var modelAsset = AssetDatabase.LoadAssetAtPath<GameObject>(ModelPath);
+            if (modelAsset == null)
             {
-                Debug.LogError("[MB-Bake] Humanoid-бейк пропущен: у модели нет Animator с Humanoid-аватаром.");
-                warnings.Add("humanoid-клип не испечён: нет Humanoid-аватара");
+                Debug.LogError($"[MB-Bake] Humanoid-бейк пропущен: модель не найдена '{ModelPath}'.");
+                warnings.Add("humanoid-клип не испечён: модель не найдена");
                 return null;
             }
 
-            var bones = new List<Transform>(locals.Keys);
-            int muscleCount = HumanTrait.MuscleCount;
-            var muscles = new float[frameCount][];
-            var bodyPos = new Vector3[frameCount];
-            var bodyRot = new Quaternion[frameCount];
-
-            var handler = new HumanPoseHandler(animator.avatar, animator.transform);
+            var sampleHolder = new GameObject("__MB_Humanoid_Sample");
+            sampleHolder.hideFlags = HideFlags.HideAndDontSave;
             try
             {
-                for (int f = 0; f < frameCount; f++)
+                var sampleRoot = UnityEngine.Object.Instantiate(modelAsset, sampleHolder.transform);
+                var animator = sampleRoot.GetComponentInChildren<Animator>(true);
+                if (animator == null || animator.avatar == null || !animator.avatar.isHuman)
                 {
-                    for (int i = 0; i < bones.Count; i++) bones[i].localRotation = locals[bones[i]][f];
-
-                    // Тазовая трансляция (in-place + foot IK) — без неё HumanPose.bodyPosition.y не меняется.
-                    if (hips != null) hips.localPosition = restHipsLocal + yaw * hipsOffsets[f];
-
-                    var pose = new HumanPose { muscles = new float[muscleCount] };
-                    handler.GetHumanPose(ref pose);
-
-                    bodyPos[f] = pose.bodyPosition;
-                    bodyRot[f] = pose.bodyRotation;
-                    muscles[f] = pose.muscles;
+                    Debug.LogError("[MB-Bake] Humanoid-бейк пропущен: у модели нет Animator с Humanoid-аватаром.");
+                    warnings.Add("humanoid-клип не испечён: нет Humanoid-аватара");
+                    return null;
                 }
+
+                // Avatar — общий ассет; сам Animator на временном инстансе только мешает.
+                Avatar avatar = animator.avatar;
+                UnityEngine.Object.DestroyImmediate(animator);
+
+                int muscleCount = HumanTrait.MuscleCount;
+                var muscles = new float[frameCount][];
+                var bodyPos = new Vector3[frameCount];
+                var bodyRot = new Quaternion[frameCount];
+
+                var handler = new HumanPoseHandler(avatar, sampleRoot.transform);
+                var pose = new HumanPose { muscles = new float[muscleCount] };
+                try
+                {
+                    for (int f = 0; f < frameCount; f++)
+                    {
+                        // Без Animator'а SampleAnimation честно применяет generic-кривые,
+                        // и GetHumanPose видит реальную позу, а не T-позу.
+                        genericClip.SampleAnimation(sampleRoot, f / Fps);
+                        handler.GetHumanPose(ref pose);
+
+                        bodyPos[f] = pose.bodyPosition;
+                        bodyRot[f] = pose.bodyRotation;
+                        muscles[f] = (float[])pose.muscles.Clone();
+                    }
+                }
+                finally
+                {
+                    handler.Dispose();
+                }
+
+                return BuildHumanoidClip(muscles, bodyPos, bodyRot, frameCount, job, warnings);
             }
             finally
             {
-                handler.Dispose();
+                UnityEngine.Object.DestroyImmediate(sampleHolder);
             }
+        }
+
+        /// <summary>Собрать .anim из снятой humanoid-позы (мышцы + RootT/RootQ).</summary>
+        private static AnimationClip BuildHumanoidClip(
+            float[][] muscles,
+            Vector3[] bodyPos,
+            Quaternion[] bodyRot,
+            int frameCount,
+            MotionBricksBakeJob job,
+            List<string> warnings)
+        {
+            int muscleCount = HumanTrait.MuscleCount;
 
             // Контроль: Humanoid-плеер клампит мышцы в [-1..1] по лимитам аватара.
             // Выход за диапазон = поза в игре будет не такой, как в бейке (вывернутые конечности).
@@ -748,6 +1060,22 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
         }
 
         // === Сохранение ===
+
+        /// <summary>
+        /// T-MB05: one-shot клипы не должны зацикливаться ни в ассете, ни в PlayableGraph
+        /// по умолчанию. Для петли ставим Loop; для one-shot — Clamp + loopTime=false.
+        /// </summary>
+        internal static void ApplyLoopSettings(AnimationClip clip, bool loop)
+        {
+            if (clip == null) return;
+
+            clip.wrapMode = loop ? WrapMode.Loop : WrapMode.Clamp;
+
+            AnimationClipSettings settings = AnimationUtility.GetAnimationClipSettings(clip);
+            settings.loopTime = loop;
+            settings.loopBlend = false;
+            AnimationUtility.SetAnimationClipSettings(clip, settings);
+        }
 
         private struct ClipSaveInfo
         {
@@ -853,6 +1181,7 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
             Dictionary<Transform, int> poseByTransform,
             Dictionary<Transform, Quaternion[]> locals,
             Dictionary<Transform, Vector3> worldPos,
+            Dictionary<Transform, Quaternion> worldRot,
             Transform hips,
             Vector3 hipsLocalPos)
         {
@@ -876,6 +1205,7 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
             }
 
             if (locals.TryGetValue(t, out var frames)) frames[frame] = Quaternion.Inverse(animParentWorld) * animWorld;
+            worldRot[t] = animWorld;
 
             Vector3 localPos = ReferenceEquals(t, hips) ? hipsLocalPos : t.localPosition;
             Vector3 worldPosition = animParentPos + animParentWorld * localPos;
@@ -884,7 +1214,7 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
             for (int i = 0; i < t.childCount; i++)
             {
                 EvalFrame(t.GetChild(i), animWorld, worldPosition, frame, deltaByPose, clavByPose,
-                    restWorld, poseByTransform, locals, worldPos, hips, hipsLocalPos);
+                    restWorld, poseByTransform, locals, worldPos, worldRot, hips, hipsLocalPos);
             }
         }
 

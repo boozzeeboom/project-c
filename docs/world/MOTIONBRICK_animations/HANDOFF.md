@@ -2,7 +2,7 @@
 
 > **Для:** следующего агента/разработчика, который делает интеграцию.
 > **Дата:** 2026-11-15
-> **Статус:** research + offline pack + safe rollout + **T-MB02 spike** + **T-MB04b accepted** + **T-MB03 done** + **T-MB04c code + runtime measurement (visual pending)**; production-интеграции ещё нет.
+> **Статус:** research + offline pack + safe rollout + **T-MB02 spike** + **T-MB04b accepted** + **T-MB03 done** + **T-MB04c code + runtime (visual pending)** + **T-MB05 code + замеры (visual pending)**; production-интеграции ещё нет.
 > **Главное правило:** текущий Animator — дефолт; MotionBricks — additive, off by default, с откатом в минуты.
 > **Main:** код и docs импортированы в `main` коммитом `934ecdf6`; `MotionBricksRuntimeSettings.asset` в main — `mode: 0` (Disabled). `feature/motionbricks` — backup/история, не мержить слепо (в ветке `mode: 1`).
 > **T-MB02:** `bake → import → playback` работает; качество/IK/покрытие — T-MB03/04. См. [07](07_T-MB02_WORKTREE_BASELINE_FINDINGS.md) · [08](08_T-MB02_RETARGET_FINDINGS.md) · [09](09_T-MB02_ANALYSIS_AND_NEXT.md).
@@ -10,6 +10,7 @@
 > **T-MB04b (вечер 15.11): ✅ принят.** Root motion на probe: **2.00 м/с** (`30,42 м / 15,21 s`), стопы не шаркают, `Stop`→baseline. Body swap Male→Female→Male на живом игроке — штатный путь 1/1; body swap при **активном playback** проверен на probe с настоящим applier — playback и root motion перепривязываются, кость двигается (18.8°/29.6°). Осталось вне тикета (в чек-лист T-MB08): 2 клиента, F8/F9 от нуля. Второй `CharacterController.Move` запрещён кодом; интеграция в `NetworkPlayer` — отдельный шаг.
 > **T-MB03 (ночь 15.11): ✅ сделано** — бейкер собирает задания с диска, batch + валидация + `*.bake.report.json`; тазовый foot IK стал контактно-осознанным (размах таза 15.7 → 11.7 см при hover 4 / penetration 1 см); `applyRootMotion` guard с учётом `SkillAnimationPlayer`; GUID/ссылки при перепёке сохранены. Подробности и замеры — [11](11_T-MB03_BAKER_AND_GUARDS.md). Baseline 12/12, Play Mode не запускался.
 > **T-MB04c (ночь 15.11): код + runtime-замер** — новый `MotionBricksLocomotionBridge`: `MotionBricksBakedRootMotion` на `NetworkPlayer` не вызывает `Move`, а публикует displacement; `NetworkPlayer.ProcessMovement` забирает его перед **единственным** `_controller.Move`. Baseline-файл `NetworkPlayer.cs` изменён с одобрения; хэш обновлён отдельным коммитом. Один контролируемый прогон Play Mode (по разрешению пользователя): поездка **33.13 м / 16.56 с = 2.00 м/с**, `Stop` → стоп, body swap Female→Male с перепривязкой playback/скелета, 0 errors. Визуал/экипировка — за пользователем: [12](12_T-MB04C_ROOT_MOTION_IN_PLAYER.md) §6.1.
+> **T-MB05 (16.11): код + замеры, visual pending** — аналитический **2-bone IK ног** в бейкере: таз **15.7 → 1.7 см** (`WalkForward`) и **5.1 → 2.8 см** (`WalkToJog`), humanoid hover/penetration **4.7/1.9** и **1.7/0.9** (в допуске). `loop:false` в sidecar + `loopTime/WrapMode`; non-cyclic решатель не тянет шов. Найден и исправлен **humanoid T-поза баг** (`HumanPoseHandler` читал T-позу Animator'а). Baseline 12/12, Play Mode не запускался: [13](13_T-MB05_LEG_IK_AND_LOOP.md).
 > **Найдено:** фактический рантайм-игрок — `NetworkPlayer_GlobalPilot.prefab` (подставляет `GlobalMotionNetworkStartup` из профиля), baseline защищает `NetworkPlayer.prefab`. Новое тело после свапа приходит с FBX-дефолтами Animator (`applyRootMotion=true`, `CullUpdateTransforms`) — для будущих root-motion клипов нужен гард (T-MB03/05).
 
 ---
@@ -37,6 +38,7 @@
 | T-MB04a root motion | ✅ **2.00 м/с** в рантайме (`30,42 м / 15,21 s`), стопы не шаркают, `Stop`→baseline (§5.1–5.3 [10](10_T-MB04B_RUNTIME_HARNESS.md)) |
 | T-MB04a body swap | ✅ Male→Female→Male на живом игроке (1/1, штатный путь); при активном playback — проверено на probe с настоящим applier: перепривязка playback и `B-hips`, кость 18.8°/29.6° (§5.2–5.3) |
 | T-MB03 baker/IK/guard | ✅ discovery с диска, batch+validate, `*.bake.report.json`; foot IK hover 4 / penetration 1 см при размахе таза 11.7 см; guard 6/6; GUID стабилен — [11](11_T-MB03_BAKER_AND_GUARDS.md) |
+| T-MB05 leg IK/loop | ✅ 2-bone IK: таз 15.7 → **1.7 см**, humanoid hover/pen 4.7/1.9; `WalkToJog` 5.1 → **2.8 см**, 1.7/0.9; `loop:false` + non-cyclic self-test; humanoid T-поза fix; baseline 12/12 — [13](13_T-MB05_LEG_IK_AND_LOOP.md) |
 | Baseline animation files | ✅ `check_baseline.ps1` - 12/12 match (main); worktree `-SkipContent` - 4 scripts |
 | Sentis import | ❌ не проверялся; конфликт версий Burst/Collections/Newtonsoft |
 | Unity Play Mode | ✅ T-MB04b: пользователь + один прогон агента по разрешению; агент сам Play Mode не запускает |
@@ -104,7 +106,7 @@
    Test-Path C:\Projects\motion_bricks\motionbricks\.venv\Scripts\python.exe
    Test-Path C:\Projects\motion_bricks\tools\cpu_baker\.venv\Scripts\python.exe
    ```
-5. T-MB04c закрыт (код + замер). Дальше — `T-MB05` (2-bone IK, `loop:false`, NPC pool) и `T-MB08` (2 клиента/F8-F9/equipment/go-no-go); код и Unity-ассеты в main; baseline до/после.
+5. T-MB04c закрыт (код + замер); T-MB05 закрыт по коду/замерам (2-bone IK, `loop:false`, humanoid T-поза fix). Дальше — `T-MB08` (2 клиента/F8-F9/equipment/каст/go-no-go); отдельными решениями — NPC baked pool, culling после body swap, `NetworkPlayer_GlobalPilot.prefab` в baseline.
 
 **Main vs worktree:** main теперь содержит код/docs и Lore-контент; worktree не содержит контента и оставлен только как backup. Не открывать два Unity на одном проекте; не копировать контент в worktree.
 
@@ -122,7 +124,7 @@
 | `T-MB04b` | ✅ accepted | root motion **2.00 м/с**, `Stop`→baseline, body swap (в т.ч. при активном playback) — приняты. Вне тикета → T-MB08: 2 клиента, F8/F9 от нуля, экипировка отдельным глазом |
 | `T-MB04c` | ✅ code + runtime; visual pending | Root motion встроен в движение игрока: `MotionBricksLocomotionBridge` + публикация из `MotionBricksBakedRootMotion`; `ProcessMovement` забирает displacement перед единственным `Move`. Замер 2.00 м/с, Stop→стоп, body swap с перепривязкой; визуал — [12 §6](12_T-MB04C_ROOT_MOTION_IN_PLAYER.md). |
 | `T-MB03` | ✅ done | Baker MVP: discovery/batch/validation/metadata; контактный pelvis foot IK; guard `applyRootMotion`; `SaveClipInPlace` с проверкой GUID — [11](11_T-MB03_BAKER_AND_GUARDS.md) |
-| `T-MB05` | ⬜ | Hybrid primitives: authoring/registry/playback |
+| `T-MB05` | ✅ code + metrics; visual pending | 2-bone IK ног + `loop:false`: таз 15.7 → 1.7 см / 5.1 → 2.8 см, humanoid contact 4.7/1.9 и 1.7/0.9; humanoid T-поза fix — [13](13_T-MB05_LEG_IK_AND_LOOP.md). NPC pool/culling — отдельно |
 | `T-MB06` | ⬜ optional | Sentis import + benchmark (timebox) |
 | `T-MB07` | ⬜ optional | Runtime experiment (only after go) |
 | `T-MB08` | ⬜ | Go/no-go review |
@@ -145,6 +147,7 @@
 | Sources | `C:\Projects\ProjectC_client\docs\world\MOTIONBRICK_animations\04_SOURCES.md` |
 | Offline resources | `C:\Projects\ProjectC_client\docs\world\MOTIONBRICK_animations\05_LOCAL_RESOURCES.md` |
 | Safe rollout/rollback | `C:\Projects\ProjectC_client\docs\world\MOTIONBRICK_animations\06_SAFE_ROLLOUT_AND_ROLLBACK.md` |
+| T-MB05 leg IK/loop | `C:\Projects\ProjectC_client\docs\world\MOTIONBRICK_animations\13_T-MB05_LEG_IK_AND_LOOP.md` |
 | Baseline manifest | `C:\Projects\ProjectC_client\docs\world\MOTIONBRICK_animations\baseline\BASELINE_MANIFEST.md` |
 | Baseline hashes | `C:\Projects\ProjectC_client\docs\world\MOTIONBRICK_animations\baseline\baseline_hashes.tsv` |
 | Baseline check | `C:\Projects\ProjectC_client\docs\world\MOTIONBRICK_animations\baseline\check_baseline.ps1` |
@@ -222,7 +225,7 @@
 1. **Сид-клип `walk_to_jog` — разворот на месте.** Для рабочей ходьбы используется авторский KL `HumanM@Walk01_Forward`; синтезированный `WalkForward_Male` (0.54 м/с) пока не motion-consistent.
 2. **Плечи не анимируются.** `B-shoulder.L/R` наследуют грудь; `11→12`/`39→40` degenerate swing.
 3. **Руки — закрыто для KL.** `B-upperArm.L` двигается на 23.7° в LateUpdate при `controller = null`; для синтезированных клипов проверить отдельно.
-4. **Foot IK / pelvis.** Для KL метрики в допуске (slide 0.07/0.11 см/кадр, подъём 0.036 м). T-MB03: тазовый IK стал контактно-осознанным (`PelvisSmooth`): на `WalkForward_Male` размах таза 15.7 → 11.7 см при hover 4 / penetration 1 см; «2 см» тазовым IK недостижимы, пока опорная стопа клипа гуляет на 15.7 см — кандидат на 2-bone IK в T-MB05. См. [11 §5](11_T-MB03_BAKER_AND_GUARDS.md).
+4. **Foot IK / pelvis.** Для KL метрики в допуске (slide 0.07/0.11 см/кадр, подъём 0.036 м). T-MB03: тазовый IK стал контактно-осознанным (`PelvisSmooth`): на `WalkForward_Male` размах таза 15.7 → 11.7 см при hover 4 / penetration 1 см. **T-MB05:** 2-bone IK ног снял зависимость таза от стопы — `WalkForward` 15.7 → **1.7 см**, `WalkToJog` 5.1 → **2.8 см**; humanoid contact 4.7/1.9 и 1.7/0.9 (в допуске). Остаток: humanoid-кламп `Lower Leg Stretch` и foot slide 2.36 у `WalkForward` — контент/foot-lock post-pass; см. [13](13_T-MB05_LEG_IK_AND_LOOP.md).
 5. **`MotionBricksRuntimeSettings.mode`** в main — `0` (Disabled) ✓; probe `MB_Probe_Player` остаётся в `WorldScene_0_0` как dev-объект (разрешённая ветка).
 6. **Body swap M↔F — стенд готов.** Playback добавляется в рантайме на живого игрока; свап идёт через настоящий `CharacterCustomisationApplier` (штатный путь `CustomisationClientState`, при неподписанном applier — прямой вызов `ApplyBodyType` из меню). Визуал — за пользователем; `NetworkPlayer.prefab` не тронут.
 7. **Root motion — probe и игрок.** На probe `MotionBricksBakedRootMotion` двигает transform через `_allowTransformFallback` (2.00 м/с, T-MB04b). На сетевом персонаже он Move не вызывает: публикует смещение в `MotionBricksLocomotionBridge`, а `NetworkPlayer.ProcessMovement` применяет его в своём единственном `_controller.Move` (T-MB04c, [12](12_T-MB04C_ROOT_MOTION_IN_PLAYER.md)). Контролируемый прогон агента по разрешению: 2.00 м/с, Stop→стоп, body swap Female→Male с перепривязкой; визуал/T-pose/экипировка — за пользователем.
@@ -323,6 +326,25 @@
   T-pose/экипировки — за пользователем. Детали и оговорка про culling — [12 §6.1](12_T-MB04C_ROOT_MOTION_IN_PLAYER.md).
 - Приёмка пользователем — [12](12_T-MB04C_ROOT_MOTION_IN_PLAYER.md) §6 (в первую очередь глазами:
   стопы не шаркают, T-pose при свапе нет, экипировка на месте).
+
+**Обновление 16.11 (T-MB05):**
+- **2-bone IK ног** в бейкере (`MotionBricksLegIk`): таз идёт по достижимости + естественному bob,
+  стопу ставит аналитический IK (закон косинусов, плоскость колена из позы, мировой поворот стопы
+  сохраняется). Откат — sidecar `{ "legIk": false }` → `PelvisSmooth`.
+- Замеры (bake + validate, без Play Mode): `WalkForward_Male` таз **15.7 → 1.7 см**, humanoid
+  hover/pen **4.7/1.9**; `WalkToJog_Male` **5.1 → 2.8 см**, **1.7/0.9**. Raw pose hover/pen 0.1/0.0.
+  Оба контакта — в допуске валидатора (5/2). Ось/асимметрия/разворот по-прежнему FAIL — контент.
+- **`loop:false`:** sidecar + `loopTime=false`/`WrapMode.Clamp`; `PelvisSmooth`/`SolveCurve` получили
+  `cyclic`; self-test «one-shot шов» PASS (cyclic −1.0 см на старте, non-cyclic 0.0 см).
+- **Humanoid T-поза bug fix:** `HumanPoseHandler.GetHumanPose` на инстансе с Animator читал T-позу;
+  humanoid-клип теперь сэмплирует generic-клип через `SampleAnimation` на инстансе **без Animator**
+  (Avatar остаётся). После фикса `B-shoulder/upperArm` двигаются, мышцы соответствуют позе.
+- Self-tests: Foot IK 6/6, Leg IK 6/6, Loop 4/4, applyRootMotion guard 6/6. Baseline 12/12.
+- **Не делалось (по решению):** NPC baked pool, culling `AlwaysAnimate` после body swap,
+  `NetworkPlayer_GlobalPilot.prefab` в baseline. Foot slide `WalkForward` 2.36 см/кадр — контент
+  (стопа теперь стоит больше кадров); humanoid-кламп `Lower Leg Stretch` 0.00..1.03 — кандидат
+  на отдельный post-pass.
+- Подробности — [13](13_T-MB05_LEG_IK_AND_LOOP.md); design — `docs/dev/T-MB05_LEG_IK_LOOP_DESIGN.md`.
 
 ---
 

@@ -179,6 +179,40 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
                       $" Ожидаемо для KL Walk01 — 2.00 м/с (foot slide ≤ 2 см/кадр смотреть глазами).{clipSpeed}");
         }
 
+        [MenuItem("ProjectC/MotionBricks/Review/Probe/Bring probe in front of my player", priority = 72)]
+        public static void BringProbeToPlayer()
+        {
+            if (!RequirePlayMode()) return;
+
+            var probe = FindProbeObject();
+            if (probe == null)
+            {
+                Debug.LogError($"[MB-Review] Нет '{ProbeObjectName}' — переносить нечего.");
+                return;
+            }
+
+            var player = FindLocalPlayer();
+            if (player == null)
+            {
+                Debug.LogError("[MB-Review] Локальный NetworkPlayer не найден. Войдите в игру и повторите.");
+                return;
+            }
+
+            // Только на сессию Play Mode: сцена не сохраняется. Ориентация — по лицу игрока,
+            // модель пробы смотрит в +Z (проверено замером), поэтому она пойдёт от игрока вперёд.
+            Vector3 forward = player.transform.forward;
+            forward.y = 0f;
+            if (forward.sqrMagnitude < 1e-4f) forward = Vector3.forward;
+            forward.Normalize();
+
+            probe.transform.SetPositionAndRotation(
+                player.transform.position + forward * 5f,
+                Quaternion.LookRotation(forward, Vector3.up));
+
+            Debug.Log($"[MB-Review] Probe перенесён перед игроком: {probe.transform.position:F2}, лицо {forward:F2}. " +
+                      "Сцена не сохранена; после Stop/Play Mode позиция вернётся.");
+        }
+
         [MenuItem("ProjectC/MotionBricks/Review/Focus probe in Scene view", priority = 80)]
         public static void FocusProbe()
         {
@@ -251,18 +285,30 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
 
             foreach (var playback in playbacks)
             {
-                // Компоненты могли сами себя выключить на OnEnable (Mode=Disabled) — включаем,
-                // чтобы работали LateUpdate с диагностикой, намотка петли и root motion.
-                if (!playback.enabled) playback.enabled = true;
+                // Клип и скорость задаём ДО включения компонента: иначе OnEnable успеет сыграть
+                // клип, который лежал в сцене (WalkToJog), и в логе будет два «Play».
+                if (playback.enabled) playback.StopPlayback();
+
+                playback.ConfigureForReview(LoadSettings(), playback.TargetAnimator, clip, 1f, loop: true, logVerbose: true);
 
                 foreach (var rootMotion in playback.GetComponents<MotionBricksBakedRootMotion>())
                 {
                     // Скорость задаётся по замеру клипа: с чужой скоростью стопы будут скользить.
                     rootMotion.ClipSpeed = clipSpeed;
+                }
+
+                // Компоненты могли сами себя выключить на OnEnable (Mode=Disabled) — включаем,
+                // чтобы работали LateUpdate с диагностикой, намотка петли и root motion.
+                bool wasEnabled = playback.enabled;
+                if (!wasEnabled) playback.enabled = true;
+                else playback.TryPlayForReview(clip, 1f);
+
+                foreach (var rootMotion in playback.GetComponents<MotionBricksBakedRootMotion>())
+                {
                     if (!rootMotion.enabled) rootMotion.enabled = true;
                 }
 
-                bool ok = playback.TryPlayForReview(clip, 1f);
+                bool ok = playback.IsPlaying;
                 Debug.Log(ok
                     ? $"[MB-Review] Играю {label}: '{clip.name}' ({clip.length:F2} s, humanMotion={clip.humanMotion}) " +
                       $"на '{playback.name}' → Animator '{playback.TargetAnimator?.name}'. " +

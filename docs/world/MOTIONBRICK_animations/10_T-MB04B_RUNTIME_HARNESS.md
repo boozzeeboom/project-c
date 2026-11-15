@@ -133,8 +133,9 @@ Blender). Это существующая конфигурация проект�
 ### 4.1. Root motion на пробе
 
 1. Войти в Play Mode, дождаться загрузки `WorldScene_0_0`.
-2. **`Review/Focus probe in Scene view`** — камера Scene View наводится на куклу
-   (Game View смотреть на неё не обязательно).
+2. **`Review/Focus probe in Scene view`** — камера Scene View наводится на куклу.
+   Если удобнее смотреть из Game View: **`Review/Probe/Bring probe in front of my player`**
+   переносит пробу на 5 м перед локальным игроком (только в сессии, сцена не сохраняется).
 3. **`Review/Play KL Walk01 Forward on probe (рабочая ходьба)`**.
    Ожидаемо в логе: `Играю KL Walk01 Forward ... Root motion: 2,00 м/с`, затем
    `[MotionBricksBakedPlayback] Play 'HumanM@Walk01_Forward' ...`.

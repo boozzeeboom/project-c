@@ -23,7 +23,11 @@ C:\Projects\motion_bricks\tools\cpu_baker\.venv\Scripts\python.exe `
 .venv\Scripts\python.exe -c "import motionbricks, tensorrt; print(motionbricks.__version__, tensorrt.__version__)"
 .venv\Scripts\python.exe docs\examples\generate_once.py --model soma
 
-# 4. Проверка целостности
+# 4. CPU CLI sa-inbetween (готовый пример)
+cd C:\Projects\motion_bricks\community\sa-inbetween\releases\v0.9.4\tools-win-x64\SaInbetween
+.\cli\sa-inbetween.exe inspect ..\..\library\demo_walk_to_jog.saib
+
+# 5. Проверка целостности
 Get-Content C:\Projects\motion_bricks\checksums\SHA256SUMS.txt
 ```
 
@@ -63,7 +67,7 @@ C:\Projects\motion_bricks\
 ├── models\huggingface\MotionBricks\ ← SafeTensors SOMA/G1 + model cards
 ├── community\
 │   ├── motionbricks-unity-bridge\   ← HTTP server + Unity C# + Editor Clip Baker
-│   ├── sa-inbetween\                ← CPU ONNX CLI/Unity package (reference)
+│   ├── sa-inbetween\                ← CPU ONNX CLI/Unity package + releases\v0.9.4 (library/demo)
 │   ├── Unity6_motionbricks_test\    ← Unity 6 G1/UDP/retarget reference project
 │   └── motion-bricks.cpp\           ← C++/GGUF port (optional)
 ├── unity\packages\               ← Sentis tarball + dependencies (offline UPM)
@@ -74,7 +78,7 @@ C:\Projects\motion_bricks\
 └── checksums\SHA256SUMS.txt      ← SHA256 ключевых артефактов
 ```
 
-**Общий размер пакета:** ~8.7 GB (из них ~1.5 GB — HF SafeTensors, ~0.4 GB — community releases, ~0.4 GB — Unity tarballs, ~0.7 GB — TensorRT plan cache, ~3 GB — official `.venv`).
+**Общий размер пакета:** ~9.4 GB (из них ~1.5 GB — HF SafeTensors, ~1.1 GB — community (включая копию SOMA ONNX для `sa-inbetween`), ~0.4 GB — Unity tarballs, ~0.7 GB — TensorRT plan cache, ~3 GB — official `.venv`).
 
 ---
 
@@ -131,7 +135,7 @@ Model cards: `models\huggingface\MotionBricks\soma\README.md`, `...\g1\README.md
 |---|---|---|---|
 | `ninja9998877/motionbricks-unity-bridge` | `community\motionbricks-unity-bridge` | HTTP server + Unity C# + Editor Clip Baker; SOMA→Humanoid mapping | Неофициально; Apache 2.0; проверить код |
 | `IAFahim/sa-inbetween` | `community\sa-inbetween` | CPU ONNX Runtime CLI/Unity package; `.saib`; reference для offline bake | Неофициально; модель отдельно |
-| `sa-inbetween` releases v0.9.4 | `community\sa-inbetween\releases\v0.9.4\` | Готовый `win-x64` CLI + tools (`bake`, `cli`, `model`, `humanoid-v1.safamily`) + SHA256SUMS | Windows x64; .NET 10 self-contained; модель отдельно |
+| `sa-inbetween` releases v0.9.4 | `community\sa-inbetween\releases\v0.9.4\` | Готовый `win-x64` CLI + tools (`bake`, `cli`, `model`, `humanoid-v1.safamily`); модель и `soma_rest.pose` уже положены в `tools-win-x64\SaInbetween`; `library\` — тестовые позы | Windows x64; .NET 10 self-contained; `library` — **eval-only** |
 | `bagybagy/Unity6_motionbricks_test` | `community\Unity6_motionbricks_test` | Unity 6000.3.13, G1/UDP, semantic retargeting, VRAM/latency benchmark | Неофициально; японский README; LFS/submodule не тянулись |
 | `localai-org/motion-bricks.cpp` | `community\motion-bricks.cpp` | C++/GGUF port (alternative runtime) | Не evaluated |
 
@@ -148,6 +152,9 @@ Model cards: `models\huggingface\MotionBricks\soma\README.md`, `...\g1\README.md
 | Collections | `unity\packages\com.unity.collections-2.4.3.tgz` | 2.4.3 |
 | Newtonsoft JSON | `unity\packages\com.unity.nuget.newtonsoft-json-3.2.1.tgz` | 3.2.1 |
 | App UI | `unity\packages\com.unity.dt.app-ui-1.3.6.tgz` | 1.3.6 |
+| Mathematics | `unity\packages\com.unity.mathematics-1.2.1.tgz` | 1.2.1 |
+| Mono Cecil | `unity\packages\com.unity.nuget.mono-cecil-1.11.4.tgz` | 1.11.4 |
+| Test Framework Performance | `unity\packages\com.unity.test-framework.performance-3.0.3.tgz` | 3.0.3 |
 
 **Установка (в отдельной ветке!):**
 1. Unity → `Window > Package Manager`.
@@ -231,7 +238,9 @@ Get-Content C:\Projects\motion_bricks\checksums\SHA256SUMS.txt
 
 - NVIDIA driver / CUDA toolkit — уже стоят на машине (RTX 3090, driver 610.88); для другой машины ставить отдельно.
 - BONES RP1 training dataset — не распространяется; sample motions только eval.
+- `community\sa-inbetween\releases\v0.9.4\library` — позы, сгенерированные из bundled sample motions; **eval-only**, не шипить.
 - Полный SOMA-X body model / meshes — не нужен для Unity-ретаргета; в repo есть skeleton USD.
+- `GR00T-WholeBodyControl` preview / training pipeline — не скачивался; для инференса не нужен (только если понадобится обучение/дообучение).
 - Kimodo/ARDY модели — альтернативы, не для T-MB02.
 - Unity-проект Project C — не изменялся; Sentis не установлен.
 
@@ -247,7 +256,7 @@ Get-Content C:\Projects\motion_bricks\checksums\SHA256SUMS.txt
 | Sentis import | ❌ Не проверялся | Статический op-аудит хороший, но 6993 узла/динамические shape не проверены |
 | Unity Play Mode | ❌ Не запускался | Правило `dont-start-play` |
 | Community bridge | ⚠️ Код не ревьюился построчно | Использовать как reference |
-| `sa-inbetween` CLI | ✅ `--help` работает | `win-x64\cli-win-x64\sa-inbetween.exe`; full `generate` не запускался (нужны `.pose`) |
+| `sa-inbetween` CLI | ✅ **PASS** | `tools-win-x64\SaInbetween\cli\sa-inbetween.exe generate` → `library\demo_walk_to_jog.saib`, 50 frames; `inspect` OK |
 | Checksums | ✅ Ключевые артефакты | Sample motions/меши не хэшировались |
 
 **TensorRT plan cache:** первый запуск `generate_once.py` строит plan (несколько минут); кэш — в `C:\Projects\motion_bricks\motionbricks\.trt-cache\` (проверить путь; официальный runtime использует `.trt-cache`). Повторный запуск быстрее.

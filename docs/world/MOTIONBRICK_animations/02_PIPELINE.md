@@ -244,10 +244,11 @@ C:\Projects\motion_bricks\tools\cpu_baker\.venv\Scripts\python.exe `
 
 #### Вариант C — CLI `sa-inbetween` / .NET ORT
 
-- Готовый CPU-инструмент, Apache 2.0 code, модель отдельно.
-- Локально: `C:\Projects\motion_bricks\community\sa-inbetween`.
+- Готовый CPU-инструмент, Apache 2.0 code.
+- Локально: `C:\Projects\motion_bricks\community\sa-inbetween`; готовый `win-x64` + модель + `soma_rest.pose` — в `releases\v0.9.4\tools-win-x64\SaInbetween`; тестовые позы — в `releases\v0.9.4\library`.
+- **Проверено:** `cli\sa-inbetween.exe generate` → 50 frames; `inspect` OK (`demo_walk_to_jog.saib`).
 - Плюсы: не писать свой inference; есть `.saib`/`.pose`.
-- Минусы: 77 joints, свой формат; нужен ретаргет/конвертация; неофициально.
+- Минусы: 77 joints, свой формат; нужен ретаргет/конвертация; неофициально; sample library — eval-only.
 
 **Рекомендация:** A для качества, B для машин без NVIDIA; C — как референс.
 

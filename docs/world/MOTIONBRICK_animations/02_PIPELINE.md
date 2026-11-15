@@ -5,6 +5,7 @@
 > **Область:** Unity 6.5 (`6000.5.2f1`), Windows x64, URP 17.5, NGO 2.13
 > **Главный принцип:** neural-анимация — **косметика и authoring**, не gameplay-authority. Всё, что влияет на бой, сеть и FO, остаётся детерминированным и authored.
 > **Offline:** все команды ниже используют локальный пакет `C:\Projects\motion_bricks`; ссылки на скачивание оставлены как происхождение. См. [05_LOCAL_RESOURCES.md](05_LOCAL_RESOURCES.md).
+> **Safety:** перед любыми изменениями — [06_SAFE_ROLLOUT_AND_ROLLBACK.md](06_SAFE_ROLLOUT_AND_ROLLBACK.md): worktree, baseline check, feature flag, откат.
 
 ---
 
@@ -17,6 +18,7 @@
 5. **Сеть не реплицирует кости.** Реплицируем состояние; клиент играет клип.
 6. **FO:** target-позы — в local space; мировые координаты не кэшируем.
 7. **Никаких ручных `.meta`/`.asmdef`.** Если нужен asmdef — отдельный план с одобрения.
+8. **Baseline неприкосновенен:** `PlayerAnimation.controller`, `NetworkPlayer.prefab`, NPC-контроллеры, `SkillAnimationPlayer` не меняем на MVP; работа — в worktree; `check_baseline.ps1` до/после каждого этапа.
 
 ---
 
@@ -497,8 +499,8 @@ public sealed class MotionBricksRuntime : MonoBehaviour
 ### 5.4. Feature flag
 
 ```csharp
-[CreateAssetMenu(menuName = "ProjectC/Animation/Neural Animation Settings")]
-public sealed class NeuralAnimationSettings : ScriptableObject
+[CreateAssetMenu(menuName = "ProjectC/Animation/MotionBricks Runtime Settings")]
+public sealed class MotionBricksRuntimeSettings : ScriptableObject
 {
     public bool enabled;
     public BackendKind backend;      // Off, Sentis, OnnxRuntime, Http
@@ -509,6 +511,8 @@ public sealed class NeuralAnimationSettings : ScriptableObject
     public bool allowForRemotePlayers; // false
 }
 ```
+
+> Каноническая схема режимов/полей — [06_SAFE_ROLLOUT_AND_ROLLBACK.md](06_SAFE_ROLLOUT_AND_ROLLBACK.md) §3; здесь — эскиз.
 
 `MotionBricksRuntimeGate`:
 - Windows x64;
@@ -597,8 +601,18 @@ public sealed class NeuralAnimationSettings : ScriptableObject
   - ghost meshes: context (серый), target (синий), generated (зелёный), final (обычный);
   - gizmos: entry/targets/exit/box;
   - stats: backend, ms, tokens, frames, fallback, VRAM;
-  - toggle in `NeuralAnimationSettings`.
+  - toggle in `MotionBricksRuntimeSettings`.
 - Не включать в build по умолчанию.
+
+### 6.8. Безопасность и откат
+
+- `MotionBricksRuntimeSettings.mode = Disabled` по умолчанию; нет ассета — тоже `Disabled`.
+- Baked playback — отдельный `PlayableGraph`/`AnimationClipPlayable`, **без правок** `PlayerAnimation.controller`.
+- `OnDisable` → stop graph + `Animator.Rebind()`; baseline Animator продолжает.
+- Body swap: подписка на `CharacterCustomisationApplier.BodySwapped`, пересборка bone map.
+- Baseline check: `baseline/check_baseline.ps1` (12 файлов).
+- Уровни отката: см. [06_SAFE_ROLLOUT_AND_ROLLBACK.md](06_SAFE_ROLLOUT_AND_ROLLBACK.md) §8.
+- **Не мержить в main** до go/no-go; работать в `feature/motionbricks` worktree.
 
 ---
 
@@ -645,7 +659,8 @@ public sealed class NeuralAnimationSettings : ScriptableObject
 |---|---|---|
 | `T-MB01` | Research + decision (этот документ) | — |
 | `T-MB01A` | Offline resource pack: repo/ONNX/HF/community/Sentis/venv в `C:\Projects\motion_bricks` | T-MB01 |
-| `T-MB02` | Baker spike: один клип через HTTP/ORT, импорт, playback | T-MB01A |
+| `T-MB01B` | Safe rollout/rollback + baseline manifest + handoff | T-MB01A |
+| `T-MB02` | Baker spike: один клип через HTTP/ORT, импорт, playback | T-MB01B |
 | `T-MB03` | Baker MVP: Editor window, settings, metadata, validation | T-MB02 |
 | `T-MB04` | Retarget/IK: SOMA→Humanoid, T-pose, foot IK, equipment | T-MB03 |
 | `T-MB05` | Hybrid primitives: authoring, registry, playback | T-MB04 |
@@ -673,6 +688,7 @@ public sealed class NeuralAnimationSettings : ScriptableObject
 
 ## 10. Rollout
 
+0. **T-MB01B** — worktree + baseline check; без этого не начинать.
 1. **T-MB02** — доказать, что один клип можно испечь и проиграть. Если нет — стоп.
 2. **T-MB03/04** — tool + retarget; 3–5 клипов; аниматор подтверждает.
 3. **T-MB05** — hybrid primitives; использовать в сцене.

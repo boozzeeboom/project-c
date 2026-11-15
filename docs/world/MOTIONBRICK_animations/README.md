@@ -4,7 +4,7 @@
 > **Статус:** research complete; решение предложено, ждёт подтверждения
 > **Область:** анимация персонажей, Unity 6.5 (`6000.5.2f1`), Windows x64, MMO-sandbox
 > **Тикет:** `T-MB01` (новая серия `T-MB` — MotionBricks; заводится этим документом)
-> **Документы:** [01_RESEARCH.md](01_RESEARCH.md) · [02_PIPELINE.md](02_PIPELINE.md) · [03_ALTERNATIVES.md](03_ALTERNATIVES.md) · [04_SOURCES.md](04_SOURCES.md) · [05_LOCAL_RESOURCES.md](05_LOCAL_RESOURCES.md)
+> **Документы:** [01_RESEARCH.md](01_RESEARCH.md) · [02_PIPELINE.md](02_PIPELINE.md) · [03_ALTERNATIVES.md](03_ALTERNATIVES.md) · [04_SOURCES.md](04_SOURCES.md) · [05_LOCAL_RESOURCES.md](05_LOCAL_RESOURCES.md) · [06_SAFE_ROLLOUT_AND_ROLLBACK.md](06_SAFE_ROLLOUT_AND_ROLLBACK.md) · [HANDOFF.md](HANDOFF.md)
 >
 > **Offline-пакет:** все материалы уже скачаны в **`C:\Projects\motion_bricks`**. Агент интеграции работает без сети — используйте [05_LOCAL_RESOURCES.md](05_LOCAL_RESOURCES.md); внешние ссылки ниже оставлены как происхождение.
 
@@ -22,6 +22,7 @@
 8. **Альтернативы для runtime:** Animancer (Playable API), Motion Matching (MxM / JLPM22), Animation Rigging IK, offline Kimodo/ARDY, video mocap. Рекомендация — гибрид: существующий Animator/Animancer + motion matching для игрока + IK + offline baker для недостающих переходов.
 9. **Решение:** не тащить 758 MB модель в клиент MMO, не заменять Animator у NPC, не использовать neural poses для хитбоксов. Инвестировать в baker только под конкретную анимационную задачу, а не «на всякий случай».
 10. **Что реально проверено:** официальные docs/paper/ONNX-манифест, статический аудит ONNX-графа, CPU-бенчмарк ONNX Runtime, чтение кода проекта. Официальный TensorRT-движок **запущен** (`generate_once.py`: 26 + 50 кадров на RTX 3090); Sentis-импорт и Play Mode **не запускались** (правило `dont-start-play`).
+11. **Безопасный откат:** по умолчанию `Mode=Disabled`; baseline-хэши 12 файлов + `check_baseline.ps1`; откат — выключатель → удалить playback → удалить generated-клипы → `git revert` → выбросить worktree. Подробно — [06_SAFE_ROLLOUT_AND_ROLLBACK.md](06_SAFE_ROLLOUT_AND_ROLLBACK.md).
 
 ---
 
@@ -180,6 +181,9 @@
 | [03_ALTERNATIVES.md](03_ALTERNATIVES.md) | Альтернативы и сравнительная матрица |
 | [04_SOURCES.md](04_SOURCES.md) | Аннотированные источники и методология замеров |
 | [05_LOCAL_RESOURCES.md](05_LOCAL_RESOURCES.md) | **Offline-пакет:** локальные пути, модели, venv, Unity-пакеты, checksums |
+| [06_SAFE_ROLLOUT_AND_ROLLBACK.md](06_SAFE_ROLLOUT_AND_ROLLBACK.md) | Безопасная интеграция: режимы, feature flag, изоляция, откат, тест-матрица |
+| [baseline/BASELINE_MANIFEST.md](baseline/BASELINE_MANIFEST.md) | Baseline-хэши 12 ключевых файлов + `check_baseline.ps1` |
+| [HANDOFF.md](HANDOFF.md) | Саммари для передачи работы следующему агенту (абсолютные ссылки) |
 
 ---
 

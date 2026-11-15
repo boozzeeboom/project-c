@@ -2,6 +2,29 @@
 
 ## 15 ноября 2026
 
+**Тикет:** T-MB01B
+
+**Тема:** Безопасная интеграция MotionBricks: baseline-хэши, режимы/feature flag, откат, handoff.
+
+**Что сделано:**
+- `baseline_hashes.tsv` — SHA256 12 ключевых файлов (контроллеры, M/F override, `NetworkPlayer.prefab`, `Npc_Goblin`, `SkillAnimationPlayer`, `NpcBrain`, `Packages/*`).
+- `check_baseline.ps1` — read-only проверка baseline (PASS 12/12 на текущем дереве).
+- `06_SAFE_ROLLOUT_AND_ROLLBACK.md` — режимы `Disabled/BakedClips/NeuralExperimental`, feature flag, изоляция ассетов/кода, body swap, `PlayableGraph` вместо `CrossFade` произвольного клипа, уровни отката, тест-матрица.
+- `HANDOFF.md` — саммари для следующего агента с абсолютными ссылками.
+- Обновлены `README.md`, `02_PIPELINE.md`, `05_LOCAL_RESOURCES.md` (ссылки на 06/handoff/baseline).
+
+**Файлы:**
+- `docs/world/MOTIONBRICK_animations/baseline/BASELINE_MANIFEST.md`
+- `docs/world/MOTIONBRICK_animations/baseline/baseline_hashes.tsv`
+- `docs/world/MOTIONBRICK_animations/baseline/check_baseline.ps1`
+- `docs/world/MOTIONBRICK_animations/06_SAFE_ROLLOUT_AND_ROLLBACK.md`
+- `docs/world/MOTIONBRICK_animations/HANDOFF.md`
+- `docs/world/MOTIONBRICK_animations/README.md`, `02_PIPELINE.md`, `05_LOCAL_RESOURCES.md`
+
+**Проверено:** `check_baseline.ps1` — 12/12 OK; Play Mode не запускался.
+
+## 15 ноября 2026
+
 **Тикет:** T-MB01A
 
 **Тема:** Offline-пакет MotionBricks для агента интеграции (без сети) + локальные ссылки в доках.

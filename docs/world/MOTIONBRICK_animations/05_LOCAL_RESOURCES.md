@@ -3,6 +3,7 @@
 > **Дата:** 2026-11-15
 > **Корень:** `C:\Projects\motion_bricks`
 > **Корневой README пакета:** `C:\Projects\motion_bricks\README.md`
+> **Safety/handoff:** [06_SAFE_ROLLOUT_AND_ROLLBACK.md](06_SAFE_ROLLOUT_AND_ROLLBACK.md) · [HANDOFF.md](HANDOFF.md)
 > **Зачем:** у агента, который будет делать интеграцию, **нет доступа к сети**. Все внешние ссылки из [README.md](README.md) / [01_RESEARCH.md](01_RESEARCH.md) / [02_PIPELINE.md](02_PIPELINE.md) продублированы локально здесь.
 > **Статус:** пакет собран; **официальный TensorRT-прогон PASS** (RTX 3090, 26 + 50 кадров); CPU smoke-test PASS; Sentis-импорт ещё не проверялся (см. §10).
 

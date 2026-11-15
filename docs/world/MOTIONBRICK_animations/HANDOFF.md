@@ -47,6 +47,8 @@
 
 | Коммит | Что |
 |---|---|
+| `5425bc62` | `T-MB04c`: update the reviewed `NetworkPlayer.cs` baseline hash (12/12) |
+| `e33cc216` | `T-MB04c`: baked root motion through the locomotion bridge, runtime measurement, docs |
 | `90180758` | `T-MB03`: discovery baker, batch/validation/metadata, contact-aware pelvis foot IK, applyRootMotion guard, guard/IK self-tests |
 | `d7235bfe` | `T-MB04b`: ticket closed — travel 2.00 m/s, body swap with active playback, findings |
 | `1441e51b` | `T-MB04b`: Stop/body-swap/F8 session log + runtime player prefab finding |
@@ -102,7 +104,7 @@
    Test-Path C:\Projects\motion_bricks\motionbricks\.venv\Scripts\python.exe
    Test-Path C:\Projects\motion_bricks\tools\cpu_baker\.venv\Scripts\python.exe
    ```
-5. Начать `T-MB03` (baker/pelvis IK/applyRootMotion guard) и `T-MB08` (2 clients/F8-F9/equipment) — код и Unity-ассеты в main; baseline до/после.
+5. T-MB04c закрыт (код + замер). Дальше — `T-MB05` (2-bone IK, `loop:false`, NPC pool) и `T-MB08` (2 клиента/F8-F9/equipment/go-no-go); код и Unity-ассеты в main; baseline до/после.
 
 **Main vs worktree:** main теперь содержит код/docs и Lore-контент; worktree не содержит контента и оставлен только как backup. Не открывать два Unity на одном проекте; не копировать контент в worktree.
 

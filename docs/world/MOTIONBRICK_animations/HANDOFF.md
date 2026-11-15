@@ -43,6 +43,9 @@
 
 | Коммит | Что |
 |---|---|
+| `2c35a903` | `T-MB04b`: play-mode acceptance of probe root motion (logs + status) |
+| `eb4c87e8` | `T-MB04b`: bring-probe convenience and single-play ordering in the review menu |
+| `a1b3f859` | `T-MB04b`: handoff index row for the runtime harness commit |
 | `ddbc51f0` | `T-MB04b`: probe root motion, body-swap harness, no-duplicate-Move guard |
 | `934ecdf6` | `T-MB02/T-MB04a`: import code and docs into main (settings stay Disabled) |
 | `cd4133d9` | `T-MB04a`: handoff index row for the working-clip commit |

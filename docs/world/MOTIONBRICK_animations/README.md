@@ -25,6 +25,7 @@
 11. **Безопасный откат:** по умолчанию `Mode=Disabled`; baseline-хэши 12 файлов + `check_baseline.ps1`; откат — выключатель → удалить playback → удалить generated-клипы → `git revert` → выбросить worktree. Подробно — [06_SAFE_ROLLOUT_AND_ROLLBACK.md](06_SAFE_ROLLOUT_AND_ROLLBACK.md).
 12. **T-MB02 spike принят:** CPU-бейк → Humanoid `.anim` → `PlayableGraph` playback → baseline restore работает; но это **один** демо-клип (`walk_to_jog`, разворот на месте), 22 кости, без плеч/кистей/пальцев и без foot IK. 100% покрытия нет; см. [09_T-MB02_ANALYSIS_AND_NEXT.md](09_T-MB02_ANALYSIS_AND_NEXT.md).
 13. **T-MB04b accepted:** root motion на probe — **2.00 м/с** (`30,42 м / 15,21 s`), `Stop`→baseline; body swap Male→Female→Male на игроке и при активном playback на probe; baseline 12/12. Остаточные долги: `NetworkPlayer_GlobalPilot.prefab` не в baseline, root motion не интегрирован в `NetworkPlayer.ProcessMovement`, `applyRootMotion` после свапа, 2 clients/F8/F9 — T-MB08. Код/docs в main, settings `mode: 0`; см. [10](10_T-MB04B_RUNTIME_HARNESS.md).
+14. **T-MB03 done (pipeline):** baker discovery/batch/validation/metadata; pelvis IK улучшил таз 15.7 → 11.7 см, но 2 см не достигнуты — это 2-bone IK (T-MB05); `applyRootMotion` guard 6/6; GUID стабильны. Оба текущих клипа FAIL по валидатору — контент, не пайплайн; см. [11](11_T-MB03_BAKER_AND_GUARDS.md).
 
 ---
 
@@ -188,6 +189,7 @@
 | [08_T-MB02_RETARGET_FINDINGS.md](08_T-MB02_RETARGET_FINDINGS.md) | **T-MB02:** ретаргет, замеры, Play Mode-приёмка, ограничения |
 | [09_T-MB02_ANALYSIS_AND_NEXT.md](09_T-MB02_ANALYSIS_AND_NEXT.md) | **Анализ T-MB02:** 100%? ограничения, NPC, выигрыш, следующие шаги |
 | [10_T-MB04B_RUNTIME_HARNESS.md](10_T-MB04B_RUNTIME_HARNESS.md) | **T-MB04b:** root motion на probe, body swap на живом игроке, стенд и порядок приёмки |
+| [11_T-MB03_BAKER_AND_GUARDS.md](11_T-MB03_BAKER_AND_GUARDS.md) | **T-MB03:** discovery/batch/validation, pelvis IK, applyRootMotion guard, GUID |
 | [baseline/BASELINE_MANIFEST.md](baseline/BASELINE_MANIFEST.md) | Baseline-хэши 12 ключевых файлов + `check_baseline.ps1` |
 | [HANDOFF.md](HANDOFF.md) | Саммари для передачи работы следующему агенту (абсолютные ссылки) |
 

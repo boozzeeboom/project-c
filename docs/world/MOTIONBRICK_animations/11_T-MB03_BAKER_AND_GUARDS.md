@@ -375,4 +375,51 @@ PASS  каст: Stop не перетирает флаг скилла
 
 ---
 
+## 14. Аудит T-MB03 со стороны следующего шага (15.11, ночь)
+
+### 14.1. Что реально закрыто
+
+- Бейкер больше не хардкодит клипы: discovery по `*_30fps.f32` + `soma_bind.f32`; sidecar-конфиг; batch/validate/list.
+- Метаданные: `*.bake.report.json` с SHA256 сырья/bind, настройками, foot-IK-трассой, метриками и GUID.
+- `applyRootMotion` guard: self-test 6/6 без Play Mode; учитывает `SkillAnimationPlayer` при восстановлении флага.
+- `SaveClipInPlace`: GUID стабилен на трёх перепёках; ссылка `MB_Probe_Player._clip` жива.
+- Baseline 12/12; baseline-файлы не тронуты; Play Mode не запускался.
+
+### 14.2. Новые риски / что важно не потерять
+
+1. **`PelvisSmooth` цикличен по построению.** `MotionBricksFootIk.Solve` всегда берёт `prev=(f-1+n)%n` и `next=(f+1)%n`; в `MotionBricksBakeConfig` **нет `loop`/`cyclic`**, а `groundFeet` по умолчанию `true`. Для one-shot клипов (jump/vault/sit/attack) с контактом это сгладит несвязанные начало и конец. Для прыжков `groundFeet:false` спасает, для sit/vault — нужен `loop:false`/нециклическое сглаживание или `groundFeet:false`. Кандидат в T-MB05.
+2. **Каст скилла во время активного playback не остановлен.** `TryPlay` отказывает, если `SkillAnimationPlayer.IsCasting` уже true, но `Update` не останавливает playback при переходе в каст. Если скилл начинается во время playback, `PlayableGraph` может продолжать писать позу поверх скилла. Нужно проверить в T-MB08; при необходимости — `if (_skillPlayer.IsCasting) StopPlayback()`.
+3. **Это не 2-bone foot IK.** `PelvisSmooth` двигает таз, а не ставит стопу; `WalkForward_Male` 11.7 см размаха при цели 2 см. Честно: цель 2 см достигается только IK ног (T-MB05) и/или лучшим контентом.
+4. **Solver упирается в 400 итераций** (в отчётах `iterations: 400`), т.е. не сходится по `1e-6`. Результат в допуске, но это сигнал: для T-MB05 стоит заменить на taut-string/least-variation или добавить сходимость.
+5. **Оба текущих клипа FAIL по валидатору:** `WalkForward_Male` — ось 75°, асимметрия 33 %, implied 0.51 м/с; `WalkToJog` — yaw −195.6°, ключицы 176°. Это контент, не бейкер; **production-клипов пока нет**.
+6. **Baseline gap:** фактический игрок `NetworkPlayer_GlobalPilot.prefab` не в `baseline_hashes.tsv`; решение отложено.
+7. **Root motion в `NetworkPlayer` не интегрирован:** T-MB04c; правка baseline-файла требует одобрения.
+8. **`tmp_tmb04_*.bat`** — temp-файлы в корне; не коммитить, удалить.
+
+### 14.3. Где мы по плану
+
+| Этап | Статус |
+|---|---|
+| T-MB01 / 01A / 01B | ✅ |
+| T-MB02 | ✅ |
+| T-MB04a | ✅ historical |
+| T-MB04b | ✅ accepted |
+| T-MB03 | ✅ done (pipeline; quality FAIL остаётся) |
+| T-MB04c root motion в NetworkPlayer | ⬜ next, нужно одобрение |
+| T-MB05 hybrid/2-bone IK/NPC pool | ⬜ |
+| T-MB08 2 clients/F8-F9/equipment/go-no-go | ⬜ |
+| T-MB06/07 runtime neural | ⬜ optional |
+
+До go/no-go: **T-MB04c → T-MB05 (если нужен NPC/2-bone IK) → T-MB08**. Если T-MB05 не нужен, остаётся T-MB04c + T-MB08.
+
+### 14.4. Следующему агенту
+
+1. Не трогать baseline-файлы без одобрения; `check_baseline.ps1` → 12/12.
+2. T-MB04c: root motion в `NetworkPlayer.ProcessMovement` под feature flag; один `CharacterController.Move`; после — baseline с обновлённым хэшем отдельным коммитом.
+3. T-MB05: 2-bone IK, `loop:false`/нециклический IK, NPC baked pool/hybrid primitives.
+4. T-MB08: 2 clients, F8/F9 от нуля, equipment, каст скилла во время playback, go/no-go.
+5. Отдельное решение: добавить `NetworkPlayer_GlobalPilot.prefab` в baseline.
+
+---
+
 *Связанные: [10_T-MB04B_RUNTIME_HARNESS.md](10_T-MB04B_RUNTIME_HARNESS.md) · [09_T-MB02_ANALYSIS_AND_NEXT.md](09_T-MB02_ANALYSIS_AND_NEXT.md) · [06_SAFE_ROLLOUT_AND_ROLLBACK.md](06_SAFE_ROLLOUT_AND_ROLLBACK.md) · [HANDOFF.md](HANDOFF.md)*

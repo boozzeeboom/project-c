@@ -2,6 +2,26 @@
 
 ## 15 ноября 2026
 
+**Тикет:** T-MB03
+
+**Тема:** MotionBricks baker без хардкода, batch/validation, pelvis IK, applyRootMotion guard.
+
+**Что сделано:**
+- `MotionBricksBakeJob` — discovery по диску (`<primitive>/<body>/<ClipBase>_30fps.f32` + `soma_bind.f32`), sidecar `.bake.config.json`, batch/validate/list.
+- `MotionBricksBakeReport` — `*.bake.report.json` с SHA256, настройками, foot-IK-трассой, метриками, GUID.
+- `MotionBricksFootIk` — `PelvisSmooth` (таз 15.7 → 11.7 см, hover 4 / penetration 1 / slide 1.82); self-test 4/4.
+- `MotionBricksBakedPlayback` — `applyRootMotion` guard (6/6 self-test), body swap, SkillAnimationPlayer.
+- `SaveClipInPlace`: GUID стабилен, ссылка `MB_Probe_Player._clip` жива; baseline 12/12.
+
+**Файлы:**
+- `Assets/_Project/Scripts/Editor/Animation/MotionBricksBakeJob.cs`, `MotionBricksBakeReport.cs`, `MotionBricksFootIk.cs`, `MotionBricksGuardSelfTest.cs`, `MotionBricksSpikeBaker.cs`, `MotionBricksClipValidator.cs`
+- `Assets/_Project/Scripts/Animation/MotionBricks/MotionBricksBakedPlayback.cs`
+- `docs/world/MOTIONBRICK_animations/11_T-MB03_BAKER_AND_GUARDS.md`, `HANDOFF.md`, `09`, `10`, baseline
+
+**Проверено:** Edit Mode self-tests; Play Mode не запускался; оба текущих клипа FAIL по оси/асимметрии/развороту — контент, не пайплайн.
+
+## 15 ноября 2026
+
 **Тикет:** T-MB04b
 
 **Тема:** MotionBricks root motion на probe, body swap и стенд приёмки.

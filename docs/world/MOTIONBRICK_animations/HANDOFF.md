@@ -2,7 +2,7 @@
 
 > **Для:** следующего агента/разработчика, который делает интеграцию.
 > **Дата:** 2026-11-16
-> **Статус:** research + offline pack + safe rollout + **T-MB02 spike** + **T-MB04b accepted** + **T-MB03 done** + **T-MB04c code + runtime (visual pending)** + **T-MB05 code + замеры (visual pending)** + **official slice visual accepted**; **offline locomotion transition pack отклонён**. Следующий этап — **T-MB06 полный runtime-порт NVIDIA**; runtime-код ещё не начат.
+> **Статус:** research + offline pack + safe rollout + **T-MB02 spike** + **T-MB04b accepted** + **T-MB03 done** + **T-MB04c code + runtime (visual pending)** + **T-MB05 code + замеры (visual pending)** + **official slice visual accepted**; **offline locomotion transition pack отклонён**. **T-MB06:** официальный runtime sidecar + owner-player harness реализованы; standalone TensorRT и UDP PASS, Unity 0 errors, **визуальная приёмка pending**.
 > **Продуктовая рамка:** host-client co-op до 4 игроков. Прежние MMO-аргументы против runtime считать исторической гипотезой; feasibility runtime определяется замерами.
 > **Главное правило:** текущий Animator — дефолт; MotionBricks — additive, off by default, с откатом в минуты.
 > **Main:** код и docs импортированы в `main` коммитом `934ecdf6`; `MotionBricksRuntimeSettings.asset` в main — `mode: 0` (Disabled). `feature/motionbricks` — backup/история, не мержить слепо (в ветке `mode: 1`).
@@ -14,6 +14,7 @@
 > **T-MB05 (16.11): код + offline-замеры + probe runtime; visual pending** — аналитический **2-bone IK ног** в бейкере: таз **15.7 → 1.7 см** (`WalkForward`) и **5.1 → 4.6 см** (`WalkToJog`, one-shot), humanoid hover/penetration **0.09/0.00** и **0.30/0.20** (в допуске). `loop:false` в sidecar + `loopTime/WrapMode`; non-cyclic решатель не тянет шов. Найдены и исправлены: **humanoid T-поза** (`HumanPoseHandler`), **stale parent в leg IK** (172° переворот бёдер), **last-frame wrap** (последний кадр = первый), **Arm Twist ±180/360** (178.8°), **RootQ guard** (корпус не поворачивался → «выворот»; на probe включён `applyRootMotion`), **ключица** (локальный delta 11/39). Baseline 12/12: [13](13_T-MB05_LEG_IK_AND_LOOP.md).
 > **Official vertical slice (16.11): ✅ численный PASS + visual accepted; Play Mode pending** — собственный KL `Walk01_Forward [RM]` → inverse SOMA (roundtrip ≤2.4×10⁻⁶°) → официальный TensorRT и `sa-inbetween` на одном moving context. 18 кадров, **2.142 м/с**, yaw drift ~0; backend difference ≤13.3 мм / 2.6°. Unity generic clip сохранил **1.214 м / 0.567 с = 2.142 м/с**, humanoid без T-pose. **Пользователь принял `OfficialWalk_Male_Humanoid.anim` в Animation Window**; это не Play Mode/equipment acceptance. Contact-validator FAIL — ожидаемый артефакт `groundFeet:false`+root motion, не обратное движение: [14](14_OFFICIAL_VERTICAL_SLICE.md).
 > **Locomotion transition pack v1 (16.11): ❌ отклонён** — 22 перехода, 0/22 validator PASS, 9/22 slide≤2. Пользователь: не лучше исходного Animator, требует сопоставимого объёма ручной отладки. В Animator не внедрялся. Generated-артефакты и debug-сцена удалены; причина и следующий этап — [16](16_OFFLINE_REJECTED_RUNTIME_NEXT.md).
+> **T-MB06 (16.11): runtime-код + standalone PASS; visual pending** — настоящий `NetworkPlayer`/`CharacterController` отправляет движение в официальный Python/TensorRT `SOMACharacter`; UDP latest-frame → SOMA retarget поверх Animator в `LateUpdate`. Ctrl+F10 — neural/legacy A/B; owner loss/cast/stale/error/body swap → authored Animator. Self-test 480 кадров/14 генераций, тёплый wall inference p50/p95 **5.220/32.478 ms**; UDP 150 poses PASS; Unity 0 errors, baseline 12/12. **Play Mode, визуал, equipment/body swap, FPS/VRAM и host-client ещё не проверены.** Инструкция и метрики — [17](17_T-MB06_RUNTIME_SIDECAR.md).
 > **Найдено:** фактический рантайм-игрок — `NetworkPlayer_GlobalPilot.prefab` (подставляет `GlobalMotionNetworkStartup` из профиля), baseline защищает `NetworkPlayer.prefab`. Новое тело после свапа приходит с FBX-дефолтами Animator (`applyRootMotion=true`, `CullUpdateTransforms`) — для будущих root-motion клипов нужен гард (T-MB03/05).
 
 ---
@@ -112,7 +113,7 @@
    Test-Path C:\Projects\motion_bricks\motionbricks\.venv\Scripts\python.exe
    Test-Path C:\Projects\motion_bricks\tools\cpu_baker\.venv\Scripts\python.exe
    ```
-5. T-MB04c/T-MB05 закрыты по коду/замерам; official slice visual accepted; offline transition pack v1 отклонён. Дальше — **T-MB06 runtime-порт NVIDIA** (engine + recorder + targets + playback) и замеры на host-client до 4 игроков; только после этого решать про gameplay/shipping. `T-MB08` с 2 client/F8-F9/equipment/каст — после runtime-этапа. Очистка старых generated/MB debug-файлов выполнена, правила — [16](16_OFFLINE_REJECTED_RUNTIME_NEXT.md).
+5. T-MB04c/T-MB05 закрыты по коду/замерам; official slice visual accepted; offline transition pack v1 отклонён. **T-MB06 runtime-код готов**, standalone TensorRT/UDP и Unity compile проверены. Дальше — ручная визуальная приёмка и замеры по [17](17_T-MB06_RUNTIME_SIDECAR.md), затем host-client до 4 игроков; только после этого решать про gameplay/shipping. `T-MB08` с 2 client/F8-F9/equipment/каст — после runtime-этапа. Очистка старых generated/MB debug-файлов выполнена, правила — [16](16_OFFLINE_REJECTED_RUNTIME_NEXT.md).
 
 **Main vs worktree:** main теперь содержит код/docs и Lore-контент; worktree не содержит контента и оставлен только как backup. Не открывать два Unity на одном проекте; не копировать контент в worktree.
 
@@ -133,7 +134,7 @@
 | `T-MB05` | ✅ code + metrics; visual pending | 2-bone IK ног + `loop:false`: таз 15.7 → 1.7 см / 5.1 → 4.6 см, humanoid contact 0.09/0.00 и 0.30/0.20; T-поза/stale-parent/last-frame/twist/RootQ/ключица fixes — [13](13_T-MB05_LEG_IK_AND_LOOP.md). NPC pool/culling — отдельно |
 | Official slice (вне тикета) | ✅ numeric + Animation Window accepted; Play Mode pending | Собственный moving context → TensorRT/CPU A/B → generic/humanoid без IK: **2.142 м/с**, 1.214 м, без T-pose; пользователь принял Humanoid-клип в Animation Window — [14](14_OFFICIAL_VERTICAL_SLICE.md) |
 | Locomotion pack v1 (вне тикета) | ❌ rejected | Не лучше исходного Animator; 0/22 validator, 9/22 slide≤2; generated-артефакты удалены — [16](16_OFFLINE_REJECTED_RUNTIME_NEXT.md) |
-| `T-MB06` | ⬜ **next** | Полноценный runtime-порт NVIDIA: engine, recorder, targets, playback; замеры на host-client 1/2/4 |
+| `T-MB06` | 🟡 code + standalone/UDP PASS; visual pending | Official SOMA runtime через Python/UDP на owner-персонаже, Ctrl+F10 A/B/fallback; Unity 0 errors, baseline 12/12. Дальше живой визуал, FPS/VRAM, host-client 1/2/4 — [17](17_T-MB06_RUNTIME_SIDECAR.md) |
 | `T-MB07` | ⬜ optional | Runtime gameplay/cosmetic integration после измерений |
 | `T-MB08` | ⬜ | Go/no-go review: сначала preview + 3–5 moving-context клипов, затем 2 клиента/F8-F9/equipment/каст |
 | `T-MB09` | ⬜ | Docs/rollout |

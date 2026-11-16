@@ -3,7 +3,7 @@
 > **Дата:** 2026-11-16
 > **Ветка:** `main`
 > **Решение:** offline-путь «генерировать переходы в отдельные `.anim` и подключать к Animator» остановлен. Следующий этап — **полноценный runtime-порт MotionBricks как у NVIDIA, с измерениями на host-client до 4 игроков**.
-> **Код runtime в этом шаге не писался.** Изменены только документация, ignore-правила и очистка локальных артефактов.
+> **На момент решения об отказе от offline:** код runtime ещё не писался. Актуальный результат T-MB06 — [17_T-MB06_RUNTIME_SIDECAR.md](17_T-MB06_RUNTIME_SIDECAR.md): standalone TensorRT и UDP проверены, живой визуал ожидает ручной приёмки.
 > **Связанные:** [15_LOCOMOTION_TRANSITION_PACK_V1.md](15_LOCOMOTION_TRANSITION_PACK_V1.md) · [MOTIONBRICKS_LOCOMOTION_PACK_DESIGN.md](../dev/MOTIONBRICKS_LOCOMOTION_PACK_DESIGN.md) · [HANDOFF.md](HANDOFF.md)
 
 ---
@@ -167,7 +167,7 @@ Baseline-файлы не менялись: **12/12**.
 |---|---|
 | Offline locomotion transition pack | ❌ rejected |
 | Генерация новых offline clips | ⏹ остановлена |
-| Runtime MotionBricks (T-MB06) | ⬜ следующий этап, код ещё не начат |
+| Runtime MotionBricks (T-MB06) | 🟡 код + standalone/UDP PASS; живой визуал pending — [17](17_T-MB06_RUNTIME_SIDECAR.md) |
 | Исходный Animator | ✅ остаётся дефолтом |
 | Play Mode | не запускался агентом |
 | Baseline | 12/12 |

@@ -2,7 +2,7 @@
 
 > **Дата:** 2026-11-16
 > **Ветка:** `main`
-> **Статус:** пакет **сгенерирован и импортирован**, визуальная приёмка не выполнена. В Animator/controller/baseline ничего не внедрялось.
+> **Статус:** ❌ **отклонён пользователем**: ощущается не лучше исходного Animator и требует сопоставимого объёма ручной отладки. Пакет был сгенерирован и просмотрен; в Animator не внедрялся. Решение и следующий runtime-этап — [16](16_OFFLINE_REJECTED_RUNTIME_NEXT.md).
 > **Область:** host-client co-op до 4 игроков; прежняя формулировка «MMO запрещает runtime» больше не используется как архитектурный аргумент.
 > **Связанные:** [14_OFFICIAL_VERTICAL_SLICE.md](14_OFFICIAL_VERTICAL_SLICE.md) · [Locomotion pack design](../dev/MOTIONBRICKS_LOCOMOTION_PACK_DESIGN.md) · [HANDOFF.md](HANDOFF.md)
 

@@ -1,7 +1,7 @@
 # MotionBricks — locomotion transition pack + runtime path
 
 > **Дата:** 2026-11-16
-> **Статус:** pack v1 сгенерирован/импортирован (22 перехода), visual pending; runtime-порт не начат. Результат — [15](../world/MOTIONBRICK_animations/15_LOCOMOTION_TRANSITION_PACK_V1.md).
+> **Статус:** ❌ pack v1 отклонён: не лучше исходного Animator и требует ручной отладки. Offline-направление остановлено; следующий этап — полноценный runtime-порт. Результат — [16](../world/MOTIONBRICK_animations/16_OFFLINE_REJECTED_RUNTIME_NEXT.md).
 > **Решение пользователя:** сначала **полный пакет locomotion transitions**, затем **полный runtime-порт MotionBricks как у NVIDIA** с замером производительности.
 > **Пересмотр допущения:** проект больше не оценивается как MMO на сотни клиентов. Текущая модель — host-client, реалистичная цель до **4 игроков** с host-сервером. Прежние выводы «runtime невозможен, потому что MMO» считать исторической гипотезой, а не архитектурным запретом.
 

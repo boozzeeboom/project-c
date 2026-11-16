@@ -2,6 +2,25 @@
 
 ## 16 ноября 2026
 
+**Тип:** MotionBricks — отказ от offline transition pack, переход к runtime
+
+**Тема:** Зафиксировано, что baked-переходы не лучше исходного Animator и требуют сопоставимого объёма ручной отладки.
+
+**Решение:**
+- 22-переходный offline pack отклонён: 0/22 validator PASS, 9/22 foot slide ≤2, требуется speed/state coupling.
+- Offline-направление остановлено; новые клипы/IK-полировка не производятся.
+- Следующий этап — **T-MB06**: полноценный runtime-порт NVIDIA (engine + recorder + target generation + playback), затем замеры на host-client 1/2/4 игрока.
+- Runtime-код в этом шаге не писался.
+
+**Очистка:**
+- удалены generated-артефакты `locomotion_*`, `official_*`, `walk_forward`, старые `walk_to_jog` (кроме tracked manifest), playtest controller, preview scene и `tmp_tmb04_*.bat`;
+- `.gitignore` дополнен общими MotionBricks-правилами;
+- baseline 12/12; `mode=0`.
+
+**Документация:** `docs/world/MOTIONBRICK_animations/16_OFFLINE_REJECTED_RUNTIME_NEXT.md`, обновлены `15`, `HANDOFF`, `README`.
+
+## 16 ноября 2026
+
 **Тип:** MotionBricks locomotion transition pack v1 (manifest batch)
 
 **Тема:** 22 перехода одним прогоном вместо поштучных клипов; продуктовая рамка — host-client co-op до 4 игроков.

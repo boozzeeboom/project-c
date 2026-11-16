@@ -234,3 +234,8 @@ aura_export/
 Assets/_Project/Generated/Fences/Spline/*
 Assets/_Project/Generated/Fences/*
 Assets/Editor/_Editor_Temp/*
+# MotionBricks local Lore / generated experiment artifacts
+/Assets/_Project/Animations/Generated/MotionBricks/
+/Assets/_Project/Settings/MotionBricks/
+/Assets/_Project/Scenes/MotionBricksTransitionPreview.unity*
+/tmp_tmb04_*.bat

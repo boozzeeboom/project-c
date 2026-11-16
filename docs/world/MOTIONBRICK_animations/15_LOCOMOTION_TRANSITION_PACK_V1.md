@@ -89,7 +89,22 @@ Stop-переходы проходят **0.428 м** и заканчиваютс�
 
 **Реальным сигналом остаётся foot slide:** только 9 из 22 клипов уложились в ≤2 см/кадр; у части lateral/run-переходов скольжение заметное. Это нужно проверять глазами и при необходимости отдельно настраивать foot-lock/clip speed. Автоматически объявлять пакет принятым нельзя.
 
-## 5. Что смотреть пользователю
+## 5. Как смотреть на персонаже без Play Mode
+
+Добавлены два безопасных инструмента:
+
+1. Сцена `Assets/_Project/Scenes/MotionBricksTransitionPreview.unity` — KL-персонаж, камера, свет и пол.
+2. Окно `ProjectC/MotionBricks/Review/Locomotion Transition Preview`.
+
+Порядок:
+
+1. Сохранить текущие сцены и открыть `MotionBricksTransitionPreview.unity` (в окне есть кнопка **Open preview scene**).
+2. Открыть `ProjectC → MotionBricks → Review → Locomotion Transition Preview`.
+3. Выбрать `MotionBricksPreviewCharacter` в Hierarchy и нажать **Use selected**.
+4. Кликать клипы в списке или **Play / Pause**, **◀ Prev / Next ▶**, **Speed**.
+5. **Stop / restore pose** возвращает исходную позу.
+
+Окно работает через `AnimationMode` в Edit Mode: Play Mode, Animator Controller, prefab и сцена не изменяются. Clip list автоматически берёт Humanoid-клипы из `locomotion_transitions_v1/Male`.
 
 Пакет лежит локально (в git не входит):
 
@@ -97,7 +112,7 @@ Stop-переходы проходят **0.428 м** и заканчиваютс�
 Assets/_Project/Animations/Generated/MotionBricks/locomotion_transitions_v1/Male/
 ```
 
-Рекомендуемый порядок просмотра в Animation Window:
+Рекомендуемый порядок просмотра:
 
 1. `MB_IdleToWalkForward_Humanoid.anim`
 2. `MB_WalkForwardToIdle_Humanoid.anim`

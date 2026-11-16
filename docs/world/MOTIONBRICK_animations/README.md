@@ -4,7 +4,7 @@
 > **Статус:** research complete; решение предложено, ждёт подтверждения
 > **Область:** анимация персонажей, Unity 6.5 (`6000.5.2f1`), Windows x64, MMO-sandbox
 > **Тикет:** `T-MB01` (новая серия `T-MB` — MotionBricks; заводится этим документом)
-> **Документы:** [01_RESEARCH.md](01_RESEARCH.md) · [02_PIPELINE.md](02_PIPELINE.md) · [03_ALTERNATIVES.md](03_ALTERNATIVES.md) · [04_SOURCES.md](04_SOURCES.md) · [05_LOCAL_RESOURCES.md](05_LOCAL_RESOURCES.md) · [06_SAFE_ROLLOUT_AND_ROLLBACK.md](06_SAFE_ROLLOUT_AND_ROLLBACK.md) · [10_T-MB04B_RUNTIME_HARNESS.md](10_T-MB04B_RUNTIME_HARNESS.md) · [11_T-MB03_BAKER_AND_GUARDS.md](11_T-MB03_BAKER_AND_GUARDS.md) · [12_T-MB04C_ROOT_MOTION_IN_PLAYER.md](12_T-MB04C_ROOT_MOTION_IN_PLAYER.md) · [HANDOFF.md](HANDOFF.md)
+> **Документы:** [01_RESEARCH.md](01_RESEARCH.md) · [02_PIPELINE.md](02_PIPELINE.md) · [03_ALTERNATIVES.md](03_ALTERNATIVES.md) · [04_SOURCES.md](04_SOURCES.md) · [05_LOCAL_RESOURCES.md](05_LOCAL_RESOURCES.md) · [06_SAFE_ROLLOUT_AND_ROLLBACK.md](06_SAFE_ROLLOUT_AND_ROLLBACK.md) · [10_T-MB04B_RUNTIME_HARNESS.md](10_T-MB04B_RUNTIME_HARNESS.md) · [11_T-MB03_BAKER_AND_GUARDS.md](11_T-MB03_BAKER_AND_GUARDS.md) · [12_T-MB04C_ROOT_MOTION_IN_PLAYER.md](12_T-MB04C_ROOT_MOTION_IN_PLAYER.md) · [13_T-MB05_LEG_IK_AND_LOOP.md](13_T-MB05_LEG_IK_AND_LOOP.md) · [14_OFFICIAL_VERTICAL_SLICE.md](14_OFFICIAL_VERTICAL_SLICE.md) · [HANDOFF.md](HANDOFF.md)
 >
 > **Offline-пакет:** все материалы уже скачаны в **`C:\Projects\motion_bricks`**. Агент интеграции работает без сети — используйте [05_LOCAL_RESOURCES.md](05_LOCAL_RESOURCES.md); внешние ссылки ниже оставлены как происхождение.
 
@@ -27,6 +27,7 @@
 13. **T-MB04b accepted:** root motion на probe — **2.00 м/с** (`30,42 м / 15,21 s`), `Stop`→baseline; body swap Male→Female→Male на игроке и при активном playback на probe; baseline 12/12. Остаточные долги: `NetworkPlayer_GlobalPilot.prefab` не в baseline, root motion не интегрирован в `NetworkPlayer.ProcessMovement`, `applyRootMotion` после свапа, 2 clients/F8/F9 — T-MB08. Код/docs в main, settings `mode: 0`; см. [10](10_T-MB04B_RUNTIME_HARNESS.md).
 14. **T-MB03 done (pipeline):** baker discovery/batch/validation/metadata; pelvis IK улучшил таз 15.7 → 11.7 см, но 2 см не достигнуты — это 2-bone IK (T-MB05); `applyRootMotion` guard 6/6; GUID стабильны. Оба текущих клипа FAIL по валидатору — контент, не пайплайн; см. [11](11_T-MB03_BAKER_AND_GUARDS.md).
 15. **T-MB04c code + runtime:** baked root motion встроен в движение игрока через `MotionBricksLocomotionBridge`; `NetworkPlayer.ProcessMovement` забирает displacement перед единственным `_controller.Move`. Замер в Play Mode (один прогон по разрешению): **33.13 м / 16.56 с = 2.00 м/с**, `Stop`→стоп, body swap Female→Male с перепривязкой, 0 errors. Правка baseline-файла одобрена, хэш обновлён отдельно; визуал T-pose/экипировки — за пользователем, см. [12](12_T-MB04C_ROOT_MOTION_IN_PLAYER.md).
+16. **Official vertical slice (16.11):** собственный KL moving context → inverse SOMA (roundtrip ≤2.4×10⁻⁶°) → официальный TensorRT и `sa-inbetween`; 18 кадров, **2.142 м/с**, yaw drift ~0, backend difference ≤13.3 мм / 2.6°. Unity generic clip сохранил **1.214 м / 0.567 с = 2.142 м/с**, Humanoid — без T-pose. Play Mode и визуальный preview **не запускались**; contact-validator FAIL — ожидаемый артефакт `groundFeet:false`/root motion. См. [14](14_OFFICIAL_VERTICAL_SLICE.md).
 
 ---
 
@@ -193,6 +194,7 @@
 | [11_T-MB03_BAKER_AND_GUARDS.md](11_T-MB03_BAKER_AND_GUARDS.md) | **T-MB03:** discovery/batch/validation, pelvis IK, applyRootMotion guard, GUID |
 | [12_T-MB04C_ROOT_MOTION_IN_PLAYER.md](12_T-MB04C_ROOT_MOTION_IN_PLAYER.md) | **T-MB04c:** root motion в `NetworkPlayer` через bridge, замер 2.00 м/с, body swap |
 | [13_T-MB05_LEG_IK_AND_LOOP.md](13_T-MB05_LEG_IK_AND_LOOP.md) | **T-MB05:** 2-bone IK ног, non-cyclic pelvis/`loop:false`, humanoid T-поза fix, замеры |
+| [14_OFFICIAL_VERTICAL_SLICE.md](14_OFFICIAL_VERTICAL_SLICE.md) | **Official slice:** собственный moving context, TensorRT vs CPU A/B, Unity import без IK |
 | [baseline/BASELINE_MANIFEST.md](baseline/BASELINE_MANIFEST.md) | Baseline-хэши 12 ключевых файлов + `check_baseline.ps1` |
 | [HANDOFF.md](HANDOFF.md) | Саммари для передачи работы следующему агенту (абсолютные ссылки) |
 

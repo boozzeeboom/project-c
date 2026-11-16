@@ -65,7 +65,8 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
 
         [MenuItem("ProjectC/MotionBricks/Review/Play WalkToJog on probe", priority = 3)]
         public static void PlayWalkToJog() =>
-            PlayOnProbe(WalkToJogClip, "walk_to_jog (humanoid, разворот на месте, one-shot)", WalkToJogSpeed, loop: false);
+            PlayOnProbe(WalkToJogClip, "walk_to_jog (humanoid, разворот на месте, one-shot)", WalkToJogSpeed,
+                loop: false, keepRootRotation: true);
 
         [MenuItem("ProjectC/MotionBricks/Review/Stop on probe", priority = 20)]
         public static void StopOnProbe()
@@ -344,7 +345,7 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
 
         // === Internals ===
 
-        private static void PlayOnProbe(string clipSpec, string label, float clipSpeed, bool loop = true)
+        private static void PlayOnProbe(string clipSpec, string label, float clipSpeed, bool loop = true, bool keepRootRotation = false)
         {
             if (!RequirePlayMode()) return;
 
@@ -392,6 +393,19 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
                 }
 
                 bool ok = playback.IsPlaying;
+
+                // T-MB05: humanoid-клип несёт RootQ (поворот корпуса). applyRootMotion guard
+                // его глушит, и тело не поворачивается, а руки/ноги проигрывают поворот —
+                // выглядит как выворот. На probe (нет NetworkPlayer) безопасно вернуть
+                // Animator'у humanoid root rotation; RootT XZ у in-place клипов нулевой.
+                // Для игрока это отдельное решение.
+                if (ok && keepRootRotation && clip.humanMotion && playback.TargetAnimator != null)
+                {
+                    playback.TargetAnimator.applyRootMotion = true;
+                    Debug.Log("[MB-Review] probe: applyRootMotion=true для humanoid RootQ " +
+                              "(turn-клип; RootT XZ in-place, двойного движения нет).");
+                }
+
                 Debug.Log(ok
                     ? $"[MB-Review] Играю {label}: '{clip.name}' ({clip.length:F2} s, humanMotion={clip.humanMotion}) " +
                       $"на '{playback.name}' → Animator '{playback.TargetAnimator?.name}'. " +

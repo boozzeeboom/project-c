@@ -389,6 +389,24 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
             var hips = boneByPose[0];
             Vector3 restHipsLocal = hips.localPosition;
 
+            // T-MB05: ключицу переносим из ЛОКАЛЬНОГО поворота source-джойнта 11/39, а не
+            // только swing'ом chest->shoulder. Иначе при полном развороте arm local
+            // компенсирует недо-повёрнутую ключицу и рука counter-rotates в мире.
+            Transform shoulderL = boneByPose[11];
+            Transform shoulderR = boneByPose[39];
+            Quaternion shoulderRestL = shoulderL.localRotation;
+            Quaternion shoulderRestR = shoulderR.localRotation;
+            const float MaxClavicleLocalDeg = 45f;
+
+            Quaternion ClavicleLocal(float[] frame, int pose, Quaternion restLocal)
+            {
+                Quaternion delta = SomaLocal(frame, pose) * Quaternion.Inverse(SomaLocal(rest, pose));
+                float angle = Quaternion.Angle(Quaternion.identity, delta);
+                if (angle > MaxClavicleLocalDeg)
+                    delta = Quaternion.Slerp(Quaternion.identity, delta, MaxClavicleLocalDeg / angle);
+                return restLocal * delta;
+            }
+
             // 3b. Foot IK (тазовая часть). Причина: rotation-only ретаргет сохраняет углы суставов,
             //     но нога рига короче SOMA (reach 0.852 против 0.940 м, −9.4%), поэтому при
             //     одинаковой высоте таза стопа остаётся ~10 см выше земли.
@@ -520,6 +538,10 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
                 worldRot.Clear();
                 EvalFrame(root, Quaternion.identity, Vector3.zero, f, deltaByPose, clavByPose,
                     restWorld, poseByTransform, locals, worldPos, worldRot, hips, restHipsLocal + yaw * offset);
+
+                // T-MB05: полная локальная ключица (source joint 11/39), а не swing-only.
+                locals[shoulderL][f] = ClavicleLocal(frameBuf, 11, shoulderRestL);
+                locals[shoulderR][f] = ClavicleLocal(frameBuf, 39, shoulderRestR);
 
                 if (groundFeet)
                 {
@@ -1297,6 +1319,13 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
             foreach (var (pose, bone) in BoneMap)
                 if (bone == boneName) return pose;
             return -1;
+        }
+
+        /// <summary>Локальный (parent-local) поворот джойнта SOMA в осях Unity.</summary>
+        private static Quaternion SomaLocal(float[] frame, int pose)
+        {
+            int o = pose * FloatsPerJoint;
+            return ToUnityRot(new Quaternion(frame[o + 3], frame[o + 4], frame[o + 5], frame[o + 6]));
         }
 
         /// <summary>

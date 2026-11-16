@@ -49,6 +49,7 @@
 
 | Коммит | Что |
 |---|---|
+| `c6a5f57f` | `T-MB05`: restore humanoid RootQ on probe, local clavicle retarget |
 | `7ac26287` | `T-MB05`: leg IK parent frame, humanoid last-frame wrap, twist flips, one-shot loop |
 | `87102426` | `T-MB05`: 2-bone leg IK, non-cyclic pelvis/`loop:false`, humanoid T-поза fix, metrics/docs |
 | `5425bc62` | `T-MB04c`: update the reviewed `NetworkPlayer.cs` baseline hash (12/12) |

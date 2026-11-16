@@ -250,7 +250,8 @@ class ExternalSOMACharacter:
         self._reference_app_rotation = app_rotation.copy()
         self._reference_pose_root_rotation = _normalize_quaternion(pose[0, 3:7])
         self._reference_sample_root_z = float(pose[0, 2])
-        self._reference_root_height = float(pose[0, 2] - app_ground[2])
+        # SOMA current_pose: root XY — app-ground, Z — высота относительно ground.
+        self._reference_root_height = float(pose[0, 2])
         self._reference_initialized = True
 
     def _apply_external_root(self, character, app_ground: np.ndarray, app_rotation: np.ndarray) -> None:
@@ -259,12 +260,7 @@ class ExternalSOMACharacter:
         yaw_delta = _quat_multiply(app_rotation, _quat_inverse(self._reference_app_rotation))
         corrected_rotation = _quat_multiply(yaw_delta, self._reference_pose_root_rotation)
         pose[0, 0:2] = app_ground[0:2]
-        pose[0, 2] = (
-            app_ground[2]
-            + self._reference_root_height
-            + sampled_root_z
-            - self._reference_sample_root_z
-        )
+        pose[0, 2] = self._reference_root_height + sampled_root_z - self._reference_sample_root_z
         pose[0, 3:7] = corrected_rotation
         character.current_pose.assign(np.ascontiguousarray(pose, dtype=np.float32))
 
@@ -327,7 +323,7 @@ class ExternalSOMACharacter:
             wp.vec3(
                 float(values[0, 0] - app_ground[0]),
                 float(values[0, 1] - app_ground[1]),
-                float(values[0, 2] - app_ground[2]),
+                float(values[0, 2]),
             ),
             wp.quat(*_quat_multiply(_quat_inverse(app_rotation), values[0, 3:7])),
         )

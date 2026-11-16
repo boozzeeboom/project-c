@@ -95,13 +95,21 @@ C:\Projects\motion_bricks\motionbricks\.venv\Scripts\python.exe `
 | Прогон | Init | Wall inference mean | p50 | p95 | max |
 |---|---:|---:|---:|---:|---:|
 | Первый холодный | 2916.840 ms | — | 24.856 ms | 147.745 ms | 327.978 ms |
-| Последний тёплый | 3356.041 ms | 10.777 ms | 5.220 ms | 32.478 ms | 82.011 ms |
+| Последний тёплый после fix root | 2978.965 ms | 10.647 ms | 5.107 ms | 32.302 ms | 81.711 ms |
 
-Последние CUDA stages: encode **0.283 ms**, inference **3.634 ms**, decode **0.106 ms**,
-post-process **0.019 ms**. Это числа standalone sidecar, не Unity frame time и не
+Последние CUDA stages: encode **0.267 ms**, inference **3.633 ms**, decode **0.105 ms**,
+post-process **0.015 ms**. Это числа standalone sidecar, не Unity frame time и не
 end-to-end игровой FPS.
 
-### 4.2. Реальный UDP smoke
+### 4.2. Вертикальный контракт root
+
+Регрессионный тест после фикса: Unity player `Y=200.0 → 201.5 → 150.0 → 200.0`
+даёт возвращаемый model-root `Y=0.993078 / 0.993040 / 0.993045 / 0.993014` м.
+Высота больше не зависит от мировой координаты Unity; все позы finite. C# guard
+отсекает вертикальный offset >5 м и non-finite root, переводя playback в authored Animator
+вместо визуального улёта модели.
+
+### 4.3. Реальный UDP smoke
 
 Отдельный subprocess + datagrams: **PASS**. Получен finite bind, затем 150 finite pose
 packets, 6 генераций; shutdown завершился с кодом 0. `ENGINE_READY init_ms=2849.1 ms`.
@@ -109,7 +117,7 @@ packets, 6 генераций; shutdown завершился с кодом 0. `E
 RTT p50 **1.567 ms**, p95 **4.752 ms**, max **5897.773 ms**. Max включает ожидание
 холодной инициализации/генерации и не является steady-state latency.
 
-### 4.3. Unity и неизменность базовой анимации
+### 4.4. Unity и неизменность базовой анимации
 
 - Python syntax: **PASS**.
 - Unity `6000.5.2f1`: compilation **0 errors**, `isCompiling=false`.

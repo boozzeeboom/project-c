@@ -13,6 +13,7 @@ namespace ProjectC.Animation.MotionBricks
         private const int FloatsPerJoint = 7;
         private const float MaxClavicleDeg = 45f;
         private const float MaxClavicleLocalDeg = 45f;
+        private const float MaxRootVerticalOffsetMeters = 5f;
 
         private sealed class RestNode
         {
@@ -115,7 +116,12 @@ namespace ProjectC.Animation.MotionBricks
 
             Evaluate(_root, _root.Target.localRotation, true);
             Vector3 rootUnity = ToUnityPos(frame[0], frame[1], frame[2]);
-            _hips.Target.localPosition = _hips.RestLocalPosition + Vector3.up * (rootUnity.y - _bindRootUnity.y);
+            float verticalOffset = rootUnity.y - _bindRootUnity.y;
+            if (float.IsNaN(rootUnity.y) || float.IsInfinity(rootUnity.y) ||
+                Mathf.Abs(verticalOffset) > MaxRootVerticalOffsetMeters)
+                throw new InvalidOperationException(
+                    $"SOMA root vertical offset {verticalOffset:F2} m exceeds guard; frame root Y={rootUnity.y:F2}, bind Y={_bindRootUnity.y:F2}");
+            _hips.Target.localPosition = _hips.RestLocalPosition + Vector3.up * verticalOffset;
             ApplyClavicleLocal(frame, 11);
             ApplyClavicleLocal(frame, 39);
         }

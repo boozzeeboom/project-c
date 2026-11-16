@@ -30,9 +30,13 @@ evaluation/dev preview; в `Assets` они не копируются.
 
 App world NVIDIA: right-handed Z-up, forward +X. Unity → app position:
 `(z, -x, y)`. Поворот конвертируется сменой basis и отражением handedness.
-Перед отправкой кадра в Unity root переводится из app world обратно в SOMA model space;
-остальные joint-local transforms не изменяются. C# использует существующее преобразование
-baker'а: position `(-x,y,z)`, quaternion `(x,-y,-z,w)`.
+
+Важный контракт официального `SOMACharacter.current_pose`: root **XY** — app-ground
+персонажа, root **Z** — высота уже относительно ground. Поэтому перед отправкой в Unity
+вычитается только app-ground XY; Z не трогается. C# получает model-space root с локальной
+высотой и использует существующее преобразование baker'а: position `(-x,y,z)`,
+quaternion `(x,-y,-z,w)`. C# дополнительно гардит аномальный вертикальный offset
+(>5 м или non-finite) и уходит в fallback, не двигая модель.
 
 Внешний root корректируется **до** `player.record_pose()`: recorder получает именно
 показанную позу. Горизонталь и yaw берутся от игрока, вертикальный bob генерации

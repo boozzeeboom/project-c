@@ -2,7 +2,7 @@
 
 > **Дата:** 2026-11-16
 > **Ветка:** `main`
-> **Статус:** численный offline probe выполнен; Unity generic/humanoid clips испечены; **Play Mode и визуальный preview не запускались**. Это не production acceptance.
+> **Статус:** численный offline probe выполнен; Unity generic/humanoid clips испечены; **Humanoid clip принят пользователем визуально в Animation Window (16.11)**; **Play Mode не запускался**. Это не production acceptance.
 > **Связанные:** [13_T-MB05_LEG_IK_AND_LOOP.md](13_T-MB05_LEG_IK_AND_LOOP.md) · [09_T-MB02_ANALYSIS_AND_NEXT.md](09_T-MB02_ANALYSIS_AND_NEXT.md) · [06_SAFE_ROLLOUT_AND_ROLLBACK.md](06_SAFE_ROLLOUT_AND_ROLLBACK.md) · [design](../dev/MOTIONBRICKS_OFFICIAL_VERTICAL_SLICE_DESIGN.md) · [HANDOFF.md](HANDOFF.md)
 
 ---
@@ -114,6 +114,15 @@ Bake настройки:
 | Колено L | **87.9–162.6°** за клип |
 | T-pose | **не обнаружена**; руки в рабочем опущенном диапазоне |
 | GUID generic/humanoid | стабильны при перепёке |
+| Визуальная проверка | Пользователь открыл `OfficialWalk_Male_Humanoid.anim` в Animation Window: **«приемлема»** |
+
+### 4.1. Визуальная приёмка среза
+
+- **Кто:** пользователь, вручную.
+- **Где:** Unity Animation Window.
+- **Что:** `OfficialWalk_Male_Humanoid.anim`.
+- **Вердикт:** анимация приемлема.
+- **Границы приёмки:** только один 18-кадровый Humanoid-клип в окне анимации; Play Mode, экипировка, network/FO, body swap и переходы этим не приняты.
 
 Текущий `MotionBricksClipValidator` даёт FAIL:
 
@@ -147,7 +156,7 @@ foot slide 0.00 см/кадр > 2
 
 ### Не доказано
 
-- Визуальное качество походки: Play Mode/Animation preview пользователем не выполнялся.
+- Поведение в Play Mode, на живом игроке и с экипировкой; Animation Window — не игровой контекст.
 - Foot contact/hover/slide на игровом риге без IK.
 - Переходы, повороты, stop/start, chaining нескольких генераций.
 - Поведение на Female/body swap/equipment/NGO/FO/combat.
@@ -163,7 +172,7 @@ foot slide 0.00 см/кадр > 2
 Поэтому:
 
 1. новые IK/guard/NPC-фичи пока **не наращивать**;
-2. следующий шаг — визуальный просмотр двух клипов пользователем и **3–5 коротких клипов с собственным движущимся контекстом** (walk, turn, stop, vault/interaction);
+2. Humanoid-клип visual accepted — следующий шаг **3–5 коротких клипов с собственным движущимся контекстом** (walk, turn, stop, vault/interaction), затем их визуальная проверка;
 3. переходить к T-MB08 следует после визуального подтверждения и хотя бы одного перехода (start/stop), а не после одного 18-кадрового сегмента;
 4. `sa-inbetween` допустим как быстрый CPU-инструмент A/B, но production-генерация должна быть воспроизводима официальным engine и фиксировать model SHA.
 

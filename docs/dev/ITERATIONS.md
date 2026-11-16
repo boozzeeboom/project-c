@@ -11,8 +11,9 @@
 - `official_vertical_slice.py` — inverse SOMA retarget с roundtrip ≤2.4×10⁻⁶°, официальный `MotionBricksSOMAEngine`, A/B с `sa-inbetween`, raw-метрики.
 - Контекст — 4 последовательных кадра движения, target — 4 кадра через 1.214 м; 6 токенов, endpoint correction.
 - TensorRT: 18 кадров, **2.142 м/с**, yaw drift ~0; CPU backend совпал по траектории, max joint difference 13.3 мм / 2.6°.
-- Unity: generic 91 curve — 2.142 м/с, 1.214 м по +Z; humanoid 102 curve без T-pose. Валидатор contact FAIL — намеренный `groundFeet:false`/root motion, не обратное движение.
-- Baseline 12/12; settings `mode:0`; Play Mode и визуальный preview не запускались.
+- Unity: generic 91 curve - 2.142 м/с, 1.214 м по +Z; humanoid 102 curve без T-pose. Валидатор contact FAIL - намеренный `groundFeet:false`/root motion, не обратное движение.
+- **Пользователь принял `OfficialWalk_Male_Humanoid.anim` визуально в Animation Window.**
+- Baseline 12/12; settings `mode:0`; Play Mode не запускался.
 
 **Файлы:**
 - `Assets/_Project/Scripts/Editor/Animation/MotionBricksOfficialSliceExporter.cs`
@@ -20,7 +21,7 @@
 - `docs/world/MOTIONBRICK_animations/14_OFFICIAL_VERTICAL_SLICE.md`
 - `docs/dev/MOTIONBRICKS_OFFICIAL_VERTICAL_SLICE_DESIGN.md`, `HANDOFF.md`, `README.md`
 
-**Проверено:** официальный TensorRT, community CPU A/B, Unity Edit Mode bake/import. **Не проверено:** визуал, Play Mode, переходы, network/FO/equipment.
+**Проверено:** официальный TensorRT, community CPU A/B, Unity Edit Mode bake/import, визуальная приёмка Humanoid-клипа в Animation Window. **Не проверено:** Play Mode, переходы, network/FO/equipment.
 
 ## 15 ноября 2026
 

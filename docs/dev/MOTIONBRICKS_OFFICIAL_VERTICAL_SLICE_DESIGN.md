@@ -2,7 +2,7 @@
 
 > **Дата:** 2026-11-16
 > **Тип:** read-only к production runtime; экспериментальный offline probe, без нового тикета в трекере.
-> **Статус:** выполнен 2026-11-16; результаты — [14_OFFICIAL_VERTICAL_SLICE.md](../world/MOTIONBRICK_animations/14_OFFICIAL_VERTICAL_SLICE.md).
+> **Статус:** выполнен 2026-11-16; Humanoid-клип принят пользователем в Animation Window; результаты — [14_OFFICIAL_VERTICAL_SLICE.md](../world/MOTIONBRICK_animations/14_OFFICIAL_VERTICAL_SLICE.md).
 > **Ограничения:** Play Mode не запускать; Animator/controller/NetworkPlayer/NPC/Combat/Package не менять; model/TensorRT/CUDA в build не добавлять.
 
 ## Цель

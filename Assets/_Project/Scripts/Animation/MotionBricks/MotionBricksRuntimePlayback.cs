@@ -31,6 +31,10 @@ namespace ProjectC.Animation.MotionBricks
         [SerializeField, Min(0.2f)] private float _staleTimeoutSeconds = 1.5f;
         [SerializeField, Min(1)] private int _failureBudget = 3;
 
+        [Header("Airborne fallback")]
+        [SerializeField, Min(0.05f)] private float _airborneDelaySeconds = 0.1f;
+        [SerializeField, Min(0.1f)] private float _airborneVerticalSpeed = 2f;
+
         private NetworkPlayer _player;
         private CharacterController _controller;
         private CharacterCustomisationApplier _applier;
@@ -52,6 +56,8 @@ namespace ProjectC.Animation.MotionBricks
         private int _fallbackCount;
         private string _lastStopReason = "not started";
         private uint _lastAppliedSequence;
+        private float _airborneTimer;
+        private bool _resumeAfterLanding;
 
         public bool IsNeuralActive => _neuralActive;
         public int FallbackCount => _fallbackCount;
@@ -75,23 +81,50 @@ namespace ProjectC.Animation.MotionBricks
                 if (_neuralActive) StopRuntime("Ctrl+F10: legacy Animator");
                 else StartRuntime();
             }
-            if (!_neuralActive || _client == null) return;
-
             if (_player == null || !_player.IsOwner)
             {
-                FailRuntime("owner lost");
+                if (_neuralActive) FailRuntime("owner lost");
                 return;
             }
             if (_controller == null || !_controller.enabled)
             {
-                StopRuntime("CharacterController disabled");
+                if (_neuralActive) StopRuntime("CharacterController disabled");
                 return;
             }
-            if (_skillPlayer != null && _skillPlayer.IsCasting)
+
+            bool casting = _skillPlayer != null && _skillPlayer.IsCasting;
+            if (casting)
             {
-                StopRuntime("combat: authored Animator");
+                if (_neuralActive) StopRuntime("combat: authored Animator");
                 return;
             }
+
+            bool airborne = !_controller.isGrounded && Mathf.Abs(_controller.velocity.y) > _airborneVerticalSpeed;
+            if (airborne)
+            {
+                _airborneTimer += Time.deltaTime;
+                if (_neuralActive && _airborneTimer >= _airborneDelaySeconds)
+                {
+                    StopRuntime("airborne: authored Animator");
+                    _resumeAfterLanding = true;
+                    return;
+                }
+            }
+            else
+            {
+                _airborneTimer = 0f;
+            }
+
+            if (!_neuralActive || _client == null)
+            {
+                if (_resumeAfterLanding && !airborne)
+                {
+                    _resumeAfterLanding = false;
+                    StartRuntime();
+                }
+                return;
+            }
+
             if (!string.IsNullOrEmpty(_client.LastError))
             {
                 FailRuntime(_client.LastError);
@@ -178,6 +211,8 @@ namespace ProjectC.Animation.MotionBricks
                 return false;
             }
             if (_skillPlayer != null && _skillPlayer.IsCasting) return false;
+            _resumeAfterLanding = false;
+            _airborneTimer = 0f;
 
             foreach (MotionBricksBakedPlayback baked in GetComponents<MotionBricksBakedPlayback>())
             {
@@ -222,6 +257,8 @@ namespace ProjectC.Animation.MotionBricks
             _frame = null;
             _retarget = null;
             _lastStopReason = reason;
+            _resumeAfterLanding = false;
+            _airborneTimer = 0f;
             bool casting = _skillPlayer != null && _skillPlayer.IsCasting;
             if (_animator != null && _animator.isActiveAndEnabled && !casting)
             {

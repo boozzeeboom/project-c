@@ -35,8 +35,11 @@ App world NVIDIA: right-handed Z-up, forward +X. Unity → app position:
 персонажа, root **Z** — высота уже относительно ground. Поэтому перед отправкой в Unity
 вычитается только app-ground XY; Z не трогается. C# получает model-space root с локальной
 высотой и использует существующее преобразование baker'а: position `(-x,y,z)`,
-quaternion `(x,-y,-z,w)`. C# дополнительно гардит аномальный вертикальный offset
-(>5 м или non-finite) и уходит в fallback, не двигая модель.
+quaternion `(x,-y,-z,w)`. C# дополнительно гардит аномальный вертикальный offset (>5 м или non-finite) и уходит
+в fallback, не двигая модель. Для facing численно подтверждён постоянный basis offset:
+при движении вперёд root-forward пакета `−X`, а rest-forward `testing` — `+Z`; поэтому
+мировые SOMA-delta поворачиваются на +90° до применения к Project C rig. Для плеч/предплечий
+twist отдельно ограничен ±90° — runtime-аналог фикса «руки наизнанку» из T-MB05.
 
 Внешний root корректируется **до** `player.record_pose()`: recorder получает именно
 показанную позу. Горизонталь и yaw берутся от игрока, вертикальный bob генерации
@@ -50,7 +53,7 @@ quaternion `(x,-y,-z,w)`. C# дополнительно гардит анома�
 - `MotionBricksSomaRetarget.cs` — bind-поза из UDP packet + rest из FBX, полный world-rotation
   retarget по проверенной схеме T-MB03/05; `soma_bind.f32` не требуется, `B-jaw` опционален.
 - `MotionBricksRuntimePlayback.cs` — gate `NeuralExperimental`, owner-only, переключение
-  `Ctrl+F10`, combat/body-swap guard, восстановление Animator.
+  `Ctrl+F10`, combat/body-swap/airborne guard, восстановление Animator.
 - `MotionBricksRuntimeReviewMenu.cs` — явный Attach/Start только в Play Mode; prefab,
   controller и сцены не меняются.
 

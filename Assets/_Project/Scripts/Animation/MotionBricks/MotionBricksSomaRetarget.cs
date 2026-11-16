@@ -14,6 +14,8 @@ namespace ProjectC.Animation.MotionBricks
         private const float MaxClavicleDeg = 45f;
         private const float MaxClavicleLocalDeg = 45f;
         private const float MaxRootVerticalOffsetMeters = 5f;
+        private const float MaxArmTwistDeg = 90f;
+        private const float SourceToTargetYawOffsetDeg = 90f;
 
         private sealed class RestNode
         {
@@ -38,6 +40,8 @@ namespace ProjectC.Animation.MotionBricks
         private readonly float[] _bind;
         private readonly RestNode _hips;
         private readonly Vector3 _bindRootUnity;
+        private readonly Quaternion _sourceToTargetYaw;
+        private readonly Quaternion _sourceToTargetYawInv;
 
         private MotionBricksSomaRetarget(Animator animator, GameObject restTemplate, float[] bind)
         {
@@ -46,6 +50,8 @@ namespace ProjectC.Animation.MotionBricks
             _bind = (float[])bind.Clone();
             SomaPose(_bind, _bindRot, _bindPos);
             _bindRootUnity = ToUnityPos(_bind[0], _bind[1], _bind[2]);
+            _sourceToTargetYaw = Quaternion.Euler(0f, SourceToTargetYawOffsetDeg, 0f);
+            _sourceToTargetYawInv = Quaternion.Inverse(_sourceToTargetYaw);
 
             var holder = new GameObject("__MB_Runtime_Rest");
             holder.hideFlags = HideFlags.HideAndDontSave;
@@ -93,7 +99,20 @@ namespace ProjectC.Animation.MotionBricks
             for (int i = 0; i < Segments.Length; i++)
             {
                 var segment = Segments[i];
-                _deltaByPose[segment.Bone] = _frameRot[segment.Bone] * Quaternion.Inverse(_bindRot[segment.Bone]);
+                Vector3 frameDirection = _framePos[segment.Child] - _framePos[segment.Bone];
+                if (frameDirection.sqrMagnitude < 1e-10f) frameDirection = _segmentRestDirections[i];
+                else frameDirection.Normalize();
+
+                Quaternion delta = _frameRot[segment.Bone] * Quaternion.Inverse(_bindRot[segment.Bone]);
+                delta = _sourceToTargetYaw * delta * _sourceToTargetYawInv;
+                if (IsArmSegment(segment.Bone))
+                {
+                    delta = ClampSegmentTwist(
+                        delta,
+                        _sourceToTargetYaw * _segmentRestDirections[i],
+                        _sourceToTargetYaw * frameDirection);
+                }
+                _deltaByPose[segment.Bone] = delta;
             }
 
             for (int i = 0; i < Clavicles.Length; i++)
@@ -105,6 +124,7 @@ namespace ProjectC.Animation.MotionBricks
                 float angle = Quaternion.Angle(Quaternion.identity, swing);
                 if (angle > MaxClavicleDeg)
                     swing = Quaternion.Slerp(Quaternion.identity, swing, MaxClavicleDeg / angle);
+                swing = _sourceToTargetYaw * swing * _sourceToTargetYawInv;
                 int pose = FindPoseByBone(clavicle.Bone);
                 _clavByPose[pose] = swing;
                 foreach (int chainPose in ClavicleChains[i])
@@ -149,6 +169,23 @@ namespace ProjectC.Animation.MotionBricks
             if (!isRoot && node.Target != null)
                 node.Target.localRotation = Quaternion.Inverse(animatedParentWorld) * animatedWorld;
             foreach (RestNode child in node.Children) Evaluate(child, animatedWorld, false);
+        }
+
+        private static bool IsArmSegment(int pose)
+        {
+            return pose == 12 || pose == 13 || pose == 40 || pose == 41;
+        }
+
+        private static Quaternion ClampSegmentTwist(Quaternion delta, Vector3 restDirection, Vector3 frameDirection)
+        {
+            if (restDirection.sqrMagnitude < 1e-10f || frameDirection.sqrMagnitude < 1e-10f)
+                return delta;
+            Quaternion swing = Quaternion.FromToRotation(restDirection, frameDirection);
+            Quaternion twist = Quaternion.Inverse(swing) * delta;
+            float angle = Quaternion.Angle(Quaternion.identity, twist);
+            if (angle > MaxArmTwistDeg)
+                twist = Quaternion.Slerp(Quaternion.identity, twist, MaxArmTwistDeg / angle);
+            return swing * twist;
         }
 
         private void ApplyClavicleLocal(float[] frame, int pose)

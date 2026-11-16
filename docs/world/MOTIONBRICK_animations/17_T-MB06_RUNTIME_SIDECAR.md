@@ -33,8 +33,10 @@ Root генерации связывается с фактическим пол�
 - `MotionBricksRuntimeClient.cs` — запуск процесса, async logs, background receive,
   latest-frame, RTT/inference/process diagnostics и shutdown.
 - `MotionBricksSomaRetarget.cs` — SOMA bind/rest → 22 кости Project C, world-delta rotations,
-  ограничения ключиц, вертикальная поправка таза; `B-jaw` необязателен для female-ригов.
-- `MotionBricksRuntimePlayback.cs` — owner-only playback, A/B, fallback и body-swap guard.
+  постоянный +90° source→target yaw (численно: frame-forward `−X` → `+Z`), ограничения
+  ключиц и twist рук ±90°, вертикальная поправка таза; `B-jaw` необязателен.
+- `MotionBricksRuntimePlayback.cs` — owner-only playback, A/B, fallback, body-swap guard
+  и временный authored Animator на прыжке с автовозвратом после приземления.
 - `MotionBricksRuntimeReviewMenu.cs` — ручной Attach/Start/Stop/Detach/Diagnostics.
 
 Attach выбирает rest template из фактических serialized-моделей `CharacterCustomisationApplier`
@@ -129,7 +131,7 @@ RTT p50 **1.567 ms**, p95 **4.752 ms**, max **5897.773 ms**. Max включае�
 
 1. Войти в Play Mode → Host/Client, дождаться появления персонажа.
 2. `ProjectC/MotionBricks/Runtime/Attach + start on my player`.
-3. Проверить WASD, Shift, резкие повороты, stop и движение по неровной поверхности.
+3. Проверить WASD, Shift, резкие повороты, stop, прыжок/падение и движение по неровной поверхности.
 4. `Ctrl+F10` — сравнить neural preview с обычным Animator; повторить несколько раз.
 5. `ProjectC/MotionBricks/Runtime/Log diagnostics` — сохранить строки `[MB-Runtime]`
    и `[MB-Sidecar]`, включая p95, generations, source, fallbacks и RAM.

@@ -95,12 +95,16 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
             Vector3 achievedTarget = hip + axis * distance;
 
             // Плоскость сгиба: текущее колено относительно оси таз→стопа. Если нога почти
-            // прямая, берём forward персонажа — иначе ось поворота не определена.
+            // прямая или проекция смотрит назад, берём forward персонажа. Иначе микроскопическая
+            // проекция колена разворачивает плоскость на 180° — на WalkToJog это давало
+            // переворот бёдер на 172° за кадр (T-MB05 runtime repro).
             Vector3 kneeDir = knee - hip;
             Vector3 bend = kneeDir - axis * Vector3.Dot(kneeDir, axis);
-            if (bend.sqrMagnitude < 1e-8f)
+            Vector3 forwardBend = bendForward - axis * Vector3.Dot(bendForward, axis);
+
+            if (bend.sqrMagnitude < 1e-6f || Vector3.Dot(bend, forwardBend) < 0f)
             {
-                bend = bendForward - axis * Vector3.Dot(bendForward, axis);
+                bend = forwardBend;
             }
 
             if (bend.sqrMagnitude < 1e-8f)
@@ -179,6 +183,14 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
                 Quaternion.identity, Quaternion.identity, 0.02f, Vector3.forward);
             Check("прямая нога не даёт NaN", straight.Solved && IsFinite(straight.Knee) && IsFinite(straight.Foot),
                 $"knee={straight.Knee:F3}", failures);
+
+            // Колено смотрит назад при почти прямой ноге: solver обязан выбрать forward,
+            // иначе плоскость сгиба переворачивается на 180° (баг WalkToJog f4→f5).
+            Vector3 backKnee = new Vector3(0f, 0.15f, -0.005f);
+            var back = Solve(new Vector3(0f, 0.30f, 0f), backKnee, new Vector3(0f, 0f, 0f),
+                Quaternion.identity, Quaternion.identity, Quaternion.identity, 0.01f, Vector3.forward);
+            Check("колено не уходит назад", back.Solved && back.Knee.z > 0f,
+                $"knee={back.Knee:F3} (forward=+Z)", failures);
 
             // Недостижимая цель: нога выпрямляется до maxReach, residual отрицательный (стопа выше цели).
             var unreachable = Solve(hip, knee, foot, thigh, shin, footRot, -0.25f, Vector3.forward);

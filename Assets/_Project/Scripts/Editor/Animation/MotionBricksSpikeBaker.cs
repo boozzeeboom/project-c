@@ -705,6 +705,10 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
             public Quaternion ThighRotation;
             public Quaternion ShinRotation;
             public Quaternion FootRotation;
+
+            /// <summary>Мировой поворот родителя бедра (таза) ИМЕННО ЭТОГО кадра.</summary>
+            public Quaternion ParentRotation;
+
             public Vector3 BendForward;
             public bool Valid;
         }
@@ -736,6 +740,7 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
             // Плоскость сгиба колена: forward таза (горизонтальный). Если таз повёрнут
             // вместе с клипом, колено всё равно сгибается вперёд персонажа.
             Quaternion parentRot = WorldRotation(thigh.parent, worldRot);
+            leg.ParentRotation = parentRot;
             Vector3 forward = parentRot * Vector3.forward;
             forward.y = 0f;
             leg.BendForward = forward.sqrMagnitude > 1e-6f ? forward.normalized : Vector3.forward;
@@ -887,7 +892,7 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
             if (!solved.Solved) return outcome;
 
             if (locals.TryGetValue(thigh, out Quaternion[] thighFrames) && frame < thighFrames.Length)
-                thighFrames[frame] = Quaternion.Inverse(WorldRotation(thigh.parent, worldRot)) * solved.ThighRotation;
+                thighFrames[frame] = Quaternion.Inverse(leg.ParentRotation) * solved.ThighRotation;
             if (locals.TryGetValue(shin, out Quaternion[] shinFrames) && frame < shinFrames.Length)
                 shinFrames[frame] = Quaternion.Inverse(solved.ThighRotation) * solved.ShinRotation;
             if (locals.TryGetValue(foot, out Quaternion[] footFrames) && frame < footFrames.Length)
@@ -962,9 +967,11 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
                 {
                     for (int f = 0; f < frameCount; f++)
                     {
-                        // Без Animator'а SampleAnimation честно применяет generic-кривые,
-                        // и GetHumanPose видит реальную позу, а не T-позу.
-                        genericClip.SampleAnimation(sampleRoot, f / Fps);
+                        // НЕ сэмплируем ровно в clip.length: при loopTime=true SampleAnimation
+                        // заворачивает t==length на первый кадр, и humanoid-клип заканчивался
+                        // позой старта (рывок при повороте WalkToJog). Берём чуть раньше.
+                        float t = Mathf.Min(f / Fps, genericClip.length - 1e-4f);
+                        genericClip.SampleAnimation(sampleRoot, t);
                         handler.GetHumanPose(ref pose);
 
                         bodyPos[f] = pose.bodyPosition;
@@ -995,6 +1002,71 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
             List<string> warnings)
         {
             int muscleCount = HumanTrait.MuscleCount;
+
+            // T-MB05 runtime repro: на WalkToJog Arm Twist In-Out перескакивал с +1 на −1
+            // (полный разворот кисти/плеча за кадр, 178.8° на кости). Это представление
+            // twist-мышцы у полюса ±180°: +1 и −1 — одна и та же ориентация. Разворачиваем
+            // скачок на 2.0, чтобы humanoid-клип не выворачивал руку.
+            int unwrappedTwists = 0;
+            int clampedArmTwists = 0;
+            for (int m = 0; m < muscleCount; m++)
+            {
+                if (HumanTrait.MuscleName[m].IndexOf("Twist", System.StringComparison.OrdinalIgnoreCase) < 0)
+                    continue;
+
+                for (int f = 1; f < frameCount; f++)
+                {
+                    float previous = muscles[f - 1][m];
+                    float current = muscles[f][m];
+
+                    while (current - previous > 1.0f) { current -= 2.0f; unwrappedTwists++; }
+                    while (current - previous < -1.0f) { current += 2.0f; unwrappedTwists++; }
+
+                    muscles[f][m] = current;
+                }
+
+                // Абсолютный полюс: Arm Twist на WalkToJog держится около 2.0 (полный оборот),
+                // а humanoid-плеер клампит в [-1..1]. Сдвигаем всю кривую на ±2.0, чтобы
+                // сохранить ориентацию и не пересекать 2.0 (иначе рука переворачивается).
+                float mean = 0f;
+                for (int f = 0; f < frameCount; f++) mean += muscles[f][m];
+                mean /= Mathf.Max(1, frameCount);
+
+                float offset = 0f;
+                while (mean + offset > 1f) { offset -= 2f; }
+                while (mean + offset < -1f) { offset += 2f; }
+
+                if (Mathf.Abs(offset) > 1e-4f)
+                {
+                    for (int f = 0; f < frameCount; f++) muscles[f][m] += offset;
+                    unwrappedTwists += frameCount;
+                }
+
+                // Arm Twist на WalkToJog накапливает полный оборот (2.1) — humanoid-плеер
+                // клампит и на полюсе 2.0 рука переворачивается на 178.8°. Ограничиваем
+                // скрутку плеча/предплечья ±0.5 (90°): направление руки задают swing-мышцы,
+                // а roll больше 90° для locomotion не нужен и выглядит вывернутым.
+                string muscleName = HumanTrait.MuscleName[m];
+                if (muscleName.IndexOf("Arm", System.StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    for (int f = 0; f < frameCount; f++)
+                        muscles[f][m] = Mathf.Clamp(muscles[f][m], -0.5f, 0.5f);
+                    clampedArmTwists++;
+                }
+            }
+
+            if (unwrappedTwists > 0)
+                Debug.Log($"[MB-Bake] twist-мышцы: развёрнуто скачков {unwrappedTwists} " +
+                          "(представление ±180°, не движение позы)");
+            if (clampedArmTwists > 0)
+                Debug.Log($"[MB-Bake] arm twist: ограничено {clampedArmTwists} кривых до ±0.5 " +
+                          "(humanoid-полюс ±180°/360° иначе переворачивает руку)");
+
+            // T-MB05 runtime repro: Animator клампит мышцы в [-1..1], а бейкер писал сырые
+            // значения (Shoulder Front-Back до 11.6). Глобальный/плечевой кламп менял
+            // penetration и yaw (humanoid solver связан), поэтому пока не применяем его
+            // вслепую: сначала runtime-замер на probe, затем точечный фикс ретаргета.
+            // Arm Twist уже ограничен выше (±0.5) — именно он давал 178.8° переворот.
 
             // Контроль: Humanoid-плеер клампит мышцы в [-1..1] по лимитам аватара.
             // Выход за диапазон = поза в игре будет не такой, как в бейке (вывернутые конечности).

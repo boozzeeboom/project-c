@@ -239,6 +239,10 @@ namespace ProjectC.Animation.MotionBricks
             _clip = clip;
             _speed = Mathf.Max(0f, speed);
 
+            // T-MB05: one-shot клип (loopTime=false) не зацикливаем даже если _loop=true —
+            // иначе на шве будет рывок (WalkToJog: последний кадр ≠ первый).
+            if (_loop && !clip.isLooping) _loop = false;
+
             // T-MB03: до старта графа — чтобы первый же кадр клипа не применился Animator'ом
             // как root motion. Возврат — в StopPlayback.
             ApplyRootMotionGuard();

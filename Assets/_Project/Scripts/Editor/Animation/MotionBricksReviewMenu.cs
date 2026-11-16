@@ -65,7 +65,7 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
 
         [MenuItem("ProjectC/MotionBricks/Review/Play WalkToJog on probe", priority = 3)]
         public static void PlayWalkToJog() =>
-            PlayOnProbe(WalkToJogClip, "walk_to_jog (humanoid, разворот на месте)", WalkToJogSpeed);
+            PlayOnProbe(WalkToJogClip, "walk_to_jog (humanoid, разворот на месте, one-shot)", WalkToJogSpeed, loop: false);
 
         [MenuItem("ProjectC/MotionBricks/Review/Stop on probe", priority = 20)]
         public static void StopOnProbe()
@@ -344,7 +344,7 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
 
         // === Internals ===
 
-        private static void PlayOnProbe(string clipSpec, string label, float clipSpeed)
+        private static void PlayOnProbe(string clipSpec, string label, float clipSpeed, bool loop = true)
         {
             if (!RequirePlayMode()) return;
 
@@ -372,7 +372,7 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
                 // клип, который лежал в сцене (WalkToJog), и в логе будет два «Play».
                 if (playback.enabled) playback.StopPlayback();
 
-                playback.ConfigureForReview(LoadSettings(), playback.TargetAnimator, clip, 1f, loop: true, logVerbose: true);
+                playback.ConfigureForReview(LoadSettings(), playback.TargetAnimator, clip, 1f, loop, logVerbose: true);
 
                 foreach (var rootMotion in playback.GetComponents<MotionBricksBakedRootMotion>())
                 {

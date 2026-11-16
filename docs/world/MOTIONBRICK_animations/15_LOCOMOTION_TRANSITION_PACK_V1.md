@@ -89,7 +89,43 @@ Stop-переходы проходят **0.428 м** и заканчиваютс�
 
 **Реальным сигналом остаётся foot slide:** только 9 из 22 клипов уложились в ≤2 см/кадр; у части lateral/run-переходов скольжение заметное. Это нужно проверять глазами и при необходимости отдельно настраивать foot-lock/clip speed. Автоматически объявлять пакет принятым нельзя.
 
-## 5. Как смотреть на персонаже без Play Mode
+## 5. Как проверить ощущения в игре (WASD + Play Mode)
+
+Animation Window не проверяет отклик, инерцию и связь анимации с движением. Для этого добавлен **обратимый Play Mode-стенд**:
+
+```text
+ProjectC → MotionBricks → Review → Locomotion Transition Playtest (Play Mode)
+```
+
+Что он делает:
+
+- создаёт **копию** `PlayerAnimation.controller` в `Generated/MotionBricks/playtest/`;
+- заменяет в копии только переходы Idle↔Walk, Walk↔Run, Run↔Sprint на сгенерированные clip-states;
+- во время Play Mode подменяет runtime controller **только у owner-игрока**;
+- `Restore baseline` возвращает оригинальный controller;
+- оригинальный `PlayerAnimation.controller`, prefab, `NetworkPlayer` и сцена **не меняются**; после выхода из Play Mode подмена исчезает.
+
+Порядок проверки (Play Mode запускает пользователь):
+
+1. Открыть окно `Locomotion Transition Playtest (Play Mode)`.
+2. Нажать **Rebuild test controller**.
+3. Запустить игру и дождаться spawn игрока.
+4. Нажать **Apply test controller**.
+5. Проверить:
+   - W: Idle→Walk;
+   - отпустить W: Walk→Idle;
+   - W+Shift: Walk→Run/Sprint;
+   - короткие тапы W;
+   - резкое отпускание на бегу;
+   - повторные старт/стоп.
+6. Нажать **Restore baseline** для сравнения с текущим Animator.
+7. Выйти из Play Mode.
+
+**Важное ограничение теста:** `NetworkPlayer` не изменялся. Он по-прежнему мгновенно задаёт `Speed = 5/10` и двигает `CharacterController`; сгенерированные переходы имеют длительность 0.567 s. Стенд специально покажет, насколько анимация рассинхронизирована со скоростью персонажа и где нужен motion matching / управление скоростью по клипу. Кроме того, текущий `NetworkPlayer` всегда ставит `MoveY=1`, поэтому в этом стенде подключены forward/speed-переходы; боковые direction clips проверяются отдельно после решения по скорости.
+
+## 5.1. Просмотр без Play Mode
+
+Пакет также можно смотреть на персонаже без запуска игры:
 
 Добавлены два безопасных инструмента:
 

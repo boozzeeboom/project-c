@@ -14,10 +14,12 @@
 - Испечено 22 generic (91 curve) + 22 Humanoid (102 curve); contact 0.10–0.15 см, penetration ≤0.05; 9/22 foot slide ≤2 см.
 - В Animator/controller/baseline ничего не внедрялось; visual pending.
 - Добавлен безопасный preview на персонаже без Play Mode: сцена `MotionBricksTransitionPreview` + EditorWindow через `AnimationMode`.
+- Добавлен обратимый WASD-стенд: runtime-копия `PlayerAnimation.controller` с clip-transition states, подмена только owner-игрока в Play Mode, оригинал не меняется.
 
 **Файлы:**
 - `Assets/_Project/Scripts/Editor/Animation/MotionBricksLocomotionSourceExporter.cs`
 - `Assets/_Project/Scripts/Editor/Animation/MotionBricksTransitionPreviewWindow.cs`
+- `Assets/_Project/Scripts/Editor/Animation/MotionBricksLocomotionPlaytestWindow.cs`
 - `docs/world/MOTIONBRICK_animations/batches/locomotion_v1.json`
 - `docs/world/MOTIONBRICK_animations/tools/locomotion_pack.py`
 - `docs/world/MOTIONBRICK_animations/15_LOCOMOTION_TRANSITION_PACK_V1.md`

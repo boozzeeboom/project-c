@@ -33,9 +33,13 @@ Root генерации связывается с фактическим пол�
 - `MotionBricksRuntimeClient.cs` — запуск процесса, async logs, background receive,
   latest-frame, RTT/inference/process diagnostics и shutdown.
 - `MotionBricksSomaRetarget.cs` — SOMA bind/rest → 22 кости Project C, world-delta rotations,
-  ограничения ключиц и вертикальная поправка таза.
+  ограничения ключиц, вертикальная поправка таза; `B-jaw` необязателен для female-ригов.
 - `MotionBricksRuntimePlayback.cs` — owner-only playback, A/B, fallback и body-swap guard.
 - `MotionBricksRuntimeReviewMenu.cs` — ручной Attach/Start/Stop/Detach/Diagnostics.
+
+Attach выбирает rest template из фактических serialized-моделей `CharacterCustomisationApplier`
+(`_maleModel`/`_femaleModel` по `CurrentBodyType`); HumanM/HumanF остаются fallback для KL-аватаров.
+Это поддерживает текущий male `testing.fbx` с аватаром `testingAvatar` и female-после body swap.
 
 ## 2. Изоляция и переключение
 

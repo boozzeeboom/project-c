@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 // Project C: T-MB06 — явный запуск runtime-приёмки без изменений prefab/сцен.
 
+using ProjectC.Customisation;
 using ProjectC.Player;
 using UnityEditor;
 using UnityEngine;
@@ -15,6 +16,14 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
         private const string Python = @"C:\Projects\motion_bricks\motionbricks\.venv\Scripts\python.exe";
         private const string Repository = @"C:\Projects\motion_bricks\motionbricks";
         private const string Script = @"C:\Projects\ProjectC_client\docs\world\MOTIONBRICK_animations\tools\runtime_sidecar.py";
+        private static readonly string[] RequiredBones =
+        {
+            "B-hips", "B-spine", "B-chest", "B-neck", "B-head",
+            "B-shoulder.L", "B-upperArm.L", "B-forearm.L", "B-hand.L",
+            "B-shoulder.R", "B-upperArm.R", "B-forearm.R", "B-hand.R",
+            "B-thigh.L", "B-shin.L", "B-foot.L", "B-toe.L",
+            "B-thigh.R", "B-shin.R", "B-foot.R", "B-toe.R",
+        };
 
         [MenuItem("ProjectC/MotionBricks/Runtime/Attach + start on my player", priority = 200)]
         public static void AttachAndStart()
@@ -27,10 +36,10 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
                 return;
             }
             Animator animator = player.GetComponentInChildren<Animator>(true);
-            GameObject restTemplate = SelectRestTemplate(animator);
+            GameObject restTemplate = SelectRestTemplate(player, animator);
             if (restTemplate == null)
             {
-                Debug.LogError($"[MB-Runtime] Не удалось сопоставить Avatar '{animator?.avatar?.name}' с HumanM/HumanF rest template.");
+                Debug.LogError($"[MB-Runtime] Не удалось выбрать rest template для Avatar '{animator?.avatar?.name}'.");
                 return;
             }
 
@@ -82,9 +91,13 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
             Debug.Log(runtime != null ? runtime.Diagnostics() : "[MB-Runtime] sidecar=detached", runtime);
         }
 
-        private static GameObject SelectRestTemplate(Animator animator)
+        private static GameObject SelectRestTemplate(NetworkPlayer player, Animator animator)
         {
             if (animator == null) return null;
+            var applier = player != null ? player.GetComponent<CharacterCustomisationApplier>() : null;
+            GameObject configured = GetConfiguredBodyModel(applier);
+            if (HasRequiredBones(configured)) return configured;
+
             var male = AssetDatabase.LoadAssetAtPath<GameObject>(MaleModel);
             var female = AssetDatabase.LoadAssetAtPath<GameObject>(FemaleModel);
             Avatar avatar = animator.avatar;
@@ -98,6 +111,33 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
                     return candidate;
             }
             return null;
+        }
+
+        private static GameObject GetConfiguredBodyModel(CharacterCustomisationApplier applier)
+        {
+            if (applier == null) return null;
+            string fieldName = applier.CurrentBodyType == CharacterBodyType.Female ? "_femaleModel" : "_maleModel";
+            var field = typeof(CharacterCustomisationApplier).GetField(
+                fieldName, System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            return field?.GetValue(applier) as GameObject;
+        }
+
+        private static bool HasRequiredBones(GameObject candidate)
+        {
+            if (candidate == null) return false;
+            Transform[] transforms = candidate.GetComponentsInChildren<Transform>(true);
+            foreach (string bone in RequiredBones)
+            {
+                bool found = false;
+                foreach (Transform child in transforms)
+                {
+                    if (child.name != bone) continue;
+                    found = true;
+                    break;
+                }
+                if (!found) return false;
+            }
+            return true;
         }
 
         private static NetworkPlayer FindLocalPlayer()

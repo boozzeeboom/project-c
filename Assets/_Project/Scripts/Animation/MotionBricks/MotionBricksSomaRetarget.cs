@@ -73,6 +73,8 @@ namespace ProjectC.Animation.MotionBricks
             var result = new MotionBricksSomaRetarget(animator, restTemplate, bind);
             foreach (var item in BoneMap)
             {
+                // Кастомные female-риги проекта не имеют B-jaw; челюсть — необязательный runtime-bone.
+                if (item.Pose == 8) continue;
                 if (!result._nodeByPose.TryGetValue(item.Pose, out RestNode node) || node.Target == null)
                     throw new InvalidOperationException($"Runtime rig bone missing: {item.Bone}");
             }

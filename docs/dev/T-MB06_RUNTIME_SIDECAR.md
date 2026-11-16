@@ -44,7 +44,7 @@ baker'а: position `(-x,y,z)`, quaternion `(x,-y,-z,w)`.
 - `MotionBricksRuntimeClient.cs` — процесс, background receive, latest-frame buffer,
   timeout/failure budget, диагностика.
 - `MotionBricksSomaRetarget.cs` — bind-поза из UDP packet + rest из FBX, полный world-rotation
-  retarget по проверенной схеме T-MB03/05; `soma_bind.f32` не требуется.
+  retarget по проверенной схеме T-MB03/05; `soma_bind.f32` не требуется, `B-jaw` опционален.
 - `MotionBricksRuntimePlayback.cs` — gate `NeuralExperimental`, owner-only, переключение
   `Ctrl+F10`, combat/body-swap guard, восстановление Animator.
 - `MotionBricksRuntimeReviewMenu.cs` — явный Attach/Start только в Play Mode; prefab,

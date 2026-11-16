@@ -2,6 +2,29 @@
 
 ## 16 ноября 2026
 
+**Тип:** MotionBricks locomotion transition pack v1 (manifest batch)
+
+**Тема:** 22 перехода одним прогоном вместо поштучных клипов; продуктовая рамка — host-client co-op до 4 игроков.
+
+**Что сделано:**
+- Инвентаризован `PlayerAnimation.controller`: 8-направленные Walk/Run, 5 Sprint, Turn L/R уже есть — дубли cycling-клипов не генерировались.
+- Manifest `batches/locomotion_v1.json`: 13 source clips, 22 transition jobs (Idle↔Walk 8 направлений, Walk↔Run, Run↔Sprint, Walk→Turn).
+- `MotionBricksLocomotionSourceExporter` — batch-экспорт KL pose packs.
+- `locomotion_pack.py` — inverse SOMA, target placement, официальный TensorRT batch, sidecar'ы для baker.
+- Испечено 22 generic (91 curve) + 22 Humanoid (102 curve); contact 0.10–0.15 см, penetration ≤0.05; 9/22 foot slide ≤2 см.
+- В Animator/controller/baseline ничего не внедрялось; visual pending.
+
+**Файлы:**
+- `Assets/_Project/Scripts/Editor/Animation/MotionBricksLocomotionSourceExporter.cs`
+- `docs/world/MOTIONBRICK_animations/batches/locomotion_v1.json`
+- `docs/world/MOTIONBRICK_animations/tools/locomotion_pack.py`
+- `docs/world/MOTIONBRICK_animations/15_LOCOMOTION_TRANSITION_PACK_V1.md`
+- `docs/dev/MOTIONBRICKS_LOCOMOTION_PACK_DESIGN.md`
+
+**Проверено:** batch generation/bake, baseline. **Не проверено:** визуал пакета, Play Mode, runtime-порт. Следующий этап после visual — runtime NVIDIA + замеры для 4-player host-client.
+
+## 16 ноября 2026
+
 **Тип:** MotionBricks official vertical slice (без нового production-тикета)
 
 **Тема:** Проверка официального TensorRT backend на собственном moving context и минимальный Unity import.

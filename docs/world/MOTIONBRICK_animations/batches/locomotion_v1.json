@@ -1,0 +1,101 @@
+{
+  "schema": 1,
+  "id": "locomotion_v1",
+  "label": "Locomotion transitions v1",
+  "frameRate": 30,
+  "tokenCount": 6,
+  "sources": [
+    {
+      "id": "idle",
+      "clipPath": "Assets/Kevin Iglesias/Human Animations/Animations/Male/Idles/HumanM@Idle01.fbx",
+      "clipName": "HumanM@Idle01"
+    },
+    {
+      "id": "walk_forward",
+      "clipPath": "Assets/Kevin Iglesias/Human Animations/Animations/Male/Movement/Walk/RootMotion/HumanM@Walk01_Forward [RM].fbx",
+      "clipName": "HumanM@Walk01_Forward [RM]"
+    },
+    {
+      "id": "walk_backward",
+      "clipPath": "Assets/Kevin Iglesias/Human Animations/Animations/Male/Movement/Walk/RootMotion/HumanM@Walk01_Backward [RM].fbx",
+      "clipName": "HumanM@Walk01_Backward [RM]"
+    },
+    {
+      "id": "walk_left",
+      "clipPath": "Assets/Kevin Iglesias/Human Animations/Animations/Male/Movement/Walk/RootMotion/HumanM@Walk01_Left [RM].fbx",
+      "clipName": "HumanM@Walk01_Left [RM]"
+    },
+    {
+      "id": "walk_right",
+      "clipPath": "Assets/Kevin Iglesias/Human Animations/Animations/Male/Movement/Walk/RootMotion/HumanM@Walk01_Right [RM].fbx",
+      "clipName": "HumanM@Walk01_Right [RM]"
+    },
+    {
+      "id": "walk_forward_left",
+      "clipPath": "Assets/Kevin Iglesias/Human Animations/Animations/Male/Movement/Walk/RootMotion/HumanM@Walk01_ForwardLeft [RM].fbx",
+      "clipName": "HumanM@Walk01_ForwardLeft [RM]"
+    },
+    {
+      "id": "walk_forward_right",
+      "clipPath": "Assets/Kevin Iglesias/Human Animations/Animations/Male/Movement/Walk/RootMotion/HumanM@Walk01_ForwardRight [RM].fbx",
+      "clipName": "HumanM@Walk01_ForwardRight [RM]"
+    },
+    {
+      "id": "walk_backward_left",
+      "clipPath": "Assets/Kevin Iglesias/Human Animations/Animations/Male/Movement/Walk/RootMotion/HumanM@Walk01_BackwardLeft [RM].fbx",
+      "clipName": "HumanM@Walk01_BackwardLeft [RM]"
+    },
+    {
+      "id": "walk_backward_right",
+      "clipPath": "Assets/Kevin Iglesias/Human Animations/Animations/Male/Movement/Walk/RootMotion/HumanM@Walk01_BackwardRight [RM].fbx",
+      "clipName": "HumanM@Walk01_BackwardRight [RM]"
+    },
+    {
+      "id": "run_forward",
+      "clipPath": "Assets/Kevin Iglesias/Human Animations/Animations/Male/Movement/Run/RootMotion/HumanM@Run01_Forward [RM].fbx",
+      "clipName": "HumanM@Run01_Forward [RM]"
+    },
+    {
+      "id": "sprint_forward",
+      "clipPath": "Assets/Kevin Iglesias/Human Animations/Animations/Male/Movement/Sprint/RootMotion/HumanM@Sprint01_Forward [RM].fbx",
+      "clipName": "HumanM@Sprint01_Forward [RM]"
+    },
+    {
+      "id": "turn_left",
+      "clipPath": "Assets/Kevin Iglesias/Human Animations/Animations/Male/Movement/Turn/HumanM@Turn01_Left [RM].fbx",
+      "clipName": "HumanM@Turn01_Left [RM]"
+    },
+    {
+      "id": "turn_right",
+      "clipPath": "Assets/Kevin Iglesias/Human Animations/Animations/Male/Movement/Turn/HumanM@Turn01_Right [RM].fbx",
+      "clipName": "HumanM@Turn01_Right [RM]"
+    }
+  ],
+  "jobs": [
+    {"id": "idle_to_walk_forward", "context": "idle", "contextFrames": [10, 11, 12, 13], "target": "walk_forward", "targetFrames": [6, 7, 8, 9], "leadSeconds": 0.40},
+    {"id": "idle_to_walk_backward", "context": "idle", "contextFrames": [10, 11, 12, 13], "target": "walk_backward", "targetFrames": [6, 7, 8, 9], "leadSeconds": 0.40},
+    {"id": "idle_to_walk_left", "context": "idle", "contextFrames": [10, 11, 12, 13], "target": "walk_left", "targetFrames": [6, 7, 8, 9], "leadSeconds": 0.40},
+    {"id": "idle_to_walk_right", "context": "idle", "contextFrames": [10, 11, 12, 13], "target": "walk_right", "targetFrames": [6, 7, 8, 9], "leadSeconds": 0.40},
+    {"id": "idle_to_walk_forward_left", "context": "idle", "contextFrames": [10, 11, 12, 13], "target": "walk_forward_left", "targetFrames": [6, 7, 8, 9], "leadSeconds": 0.40},
+    {"id": "idle_to_walk_forward_right", "context": "idle", "contextFrames": [10, 11, 12, 13], "target": "walk_forward_right", "targetFrames": [6, 7, 8, 9], "leadSeconds": 0.40},
+    {"id": "idle_to_walk_backward_left", "context": "idle", "contextFrames": [10, 11, 12, 13], "target": "walk_backward_left", "targetFrames": [6, 7, 8, 9], "leadSeconds": 0.40},
+    {"id": "idle_to_walk_backward_right", "context": "idle", "contextFrames": [10, 11, 12, 13], "target": "walk_backward_right", "targetFrames": [6, 7, 8, 9], "leadSeconds": 0.40},
+
+    {"id": "walk_forward_to_idle", "context": "walk_forward", "contextFrames": [6, 7, 8, 9], "target": "idle", "targetFrames": [0, 1, 2, 3], "leadSeconds": 0.20},
+    {"id": "walk_backward_to_idle", "context": "walk_backward", "contextFrames": [6, 7, 8, 9], "target": "idle", "targetFrames": [0, 1, 2, 3], "leadSeconds": 0.20},
+    {"id": "walk_left_to_idle", "context": "walk_left", "contextFrames": [6, 7, 8, 9], "target": "idle", "targetFrames": [0, 1, 2, 3], "leadSeconds": 0.20},
+    {"id": "walk_right_to_idle", "context": "walk_right", "contextFrames": [6, 7, 8, 9], "target": "idle", "targetFrames": [0, 1, 2, 3], "leadSeconds": 0.20},
+    {"id": "walk_forward_left_to_idle", "context": "walk_forward_left", "contextFrames": [6, 7, 8, 9], "target": "idle", "targetFrames": [0, 1, 2, 3], "leadSeconds": 0.20},
+    {"id": "walk_forward_right_to_idle", "context": "walk_forward_right", "contextFrames": [6, 7, 8, 9], "target": "idle", "targetFrames": [0, 1, 2, 3], "leadSeconds": 0.20},
+    {"id": "walk_backward_left_to_idle", "context": "walk_backward_left", "contextFrames": [6, 7, 8, 9], "target": "idle", "targetFrames": [0, 1, 2, 3], "leadSeconds": 0.20},
+    {"id": "walk_backward_right_to_idle", "context": "walk_backward_right", "contextFrames": [6, 7, 8, 9], "target": "idle", "targetFrames": [0, 1, 2, 3], "leadSeconds": 0.20},
+
+    {"id": "walk_forward_to_run_forward", "context": "walk_forward", "contextFrames": [6, 7, 8, 9], "target": "run_forward", "targetFrames": [5, 6, 7, 8], "leadSeconds": 0.35},
+    {"id": "run_forward_to_walk_forward", "context": "run_forward", "contextFrames": [6, 7, 8, 9], "target": "walk_forward", "targetFrames": [6, 7, 8, 9], "leadSeconds": 0.35},
+    {"id": "run_forward_to_sprint_forward", "context": "run_forward", "contextFrames": [6, 7, 8, 9], "target": "sprint_forward", "targetFrames": [4, 5, 6, 7], "leadSeconds": 0.30},
+    {"id": "sprint_forward_to_run_forward", "context": "sprint_forward", "contextFrames": [4, 5, 6, 7], "target": "run_forward", "targetFrames": [5, 6, 7, 8], "leadSeconds": 0.30},
+
+    {"id": "walk_forward_to_turn_left", "context": "walk_forward", "contextFrames": [6, 7, 8, 9], "target": "turn_left", "targetFrames": [8, 9, 10, 11], "leadSeconds": 0.25},
+    {"id": "walk_forward_to_turn_right", "context": "walk_forward", "contextFrames": [6, 7, 8, 9], "target": "turn_right", "targetFrames": [8, 9, 10, 11], "leadSeconds": 0.25}
+  ]
+}

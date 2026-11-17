@@ -36,10 +36,33 @@ App world NVIDIA: right-handed Z-up, forward +X. Unity → app position:
 вычитается только app-ground XY; Z не трогается. C# получает model-space root с локальной
 высотой и использует существующее преобразование baker'а: position `(-x,y,z)`,
 quaternion `(x,-y,-z,w)`. C# дополнительно гардит аномальный вертикальный offset (>5 м или non-finite) и уходит
-в fallback, не двигая модель. Для facing численно подтверждён постоянный basis offset:
-при движении вперёд root-forward пакета `−X`, а rest-forward `testing` — `+Z`; поэтому
-мировые SOMA-delta поворачиваются на +90° до применения к Project C rig. Для плеч/предплечий
-twist отдельно ограничен ±90° — runtime-аналог фикса «руки наизнанку» из T-MB05.
+в fallback, не двигая модель.
+
+Facing: **никакого yaw-offset между источником и ригом нет** (`SourceToTargetYawOffsetDeg = 0`,
+как в проверенном offline-бейке `MotionBricksSpikeBaker.YawOffsetDeg`). Замер «root-forward
+пакета `−X` против rest-forward `+Z`» относится к *абсолютной* ориентации пакета после
+зеркала осей `ToUnityRot`, а ретаргет переносит только дельту `frame·bind⁻¹`, в которой
+зеркало сокращается; трактовать его как рыскание было ошибкой (см. ниже). Для плеч/предплечий
+twist ограничен ±90° — аналог фикса «руки наизнанку» из T-MB05.
+
+**Исправлено (root-эталон).** Из 77 джойнтов пространство имеет значение только для joint 0: у
+остальных дельта `frame_local·bind_local⁻¹` конвенция-инвариантна. Для joint 0 официальный
+проигрыватель пишет **две разные конвенции**: `clip.animation.sample()` оставляет **model space**
+(эти же позы идут в inference как target poses), а декодер пишет уже runtime space
+(`output_local_poses[frame, 0] = mul(model_to_runtime, hips_transform)`). `model_pose()` при этом
+всегда снимает `runtime_to_model`, поэтому любой сэмплированный эталон давал постоянную ошибку:
+bind-клон — **≈90° вокруг X** (завал на бок), первый клип-кадр (`source=clip` после reset) —
+**≈94° вокруг Y** (корпус боком). Это замерено на реальном sidecar через
+`tools/verify_root_frame.py`: перенос захвата эталона после `_sample_playback` менял ось ошибки,
+но не убирал её.
+
+Теперь эталон корня — `model_to_runtime · bind_root`, то есть bind, переведённый в runtime space
+(`_bind_reference_root_rotation`). `_apply_external_root` пишет `yaw_delta · эталон`, `model_pose()`
+снимает `runtime_to_model`, поэтому пакетный root совпадает с bind **точно**: дельта корня =
+identity на idle, на 5 м/с и после поворота на 90° (`verify_root_frame.py`: 0.0° во всех точках).
+Ориентацию тела задаёт трансформ игрока, double-count невозможен — `model_pose()` вычитает
+текущий app-rotation. Вертикальный контракт §2 не изменился: оба поля эталона читаются из
+`pose[0,2]` и сокращаются, root следует за сэмплированной высотой генерации.
 
 Внешний root корректируется **до** `player.record_pose()`: recorder получает именно
 показанную позу. Горизонталь и yaw берутся от игрока, вертикальный bob генерации

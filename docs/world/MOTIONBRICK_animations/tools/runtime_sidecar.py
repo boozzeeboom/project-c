@@ -46,10 +46,14 @@ PLAYBACK_SOURCE = {"generated": 0, "clip_transition": 1, "clip": 2}
 # (direction_regeneration_dot 0.92) или смене скорости больше 30% диапазона
 # (speed_regeneration_fraction 0.3 / minimum 0.1): всё, что мельче, ждёт до 0.9 с.
 MOVEMENT_SETTINGS = {
-    "facing_halflife": 0.06,
-    "velocity_direction_halflife": 0.06,
-    "speed_acceleration_halflife": 0.10,
-    "speed_deceleration_halflife": 0.10,
+    "facing_halflife": 0.02,
+    "velocity_direction_halflife": 0.015,
+    "speed_acceleration_halflife": 0.015,
+    "speed_deceleration_halflife": 0.02,
+    "speed_regeneration_fraction": 0.15,
+    "minimum_speed_regeneration_fraction": 0.05,
+    "direction_regeneration_dot": 0.92,
+    "maximum_direction_change_speed_reduction": 0.0,
 }
 
 RESPONSIVE_SETTINGS = {
@@ -59,15 +63,27 @@ RESPONSIVE_SETTINGS = {
     "direction_regeneration_dot": 0.995,
 }
 
+RESPONSIVE_TOKEN_COUNTS = (6, 7)
+RESPONSIVE_POSITION_SCALE = 0.58
+RESPONSIVE_TRANSITION_EARLY_FRAMES = 4
+CLIP_TRANSITION_HORIZON_SECONDS = 0.25
+MAX_INTERNAL_STEP_DT = 1.0 / 60.0
 
-def apply_token_horizon(character, token_counts) -> int:
-    """Сократить горизонт генерации: ограничить `allowed_token_counts` у всех режимов.
 
-    `chunk` (он же `playback_duration`) — это длина сгенерированного вперёд плана, её выбирает
-    сама модель из `allowed_token_counts` режима (по умолчанию 8…14 → 0,9…1,6 с). Новый чанк
-    планируется от текущей позы к целевой в его конце, поэтому разгон занимает секунды не
-    из-за порогов регенерации, а из-за длины плана. 6 токенов ─ самый короткий допустимый
-    контрактом (`MODEL_MIN_TOKEN_COUNT`).
+def apply_token_horizon(
+    character,
+    token_counts,
+    position_scale: float | None = None,
+    transition_early_by_frames: int | None = None,
+) -> int:
+    """Сократить горизонт генерации: согласованно ограничить `allowed_token_counts`,
+    `position_scale` и `transition_early_by_frames` у всех режимов.
+
+    `chunk` (`playback_duration`) — это длина сгенерированного вперёд плана. Так как
+    `endpoint_correction` привязывает последний кадр чанка к `target[0]`, который стоит на
+    расстоянии `desired_velocity * velocity_scale * position_scale`, сокращать число токенов
+    нельзя без пропорционального уменьшения `position_scale` (иначе при 6 токенах и
+    `position_scale = 1.0` модель обязана пробежать 1.0 с пути за 0.57 с, разгоняясь вдвое).
     """
 
     if not token_counts:
@@ -83,19 +99,49 @@ def apply_token_horizon(character, token_counts) -> int:
         modes = getattr(state, "mode_runtimes", None)
         if not isinstance(modes, dict):
             continue
-        # LocomotionModeRuntime и LocomotionMode — оба frozen, поэтому заменяется объект целиком,
-        # а `active_mode_runtime` переустанавливается на новую копию того же режима.
         active = getattr(state, "active_mode_runtime", None)
         active_name = next((name for name, runtime in modes.items() if runtime is active), None)
         for name, runtime in list(modes.items()):
+            defn = runtime.definition
+            updates = {"allowed_token_counts": allowed}
+            if position_scale is not None:
+                updates["position_scale"] = float(position_scale)
+            if transition_early_by_frames is not None:
+                updates["transition_early_by_frames"] = int(transition_early_by_frames)
             modes[name] = replace(
                 runtime,
-                definition=replace(runtime.definition, allowed_token_counts=allowed),
+                definition=replace(defn, **updates),
             )
             patched += 1
         if active_name is not None:
             state.active_mode_runtime = modes[active_name]
     return patched
+
+
+def install_immediate_locomotion_enter(character) -> None:
+    """Убрать сброс `desired_speed` в 0 при переходе `IdleState -> LocomotionState`.
+
+    Движковый `LocomotionState.enter()` вызывает `character.movement.realign(character.actual_velocity, ...)`,
+    а в `IdleState` `actual_velocity == 0`. В результате на первом кадре нажатия W скорость
+    принудительно сбрасывается обратно в 0 и генерируется холостой чанк в 100% позу `Idle`.
+    При внешнем `CharacterController` целевая скорость уже задана во входной команде
+    `character.movement.input_velocity`, поэтому выравниваемся по ней.
+    """
+    import types
+
+    def _enter(self, char, state_machine) -> None:
+        velocity = (
+            char.movement.input_velocity
+            if char.movement.input_speed > 0.0
+            else char.actual_velocity
+        )
+        char.movement.realign(velocity, self.active_mode)
+        self._generate(char)
+
+    for attribute in ("standing_locomotion_state", "crouching_locomotion_state"):
+        state = getattr(character.state_machine, attribute, None)
+        if state is not None:
+            state.enter = types.MethodType(_enter, state)
 
 
 def apply_response_settings(character, overrides: "dict | None" = None) -> dict:
@@ -272,11 +318,12 @@ class ExternalSOMACharacter:
 
         import warp as wp
         from motionbricks.inference.builder import TensorRTBuildOptions
-        from motionbricks.model.contract import ModelRig
+        from motionbricks.model.contract import MODEL_POSES_PER_TOKEN, MODEL_SAMPLE_RATE, ModelRig
         from motionbricks.model.soma.contract import SOMA_N1_FP16_ONNX_PATH, SOMA_N1_FP32_ONNX_PATH
         from motionbricks.model.soma.engine import MotionBricksSOMAEngine
+        from motionbricks.runtime.target_pose import TargetPoseInferenceParams
         from app.runtime.common.io.smart_primitive_document import SmartPrimitiveAssetPool
-        from app.runtime.common.motion import LocomotionCommand
+        from app.runtime.common.motion import LocomotionCommand, PlaybackSource
         from app.runtime.common.rig import load_rig_assets
         from app.runtime.soma.character import SOMACharacter
         from app.runtime.soma.presets import (
@@ -290,6 +337,12 @@ class ExternalSOMACharacter:
         self.repo = repo
         self.walk_speed = initial.walk_speed
         self.run_speed = initial.run_speed
+        self.engine_defaults = engine_defaults
+        self._fast_clip_transition_params = TargetPoseInferenceParams(
+            transition_early_by_frames=RESPONSIVE_TRANSITION_EARLY_FRAMES,
+            num_poses_to_use=MODEL_POSES_PER_TOKEN,
+            allowed_token_counts=RESPONSIVE_TOKEN_COUNTS,
+        )
 
         started = time.perf_counter()
         wp.init()
@@ -336,6 +389,32 @@ class ExternalSOMACharacter:
                 self.generation_count += 1
                 self.last_stages = dict(self.engine.timer.milliseconds)
 
+            def generate_clip_transition(self, clip) -> None:
+                if external.engine_defaults:
+                    super().generate_clip_transition(clip)
+                    return
+                self._current_clip = clip
+                clip_ground_position = (
+                    self.character_ground_position + self.actual_velocity * CLIP_TRANSITION_HORIZON_SECONDS
+                )
+                self._align_clip(
+                    clip,
+                    clip_ground_position,
+                    self.movement.last_input_facing,
+                )
+                for frame_idx in range(MODEL_POSES_PER_TOKEN):
+                    clip.animation.sample(
+                        frame_idx / MODEL_SAMPLE_RATE,
+                        self._clip_target_poses[frame_idx],
+                        root_offset=clip.root_offset,
+                        stream=self.engine.stream,
+                    )
+                self.generate_to_target_poses(
+                    self._clip_target_poses,
+                    external._fast_clip_transition_params,
+                    PlaybackSource.CLIP_TRANSITION,
+                )
+
             def external_step(self, frame: InputFrame, reset: bool) -> None:
                 external.step_character(self, frame, reset)
 
@@ -349,7 +428,7 @@ class ExternalSOMACharacter:
             ),
             default_speed=initial.walk_speed,
             max_speed=initial.run_speed,
-            minimum_speed=min(1.0, initial.walk_speed),
+            minimum_speed=0.8 * initial.walk_speed if not engine_defaults else min(1.0, initial.walk_speed),
         )
         app_position = unity_to_app_position(initial.position)
         app_rotation = unity_to_app_rotation(initial.rotation)
@@ -371,6 +450,14 @@ class ExternalSOMACharacter:
         else:
             applied = MOVEMENT_SETTINGS
         self.response_settings = apply_response_settings(self.character, applied)
+        if not engine_defaults:
+            apply_token_horizon(
+                self.character,
+                RESPONSIVE_TOKEN_COUNTS,
+                position_scale=RESPONSIVE_POSITION_SCALE,
+                transition_early_by_frames=RESPONSIVE_TRANSITION_EARLY_FRAMES,
+            )
+            install_immediate_locomotion_enter(self.character)
         self._reference_initialized = False
         # Эталон yaw СОЗНАТЕЛЬНО не хранится: он не должен попадать в корень пакета
         # (`_apply_external_root`), иначе RESET на ненулевом yaw заваливает корпус.
@@ -453,37 +540,26 @@ class ExternalSOMACharacter:
             movement=None if movement is None else np.asarray(movement, dtype=np.float32),
             use_max_speed=use_max_speed,
         )
-        character.state_machine.update(character, dt, command)
-        # Как в официальном `Character.step()`: previous_ground снимается ДО сэмпла, а
-        # `_update_character_velocity` считает скорость по собственному корню модели
-        # (её `_update_character_position` внутри сэмпла).
-        #
-        # Раньше здесь стояло `character_ground_position = app_ground` и velocity, синтезированная
-        # из скорости игрока. Модель видела противоречивую историю: собственный корень идёт вперёд
-        # на 5 м/с, а `actual_velocity` при отпущенных клавишах — ровно 0. Замер на круге
-        # (12 x 0.5 s, 5 м/с) + 1 s простоя: chest 103° от bind и НЕ восстанавливается
-        # («отпускаешь кнопки — раскручивает»); с собственным velocity — chest 8.7° и
-        # восстановление за те же 1 s. Мир по-прежнему принадлежит игроку: позицию в Unity
-        # задаёт только `_apply_external_root`, ниже.
-        previous_ground = character.character_ground_position.copy()
-        character._sample_playback(dt)
+        substeps = 1 if (self.engine_defaults or reset) else max(1, int(math.ceil(dt / MAX_INTERNAL_STEP_DT)))
+        sub_dt = dt / substeps
+        for step_index in range(substeps):
+            character.state_machine.update(character, sub_dt, command)
+            # Как в официальном `Character.step()`: previous_ground снимается ДО сэмпла, а
+            # `_update_character_velocity` считает скорость по собственному корню модели
+            # (её `_update_character_position` внутри сэмпла).
+            previous_ground = character.character_ground_position.copy()
+            character._sample_playback(sub_dt)
 
-        # Эталон корня фиксирован на bind+M (см. `_bind_reference_root_rotation`), поэтому
-        # положение и высоту сброса можно снимать из любой позы: сам root берётся не отсюда.
-        if capture_reference:
-            self._capture_reference(character, app_ground, app_rotation)
+            if capture_reference and step_index == 0:
+                self._capture_reference(character, app_ground, app_rotation)
 
-        # Порядок важен: в историю модели (`record_pose`) должен уйти ЕЁ СОБСТВЕННЫЙ корень,
-        # как в официальном `Character.step()` (sample → record). Если записать туда корень,
-        # выровненный под игрока, модель видит «я не повернулся» при команде «повернись»:
-        # каждый чанк она пытается довернуть, поворот стирается, остаток копится в позе
-        # (персонаж «закручивается как dummy на нитке», а на простое раскручивается обратно).
-        # Выравнивание корня применяем ПОСЛЕ записи — только к позе, которую отдаём в Unity.
-        character._update_character_velocity(previous_ground, dt)
-        if reset:
-            character.player.seed_history_from_pose(character.current_pose)
-        else:
-            character.player.record_pose(dt, character.current_pose)
+            # Порядок важен: в историю модели (`record_pose`) должен уйти ЕЁ СОБСТВЕННЫЙ корень,
+            # как в официальном `Character.step()` (sample → record).
+            character._update_character_velocity(previous_ground, sub_dt)
+            if reset and step_index == 0:
+                character.player.seed_history_from_pose(character.current_pose)
+            else:
+                character.player.record_pose(sub_dt, character.current_pose)
         self._apply_external_root(character, app_ground, app_rotation)
         character._update_probe_box()
         self.last_step_ms = (time.perf_counter() - started) * 1000.0

@@ -652,7 +652,8 @@ RESPONSIVE_SETTINGS = {
 
 **Что осталось.** `allowed_token_counts=(6,)` — не горизонт, а селектор динамики: `chunk 233 мс`
 и разгон 0,2–0,5 с, но модель проезжает 9,49 м/с вместо 4,43 (×2,1) — так выпускать нельзя.
-Поэтому `chunk` намеренно остаётся движковым (0,77–1,3 с).
+Поэтому `chunk` намеренно остаётся движковым (0,77–1,3 с). **→ Решено в §4.16:** сокращать
+токены нужно **вместе** с `position_scale`.
 
 **Вторая, ещё не объяснённая аномалия** — из той же трассы: при `chunk=1300 мс` и всего 11–12
 генерациях за 7,5 с `rem` (`time_to_transition`) дёргается 1283↔1267 каждые 2 кадра, то есть
@@ -664,6 +665,134 @@ RESPONSIVE_SETTINGS = {
 1–2 с. В официальном приложении персонаж едет со скоростью анимации — там рассогласования нет.
 Отсюда и «слайдит», и «бег играет как ходьба»: это не транспорт и не сокет
 (`RTT p50 2,1–2,4 ms`, `onset 110–232 ms`), а разница скоростей тела и анимации.
+
+### 4.16. Отклик в рантайме: горизонт генерации, а не транспорт (fix 17.18)
+
+Симптом приёмки 17.11: «нажимаю W — персонаж слайдит без анимации, через секунду начинается
+проигрывание; и так во все переходные стадии, явная латентность и резиновость». Лог того же
+прогона транспорт и инференс исключает: `RTT p50 2,0–2,4 ms`, `serverStep 1,3–2,2 ms`,
+`inference p50 8,0–8,3 ms`, `resets=1`, `age 16–63 ms`. Остаток — в том, **что** модель получает на
+вход и **на какой горизонт** её просят сгенерировать.
+
+Пять механизмов, каждый проверен трассировкой 60 Гц:
+
+| # | Механизм | Следствие |
+|---|---|---|
+| а | `LocomotionState.enter()` делает `realign(character.actual_velocity)`, а в `IdleState` `actual_velocity == 0`, и обнуляет `desired_speed` | первый кадр нажатия W сбрасывает скорость в 0 и генерирует холостой чанк в 100% `Idle` |
+| б | вторая генерация на микроскорости; порог `max(Δдиапазона × 0,3, max_speed × 0,1)` не пропускает остаток до `walk_speed` | тело уже 5 м/с, модель держится на 0,01 м/с |
+| в | `position_scale = 1,0` ставит конец чанка на **секунду** хода вперёд, `endpoint correction` пришивает начало чанка к статичному контексту | первый метр модель почти стоит — это и есть слайд |
+| г | `playback_time = 0` на каждой регенерации при `gen/s 3–4` | фаза клипа перезапускается 3–4 раза в секунду |
+| д | `generate_clip_transition()` ставит вход в idle-клип на `character_ground_position + actual_velocity` (на секунду вперёд) при `chunk 1633 мс` | после отпускания клавиш анимация ещё полторы секунды едет вперёд |
+
+**Правка** — пять согласованных изменений в `runtime_sidecar.py`:
+
+```python
+RESPONSIVE_TOKEN_COUNTS = (6, 7)          # горизонт 0,8–0,93 с вместо 1,07–2,13 с
+RESPONSIVE_POSITION_SCALE = 0.58          # путь чанка × 0,58 — во столько же короче горизонт
+RESPONSIVE_TRANSITION_EARLY_FRAMES = 4    # вход в клип на 4 кадра раньше
+CLIP_TRANSITION_HORIZON_SECONDS = 0.25    # вход в idle-клип на 0,25 с вперёд, а не на 1,0 с
+MAX_INTERNAL_STEP_DT = 1.0 / 60.0         # субшаги: 15 FPS редактора = 4 внутренних шага
+```
+
+1. `apply_token_horizon(character, token_counts, position_scale=None, transition_early_by_frames=None)`
+   правит `allowed_token_counts`, `position_scale` и `transition_early_by_frames` **одновременно**
+   (см. ловушку ниже). Возвращает число пропатченных режимов → в отчёте стенда это `token_patches`.
+2. `install_immediate_locomotion_enter(character)` подменяет `enter` у `standing_locomotion_state` и
+   `crouching_locomotion_state`: при `input_speed > 0` выравнивание по `movement.input_velocity`, иначе
+   по `actual_velocity`. Снимает (а).
+3. `MOVEMENT_SETTINGS`: `facing_halflife 0.02`, `velocity_direction_halflife 0.015`,
+   `speed_acceleration_halflife 0.015`, `speed_deceleration_halflife 0.02`,
+   `speed_regeneration_fraction 0.15`, `minimum_speed_regeneration_fraction 0.05`,
+   `direction_regeneration_dot 0.92`, `maximum_direction_change_speed_reduction 0.0`. Снимает (б).
+4. `generate_clip_transition()` в нашем подклассе ставит вход в клип на
+   `actual_velocity * CLIP_TRANSITION_HORIZON_SECONDS` и генерирует с
+   `_fast_clip_transition_params`; `LINEAR_LOCOMOTION.minimum_speed = 0,8 × walk_speed`. Снимает (д).
+5. `step_character()` делит кадр на субшаги `ceil(dt / 16,7 ms)`: в каждом — `state_machine.update`,
+   `_sample_playback`, `_update_character_velocity`, `record_pose`; `_apply_external_root` и
+   `_update_probe_box` — один раз после цикла. При 15 FPS Unity модель ведётся как при 60 FPS, а не
+   прыгает шагами по 67 мс.
+
+**Замер** `verify_step_response.py --preset movement-only` (сценарий `idle 1,5 с → walk 5 м/с 3 с →
+run 10 м/с 3 с`):
+
+| метрика | до (§4.15) | после | |
+|---|---:|---:|---|
+| t50 idle→walk | 1066,7 мс | **150,0 мс** | ×7,1 |
+| t90 idle→walk | 2250 мс | **350,0 мс** | ×6,4 |
+| t50 walk→run | 850 мс | **350,0 мс** | ×2,4 |
+| t90 walk→run | 1900 мс | **666,7 мс** | ×2,9 |
+| уст. walk | 4,426 м/с | **4,981 м/с** | слайд 11% → 0,4% |
+| уст. run | 9,797 м/с | **10,004 м/с** | |
+| chunk p50 | 767 мс (лог §4.13) | **433,3 мс** | |
+| gen/s | 1,47 | 2,14 | |
+| step_wall p50 / p95 | — | **1,23 / 2,05 мс** | в пределах §4.15 (2,36 мс) |
+
+`verify_motion_contract.py` (тот же режим, `engine_defaults=False`): `onset_frames 13` = **220 мс**
+от команды до начала маха при пороге `idle_swing_baseline 0,0948 + 0,12`, `model_speed_mps 4,969`
+при команде 5,0 (`slide_ratio 0,994`), `model_root_displacement_m 12,34` за 300 кадров,
+`playback_sources clip 90 / generated 300`, `keeps_up_with_60hz true`.
+
+Свип по горизонту (снят в ходе этой же правки на промежуточной сборке стенда; ранжирование
+устойчиво, абсолютные значения ±1 кадр 60 Гц):
+
+| токены / position_scale / early | t50 idle→walk | уст. walk | пик `thR` |
+|---|---:|---:|---:|
+| **(6,7) / 0,58 / 4** | **150 мс** | **4,98 м/с** | 86,2° |
+| (7,8,9) / 0,68 / 6 | 217 мс | 4,68 м/с | 95,1° |
+| (8,9,10) / 0,75 / 7 | 150 мс | 4,33 м/с | 89,3° |
+| (8,9,10,11) / 0,80 / 8 | 117 мс | 4,72 м/с | 69,0° |
+
+`(6,7) / 0,58 / 4` выбран как компромисс: самый короткий горизонт без перелома шага (`thR` 86,2° —
+в пределах §4.6) и установившаяся скорость совпадает с командой. Выбранная точка перепроверена
+сегодня финальной сборкой стенда: `t50 150,0 мс`, `steady_walk 4,981 м/с`.
+
+**Ловушка (главная).** `allowed_token_counts` нельзя сокращать без `position_scale`: `endpoint
+correction` ставит конец чанка на `target[0]`, то есть на `desired_velocity × velocity_scale ×
+position_scale`. С `(6,)` и `position_scale 1,0` модель проезжает **9,49 м/с** вместо 4,43 — та
+самая «резиновость», которую потом ищут в ретаргете. Отсюда три аргумента в `apply_token_horizon`
+одновременно и `token_patches 3` в отчёте.
+
+**Регрессия после правок:**
+
+| проверка | результат |
+|---|---|
+| `runtime_sidecar.py --self-test` | PASS, exit 0 — 480 кадров, 18 генераций, inference p50 5,0 ms / p95 17,5 ms / max 82,8 ms, `pose_packet_bytes 2220` |
+| `verify_root_frame.py` | PASS — `delta_root 0,0°` на idle/walk/turn/turn180/reset180; контрфакты 90°/180° |
+| `verify_pose_stability.py` | PASS — spine 14,5°, chest 14,5°, thighR 84,8°, armR 88,2°, восстановление на idle (spine 4,3°) |
+| `verify_pose_directions.py` | PASS — arm_down 30,2°, thigh_scissor −0,96, `spine_up_deg 3,33°` |
+
+`verify_pose_stability.py` и `verify_pose_directions.py` конструируют runtime с движковыми
+настройками, поэтому их PASS описывает baseline, а не новый режим. Новый режим меряют
+`verify_step_response.py` и `verify_motion_contract.py`.
+
+**Откат.** `--engine-defaults` (в стенде — пресет `engine-defaults`) возвращает движковые
+`LocomotionSettings`, движковый горизонт генерации, движковый `generate_clip_transition` и
+`substeps = 1`; A/B-путь сохранён. `--responsive` дополнительно включает агрессивные пороги
+регенерации из §4.14.
+
+**Приёмка 17.11 (fix 17.18): основной задержки больше нет.** Лог живого Play Mode:
+
+```
+firstPose = 264 мс     (ENGINE уже был поднят; 7558 мс в §4.12 — это подъём, а не модель)
+ONSET     = 45 и 105 мс, source=0 (generated)   — раньше было 117…205 мс и ложные 0 мс
+chunk     = 433…567 мс (было 500…1633), gen/s 3,2…5,2
+RTT p50   = 4,7…4,9 мс, inference p50 9,4…10,8 мс, fallbacks 0, hitches 0
+```
+
+Вердикт пользователя: «пропала основная задержка». Остаток — качество самой позы:
+«бегает как будто не суставы, а пружины» — это следующий этап (упругость, пере-/недобор
+амплитуды в суставах), к отклику он не относится.
+
+**Что осталось.**
+
+- `ONSET` в `MotionBricksRuntimePlayback.cs` по-прежнему означает «первый кадр, где стопа в контакте»,
+  а не «мах начался». Ложные `0 мс (source=1)` убраны: кадр, лежавший в буфере до нажатия (в
+  `clip_transition`/клипе стопа уже стоит), больше не засчитывается — сверяется
+  `_lastAppliedSequence > _onsetSequenceAtCommand`. Смысл метрики при этом прежний.
+- Визуальная приёмка на живом персонаже не проводилась. В C# изменён только счётчик `ONSET`
+  (компиляция чистая); ретаргет, протокол и проигрывание не трогались.
+- Аномалия §4.15 с `rem` 1283↔1267 каждые 2 кадра не объяснена до конца; правка снизила частоту
+  (`gen/s` 3–4 → 2,14), но сам сброс — тот же `playback_time = 0` в `generate()`.
 
 ## 5. Ручная приёмка
 

@@ -32,11 +32,23 @@ MOVE_FRAMES = 180
 DT = 1.0 / 60.0
 
 PRESETS = {
-    "engine-defaults": {"settings": {}, "tokens": None},
-    "movement-only": {"settings": dict(rs.MOVEMENT_SETTINGS), "tokens": None},
-    "responsive-full": {"settings": dict(rs.RESPONSIVE_SETTINGS), "tokens": None},
-    "short-chunk-tokens-only": {"settings": {}, "tokens": (6,)},
-    "short-chunk": {"settings": dict(rs.RESPONSIVE_SETTINGS), "tokens": (6,)},
+    "engine-defaults": {"settings": {}, "tokens": None, "engine_defaults": True},
+    "movement-only": {
+        "settings": dict(rs.MOVEMENT_SETTINGS),
+        "tokens": rs.RESPONSIVE_TOKEN_COUNTS,
+        "position_scale": rs.RESPONSIVE_POSITION_SCALE,
+        "early": rs.RESPONSIVE_TRANSITION_EARLY_FRAMES,
+        "engine_defaults": False,
+    },
+    "responsive-full": {
+        "settings": dict(rs.RESPONSIVE_SETTINGS),
+        "tokens": rs.RESPONSIVE_TOKEN_COUNTS,
+        "position_scale": rs.RESPONSIVE_POSITION_SCALE,
+        "early": rs.RESPONSIVE_TRANSITION_EARLY_FRAMES,
+        "engine_defaults": False,
+    },
+    "short-chunk-tokens-only": {"settings": {}, "tokens": (6,), "engine_defaults": True},
+    "short-chunk": {"settings": dict(rs.RESPONSIVE_SETTINGS), "tokens": (6,), "engine_defaults": True},
 }
 
 
@@ -59,9 +71,15 @@ def ramp_metrics(speeds: list[float], start: int, target: float) -> dict:
 
 
 def run_preset(repo: Path, preset: dict, verbose: bool, trace_frames: int = 0) -> dict:
-    runtime = rs.ExternalSOMACharacter(repo, rs.InputFrame(flags=rs.FLAG_RESET), False, False, True)
+    engine_defaults = bool(preset.get("engine_defaults", True))
+    runtime = rs.ExternalSOMACharacter(repo, rs.InputFrame(flags=rs.FLAG_RESET), False, False, engine_defaults)
     applied = rs.apply_response_settings(runtime.character, preset.get("settings"))
-    token_patches = rs.apply_token_horizon(runtime.character, preset.get("tokens"))
+    token_patches = rs.apply_token_horizon(
+        runtime.character,
+        preset.get("tokens"),
+        position_scale=preset.get("position_scale"),
+        transition_early_by_frames=preset.get("early"),
+    )
     position = np.zeros(3, dtype=np.float32)
     forward = np.array([0.0, 0.0, 1.0], dtype=np.float32)
     speeds: list[float] = []

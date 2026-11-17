@@ -71,6 +71,9 @@ namespace ProjectC.Animation.MotionBricks
         private float _movementStartedAt;
         private float _onsetMs = -1f;
         private bool _wasMoving;
+        // Последовательность последнего применённого пакета на момент команды движения: кадр,
+        // лежавший в буфере ДО нажатия, не должен считаться началом шага.
+        private uint _onsetSequenceAtCommand;
         private bool _hasLastPosition;
         private Vector3 _lastPosition;
         private bool _rootMotionGuardActive;
@@ -213,10 +216,19 @@ namespace ProjectC.Animation.MotionBricks
             // Настоящая задержка «нажал W — анимация пошла не сразу»: от команды движения до первого
             // кадра, где стопа реально в контакте (в idle модель отдаёт 0,0/0,0/0,0/0,0).
             bool moving = velocity.sqrMagnitude > 0.25f;
-            if (moving && !_wasMoving) _movementStartedAt = Time.realtimeSinceStartup;
+            if (moving && !_wasMoving)
+            {
+                _movementStartedAt = Time.realtimeSinceStartup;
+                // Кадр, уже лежавший в буфере на момент нажатия, снят ДО команды: в clip_transition и в
+                // клипе стопа стоит (контакты 0.75/0.90/1.00) — именно из-за него ONSET печатал
+                // ложные `0 мс (source=1)`. Засчитываем только пакеты новее команды.
+                _onsetSequenceAtCommand = _lastAppliedSequence;
+            }
             if (!moving) _onsetMs = -1f;
             _wasMoving = moving;
-            if (moving && _onsetMs < 0f && _frame != null && FootContact(_frame.Contacts) > 0.5f)
+            if (moving && _onsetMs < 0f && _frame != null
+                && _lastAppliedSequence > _onsetSequenceAtCommand
+                && FootContact(_frame.Contacts) > 0.5f)
             {
                 _onsetMs = (Time.realtimeSinceStartup - _movementStartedAt) * 1000f;
                 Debug.Log($"[MB-Runtime] ONSET: команда движения → первый контакт стопы {_onsetMs:F0} мс " +

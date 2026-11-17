@@ -36,6 +36,52 @@ CONTACT_BYTES = 4 * 4
 PLAYBACK_SOURCE = {"generated": 0, "clip_transition": 1, "clip": 2}
 
 
+# Движок ведёт модель по **сглаженной копии** нашей скорости, а не по ней самой.
+# LocomotionSettings по умолчанию: speed_acceleration_halflife = 0.6 с (полураспад!),
+# speed_deceleration 0.4 с, velocity_direction 0.2 с. Через 0.6 с после Shift модель проходит
+# только половину пути 5→10 м/с и всё это время показывает промежуточный шаг, в то время
+# как CharacterController уже бежит — это и читается как «бег проигрывается как хотьба»
+# и «задержка 1+ с».
+# Плюс новый чанк запрашивается только на конце чанка, при повороте больше 23°
+# (direction_regeneration_dot 0.92) или смене скорости больше 30% диапазона
+# (speed_regeneration_fraction 0.3 / minimum 0.1): всё, что мельче, ждёт до 0.9 с.
+RESPONSIVE_SETTINGS = {
+    "facing_halflife": 0.06,
+    "velocity_direction_halflife": 0.06,
+    "speed_acceleration_halflife": 0.10,
+    "speed_deceleration_halflife": 0.10,
+    "speed_regeneration_fraction": 0.05,
+    "minimum_speed_regeneration_fraction": 0.02,
+    "direction_regeneration_dot": 0.995,
+}
+
+
+def apply_response_settings(character, enabled: bool = True) -> dict:
+    """Подтянуть отклик модели к скорости CharacterController.
+
+    `LocomotionSettings` — frozen dataclass, поэтому пересобираем через `replace` и
+    кладём обратно в state machine. Возвращает применённое (для лога), чтобы в
+    приёмке было видно, с какими числами гонялись.
+    """
+
+    if not enabled:
+        return {}
+    from dataclasses import replace
+
+    # settings живут не на StateMachine, а на каждом LocomotionState
+    # (state_machine.standing_locomotion_state / crouching_locomotion_state).
+    patched = []
+    for attribute in ("standing_locomotion_state", "crouching_locomotion_state"):
+        state = getattr(character.state_machine, attribute, None)
+        if state is None or not hasattr(state, "settings"):
+            continue
+        state.settings = replace(state.settings, **RESPONSIVE_SETTINGS)
+        patched.append(attribute)
+    if not patched:
+        raise RuntimeError("LocomotionState not found; response settings were not applied")
+    return dict(RESPONSIVE_SETTINGS)
+
+
 @dataclass(slots=True)
 class InputFrame:
     sequence: int = 0
@@ -161,7 +207,7 @@ def _timeline_field(character) -> int:
 
 
 class ExternalSOMACharacter:
-    def __init__(self, repo: Path, initial: InputFrame, fp16: bool = False) -> None:
+    def __init__(self, repo: Path, initial: InputFrame, fp16: bool = False, responsive: bool = True) -> None:
         repo = repo.resolve()
         if str(repo) not in sys.path:
             sys.path.insert(0, str(repo))
@@ -260,6 +306,7 @@ class ExternalSOMACharacter:
             modes=(linear, DIRECTIONAL_LOCOMOTION, CROUCH_LOCOMOTION),
         )
         self.last_step_ms = 0.0
+        self.response_settings = apply_response_settings(self.character, responsive)
         self._reference_initialized = False
         # Эталон yaw СОЗНАТЕЛЬНО не хранится: он не должен попадать в корень пакета
         # (`_apply_external_root`), иначе RESET на ненулевом yaw заваливает корпус.
@@ -534,7 +581,7 @@ def take_burst(sock: socket.socket, data: bytes, address) -> list[tuple[bytes, o
     return pending
 
 
-def serve(repo: Path, host: str, port: int, fp16: bool) -> None:
+def serve(repo: Path, host: str, port: int, fp16: bool, responsive: bool = True) -> None:
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind((host, port))
     sock.settimeout(1.0)
@@ -561,8 +608,12 @@ def serve(repo: Path, host: str, port: int, fp16: bool) -> None:
                     closing = True
                     break
                 if runtime is None:
-                    runtime = ExternalSOMACharacter(repo, frame, fp16)
+                    runtime = ExternalSOMACharacter(repo, frame, fp16, responsive)
                     print(f"ENGINE_READY init_ms={runtime.engine_init_ms:.1f} fp16={fp16}", flush=True)
+                    if runtime.response_settings:
+                        print("RESPONSE " + " ".join(f"{k}={v}" for k, v in runtime.response_settings.items()), flush=True)
+                    else:
+                        print("RESPONSE engine-defaults", flush=True)
                 if (frame.flags & FLAG_RESET) or not bind_sent:
                     sock.sendto(response_header(PACKET_BIND, frame.sequence, runtime) + runtime.bind_pose.tobytes(), address)
                     bind_sent = True
@@ -596,12 +647,17 @@ def main() -> None:
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=49360)
     parser.add_argument("--fp16", action="store_true")
+    parser.add_argument(
+        "--engine-defaults",
+        action="store_true",
+        help="Оставить LocomotionSettings движка (halflife 0.6 с) — для A/B против --responsive.",
+    )
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
     if args.self_test:
         print(json.dumps(run_self_test(args.repo, args.fp16), indent=2), flush=True)
     else:
-        serve(args.repo, args.host, args.port, args.fp16)
+        serve(args.repo, args.host, args.port, args.fp16, not args.engine_defaults)
 
 
 if __name__ == "__main__":

@@ -555,6 +555,64 @@ ONSET: команда движения → первый контакт стоп�
 **Что решают следующие цифры:** если `chunk` ≈ 1200 мс и `gen/s` ≈ 0,8 — потолок задаёт чанк, и
 рычаг один: сокращать горизонт генерации (меньше токенов / реже целевая поза), а не сокет.
 
+### 4.14. Задержка в отклике модели: halflife 0.6 с и пороги регенерации (fix 17.16)
+
+Авто-лог в движении (§4.13) дал полную картину:
+
+```
+RTT p50 = 2,1…2,4 ms, age 43…68 ms, sent ≈ received        → транспорт чистый
+onset = 110 ms                                                 → поза реагирует за кадр
+chunk = 1167/143, 767/418, 767/569, 1033/736, 900/791, 1633/891 ms
+gen/s = 0,80 → 1,40 → 1,40 → 2,80 → 2,40 → 6,40
+```
+
+Остаток задержки — в самом движке, в двух местах.
+
+**(а) Модель ведут по СГЛАЖЕННОЙ копии нашей скорости.** `LocomotionSettings` (`app/runtime/common/motion.py`):
+
+| поле | по умолчанию | смысл |
+|---|---:|---|
+| `speed_acceleration_halflife` | **0.6 с** | полураспад разгона: через 0,6 с после Shift модель проходит только половину пути 5→10 м/с |
+| `speed_deceleration_halflife` | 0.4 с | то же на торможении |
+| `velocity_direction_halflife` | 0.2 с | сглаживание направления |
+| `facing_halflife` | 0.15 с | сглаживание разворота тела |
+
+`CharacterController` при этом уже бежит — отсюда «бег проигрывается как ходьба» и слайд
+больше секунды после нажатия Shift.
+
+**(б) Новый чанк запрашивается редко.** `LocomotionState.update` генерирует только если
+`time_to_transition() <= delta_time` (конец чанка) **или** `_needs_regeneration`: старт движения,
+поворот сильнее `direction_regeneration_dot = 0.92` (≈23°), смена скорости больше
+`max(остаток_диапазона × 0.3, max_speed × 0.1)` — при 5→10 это 1,5 м/с. Всё, что мельче (плавный
+стик, мелкие довороты), ждёт конца чанка — до 891 мс по логу.
+
+**Правка.** `LocomotionSettings` — `frozen` dataclass, поэтому пересобираем и кладём обратно в оба
+`LocomotionState` (`state_machine.standing_locomotion_state` / `crouching_locomotion_state`):
+
+```python
+RESPONSIVE_SETTINGS = {
+    "facing_halflife": 0.06, "velocity_direction_halflife": 0.06,
+    "speed_acceleration_halflife": 0.10, "speed_deceleration_halflife": 0.10,
+    "speed_regeneration_fraction": 0.05, "minimum_speed_regeneration_fraction": 0.02,
+    "direction_regeneration_dot": 0.995,
+}
+```
+
+Применяется по умолчанию; `--engine-defaults` возвращает движковые значения для A/B. Факт
+применения виден в stderr sidecar строкой `RESPONSE …` рядом с `ENGINE_READY`.
+
+**Проверено:**
+
+- чтение настроек обратно — `0.1 0.1 0.06 0.06 0.05 0.02 0.995`; с `--engine-defaults` — `0.6 0.92`;
+- `--self-test` с новым откликом — **PASS**: 480 кадров, 57 генераций, инференс p50 5,1 ms /
+  max 87,9 ms, `pose_packet_bytes` 2220, позы конечные.
+
+**Ловушка:** `settings` живут не на `StateMachine` (там только `standing_locomotion_state` и
+`crouching_locomotion_state`), обращение к `state_machine.settings` падает AttributeError.
+
+**Инвариант:** отклик модели должен догонять `CharacterController`, а не сглаживать его;
+сглаживание — только как антиджиттер и только когда оно измерено.
+
 ## 5. Ручная приёмка
 
 1. Войти в Play Mode → Host/Client, дождаться появления персонажа.

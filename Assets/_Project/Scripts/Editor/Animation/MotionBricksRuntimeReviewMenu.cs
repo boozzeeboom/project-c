@@ -88,16 +88,33 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
         public static void LogDiagnostics()
         {
             MotionBricksRuntimePlayback runtime = FindRuntime();
-            Debug.Log(runtime != null ? runtime.Diagnostics() : "[MB-Runtime] sidecar=detached", runtime);
+            if (runtime == null)
+            {
+                Debug.Log("[MB-Runtime] sidecar=detached (компонент не найден — Attach не выполнен)");
+                return;
+            }
+            string text;
+            try
+            {
+                text = runtime.Diagnostics();
+            }
+            catch (System.Exception ex)
+            {
+                // Диагностика не должна сама ронять attach.
+                Debug.LogError("[MB-Runtime] Diagnostics failed: " + ex);
+                text = "[MB-Runtime] Diagnostics failed: " + ex.Message;
+            }
+            Debug.Log(text, runtime);
         }
 
         private static GameObject SelectRestTemplate(NetworkPlayer player, Animator animator)
         {
             if (animator == null) return null;
-            var applier = player != null ? player.GetComponent<CharacterCustomisationApplier>() : null;
-            GameObject configured = GetConfiguredBodyModel(applier);
-            if (HasRequiredBones(configured)) return configured;
-
+            // Порядок важен. Эталон rest-позы обязан быть тем же ригом, что анимирует Animator:
+            // ретаргет переносит `delta = frameWorld * bindWorld^-1` в `delta * RestWorld`, поэтому
+            // ошибка rest-позы `RestWorld(эталона) * RestWorld(рига)^-1` идёт в каждую кость.
+            // В логе было `Animator='Body'` (аватар HumanM) при `rest='testing'`: applier._maleModel
+            // — кастомное тело, и оно выигрывало по приоритету. Сначала — модель по аватару.
             var male = AssetDatabase.LoadAssetAtPath<GameObject>(MaleModel);
             var female = AssetDatabase.LoadAssetAtPath<GameObject>(FemaleModel);
             Avatar avatar = animator.avatar;
@@ -110,6 +127,10 @@ namespace ProjectC.Animation.MotionBricks.EditorTools
                     avatar != null && avatar.name == candidateAnimator.avatar.name)
                     return candidate;
             }
+
+            var applier = player != null ? player.GetComponent<CharacterCustomisationApplier>() : null;
+            GameObject configured = GetConfiguredBodyModel(applier);
+            if (HasRequiredBones(configured)) return configured;
             return null;
         }
 

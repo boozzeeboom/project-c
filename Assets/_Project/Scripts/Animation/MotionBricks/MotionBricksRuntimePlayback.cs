@@ -28,11 +28,18 @@ namespace ProjectC.Animation.MotionBricks
         [SerializeField] private float _runSpeed = 10f;
 
         [Header("Failure guard")]
-        [SerializeField, Min(0.2f)] private float _staleTimeoutSeconds = 1.5f;
+        // 1.5 с было меньше, чем стоит пауза/хитч редактора в этом проекте (в логе видно
+        // `stale pose (5004 ms)` и `(13000 ms)` при таймауте 1.5 с — значит главный поток стоял сам).
+        [SerializeField, Min(0.2f)] private float _staleTimeoutSeconds = 6f;
         [SerializeField, Min(1)] private int _failureBudget = 3;
+        // Кадр дольше этого — не молчание sidecar, а провал главного потока: такой кадр
+        // не считается устареванием, но модель надо пере-заякорить (RESET).
+        [SerializeField, Min(0.1f)] private float _hitchThresholdSeconds = 0.5f;
 
         [Header("Airborne fallback")]
-        [SerializeField, Min(0.05f)] private float _airborneDelaySeconds = 0.1f;
+        // 0.1 с давало ложные срабатывания ступенькой/склоном: в логе видны пары
+        // `airborne: STOP` → `START` с интервалом 0.2-0.8 с, т.е. анимация пропадала на ровном месте.
+        [SerializeField, Min(0.05f)] private float _airborneDelaySeconds = 0.25f;
         [SerializeField, Min(0.1f)] private float _airborneVerticalSpeed = 2f;
 
         private NetworkPlayer _player;
@@ -47,6 +54,8 @@ namespace ProjectC.Animation.MotionBricks
         private bool _neuralActive;
         private bool _resetPending;
         private bool _receivedAnyPose;
+        private float _startedAt;
+        private float _firstPoseMs = -1f;
         private bool _hasLastPosition;
         private Vector3 _lastPosition;
         private bool _rootMotionGuardActive;
@@ -57,6 +66,7 @@ namespace ProjectC.Animation.MotionBricks
         private string _lastStopReason = "not started";
         private uint _lastAppliedSequence;
         private float _airborneTimer;
+        private int _hitchCount;
         private bool _resumeAfterLanding;
 
         public bool IsNeuralActive => _neuralActive;
@@ -162,10 +172,30 @@ namespace ProjectC.Animation.MotionBricks
             if (_client.TryConsumeLatest(out MotionBricksRuntimeFrame latest))
             {
                 _frame = latest;
-                _receivedAnyPose = true;
+                if (!_receivedAnyPose)
+                {
+                    _receivedAnyPose = true;
+                    _firstPoseMs = (Time.realtimeSinceStartup - _startedAt) * 1000f;
+                    Debug.Log($"[MB-Runtime] LIVE: первый пакет через {_firstPoseMs:F0} мс после Start. " +
+                              "До этой метки нейрослой молчит — это подъём ENGINE, а не задержка модели.", this);
+                }
             }
             if (_receivedAnyPose && _client.LastFrameAgeMs > _staleTimeoutSeconds * 1000f)
-                FailRuntime($"stale pose ({_client.LastFrameAgeMs:F0} ms)");
+            {
+                // Провал главного потока (загрузка/GC/хитч) неотличим от молчания sidecar.
+                // Такой кадр не считается падением: пере-заякориваем модель и живём дальше,
+                // и НЕ убиваем процесс — иначе следующий START платит ENGINE_READY ~3.3 с,
+                // что и было видимой «задержкой старта» после каждого attach.
+                if (Time.unscaledDeltaTime > _hitchThresholdSeconds)
+                {
+                    _hitchCount++;
+                    _resetPending = true;
+                }
+                else
+                {
+                    FailRuntime($"stale pose ({_client.LastFrameAgeMs:F0} ms)", keepClient: true);
+                }
+            }
         }
 
         private void LateUpdate()
@@ -241,12 +271,15 @@ namespace ProjectC.Animation.MotionBricks
             _neuralActive = true;
             _resetPending = true;
             _receivedAnyPose = false;
+            _startedAt = Time.realtimeSinceStartup;
+            _firstPoseMs = -1f;
             _hasLastPosition = false;
             _frame = null;
             _retarget = null;
             _lastStopReason = "running";
             Debug.Log($"[MB-Runtime] START pid={_client.ProcessId}, FP{(_fp16 ? "16" : "32")}, " +
-                      "CharacterController остаётся authoritative; Ctrl+F10 — legacy Animator.", this);
+                      "CharacterController остаётся authoritative; Ctrl+F10 — legacy Animator. " +
+                      "Подъём sidecar (импорт Warp + ENGINE) занимает несколько секунд: ждите метку [MB-Runtime] LIVE.", this);
             return true;
         }
 
@@ -276,16 +309,16 @@ namespace ProjectC.Animation.MotionBricks
             string contacts = _frame == null ? "-" : string.Join("/", Array.ConvertAll(_frame.Contacts, value => value.ToString("F2")));
             return $"[MB-Runtime] active={_neuralActive}, source={source}, sequence={_lastAppliedSequence}, " +
                    $"contacts={contacts}, serverStep={(_frame != null ? _frame.ServerStepMs : 0f):F1} ms, " +
-                   $"fallbacks={_fallbackCount}, lastStop={_lastStopReason}\n" +
+                   $"fallbacks={_fallbackCount}, hitches={_hitchCount}, firstPose={_firstPoseMs:F0} ms, lastStop={_lastStopReason}\n" +
                    (_client != null ? _client.Diagnostics() : "sidecar=detached");
         }
 
-        private void FailRuntime(string reason)
+        private void FailRuntime(string reason, bool keepClient = false)
         {
             _fallbackCount++;
             Debug.LogError($"[MB-Runtime] FALLBACK: {reason}", this);
             StopRuntime(reason);
-            DisposeClient();
+            if (!keepClient) DisposeClient();
         }
 
         private void ApplyRootMotionGuard()

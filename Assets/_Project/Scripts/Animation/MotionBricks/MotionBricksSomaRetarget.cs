@@ -12,10 +12,22 @@ namespace ProjectC.Animation.MotionBricks
         private const int Joints = 77;
         private const int FloatsPerJoint = 7;
         private const float MaxClavicleDeg = 45f;
-        private const float MaxClavicleLocalDeg = 45f;
         private const float MaxRootVerticalOffsetMeters = 5f;
         private const float MaxArmTwistDeg = 90f;
-        private const float SourceToTargetYawOffsetDeg = 90f;
+
+        // T-MB06 fix: 0 — как в проверенном offline-бейке (MotionBricksSpikeBaker.YawOffsetDeg).
+        // Раньше здесь стояло 90° из-за замера «root-forward пакета −X против rest-forward +Z»,
+        // но этот замер — АБСОЛЮТНАЯ ориентация пакета после зеркала осей (ToUnityRot), а
+        // ретаргет переносит только ДЕЛЬТУ frame*bind⁻¹, где зеркало сокращается.
+        //
+        // Настоящая причина «шиворот-навыворот» — эталонный root в sidecar'е: из 77 джойнтов
+        // только у joint 0 пространство имеет значение, а он приходил в двух разных конвенциях
+        // (clip.animation.sample → model space, декодер → runtime space). Замерено
+        // tools/verify_root_frame.py на реальном sidecar: bind-клон давал 90° вокруг X (завал
+        // на бок), первый клип-кадр — 93.6° вокруг Y (корпус боком), и никакой yaw по Y
+        // первого не лечил. Сейчас эталон = model_to_runtime * bind, дельта корня = 0.0°
+        // на idle, 5 м/с и повороте 90° → 0° здесь единственное верное значение.
+        private const float SourceToTargetYawOffsetDeg = 0f;
 
         private sealed class RestNode
         {
@@ -127,11 +139,16 @@ namespace ProjectC.Animation.MotionBricks
                 swing = _sourceToTargetYaw * swing * _sourceToTargetYawInv;
                 int pose = FindPoseByBone(clavicle.Bone);
                 _clavByPose[pose] = swing;
-                foreach (int chainPose in ClavicleChains[i])
-                {
-                    if (_deltaByPose.TryGetValue(chainPose, out Quaternion delta))
-                        _deltaByPose[chainPose] = swing * delta;
-                }
+                // Ключица двигает ТОЛЬКО свою кость (B-shoulder).
+                //
+                // Раньше здесь стояло `_deltaByPose[chainPose] = swing * delta` для цепи
+                // {upperArm, forearm, hand}. Это ошибка: `delta = frameWorld * bindWorld^-1` —
+                // уже ПОЛНЫЙ мировой поворот кости, он сам приводит сегмент руки в направление
+                // источника, поэтому второй поворот `swing` разворачивает руку лишний раз.
+                // Замер tools/verify_pose_directions.py на прямом ходе 5 м/с: swing 7.9°,
+                // лишний поворот сегмента плеча 6.8° (L 6.9 / R 6.7). При поднятой руке
+                // chest->shoulder поворачивается сильно, swing упирается в MaxClavicleDeg = 45°,
+                // и рука уезжает на все 45° — это и есть «руки напутаны» на подъёме.
             }
 
             Evaluate(_root, _root.Target.localRotation, true);
@@ -142,8 +159,15 @@ namespace ProjectC.Animation.MotionBricks
                 throw new InvalidOperationException(
                     $"SOMA root vertical offset {verticalOffset:F2} m exceeds guard; frame root Y={rootUnity.y:F2}, bind Y={_bindRootUnity.y:F2}");
             _hips.Target.localPosition = _hips.RestLocalPosition + Vector3.up * verticalOffset;
-            ApplyClavicleLocal(frame, 11);
-            ApplyClavicleLocal(frame, 39);
+            // Ключица здесь больше НЕ перезаписывается.
+            //
+            // Раньше после `Evaluate` шли `ApplyClavicleLocal(frame, 11 / 39)`, которые писали
+            // `B-shoulder.localRotation = RestLocal * (frameLocal * bindLocal^-1)`, т.е. ВТОРОЙ,
+            // другой формулой поверх уже выставленной мировой. При этом локальные повороты
+            // всей руки были посчитаны в `Evaluate` относительно ПЕРВОЙ ориентации плеча.
+            // Значит после перезаписи рука получала ошибку `факт(плечо) * ожидание(плечо)^-1`,
+            // растущую вместе с подъёмом руки (swing упирается в MaxClavicleDeg = 45°).
+            // Это и есть «руки живут отдельно».
         }
 
         private void Evaluate(RestNode node, Quaternion animatedParentWorld, bool isRoot)
@@ -188,16 +212,6 @@ namespace ProjectC.Animation.MotionBricks
             return swing * twist;
         }
 
-        private void ApplyClavicleLocal(float[] frame, int pose)
-        {
-            RestNode node = _nodeByPose[pose];
-            Quaternion delta = SomaLocal(frame, pose) * Quaternion.Inverse(SomaLocal(_bind, pose));
-            float angle = Quaternion.Angle(Quaternion.identity, delta);
-            if (angle > MaxClavicleLocalDeg)
-                delta = Quaternion.Slerp(Quaternion.identity, delta, MaxClavicleLocalDeg / angle);
-            node.Target.localRotation = node.RestLocalRotation * delta;
-        }
-
         private RestNode BuildRest(Transform source, Transform target, Quaternion parentWorld)
         {
             Quaternion world = parentWorld * source.localRotation;
@@ -224,12 +238,6 @@ namespace ProjectC.Animation.MotionBricks
                 node.Children.Add(BuildRest(sourceChild, targetChild, world));
             }
             return node;
-        }
-
-        private static Quaternion SomaLocal(float[] frame, int pose)
-        {
-            int offset = pose * FloatsPerJoint;
-            return ToUnityRot(new Quaternion(frame[offset + 3], frame[offset + 4], frame[offset + 5], frame[offset + 6]));
         }
 
         private static void SomaPose(float[] frame, Quaternion[] rotations, Vector3[] positions)
@@ -291,17 +299,17 @@ namespace ProjectC.Animation.MotionBricks
         {
             (0, 1), (1, 3), (3, 4), (4, 6),
             (12, 13), (13, 14), (40, 41), (41, 42),
+            // Кисти раньше не получали дельты вовсе: в списке не было сегмента ИЗ кисти,
+            // поэтому `Evaluate` оставлял `B-hand.L/R` в rest-повороте и модель не могла
+            // согнуть запястье. Сегмент кисть→первый палец (15 под 14, 43 под 42) даёт
+            // кости кисти собственную мировую дельту.
+            (14, 15), (42, 43),
             (67, 68), (68, 69), (69, 70), (72, 73), (73, 74), (74, 75),
         };
 
         private static readonly (int Chest, int Arm, string Bone)[] Clavicles =
         {
             (3, 11, "B-shoulder.L"), (3, 39, "B-shoulder.R"),
-        };
-
-        private static readonly int[][] ClavicleChains =
-        {
-            new[] { 12, 13, 14 }, new[] { 40, 41, 42 },
         };
     }
 }

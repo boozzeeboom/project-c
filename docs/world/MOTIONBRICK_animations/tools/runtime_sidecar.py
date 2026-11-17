@@ -240,15 +240,41 @@ class ExternalSOMACharacter:
         )
         self.last_step_ms = 0.0
         self._reference_initialized = False
-        self._reference_app_rotation = app_rotation
-        self._reference_pose_root_rotation = app_rotation.copy()
+        # Эталон yaw СОЗНАТЕЛЬНО не хранится: он не должен попадать в корень пакета
+        # (`_apply_external_root`), иначе RESET на ненулевом yaw заваливает корпус.
+        self._reference_pose_root_rotation = self._bind_reference_root_rotation()
         self._reference_sample_root_z = float(app_position[2])
         self._reference_root_height = 0.0
 
+    def _bind_reference_root_rotation(self) -> np.ndarray:
+        """Корень bind в runtime space: `model_to_runtime * bind_root`.
+
+        Официальный проигрыватель пишет joint 0 в ДВУХ разных пространствах:
+        `clip.animation.sample()` оставляет model space (её позы идут в inference как
+        target poses), а декодер пишет уже runtime space
+        (`output_local_poses[frame, 0] = mul(model_to_runtime, hips_transform)`).
+        `model_pose()` же всегда снимает `runtime_to_model`, поэтому любой сэмплированный
+        эталон даёт постоянную ошибку в Unity: bind-клон — −90° вокруг X (завал на бок),
+        клип-кадр — ≈+94° вокруг Y (корпус боком). Anchor на bind+M даёт packet_root == bind,
+        то есть delta_root == identity: ориентацию тела задаёт трансформ игрока.
+        """
+        bind_root = np.asarray(self.bind_pose, dtype=np.float64).reshape(JOINTS, FLOATS_PER_JOINT)[0, 3:7]
+        return _quat_multiply(np.asarray(self.model_to_runtime.q, dtype=np.float64), bind_root)
+
     def _capture_reference(self, character, app_ground: np.ndarray, app_rotation: np.ndarray) -> None:
+        """Зафиксировать эталон при сбросе: корневая ориентация и высота.
+
+        Корневая ориентация берётся не из сэмплированной позы, а из bind+M
+        (`_bind_reference_root_rotation`): только тогда постоянный множитель root'а
+        в Unity-дельте равен identity.
+
+        yaw игрока в эталон НЕ входит — ни в поворот корня, ни в высоту. Раньше здесь
+        записывался `app_rotation`, и при RESET на развороте (airborne STOP/START) эталон
+        уезжал от bind: `model_pose` снимает `inv(app)`, остаётся `M^-1 * inv(ref) * M * bind`,
+        т.е. постоянный поворот корня — персонаж задом наперёд.
+        """
         pose = character.current_pose.numpy().reshape(JOINTS, FLOATS_PER_JOINT)
-        self._reference_app_rotation = app_rotation.copy()
-        self._reference_pose_root_rotation = _normalize_quaternion(pose[0, 3:7])
+        self._reference_pose_root_rotation = self._bind_reference_root_rotation()
         self._reference_sample_root_z = float(pose[0, 2])
         # SOMA current_pose: root XY — app-ground, Z — высота относительно ground.
         self._reference_root_height = float(pose[0, 2])
@@ -257,8 +283,10 @@ class ExternalSOMACharacter:
     def _apply_external_root(self, character, app_ground: np.ndarray, app_rotation: np.ndarray) -> None:
         pose = character.current_pose.numpy().reshape(JOINTS, FLOATS_PER_JOINT).copy()
         sampled_root_z = float(pose[0, 2])
-        yaw_delta = _quat_multiply(app_rotation, _quat_inverse(self._reference_app_rotation))
-        corrected_rotation = _quat_multiply(yaw_delta, self._reference_pose_root_rotation)
+        # Контракт: корень в пакете обязан быть равен `model_to_runtime * bind_root` при ЛЮБОМ
+        # yaw игрока. `model_pose` снимает `inv(app_rotation)`, поэтому сюда кладём
+        # `app_rotation * M * bind` — на выходе остаётся ровно `M^-1 * M * bind`.
+        corrected_rotation = _quat_multiply(app_rotation, self._reference_pose_root_rotation)
         pose[0, 0:2] = app_ground[0:2]
         pose[0, 2] = self._reference_root_height + sampled_root_z - self._reference_sample_root_z
         pose[0, 3:7] = corrected_rotation
@@ -273,11 +301,8 @@ class ExternalSOMACharacter:
         app_velocity[2] = 0.0
         speed = float(np.linalg.norm(app_velocity[:2]))
 
-        if reset or not self._reference_initialized:
-            self._capture_reference(character, app_ground, app_rotation)
+        capture_reference = reset or not self._reference_initialized
 
-        character.character_ground_position[:] = app_ground
-        previous_ground = app_ground - app_velocity * dt
         facing = _quat_rotate(app_rotation, [1.0, 0.0, 0.0])
         facing[2] = 0.0
         if speed > 0.05:
@@ -297,14 +322,37 @@ class ExternalSOMACharacter:
             use_max_speed=use_max_speed,
         )
         character.state_machine.update(character, dt, command)
+        # Как в официальном `Character.step()`: previous_ground снимается ДО сэмпла, а
+        # `_update_character_velocity` считает скорость по собственному корню модели
+        # (её `_update_character_position` внутри сэмпла).
+        #
+        # Раньше здесь стояло `character_ground_position = app_ground` и velocity, синтезированная
+        # из скорости игрока. Модель видела противоречивую историю: собственный корень идёт вперёд
+        # на 5 м/с, а `actual_velocity` при отпущенных клавишах — ровно 0. Замер на круге
+        # (12 x 0.5 s, 5 м/с) + 1 s простоя: chest 103° от bind и НЕ восстанавливается
+        # («отпускаешь кнопки — раскручивает»); с собственным velocity — chest 8.7° и
+        # восстановление за те же 1 s. Мир по-прежнему принадлежит игроку: позицию в Unity
+        # задаёт только `_apply_external_root`, ниже.
+        previous_ground = character.character_ground_position.copy()
         character._sample_playback(dt)
-        self._apply_external_root(character, app_ground, app_rotation)
-        character.character_ground_position[:] = app_ground
+
+        # Эталон корня фиксирован на bind+M (см. `_bind_reference_root_rotation`), поэтому
+        # положение и высоту сброса можно снимать из любой позы: сам root берётся не отсюда.
+        if capture_reference:
+            self._capture_reference(character, app_ground, app_rotation)
+
+        # Порядок важен: в историю модели (`record_pose`) должен уйти ЕЁ СОБСТВЕННЫЙ корень,
+        # как в официальном `Character.step()` (sample → record). Если записать туда корень,
+        # выровненный под игрока, модель видит «я не повернулся» при команде «повернись»:
+        # каждый чанк она пытается довернуть, поворот стирается, остаток копится в позе
+        # (персонаж «закручивается как dummy на нитке», а на простое раскручивается обратно).
+        # Выравнивание корня применяем ПОСЛЕ записи — только к позе, которую отдаём в Unity.
         character._update_character_velocity(previous_ground, dt)
         if reset:
             character.player.seed_history_from_pose(character.current_pose)
         else:
             character.player.record_pose(dt, character.current_pose)
+        self._apply_external_root(character, app_ground, app_rotation)
         character._update_probe_box()
         self.last_step_ms = (time.perf_counter() - started) * 1000.0
 

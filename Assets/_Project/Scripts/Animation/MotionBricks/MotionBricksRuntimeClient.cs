@@ -103,6 +103,26 @@ namespace ProjectC.Animation.MotionBricks
             }
         }
 
+        /// <summary>Медиана RTT с последнего <see cref="ResetSamples"/> (без всплеска подъёма sidecar).</summary>
+        public float RoundTripP50Ms
+        {
+            get
+            {
+                lock (_pendingSync) return Percentile(_roundTrips, 0.5f);
+            }
+        }
+
+        /// <summary>Сбросить накопленные замеры: после Attach p50 не должен включать очередь подъёма ENGINE.</summary>
+        public void ResetSamples()
+        {
+            lock (_pendingSync)
+            {
+                _roundTrips.Clear();
+                _inferenceTimes.Clear();
+                _pending.Clear();
+            }
+        }
+
         public void Start()
         {
             if (_running) return;

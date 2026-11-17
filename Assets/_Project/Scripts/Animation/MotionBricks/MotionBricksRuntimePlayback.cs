@@ -35,6 +35,9 @@ namespace ProjectC.Animation.MotionBricks
         // Кадр дольше этого — не молчание sidecar, а провал главного потока: такой кадр
         // не считается устареванием, но модель надо пере-заякорить (RESET).
         [SerializeField, Min(0.1f)] private float _hitchThresholdSeconds = 0.5f;
+        // Пока sidecar поднимается (ENGINE ~3.3 с + импорт Warp), ответов нет; шлём редкой пробой,
+        // чтобы не копить очередь в сокете.
+        [SerializeField, Min(0.05f)] private float _warmupSendInterval = 0.5f;
 
         [Header("Airborne fallback")]
         // 0.1 с давало ложные срабатывания ступенькой/склоном: в логе видны пары
@@ -57,6 +60,10 @@ namespace ProjectC.Animation.MotionBricks
         private float _startedAt;
         private float _firstPoseMs = -1f;
         private int _resetCount;
+        private float _lastSendAt;
+        private float _movementStartedAt;
+        private float _onsetMs = -1f;
+        private bool _wasMoving;
         private bool _hasLastPosition;
         private Vector3 _lastPosition;
         private bool _rootMotionGuardActive;
@@ -156,6 +163,14 @@ namespace ProjectC.Animation.MotionBricks
                 return;
             }
 
+            // Пока ни одного пакета не пришло — sidecar ещё поднимается. Шлём 2 раза в секунду,
+            // иначе запросы копятся в сокете и после ENGINE_READY обрабатываются одним залпом:
+            // в логе это дало RTT p50=1850 ms / p95=6314 ms при age=14 ms и промотку
+            // нескольких секунд прошлого в модели сразу после метки LIVE.
+            // ВАЖНО: стоит ДО разбора _resetPending, иначе пропущенный кадр съедает стартовый RESET.
+            if (!_receivedAnyPose && Time.realtimeSinceStartup - _lastSendAt < _warmupSendInterval) return;
+            _lastSendAt = Time.realtimeSinceStartup;
+
             bool reset = _resetPending;
             if (_hasLastPosition && (transform.position - _lastPosition).sqrMagnitude > 25f) reset = true;
             if (reset) _resetCount++;
@@ -164,6 +179,7 @@ namespace ProjectC.Animation.MotionBricks
             _resetPending = false;
             Vector3 velocity = _controller.velocity;
             velocity.y = 0f;
+
             _client.Send(Time.deltaTime, _walkSpeed, _runSpeed, transform.position, transform.rotation, velocity, reset);
 
             if (_client.TryGetBindPose(out float[] bind) && _retarget == null)
@@ -185,6 +201,19 @@ namespace ProjectC.Animation.MotionBricks
                     Debug.Log($"[MB-Runtime] LIVE: первый пакет через {_firstPoseMs:F0} мс после Start. " +
                               "До этой метки нейрослой молчит — это подъём ENGINE, а не задержка модели.", this);
                 }
+            }
+
+            // Настоящая задержка «нажал W — анимация пошла не сразу»: от команды движения до первого
+            // кадра, где стопа реально в контакте (в idle модель отдаёт 0,0/0,0/0,0/0,0).
+            bool moving = velocity.sqrMagnitude > 0.25f;
+            if (moving && !_wasMoving) _movementStartedAt = Time.realtimeSinceStartup;
+            if (!moving) _onsetMs = -1f;
+            _wasMoving = moving;
+            if (moving && _onsetMs < 0f && _frame != null && FootContact(_frame.Contacts) > 0.5f)
+            {
+                _onsetMs = (Time.realtimeSinceStartup - _movementStartedAt) * 1000f;
+                Debug.Log($"[MB-Runtime] ONSET: команда движения → первый контакт стопы {_onsetMs:F0} мс " +
+                          $"(RTT p50={_client.RoundTripP50Ms:F1} ms, source={_frame.PlaybackSource}, seq={_lastAppliedSequence}).", this);
             }
             if (_receivedAnyPose && _client.LastFrameAgeMs > _staleTimeoutSeconds * 1000f)
             {
@@ -276,6 +305,7 @@ namespace ProjectC.Animation.MotionBricks
             ApplyRootMotionGuard();
             _neuralActive = true;
             _resetPending = hardReset;
+            _client.ResetSamples();
             _receivedAnyPose = false;
             _startedAt = Time.realtimeSinceStartup;
             _firstPoseMs = -1f;
@@ -315,7 +345,7 @@ namespace ProjectC.Animation.MotionBricks
             string contacts = _frame == null ? "-" : string.Join("/", Array.ConvertAll(_frame.Contacts, value => value.ToString("F2")));
             return $"[MB-Runtime] active={_neuralActive}, source={source}, sequence={_lastAppliedSequence}, " +
                    $"contacts={contacts}, serverStep={(_frame != null ? _frame.ServerStepMs : 0f):F1} ms, " +
-                   $"fallbacks={_fallbackCount}, hitches={_hitchCount}, resets={_resetCount}, firstPose={_firstPoseMs:F0} ms, lastStop={_lastStopReason}\n" +
+                   $"fallbacks={_fallbackCount}, hitches={_hitchCount}, resets={_resetCount}, onset={_onsetMs:F0} ms, firstPose={_firstPoseMs:F0} ms, lastStop={_lastStopReason}\n" +
                    (_client != null ? _client.Diagnostics() : "sidecar=detached");
         }
 
@@ -325,6 +355,14 @@ namespace ProjectC.Animation.MotionBricks
             Debug.LogError($"[MB-Runtime] FALLBACK: {reason}", this);
             StopRuntime(reason);
             if (!keepClient) DisposeClient();
+        }
+
+        private static float FootContact(float[] contacts)
+        {
+            if (contacts == null || contacts.Length == 0) return 0f;
+            float max = 0f;
+            for (int index = 0; index < contacts.Length; index++) max = Mathf.Max(max, contacts[index]);
+            return max;
         }
 
         private void ApplyRootMotionGuard()

@@ -56,15 +56,54 @@ RESPONSIVE_SETTINGS = {
 }
 
 
-def apply_response_settings(character, enabled: bool = True) -> dict:
-    """Подтянуть отклик модели к скорости CharacterController.
+def apply_token_horizon(character, token_counts) -> int:
+    """Сократить горизонт генерации: ограничить `allowed_token_counts` у всех режимов.
 
-    `LocomotionSettings` — frozen dataclass, поэтому пересобираем через `replace` и
-    кладём обратно в state machine. Возвращает применённое (для лога), чтобы в
-    приёмке было видно, с какими числами гонялись.
+    `chunk` (он же `playback_duration`) — это длина сгенерированного вперёд плана, её выбирает
+    сама модель из `allowed_token_counts` режима (по умолчанию 8…14 → 0,9…1,6 с). Новый чанк
+    планируется от текущей позы к целевой в его конце, поэтому разгон занимает секунды не
+    из-за порогов регенерации, а из-за длины плана. 6 токенов ─ самый короткий допустимый
+    контрактом (`MODEL_MIN_TOKEN_COUNT`).
     """
 
-    if not enabled:
+    if not token_counts:
+        return 0
+    from dataclasses import replace
+
+    allowed = tuple(int(value) for value in token_counts)
+    patched = 0
+    for attribute in ("standing_locomotion_state", "crouching_locomotion_state"):
+        state = getattr(character.state_machine, attribute, None)
+        if state is None:
+            continue
+        modes = getattr(state, "mode_runtimes", None)
+        if not isinstance(modes, dict):
+            continue
+        # LocomotionModeRuntime и LocomotionMode — оба frozen, поэтому заменяется объект целиком,
+        # а `active_mode_runtime` переустанавливается на новую копию того же режима.
+        active = getattr(state, "active_mode_runtime", None)
+        active_name = next((name for name, runtime in modes.items() if runtime is active), None)
+        for name, runtime in list(modes.items()):
+            modes[name] = replace(
+                runtime,
+                definition=replace(runtime.definition, allowed_token_counts=allowed),
+            )
+            patched += 1
+        if active_name is not None:
+            state.active_mode_runtime = modes[active_name]
+    return patched
+
+
+def apply_response_settings(character, overrides: "dict | None" = None) -> dict:
+    """Подтянуть отклик модели к скорости CharacterController.
+
+    `overrides` — поля `LocomotionSettings`, которые надо заменить (см. RESPONSIVE_SETTINGS).
+    Пусто/None — оставить движковые значения. `LocomotionSettings` — frozen dataclass,
+    поэтому пересобираем через `replace` и кладём обратно в state.
+    Возвращает применённое (для лога), чтобы в приёмке было видно числа.
+    """
+
+    if not overrides:
         return {}
     from dataclasses import replace
 
@@ -75,11 +114,11 @@ def apply_response_settings(character, enabled: bool = True) -> dict:
         state = getattr(character.state_machine, attribute, None)
         if state is None or not hasattr(state, "settings"):
             continue
-        state.settings = replace(state.settings, **RESPONSIVE_SETTINGS)
+        state.settings = replace(state.settings, **overrides)
         patched.append(attribute)
     if not patched:
         raise RuntimeError("LocomotionState not found; response settings were not applied")
-    return dict(RESPONSIVE_SETTINGS)
+    return dict(overrides)
 
 
 @dataclass(slots=True)
@@ -306,7 +345,7 @@ class ExternalSOMACharacter:
             modes=(linear, DIRECTIONAL_LOCOMOTION, CROUCH_LOCOMOTION),
         )
         self.last_step_ms = 0.0
-        self.response_settings = apply_response_settings(self.character, responsive)
+        self.response_settings = apply_response_settings(self.character, RESPONSIVE_SETTINGS if responsive else None)
         self._reference_initialized = False
         # Эталон yaw СОЗНАТЕЛЬНО не хранится: он не должен попадать в корень пакета
         # (`_apply_external_root`), иначе RESET на ненулевом yaw заваливает корпус.

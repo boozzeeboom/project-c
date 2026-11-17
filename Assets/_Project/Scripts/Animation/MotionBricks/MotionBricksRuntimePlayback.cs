@@ -39,6 +39,13 @@ namespace ProjectC.Animation.MotionBricks
         // чтобы не копить очередь в сокете.
         [SerializeField, Min(0.05f)] private float _warmupSendInterval = 0.5f;
 
+        // Диагностику в движении снять хоткеем нельзя (руки заняты WASD), поэтому она пишется сама.
+        // 0 — выключить.
+        [SerializeField, Min(0f), Tooltip("Период авто-лога диагностики, с. 0 — выключено.")]
+        private float _autoLogIntervalSeconds = 5f;
+        private int _autoLogGenerationBaseline;
+        private float _autoLogAt;
+
         [Header("Airborne fallback")]
         // 0.1 с давало ложные срабатывания ступенькой/склоном: в логе видны пары
         // `airborne: STOP` → `START` с интервалом 0.2-0.8 с, т.е. анимация пропадала на ровном месте.
@@ -215,6 +222,16 @@ namespace ProjectC.Animation.MotionBricks
                 Debug.Log($"[MB-Runtime] ONSET: команда движения → первый контакт стопы {_onsetMs:F0} мс " +
                           $"(RTT p50={_client.RoundTripP50Ms:F1} ms, source={_frame.PlaybackSource}, seq={_lastAppliedSequence}).", this);
             }
+            if (_autoLogIntervalSeconds > 0f && Time.realtimeSinceStartup >= _autoLogAt)
+            {
+                _autoLogAt = Time.realtimeSinceStartup + _autoLogIntervalSeconds;
+                int generations = _client.GenerationCount;
+                int delta = Mathf.Max(0, generations - _autoLogGenerationBaseline);
+                _autoLogGenerationBaseline = generations;
+                // gen/s — частота генераций: чанк длиной T означает, что команда, пришедшая
+                // в середине чанка, отрабатывается только к точке перехода (остаток в chunk=).
+                Debug.Log(Diagnostics() + $"\ngen/s={delta / _autoLogIntervalSeconds:F2}", this);
+            }
             if (_receivedAnyPose && _client.LastFrameAgeMs > _staleTimeoutSeconds * 1000f)
             {
                 // Провал главного потока (загрузка/GC/хитч) неотличим от молчания sidecar.
@@ -309,6 +326,8 @@ namespace ProjectC.Animation.MotionBricks
             _receivedAnyPose = false;
             _startedAt = Time.realtimeSinceStartup;
             _firstPoseMs = -1f;
+            _autoLogAt = Time.realtimeSinceStartup + _autoLogIntervalSeconds;
+            _autoLogGenerationBaseline = _client.GenerationCount;
             _hasLastPosition = false;
             _frame = null;
             _retarget = null;
@@ -344,7 +363,8 @@ namespace ProjectC.Animation.MotionBricks
             string source = _frame == null ? "none" : SourceName(_frame.PlaybackSource);
             string contacts = _frame == null ? "-" : string.Join("/", Array.ConvertAll(_frame.Contacts, value => value.ToString("F2")));
             return $"[MB-Runtime] active={_neuralActive}, source={source}, sequence={_lastAppliedSequence}, " +
-                   $"contacts={contacts}, serverStep={(_frame != null ? _frame.ServerStepMs : 0f):F1} ms, " +
+                   $"contacts={contacts}, chunk={(_frame != null ? _frame.ChunkMs : 0)}/{(_frame != null ? _frame.ChunkRemainingMs : 0)} ms, " +
+                   $"serverStep={(_frame != null ? _frame.ServerStepMs : 0f):F1} ms, " +
                    $"fallbacks={_fallbackCount}, hitches={_hitchCount}, resets={_resetCount}, onset={_onsetMs:F0} ms, firstPose={_firstPoseMs:F0} ms, lastStop={_lastStopReason}\n" +
                    (_client != null ? _client.Diagnostics() : "sidecar=detached");
         }

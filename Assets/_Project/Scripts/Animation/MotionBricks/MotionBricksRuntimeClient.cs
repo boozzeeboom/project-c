@@ -26,6 +26,8 @@ namespace ProjectC.Animation.MotionBricks
         public float DecodeMs;
         public float PostProcessMs;
         public float ServerStepMs;
+        public int ChunkMs;
+        public int ChunkRemainingMs;
         public readonly float[] Pose = new float[77 * 7];
         public readonly float[] Contacts = new float[4];
     }
@@ -286,7 +288,7 @@ namespace ProjectC.Animation.MotionBricks
                 uint sequence = reader.ReadUInt32();
                 int source = reader.ReadInt32();
                 int generation = reader.ReadInt32();
-                reader.ReadUInt32();
+                uint timeline = reader.ReadUInt32();
                 float wall = reader.ReadSingle();
                 float encode = reader.ReadSingle();
                 float inference = reader.ReadSingle();
@@ -321,6 +323,8 @@ namespace ProjectC.Animation.MotionBricks
                     DecodeMs = decode,
                     PostProcessMs = post,
                     ServerStepMs = step,
+                    ChunkMs = (int)(timeline & 0xFFFFu),
+                    ChunkRemainingMs = (int)(timeline >> 16),
                 };
                 float[] pose = ReadFloats(reader, 77 * 7);
                 float[] contacts = ReadFloats(reader, 4);

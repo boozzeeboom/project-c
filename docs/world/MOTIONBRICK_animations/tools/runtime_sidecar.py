@@ -114,6 +114,7 @@ def response_header(
         source = 0
         generations = 0
         metrics = (0.0,) * 6
+        timeline = 0
     else:
         source = PLAYBACK_SOURCE[runtime.character._playback_source.value]
         generations = runtime.character.generation_count
@@ -126,6 +127,7 @@ def response_header(
             stages.get("post_process", 0.0),
             runtime.last_step_ms,
         )
+        timeline = _timeline_field(runtime.character)
     return RESPONSE.pack(
         MAGIC,
         VERSION,
@@ -134,9 +136,28 @@ def response_header(
         sequence,
         source,
         generations,
-        0,
+        timeline,
         *metrics,
     )
+
+
+def _timeline_field(character) -> int:
+    """Длина текущего чанка и остаток до точки перехода — в зарезервированном uint32.
+
+    Формат пакета не меняется (поле уже было в структуре и клиент его пропускал):
+    младшие 16 бит — `playback_duration` в мс, старшие 16 бит — `time_to_transition` в мс.
+    Именно остаток задаёт, через сколько модель сможет отреагировать на новую команду:
+    проигрывается уже сгенерированный чанк, и раньше точки перехода генерации не будет.
+    """
+
+    try:
+        duration = float(character.player.playback_duration)
+        remaining = float(character.time_to_transition())
+    except Exception:
+        return 0
+    chunk = int(round(max(0.0, min(duration, 65.5)) * 1000.0)) & 0xFFFF
+    left = int(round(max(0.0, min(remaining, 65.5)) * 1000.0)) & 0xFFFF
+    return (left << 16) | chunk
 
 
 class ExternalSOMACharacter:

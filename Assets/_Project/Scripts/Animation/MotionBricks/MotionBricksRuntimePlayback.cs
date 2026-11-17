@@ -56,6 +56,7 @@ namespace ProjectC.Animation.MotionBricks
         private bool _receivedAnyPose;
         private float _startedAt;
         private float _firstPoseMs = -1f;
+        private int _resetCount;
         private bool _hasLastPosition;
         private Vector3 _lastPosition;
         private bool _rootMotionGuardActive;
@@ -130,7 +131,11 @@ namespace ProjectC.Animation.MotionBricks
                 if (_resumeAfterLanding && !airborne)
                 {
                     _resumeAfterLanding = false;
-                    StartRuntime();
+                    // Продолжение после приземления — не новый старт: RESET пере-заякоривает
+                    // модель, заново засеивает историю и рестартит state machine/клип.
+                    // В логе было 9 таких циклов за сессию (9 RESET), и анимация каждый раз
+                    // начиналась заново — это и читалось как «задержка 1+ с».
+                    StartRuntime(hardReset: false);
                 }
                 return;
             }
@@ -153,6 +158,7 @@ namespace ProjectC.Animation.MotionBricks
 
             bool reset = _resetPending;
             if (_hasLastPosition && (transform.position - _lastPosition).sqrMagnitude > 25f) reset = true;
+            if (reset) _resetCount++;
             _hasLastPosition = true;
             _lastPosition = transform.position;
             _resetPending = false;
@@ -228,7 +234,7 @@ namespace ProjectC.Animation.MotionBricks
             _configured = true;
         }
 
-        public bool StartRuntime()
+        public bool StartRuntime(bool hardReset = true)
         {
             if (!_configured) return false;
             bool allowed = _reviewOverride || (_settings != null && _settings.mode == MotionBricksMode.NeuralExperimental &&
@@ -269,7 +275,7 @@ namespace ProjectC.Animation.MotionBricks
 
             ApplyRootMotionGuard();
             _neuralActive = true;
-            _resetPending = true;
+            _resetPending = hardReset;
             _receivedAnyPose = false;
             _startedAt = Time.realtimeSinceStartup;
             _firstPoseMs = -1f;
@@ -309,7 +315,7 @@ namespace ProjectC.Animation.MotionBricks
             string contacts = _frame == null ? "-" : string.Join("/", Array.ConvertAll(_frame.Contacts, value => value.ToString("F2")));
             return $"[MB-Runtime] active={_neuralActive}, source={source}, sequence={_lastAppliedSequence}, " +
                    $"contacts={contacts}, serverStep={(_frame != null ? _frame.ServerStepMs : 0f):F1} ms, " +
-                   $"fallbacks={_fallbackCount}, hitches={_hitchCount}, firstPose={_firstPoseMs:F0} ms, lastStop={_lastStopReason}\n" +
+                   $"fallbacks={_fallbackCount}, hitches={_hitchCount}, resets={_resetCount}, firstPose={_firstPoseMs:F0} ms, lastStop={_lastStopReason}\n" +
                    (_client != null ? _client.Diagnostics() : "sidecar=detached");
         }
 

@@ -487,6 +487,32 @@ def run_self_test(repo: Path, fp16: bool) -> dict:
         runtime.close()
 
 
+MAX_CATCH_UP_FRAMES = 8
+# Legacy-режим (до fix 17.13): из пачки пришедших запросов обрабатывался только новейший,
+# остальные ВЫБРАСЫВАЛИСЬ вместе с их dt. Модель шагала несколько раз в секунду, а не каждый
+# кадр игрока, поэтому её внутреннее время отставало от реального. Оставлено для A/B в
+# `verify_udp_pacing.py`.
+LATEST_ONLY_DRAIN = False
+
+
+def take_burst(sock: socket.socket, data: bytes, address) -> list[tuple[bytes, object]]:
+    """Забрать из сокета всё, что уже пришло, в порядке прихода (не больше MAX_CATCH_UP_FRAMES)."""
+    pending = [(data, address)]
+    sock.setblocking(False)
+    try:
+        while len(pending) < MAX_CATCH_UP_FRAMES:
+            try:
+                pending.append(sock.recvfrom(4096))
+            except BlockingIOError:
+                break
+    finally:
+        sock.setblocking(True)
+        sock.settimeout(1.0)
+    if LATEST_ONLY_DRAIN:
+        return pending[-1:]
+    return pending
+
+
 def serve(repo: Path, host: str, port: int, fp16: bool) -> None:
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind((host, port))
@@ -501,34 +527,33 @@ def serve(repo: Path, host: str, port: int, fp16: bool) -> None:
                 data, address = sock.recvfrom(4096)
             except socket.timeout:
                 continue
-            while True:
-                sock.setblocking(False)
-                try:
-                    newer, newer_address = sock.recvfrom(4096)
-                    data, address = newer, newer_address
-                except BlockingIOError:
+            # Очередь — В ПОРЯДКЕ, каждый кадр со своим dt: тогда внутреннее время модели
+            # совпадает с реальным (в логе `received` было 8,1/s при `sent` 14,6/s, и время
+            # терялось почти вдвое). Бюджет шага (p50 2,3 ms) много меньше кадра, так что
+            # догоняющий цикл не растёт; MAX_CATCH_UP_FRAMES ограничивает залповый разбор.
+            closing = False
+            for data, address in take_burst(sock, data, address):
+                client_address = address
+                frame = parse_request(data)
+                if frame.flags & FLAG_SHUTDOWN:
+                    print("SIDECAR_SHUTDOWN", flush=True)
+                    closing = True
                     break
-                finally:
-                    sock.setblocking(True)
-                    sock.settimeout(1.0)
-            client_address = address
-            frame = parse_request(data)
-            if frame.flags & FLAG_SHUTDOWN:
-                print("SIDECAR_SHUTDOWN", flush=True)
+                if runtime is None:
+                    runtime = ExternalSOMACharacter(repo, frame, fp16)
+                    print(f"ENGINE_READY init_ms={runtime.engine_init_ms:.1f} fp16={fp16}", flush=True)
+                if (frame.flags & FLAG_RESET) or not bind_sent:
+                    sock.sendto(response_header(PACKET_BIND, frame.sequence, runtime) + runtime.bind_pose.tobytes(), address)
+                    bind_sent = True
+                pose, contacts = runtime.step(frame)
+                packet = (
+                    response_header(PACKET_POSE, frame.sequence, runtime)
+                    + pose.tobytes()
+                    + contacts.tobytes()
+                )
+                sock.sendto(packet, address)
+            if closing:
                 break
-            if runtime is None:
-                runtime = ExternalSOMACharacter(repo, frame, fp16)
-                print(f"ENGINE_READY init_ms={runtime.engine_init_ms:.1f} fp16={fp16}", flush=True)
-            if (frame.flags & FLAG_RESET) or not bind_sent:
-                sock.sendto(response_header(PACKET_BIND, frame.sequence, runtime) + runtime.bind_pose.tobytes(), address)
-                bind_sent = True
-            pose, contacts = runtime.step(frame)
-            packet = (
-                response_header(PACKET_POSE, frame.sequence, runtime)
-                + pose.tobytes()
-                + contacts.tobytes()
-            )
-            sock.sendto(packet, address)
     except Exception as exc:
         if client_address is not None:
             message = f"{type(exc).__name__}: {exc}".encode("utf-8", errors="replace")[:60000]

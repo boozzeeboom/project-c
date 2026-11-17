@@ -45,11 +45,15 @@ PLAYBACK_SOURCE = {"generated": 0, "clip_transition": 1, "clip": 2}
 # Плюс новый чанк запрашивается только на конце чанка, при повороте больше 23°
 # (direction_regeneration_dot 0.92) или смене скорости больше 30% диапазона
 # (speed_regeneration_fraction 0.3 / minimum 0.1): всё, что мельче, ждёт до 0.9 с.
-RESPONSIVE_SETTINGS = {
+MOVEMENT_SETTINGS = {
     "facing_halflife": 0.06,
     "velocity_direction_halflife": 0.06,
     "speed_acceleration_halflife": 0.10,
     "speed_deceleration_halflife": 0.10,
+}
+
+RESPONSIVE_SETTINGS = {
+    **MOVEMENT_SETTINGS,
     "speed_regeneration_fraction": 0.05,
     "minimum_speed_regeneration_fraction": 0.02,
     "direction_regeneration_dot": 0.995,
@@ -110,6 +114,14 @@ def apply_response_settings(character, overrides: "dict | None" = None) -> dict:
     # settings живут не на StateMachine, а на каждом LocomotionState
     # (state_machine.standing_locomotion_state / crouching_locomotion_state).
     patched = []
+    # Полураспады (facing / velocity_direction / speed_acceleration) читает `Movements._smooth`
+    # из СВОЕГО settings — это отдельный экземпляр LocomotionSettings, а НЕ state.settings.
+    # Именно он задаёт разгон `desired_speed` (0.6 с → 1.35 с до команды 5 м/с).
+    movement = getattr(character, "movement", None)
+    if movement is not None and hasattr(movement, "settings"):
+        movement.settings = replace(movement.settings, **overrides)
+        patched.append("movement")
+    # Пороги регенерации (`_needs_regeneration`) читаются из state.settings.
     for attribute in ("standing_locomotion_state", "crouching_locomotion_state"):
         state = getattr(character.state_machine, attribute, None)
         if state is None or not hasattr(state, "settings"):
@@ -246,7 +258,14 @@ def _timeline_field(character) -> int:
 
 
 class ExternalSOMACharacter:
-    def __init__(self, repo: Path, initial: InputFrame, fp16: bool = False, responsive: bool = True) -> None:
+    def __init__(
+        self,
+        repo: Path,
+        initial: InputFrame,
+        fp16: bool = False,
+        responsive: bool = False,
+        engine_defaults: bool = False,
+    ) -> None:
         repo = repo.resolve()
         if str(repo) not in sys.path:
             sys.path.insert(0, str(repo))
@@ -345,7 +364,13 @@ class ExternalSOMACharacter:
             modes=(linear, DIRECTIONAL_LOCOMOTION, CROUCH_LOCOMOTION),
         )
         self.last_step_ms = 0.0
-        self.response_settings = apply_response_settings(self.character, RESPONSIVE_SETTINGS if responsive else None)
+        if engine_defaults:
+            applied = None
+        elif responsive:
+            applied = RESPONSIVE_SETTINGS
+        else:
+            applied = MOVEMENT_SETTINGS
+        self.response_settings = apply_response_settings(self.character, applied)
         self._reference_initialized = False
         # Эталон yaw СОЗНАТЕЛЬНО не хранится: он не должен попадать в корень пакета
         # (`_apply_external_root`), иначе RESET на ненулевом yaw заваливает корпус.
@@ -620,7 +645,14 @@ def take_burst(sock: socket.socket, data: bytes, address) -> list[tuple[bytes, o
     return pending
 
 
-def serve(repo: Path, host: str, port: int, fp16: bool, responsive: bool = True) -> None:
+def serve(
+    repo: Path,
+    host: str,
+    port: int,
+    fp16: bool,
+    responsive: bool = False,
+    engine_defaults: bool = False,
+) -> None:
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind((host, port))
     sock.settimeout(1.0)
@@ -647,7 +679,7 @@ def serve(repo: Path, host: str, port: int, fp16: bool, responsive: bool = True)
                     closing = True
                     break
                 if runtime is None:
-                    runtime = ExternalSOMACharacter(repo, frame, fp16, responsive)
+                    runtime = ExternalSOMACharacter(repo, frame, fp16, responsive, engine_defaults)
                     print(f"ENGINE_READY init_ms={runtime.engine_init_ms:.1f} fp16={fp16}", flush=True)
                     if runtime.response_settings:
                         print("RESPONSE " + " ".join(f"{k}={v}" for k, v in runtime.response_settings.items()), flush=True)
@@ -687,16 +719,21 @@ def main() -> None:
     parser.add_argument("--port", type=int, default=49360)
     parser.add_argument("--fp16", action="store_true")
     parser.add_argument(
+        "--responsive",
+        action="store_true",
+        help="Полный набор: полураспады + жёсткие пороги регенерации. Замерено: пороги дают 12% ценой ×4 генераций — только для A/B.",
+    )
+    parser.add_argument(
         "--engine-defaults",
         action="store_true",
-        help="Оставить LocomotionSettings движка (halflife 0.6 с) — для A/B против --responsive.",
+        help="Ничего не трогать (halflife 0.6 с) — для A/B.",
     )
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
     if args.self_test:
         print(json.dumps(run_self_test(args.repo, args.fp16), indent=2), flush=True)
     else:
-        serve(args.repo, args.host, args.port, args.fp16, not args.engine_defaults)
+        serve(args.repo, args.host, args.port, args.fp16, args.responsive, args.engine_defaults)
 
 
 if __name__ == "__main__":

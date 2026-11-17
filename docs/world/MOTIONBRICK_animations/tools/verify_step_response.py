@@ -33,15 +33,7 @@ DT = 1.0 / 60.0
 
 PRESETS = {
     "engine-defaults": {"settings": {}, "tokens": None},
-    "halflife-only": {
-        "settings": {
-            "facing_halflife": 0.06,
-            "velocity_direction_halflife": 0.06,
-            "speed_acceleration_halflife": 0.10,
-            "speed_deceleration_halflife": 0.10,
-        },
-        "tokens": None,
-    },
+    "movement-only": {"settings": dict(rs.MOVEMENT_SETTINGS), "tokens": None},
     "responsive-full": {"settings": dict(rs.RESPONSIVE_SETTINGS), "tokens": None},
     "short-chunk-tokens-only": {"settings": {}, "tokens": (6,)},
     "short-chunk": {"settings": dict(rs.RESPONSIVE_SETTINGS), "tokens": (6,)},
@@ -66,8 +58,8 @@ def ramp_metrics(speeds: list[float], start: int, target: float) -> dict:
     return result
 
 
-def run_preset(repo: Path, preset: dict, verbose: bool) -> dict:
-    runtime = rs.ExternalSOMACharacter(repo, rs.InputFrame(flags=rs.FLAG_RESET), False, False)
+def run_preset(repo: Path, preset: dict, verbose: bool, trace_frames: int = 0) -> dict:
+    runtime = rs.ExternalSOMACharacter(repo, rs.InputFrame(flags=rs.FLAG_RESET), False, False, True)
     applied = rs.apply_response_settings(runtime.character, preset.get("settings"))
     token_patches = rs.apply_token_horizon(runtime.character, preset.get("tokens"))
     position = np.zeros(3, dtype=np.float32)
@@ -103,8 +95,21 @@ def run_preset(repo: Path, preset: dict, verbose: bool) -> dict:
             speeds.append(float(np.linalg.norm((ground - previous[0])[:2])) / DT)
         previous[0] = ground
         generations[0] = runtime.character.generation_count
-        if verbose:
-            print(f"  {len(speeds):4d} cmd={speed:4.1f} model={speeds[-1] if speeds else 0.0:5.2f}", flush=True)
+        if verbose and (trace_frames <= 0 or len(speeds) <= trace_frames):
+            desired = float(np.linalg.norm(runtime.character.movement.desired_velocity))
+            try:
+                chunk = float(runtime.character.player.playback_duration) * 1000.0
+                remaining = float(runtime.character.time_to_transition()) * 1000.0
+                source = runtime.character._playback_source.value
+            except Exception:
+                chunk = remaining = float("nan")
+                source = -1
+            print(
+                f"  {len(speeds):4d} t={len(speeds) * DT:5.2f} cmd={speed:4.1f} "
+                f"desired={desired:5.2f} model={(speeds[-1] if speeds else 0.0):5.2f} "
+                f"chunk={chunk:6.0f} rem={remaining:6.0f} src={source}",
+                flush=True,
+            )
 
     try:
         for _ in range(IDLE_FRAMES):
@@ -140,16 +145,19 @@ def run_preset(repo: Path, preset: dict, verbose: bool) -> dict:
 def main() -> None:
     verbose = "--verbose" in sys.argv
     only = None
+    trace_frames = 0
     for index, value in enumerate(sys.argv):
         if value == "--preset" and index + 1 < len(sys.argv):
             only = sys.argv[index + 1]
+        if value == "--trace-frames" and index + 1 < len(sys.argv):
+            trace_frames = int(sys.argv[index + 1])
     repo = Path(r"C:/Projects/motion_bricks/motionbricks")
     report = {}
     for name, preset in PRESETS.items():
         if only is not None and name != only:
             continue
         print(f"[{name}]", flush=True)
-        report[name] = run_preset(repo, preset, verbose)
+        report[name] = run_preset(repo, preset, verbose, trace_frames)
         print(json.dumps(report[name], ensure_ascii=False), flush=True)
     print(json.dumps({"status": "OK", "presets": report}, ensure_ascii=False, indent=2), flush=True)
 

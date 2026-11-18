@@ -458300,6 +458300,14 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 9078521894809474107, guid: 65688424f24ada3429701ef06b353548, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 30.273392
+      objectReference: {fileID: 0}
+    - target: {fileID: 9078521894809474107, guid: 65688424f24ada3429701ef06b353548, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 14517
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

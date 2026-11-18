@@ -1,12 +1,22 @@
 # T-MB01 — NVIDIA MotionBricks: ресерч, применимость и пайплайн для Project C
 
 > **Дата:** 2026-11-16
-> **Статус:** research + official slice; **offline transition pack отклонён** (не лучше исходного Animator). **T-MB06 runtime sidecar + owner-player harness реализованы**, standalone TensorRT/UDP и Unity compile PASS; живой визуал и игровые замеры pending — [17](17_T-MB06_RUNTIME_SIDECAR.md).
+> **Статус (18.11.2026): ⛔ РАБОТА ОСТАНОВЛЕНА.** Итоговый вердикт, состояние кода и порядок возврата — [00_STOP_VERDICT.md](00_STOP_VERDICT.md). Ниже — историческая запись ресерча T-MB01; тикетные документы 07–18 и дубли research вынесены в [archive/](archive/).
 > **Область:** Unity 6.5 (`6000.5.2f1`), Windows x64. **Текущая продуктовая рамка — host-client co-op до 4 игроков**, не MMO; прежние MMO-аргументы против runtime считать историческими до замеров.
 > **Тикет:** `T-MB01` (новая серия `T-MB` — MotionBricks; заводится этим документом)
-> **Документы:** [01_RESEARCH.md](01_RESEARCH.md) · [02_PIPELINE.md](02_PIPELINE.md) · [03_ALTERNATIVES.md](03_ALTERNATIVES.md) · [04_SOURCES.md](04_SOURCES.md) · [05_LOCAL_RESOURCES.md](05_LOCAL_RESOURCES.md) · [06_SAFE_ROLLOUT_AND_ROLLBACK.md](06_SAFE_ROLLOUT_AND_ROLLBACK.md) · [10_T-MB04B_RUNTIME_HARNESS.md](10_T-MB04B_RUNTIME_HARNESS.md) · [11_T-MB03_BAKER_AND_GUARDS.md](11_T-MB03_BAKER_AND_GUARDS.md) · [12_T-MB04C_ROOT_MOTION_IN_PLAYER.md](12_T-MB04C_ROOT_MOTION_IN_PLAYER.md) · [13_T-MB05_LEG_IK_AND_LOOP.md](13_T-MB05_LEG_IK_AND_LOOP.md) · [14_OFFICIAL_VERTICAL_SLICE.md](14_OFFICIAL_VERTICAL_SLICE.md) · [15_LOCOMOTION_TRANSITION_PACK_V1.md](15_LOCOMOTION_TRANSITION_PACK_V1.md) · [16_OFFLINE_REJECTED_RUNTIME_NEXT.md](16_OFFLINE_REJECTED_RUNTIME_NEXT.md) · [17_T-MB06_RUNTIME_SIDECAR.md](17_T-MB06_RUNTIME_SIDECAR.md) · [HANDOFF.md](HANDOFF.md)
+> **Документы:** [00_STOP_VERDICT.md](00_STOP_VERDICT.md) · [01_RESEARCH.md](01_RESEARCH.md) · [02_PIPELINE.md](02_PIPELINE.md) · [03_ALTERNATIVES.md](03_ALTERNATIVES.md) · [04_SOURCES.md](04_SOURCES.md) · [05_LOCAL_RESOURCES.md](05_LOCAL_RESOURCES.md) · [06_SAFE_ROLLOUT_AND_ROLLBACK.md](06_SAFE_ROLLOUT_AND_ROLLBACK.md) · [HANDOFF.md](HANDOFF.md) · **архив:** [archive/](archive/)
 >
 > **Offline-пакет:** все материалы уже скачаны в **`C:\Projects\motion_bricks`**. Агент интеграции работает без сети — используйте [05_LOCAL_RESOURCES.md](05_LOCAL_RESOURCES.md); внешние ссылки ниже оставлены как происхождение.
+
+---
+
+## 0. STOP — читать первым
+
+**18.11.2026 MotionBricks остановлен как направление развития анимации.** Итоговый вердикт заказчика: MotionBricks возвращается к роли **офлайн-генератора переходных стадий**; в игре остаётся наш Animator. Runtime-нейро (T-MB06) заморожен, `mode: 0`, на билд не влияет.
+
+Полный разбор, состояние кода, карта архива и условия возврата — **[00_STOP_VERDICT.md](00_STOP_VERDICT.md)**.
+
+Всё, что ниже (TL;DR, §3 матрица применимости, §5 план) — **историческая запись T-MB01 (15–18.11.2026)**, оставлена как база знаний: что MotionBricks умеет и чего не умеет. Пункты TL;DR про runtime считать закрытыми стопом.
 
 ---
 
@@ -85,7 +95,7 @@
 - **Бой:** `T-INP-08` — `AnimationClip` + `AnimatorOverrideController` + Animation Event `OnAttackImpact` на ~60% клипа; тайминг удара завязан на клип. Это критично.
 - **FO:** персонажи — `IGlobalMotionActorParticipant`; NPC/игрок уже под контрактом floating origin.
 - **Анимационный контент:** 1344 FBX (~6.3 GB, включая меши), 13 `.anim` (~20.5 MB), 78 `.controller`; основная библиотека — Kevin Iglesias Human Animations.
-- **Пакеты:** `com.unity.animation.rigging 1.4.1`, Cinemachine 3.1.7, Timeline 1.8.13; **Sentis / `com.unity.ai.inference` не установлен**.
+- **Пакеты:** `com.unity.animation.rigging 1.4.1`, Cinemachine 3.1.7, Timeline 1.8.13; **Sentis / `com.unity.ai.inference` не установлен**. ⚠️ Замер сделан в worktree: в `main` на 18.11.2026 этих пакетов в `Packages/manifest.json` нет (есть только `com.unity.feature.characters-animation 1.0.0`), Animation Rigging надо ставить отдельно.
 
 ### 3.2. Матрица применимости
 
@@ -189,17 +199,10 @@
 | [04_SOURCES.md](04_SOURCES.md) | Аннотированные источники и методология замеров |
 | [05_LOCAL_RESOURCES.md](05_LOCAL_RESOURCES.md) | **Offline-пакет:** локальные пути, модели, venv, Unity-пакеты, checksums |
 | [06_SAFE_ROLLOUT_AND_ROLLBACK.md](06_SAFE_ROLLOUT_AND_ROLLBACK.md) | Безопасная интеграция: режимы, feature flag, изоляция, откат, тест-матрица |
-| [07_T-MB02_WORKTREE_BASELINE_FINDINGS.md](07_T-MB02_WORKTREE_BASELINE_FINDINGS.md) | **T-MB02:** worktree vs Lore-контент, baseline |
-| [08_T-MB02_RETARGET_FINDINGS.md](08_T-MB02_RETARGET_FINDINGS.md) | **T-MB02:** ретаргет, замеры, Play Mode-приёмка, ограничения |
-| [09_T-MB02_ANALYSIS_AND_NEXT.md](09_T-MB02_ANALYSIS_AND_NEXT.md) | **Анализ T-MB02:** 100%? ограничения, NPC, выигрыш, следующие шаги |
-| [10_T-MB04B_RUNTIME_HARNESS.md](10_T-MB04B_RUNTIME_HARNESS.md) | **T-MB04b:** root motion на probe, body swap на живом игроке, стенд и порядок приёмки |
-| [11_T-MB03_BAKER_AND_GUARDS.md](11_T-MB03_BAKER_AND_GUARDS.md) | **T-MB03:** discovery/batch/validation, pelvis IK, applyRootMotion guard, GUID |
-| [12_T-MB04C_ROOT_MOTION_IN_PLAYER.md](12_T-MB04C_ROOT_MOTION_IN_PLAYER.md) | **T-MB04c:** root motion в `NetworkPlayer` через bridge, замер 2.00 м/с, body swap |
-| [13_T-MB05_LEG_IK_AND_LOOP.md](13_T-MB05_LEG_IK_AND_LOOP.md) | **T-MB05:** 2-bone IK ног, non-cyclic pelvis/`loop:false`, humanoid T-поза fix, замеры |
-| [14_OFFICIAL_VERTICAL_SLICE.md](14_OFFICIAL_VERTICAL_SLICE.md) | **Official slice:** собственный moving context, TensorRT vs CPU A/B, Unity import без IK |
-| [15_LOCOMOTION_TRANSITION_PACK_V1.md](15_LOCOMOTION_TRANSITION_PACK_V1.md) | **Transition pack v1:** исторический batch 22 переходов; отклонён |
-| [16_OFFLINE_REJECTED_RUNTIME_NEXT.md](16_OFFLINE_REJECTED_RUNTIME_NEXT.md) | **Решение:** offline pack отклонён, очистка мусора, следующий этап — runtime NVIDIA |
-| [17_T-MB06_RUNTIME_SIDECAR.md](17_T-MB06_RUNTIME_SIDECAR.md) | **T-MB06:** official SOMA runtime, UDP sidecar, owner-player A/B, метрики и ручная приёмка |
+| **[00_STOP_VERDICT.md](00_STOP_VERDICT.md)** | **СТОП + итоговый вердикт:** что остановлено, состояние кода и влияние на билд, карта архива, условия возврата |
+| `archive/07…18_*.md` | **Архив тикетов T-MB02…T-MB06:** worktree/baseline, ретаргет и замеры, анализ T-MB02, runtime harness, бейкер/guard, root motion в игроке, leg IK/loop, official slice, transition pack v1 (отклонён), решение об отказе от offline, runtime sidecar, анализ осей |
+| `archive/batches/locomotion_v1.json` | Batch-задание отклонённого transition pack v1 |
+| `archive/research_2026-11-18/` | Три дубля ресерча 18.11 (`beam_`, `hy4_`, `mimo_research.md`): внешний ландшафт и ответ на «зачем нам MB» |
 | [baseline/BASELINE_MANIFEST.md](baseline/BASELINE_MANIFEST.md) | Baseline-хэши 12 ключевых файлов + `check_baseline.ps1` |
 | [HANDOFF.md](HANDOFF.md) | Саммари для передачи работы следующему агенту (абсолютные ссылки) |
 

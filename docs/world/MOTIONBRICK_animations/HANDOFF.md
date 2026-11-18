@@ -2,7 +2,7 @@
 
 > **Для:** следующего агента/разработчика, который делает интеграцию.
 > **Дата:** 2026-11-16
-> **Статус:** research + offline pack + safe rollout + **T-MB02 spike** + **T-MB04b accepted** + **T-MB03 done** + **T-MB04c code + runtime (visual pending)** + **T-MB05 code + замеры (visual pending)** + **official slice visual accepted**; **offline locomotion transition pack отклонён**. **T-MB06:** официальный runtime sidecar + owner-player harness реализованы; standalone TensorRT и UDP PASS, Unity 0 errors, **визуальная приёмка pending**.
+> **Статус (18.11.2026): ⛔ РАБОТА ОСТАНОВЛЕНА.** Ниже — историческая передача T-MB02…T-MB06. Итоговый вердикт, состояние кода, влияние на билд и условия возврата — [00_STOP_VERDICT.md](00_STOP_VERDICT.md). В игре остаётся наш Animator; MotionBricks — только офлайн-генератор переходных стадий.
 > **Продуктовая рамка:** host-client co-op до 4 игроков. Прежние MMO-аргументы против runtime считать исторической гипотезой; feasibility runtime определяется замерами.
 > **Главное правило:** текущий Animator — дефолт; MotionBricks — additive, off by default, с откатом в минуты.
 > **Main:** код и docs импортированы в `main` коммитом `934ecdf6`; `MotionBricksRuntimeSettings.asset` в main — `mode: 0` (Disabled). `feature/motionbricks` — backup/история, не мержить слепо (в ветке `mode: 1`).
@@ -16,6 +16,23 @@
 > **Locomotion transition pack v1 (16.11): ❌ отклонён** — 22 перехода, 0/22 validator PASS, 9/22 slide≤2. Пользователь: не лучше исходного Animator, требует сопоставимого объёма ручной отладки. В Animator не внедрялся. Generated-артефакты и debug-сцена удалены; причина и следующий этап — [16](16_OFFLINE_REJECTED_RUNTIME_NEXT.md).
 > **T-MB06 (16.11): runtime-код + standalone PASS; повторный visual pending** — настоящий `NetworkPlayer`/`CharacterController` отправляет движение в официальный Python/TensorRT `SOMACharacter`; UDP latest-frame → SOMA retarget поверх Animator в `LateUpdate`. Ctrl+F10 — neural/legacy A/B; owner loss/cast/stale/error/body swap → authored Animator. Attach берёт rest template из фактической модели customisation (`testing`/female), HumanM/HumanF — fallback; `B-jaw` опционален. Исправлены по приёмке пользователя: улёт по вертикали (root Z относительный; guard >5 м), постоянный поворот на −90° (**исправлено 17.11, замерено** `tools/verify_root_frame.py`: из 77 джойнтов пространство имеет значение только у joint 0, а официальный проигрыватель пишет его в двух конвенциях — `clip.animation.sample` model space, декодер runtime space; bind-клон давал `delta_root` = 90° вокруг X (завал на бок), клип-кадр — 93.6° вокруг Y (корпус боком). Теперь эталон = `model_to_runtime · bind_root`, `delta_root` = 0.0° на idle/5 м/с/повороте 90°, `SourceToTargetYawOffsetDeg = 0`), выворачивание рук (twist ±90°), прыжок (airborne → authored Animator, auto-resume после landing). Self-test 480 кадров/14 генераций, тёплый wall inference p50/p95 **5.107/32.302 ms**; Unity 0 errors, baseline 12/12. **Повторный живой визуал, equipment/body swap, FPS/VRAM и host-client ещё не проверены.** Инструкция и метрики — [17](17_T-MB06_RUNTIME_SIDECAR.md).
 > **Найдено:** фактический рантайм-игрок — `NetworkPlayer_GlobalPilot.prefab` (подставляет `GlobalMotionNetworkStartup` из профиля), baseline защищает `NetworkPlayer.prefab`. Новое тело после свапа приходит с FBX-дефолтами Animator (`applyRootMotion=true`, `CullUpdateTransforms`) — для будущих root-motion клипов нужен гард (T-MB03/05).
+
+---
+
+## 0. STOP (18.11.2026) — тикетная линия закрыта
+
+Работа по MotionBricks остановлена решением заказчика: **«вернемся к моушнбрикс как генератор переходных стадий анимационных а в игре продолжаем использовать наш аниматор»**.
+
+- Runtime-нейро (T-MB06), jump-spike и A/B `--engine-defaults` — **не начинаются**.
+- Код остаётся замороженным: `MotionBricksRuntimeSettings.asset` = `mode: 0`, на билд не влияет.
+- Все относительные ссылки вида `07_…`–`18_…` в тексте ниже ведут на **старые пути** — файлы лежат в `archive/` под теми же именами.
+- Актуальное состояние, инвентарь кода и условия возврата — [00_STOP_VERDICT.md](00_STOP_VERDICT.md).
+
+| Из | В |
+|---|---|
+| `07_…` – `18_…` (12 документов) | `archive/` |
+| `batches/locomotion_v1.json` | `archive/batches/` |
+| `beam_research.md`, `hy4_research.md`, `mimo_research.md` | `archive/research_2026-11-18/` |
 
 ---
 

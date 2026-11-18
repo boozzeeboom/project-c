@@ -83,11 +83,11 @@
 | **Пакеты** | — | MB **не добавил ни одного пакета**. Единственное изменение `Packages/manifest.json` в диапазоне — удаление `app.rive.rive-unity` (не MB). Sentis / Inference Engine не ставились. |
 | **Модель 758 МБ / TensorRT / venv** | вне Unity (`C:\Projects\motion_bricks`, `docs/.../tools`) | в проекте и билде отсутствуют |
 
-**Единственная ссылка из сцен:** объект `MB_Probe_Player` в `Assets/_Project/Scenes/World/WorldScene_0_0.unity` — `Transform` + `MotionBricksBakedPlayback` + `MotionBricksBakedRootMotion`, без меша и Animator. Оба компонента fail-closed по `mode` → в игре молчат. **Рекомендация: удалить объект из сцены** (сейчас не удалён: сцена dirty от другой работы).
+**Ссылок из сцен больше нет:** объект `WorldRoot_0_0/MB_Probe_Player` (`Transform` + `MotionBricksBakedPlayback` + `MotionBricksBakedRootMotion` + дочерний prefab-инстанс с `Animator`) **удалён** из `Assets/_Project/Scenes/World/WorldScene_0_0.unity` коммитом `f1339acc` — 514 строк, только удаления, сцена пересохранена редактором без переформатирования.
 
 **Единственный продовый хук:** `NetworkPlayer.cs:1399` → `MotionBricksLocomotionBridge.TryConsumeDisplacement(...)`. Реестр источников пуст → метод возвращает `false`, движение не меняется. Оставлен осознанно: он же нужен baked-клипам с root motion (условие 4 в §4).
 
-**Итог по билду: не влияет.** Ноль байт модели, ноль пакетов, один инертный объект в сцене, несколько КБ IL. Откат («выключить насовсем») описан в [06_SAFE_ROLLOUT_AND_ROLLBACK.md](06_SAFE_ROLLOUT_AND_ROLLBACK.md); сейчас он не требуется.
+**Итог по билду: не влияет.** Ноль байт модели, ноль пакетов, ноль ссылок из сцен, несколько КБ IL. Откат («выключить насовсем») описан в [06_SAFE_ROLLOUT_AND_ROLLBACK.md](06_SAFE_ROLLOUT_AND_ROLLBACK.md); сейчас он не требуется.
 
 ---
 

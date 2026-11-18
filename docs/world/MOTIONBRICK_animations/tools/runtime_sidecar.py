@@ -792,7 +792,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo", type=Path, default=Path(r"C:/Projects/motion_bricks/motionbricks"))
     parser.add_argument("--host", default="127.0.0.1")
-    parser.add_argument("--port", type=int, default=49360)
+    # НЕ 49360: Windows вырезает исключённые UDP-диапазоны (Hyper-V/WSL/Docker) из динамического
+    # диапазона 49152–65535, и после перезагрузки они переезжают — в одном из запусков 49360 попал
+    # внутрь 49287–49386 и bind упал с WinError 10013 (PermissionError), после чего Unity получила
+    # `sidecar exited`. Всё ниже 49152 исключить нельзя, поэтому порт живёт там.
+    parser.add_argument("--port", type=int, default=39360)
     parser.add_argument("--fp16", action="store_true")
     parser.add_argument(
         "--responsive",

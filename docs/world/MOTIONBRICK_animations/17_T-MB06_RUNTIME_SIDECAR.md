@@ -67,7 +67,13 @@ Runtime находится под `#if UNITY_EDITOR`, добавляется т�
 
 ## 3. Протокол
 
-UDP IPv4 loopback, little-endian, magic `MBR1`, version 1.
+UDP IPv4 loopback, little-endian, magic `MBR1`, version 1. Порт по умолчанию — **39360**, и он
+намеренно ниже динамического диапазона Windows (49152–65535): исключённые UDP-диапазоны
+(Hyper-V/WSL/Docker) вырезаются именно из него и переезжают при перезагрузке. Один запуск дал
+`PermissionError: [WinError 10013]` на `sock.bind((host, port))` — 49360 оказался внутри
+49287–49386 → Unity получила `FALLBACK: sidecar exited`. Если sidecar снова не поднимается,
+первым делом: `netsh int ipv4 show excludedportrange protocol=udp` — порт не должен попадать ни в
+один из диапазонов.
 
 | Пакет | Размер | Содержимое |
 |---|---:|---|

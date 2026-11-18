@@ -22,7 +22,10 @@ namespace ProjectC.Animation.MotionBricks
         [SerializeField] private string _pythonPath = @"C:\Projects\motion_bricks\motionbricks\.venv\Scripts\python.exe";
         [SerializeField] private string _repositoryPath = @"C:\Projects\motion_bricks\motionbricks";
         [SerializeField] private string _scriptPath = @"C:\Projects\ProjectC_client\docs\world\MOTIONBRICK_animations\tools\runtime_sidecar.py";
-        [SerializeField] private int _port = 49360;
+        // Порт ниже динамического диапазона Windows (49152–65535): исключённые UDP-диапазоны
+        // (Hyper-V/WSL/Docker) вырезаются именно из него и переезжают при перезагрузке — 49360 один
+        // раз оказался внутри 49287–49386, bind дал WinError 10013, и sidecar не стартовал.
+        [SerializeField] private int _port = 39360;
         [SerializeField] private bool _fp16;
         [SerializeField] private float _walkSpeed = 5f;
         [SerializeField] private float _runSpeed = 10f;
@@ -278,7 +281,7 @@ namespace ProjectC.Animation.MotionBricks
 
         public void ConfigureForReview(MotionBricksRuntimeSettings settings, Animator animator, GameObject restTemplate,
                                        string pythonPath, string repositoryPath, string scriptPath,
-                                       int port = 49360, bool fp16 = false)
+                                       int port = 39360, bool fp16 = false)
         {
             _settings = settings;
             _animator = animator;

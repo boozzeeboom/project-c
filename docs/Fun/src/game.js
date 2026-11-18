@@ -1,0 +1,2780 @@
+import { World3D } from './scene3d.js';
+import { Soundscape } from './audio.js';
+
+const CITIES = {
+    primum: { name: "Примум", x: 0.5, y: 0.15, color: "#FFE082", distance: 0, items: ['mezium','antigrav','mag_core','latex_raw','mnp_dose','food_ration','food_braga','water_purified','spare_parts','hull_plate','wire_copper','generator_mag','rotor_assembly','compass','sol_tracker','armor_plate','medical_kit','stimulant','crop_harvest','grain','tools_wrench','tools_drill','rope','lantern','clothing_warm','book','encrypted_doc','jewelry','antique','fuel_cell','battery_antigrav','gas_filter','control_unit'], ships: ['dinghy','hauler','freighter','cargoliner'] },
+    secundus: { name: "Секунд", x: 0.15, y: 0.45, color: "#EF5350", distance: 3, items: ['latex_raw','food_braga','water_purified','tools_wrench','rope','lantern','crop_harvest','grain'], ships: ['dinghy','hauler'] },
+    tertius: { name: "Тертиус", x: 0.85, y: 0.45, color: "#66BB6A", distance: 3, items: ['antigrav','mnp_dose','errey_drug','medical_kit','stimulant','encrypted_doc','jewelry','antique','fuel_cell','battery_antigrav','control_unit'], ships: ['dinghy','hauler','freighter'] },
+    quartus: { name: "Квартус", x: 0.5, y: 0.85, color: "#AB47BC", distance: 5, items: ['mag_core','generator_mag','rotor_assembly','compass','sol_tracker','armor_plate','spare_parts','hull_plate'], ships: ['hauler','freighter','cargoliner'] },
+    kibwe: { name: "Кибо", x: 0.25, y: 0.65, color: "#26A69A", distance: 4, items: ['food_ration','water_purified','tools_drill','clothing_warm','book','fuel_cell','gas_filter'], ships: ['dinghy','hauler'] },
+    elbrus: { name: "Эльбрус", x: 0.75, y: 0.65, color: "#5C6BC0", distance: 4, items: ['mezium','antigrav','errey_drug','stimulant','encrypted_doc','jewelry','antique','battery_antigrav','control_unit','sol_tracker'], ships: ['hauler','freighter','cargoliner'] }
+};
+
+const ITEMS = {
+    mezium: { name: "Мезий", basePrice: 15, weight: 12 },
+    antigrav: { name: "Антигравий", basePrice: 80, weight: 6 },
+    mag_core: { name: "МАГ-сердечник", basePrice: 120, weight: 8 },
+    latex_raw: { name: "Латекс-сырец", basePrice: 8, weight: 10 },
+    mnp_dose: { name: "МНП-препарат", basePrice: 45, weight: 2 },
+    errey_drug: { name: "Препарат Эррея", basePrice: 200, weight: 1 },
+    food_ration: { name: "Рацион", basePrice: 10, weight: 8 },
+    food_braga: { name: "Брага", basePrice: 5, weight: 6 },
+    water_purified: { name: "Вода", basePrice: 6, weight: 5 },
+    spare_parts: { name: "Запчасти", basePrice: 30, weight: 7 },
+    hull_plate: { name: "Обшивка", basePrice: 40, weight: 15 },
+    wire_copper: { name: "Провод медный", basePrice: 15, weight: 4 },
+    generator_mag: { name: "Генератор МАГ", basePrice: 150, weight: 20 },
+    rotor_assembly: { name: "Ротор", basePrice: 90, weight: 12 },
+    compass: { name: "ГРАДАР", basePrice: 50, weight: 2 },
+    sol_tracker: { name: "СОЛ-трекер", basePrice: 100, weight: 1 },
+    armor_plate: { name: "Бронепластина", basePrice: 80, weight: 18 },
+    medical_kit: { name: "Аптечка", basePrice: 35, weight: 3 },
+    stimulant: { name: "Стимулятор", basePrice: 55, weight: 1 },
+    crop_harvest: { name: "Урожай", basePrice: 15, weight: 12 },
+    grain: { name: "Зерно", basePrice: 10, weight: 10 },
+    tools_wrench: { name: "Гаечный ключ", basePrice: 10, weight: 3 },
+    tools_drill: { name: "Дрель", basePrice: 25, weight: 6 },
+    rope: { name: "Веревка", basePrice: 5, weight: 4 },
+    lantern: { name: "Фонарь", basePrice: 15, weight: 3 },
+    clothing_warm: { name: "Тёплая одежда", basePrice: 20, weight: 5 },
+    book: { name: "Книга", basePrice: 30, weight: 3 },
+    encrypted_doc: { name: "Шифровка", basePrice: 80, weight: 1 },
+    jewelry: { name: "Бижутерия", basePrice: 40, weight: 1 },
+    antique: { name: "Антиквариат", basePrice: 100, weight: 3 },
+    fuel_cell: { name: "Топливная ячейка", basePrice: 50, weight: 4 },
+    battery_antigrav: { name: "Антиграв. батарея", basePrice: 70, weight: 5 },
+    gas_filter: { name: "Газовый фильтр", basePrice: 25, weight: 4 },
+    control_unit: { name: "Блок управления", basePrice: 80, weight: 4 }
+};
+
+const CARGO_LIMIT = 100;
+const WIN_AMOUNT = 50000;
+const TRADE_TAX = 0.05;
+const CONTRACT_REWARD_RATE = 0.3;
+const BASE_FLIGHT_TIME = 20;
+const FUEL_COST_PER_KM = 0.5;
+const BREAKAGE_BASE_CHANCE = 0.03;
+
+const SHIPS = {
+    dinghy: { name: "Шлюпка", cargo: 40, speed: 1.4, price: 0, color: '#78909C', slots: 1 },
+    hauler: { name: "Хаулер", cargo: 80, speed: 1.0, price: 2000, color: '#66BB6A', slots: 2 },
+    freighter: { name: "Фрахтовик", cargo: 150, speed: 0.75, price: 6000, color: '#EF5350', slots: 3 },
+    cargoliner: { name: "Карго-лайнер", cargo: 300, speed: 0.5, price: 15000, color: '#AB47BC', slots: 5 }
+};
+
+const MODULES = {
+    cargo_c: { name: "Груз. контейнер C", type: 'cargo', tier: 'C', cargoBonus: 15, speedMod: 0.92, price: 500 },
+    cargo_b: { name: "Груз. контейнер B", type: 'cargo', tier: 'B', cargoBonus: 25, speedMod: 0.88, price: 1200 },
+    cargo_a: { name: "Груз. контейнер A", type: 'cargo', tier: 'A', cargoBonus: 40, speedMod: 0.85, price: 3000 },
+    cargo_s: { name: "Груз. контейнер S", type: 'cargo', tier: 'S', cargoBonus: 60, speedMod: 0.80, price: 8000 },
+    speed_c: { name: "Ускоритель C", type: 'speed', tier: 'C', speedBonus: 0.2, cargoMod: 5, price: 500 },
+    speed_b: { name: "Ускоритель B", type: 'speed', tier: 'B', speedBonus: 0.35, cargoMod: 10, price: 1200 },
+    speed_a: { name: "Ускоритель A", type: 'speed', tier: 'A', speedBonus: 0.5, cargoMod: 15, price: 3000 },
+    speed_s: { name: "Ускоритель S", type: 'speed', tier: 'S', speedBonus: 0.7, cargoMod: 20, price: 8000 },
+    contraband_sol: { name: "ОБХОД СОЛ", type: 'special', tier: 'S', price: 500, description: "Контрабандный сканер. Выделяет запрещённые товары красным на рынке. Риск ареста при продаже: 13%." }
+};
+
+const MODULE_TIERS = ['C', 'B', 'A', 'S'];
+const MODULE_PRICES = { C: 500, B: 1200, A: 3000, S: 8000 };
+const MODULE_CHANCES = { primum: { C: 40, B: 30, A: 20, S: 10 }, secundus: { C: 60, B: 30, A: 8, S: 2 }, tertius: { C: 50, B: 30, A: 15, S: 5 }, quartus: { C: 40, B: 35, A: 20, S: 5 }, kibwe: { C: 55, B: 30, A: 12, S: 3 }, elbrus: { C: 30, B: 30, A: 25, S: 15 } };
+
+// Contraband items - items that trigger arrest chance when sold
+const CONTRABAND_ITEMS = ['errey_drug', 'encrypted_doc', 'jewelry', 'antique', 'stimulant'];
+
+// Port System Configuration
+const PORT_CONFIG = {
+    primum: { name: "Примум", maxLevel: 10, baseIncome: 1 },
+    secundus: { name: "Секунд", maxLevel: 5, baseIncome: 1 },
+    tertius: { name: "Тертиус", maxLevel: 8, baseIncome: 2 },
+    quartus: { name: "Квартус", maxLevel: 7, baseIncome: 3 },
+    kibwe: { name: "Кибо", maxLevel: 5, baseIncome: 1 },
+    elbrus: { name: "Эльбрус", maxLevel: 10, baseIncome: 2 }
+};
+
+// Random Events System - 10 events
+const TIME_PHASES = {
+    0: { // Dawn
+        name: "Рассвет",
+        skyTop: "#2D1B4E",
+        skyBottom: "#FFB74D",
+        uiBg: "rgba(45, 27, 78, 0.88)",
+        textPrimary: "#FFF8E7",
+        textSecondary: "#E0B4D4",
+        cityGlow: "#FFD54F",
+        cloudColor: "255, 183, 77",
+        starAlpha: 0.3
+    },
+    1: { // Day
+        name: "День",
+        skyTop: "#5C6BC0",
+        skyBottom: "#FFE082",
+        uiBg: "rgba(60, 50, 80, 0.85)",
+        textPrimary: "#FFF8E7",
+        textSecondary: "#B39DDB",
+        cityGlow: "#FFD54F",
+        cloudColor: "255, 248, 231",
+        starAlpha: 0
+    },
+    2: { // Sunset
+        name: "Закат",
+        skyTop: "#1A237E",
+        skyBottom: "#FF6F00",
+        uiBg: "rgba(40, 25, 50, 0.90)",
+        textPrimary: "#FFE0B2",
+        textSecondary: "#CE93D8",
+        cityGlow: "#FFAB91",
+        cloudColor: "255, 111, 0",
+        starAlpha: 0.2
+    },
+    3: { // Night
+        name: "Ночь",
+        skyTop: "#0D0D1A",
+        skyBottom: "#1A1A3E",
+        uiBg: "rgba(15, 12, 30, 0.92)",
+        textPrimary: "#E0E0E0",
+        textSecondary: "#7986CB",
+        cityGlow: "#7986CB",
+        cloudColor: "30, 30, 60",
+        starAlpha: 0.8
+    }
+};
+
+const EVENTS = [
+    {
+        id: 'price_surge',
+        name: 'Всплеск цен',
+        description: 'Торговцы скупают товары! Цены на продажу выросли на 30%.',
+        duration: 3,
+        priceModifier: 1.3,
+        type: 'price',
+        effect: 'up'
+    },
+    {
+        id: 'price_crash',
+        name: 'Обвал цен',
+        description: 'Рынок перенасыщен! Цены на покупку упали на 25%.',
+        duration: 3,
+        priceModifier: 0.75,
+        type: 'price',
+        effect: 'down'
+    },
+    {
+        id: 'fuel_shortage',
+        name: 'Дефицит топлива',
+        description: 'Синтез-банки подорожали на 50%. Заправка обойдётся дороже.',
+        duration: 4,
+        fuelCostModifier: 1.5,
+        type: 'fuel'
+    },
+    {
+        id: 'repair_sale',
+        name: 'Скидки на ремонт',
+        description: 'Доки предлагают ремонт со скидкой 40%.',
+        duration: 3,
+        repairCostModifier: 0.6,
+        type: 'repair'
+    },
+    {
+        id: 'storm_warning',
+        name: 'Шторм над Завесой',
+        description: 'Ядовитые молнии усилились. Некоторые маршруты заблокированы!',
+        duration: 4,
+        blockedRoutes: ['primum-secundus', 'quartus-kibwe'],
+        type: 'route_block'
+    },
+    {
+        id: 'city_quarantine',
+        name: 'Карантин',
+        description: 'Город закрыт на карантин. Посадка возможна только с повреждениями.',
+        duration: 3,
+        blockedCity: 'kibwe',
+        forceLandDamage: 15,
+        type: 'city_block'
+    },
+    {
+        id: 'customs_raid',
+        name: 'Рейд таможни',
+        description: 'Таможня усилила проверки. Контрабанда под запретом, но можно заплатить пошлину.',
+        duration: 3,
+        bypassCost: 100,
+        type: 'customs'
+    },
+    {
+        id: 'trader_convoy',
+        name: 'Караван торговцев',
+        description: 'Проходит караван! Цены стабильны, но спрос вырос на 20%. Караван задерживает вас на день.',
+        duration: 3,
+        priceModifier: 1.2,
+        type: 'price',
+        effect: 'up',
+        skip: true
+    },
+    {
+        id: 'engine_trouble',
+        name: 'Поломка двигателя',
+        description: 'Ваш корабль требует ремонта. Ремонт дороже на 80%.',
+        duration: 3,
+        repairCostModifier: 1.8,
+        type: 'repair'
+    },
+    {
+        id: 'smugglers_path',
+        name: 'Путь контрабандистов',
+        description: 'Открыт тайный путь! Можно пройти мимо блокпостов за взятку.',
+        duration: 2,
+        bypassCost: 50,
+        type: 'customs'
+    }
+];
+
+// Prison system data
+const PRISON_SCENARIOS = [
+    {
+        day: 1,
+        title: "Тренажёрный зал",
+        text: "Вы пришли в тюремный спортзал. Здесь пахнет потом и ржавчиной. Барсук, местный авторитет, предлагает вам 'пожать железо' за его честь. Ваши мышцы ноют от антигравитационной болезни.",
+        choices: [
+            { text: "🏋️ Пожать штангу (риск травмы)", outcome: { days_lost: 1, health: -10, money: 0, death_chance: 0 }, result: "Вы подняли 80 кг! Барсук уважительно кивает." },
+            { text: "🤸 Отжаться от пола", outcome: { days_lost: 1, health: 5, money: 0, death_chance: 0 }, result: "50 отжиманий! Вы чувствуете себя сильнее." },
+            { text: "😴 Поспать на скамье", outcome: { days_lost: 1, health: 15, money: 0, death_chance: 0 }, result: "Сон на жёсткой скамье освежил вас." }
+        ]
+    },
+    {
+        day: 2,
+        title: "Шахматы с Барсуком",
+        text: "Барсук достал самодельные шахматы из хлеба и крошек. Он жульничает, но вы не можете доказать. Вокруг собрались зеки, они делают ставки сигаретами.",
+        choices: [
+            { text: "♟️ Играть честно (проигрыш)", outcome: { days_lost: 1, health: 0, money: -20, death_chance: 0 }, result: "Вы проиграли. Барсук забрал ваши сигареты." },
+            { text: "🎭 Обвинить в жульничестве", outcome: { days_lost: 2, health: -15, money: 0, death_chance: 5 }, result: "Барсук ударил вас. Вы проведёте лишний день в карцере." },
+            { text: "🤝 Сдаться и стать 'падалой'", outcome: { days_lost: 1, health: -5, money: 10, death_chance: 0 }, result: "Вы стали кем-то вроде слуги. Но зато есть еда." }
+        ]
+    },
+    {
+        day: 3,
+        title: "Баня по праздникам",
+        text: "Сегодня 'банный день'. Пар с крыс и мезия обжигает лёгкие. В тумане кто-то крадёт мыло. Вы стоите голышом, чувствуя себя уязвимым.",
+        choices: [
+            { text: "🧼 Искать своё мыло", outcome: { days_lost: 1, health: -5, money: 0, death_chance: 0 }, result: "Вы нашли мыло, но получили пинок от охранника." },
+            { text: "♨️ Париться до упаду", outcome: { days_lost: 1, health: 10, money: 0, death_chance: 0 }, result: "Жара ослабила ваши мышцы, но душа очистилась." },
+            { text: "💧 Спрятаться в холодной воде", outcome: { days_lost: 1, health: -10, money: 0, death_chance: 2 }, result: "Вы простудились. Но зато вас не трогали." }
+        ]
+    },
+    {
+        day: 4,
+        title: "Работа на кухне",
+        text: "Надзиратель велел вам чистить картошку для 500 зеков. Картошка странная, фиолетовая — с Завесы. Рядом работает старик, который утверждает, что был пилотом 'Интеграла'.",
+        choices: [
+            { text: "🥔 Чистить быстро (качество ↓)", outcome: { days_lost: 1, health: 0, money: 15, death_chance: 0 }, result: "Вы заработали 15 CR. Картошка мыта плохо, но кто заметит?" },
+            { text: "🍳 Украсть еду для себя", outcome: { days_lost: 2, health: 5, money: 0, death_chance: 5 }, result: "Вас поймали. Лишний день карцера, но вы сыты." },
+            { text: "👂 Слушать истории старика", outcome: { days_lost: 1, health: 0, money: 0, death_chance: 0 }, result: "Старик рассказал координаты тайного рынка. Полезно!" }
+        ]
+    },
+    {
+        day: 5,
+        title: "Драка в камере",
+        text: "В камере напряжение. Кто-то украл чей-то паёк. Вспыхнула драка. Вы зажаты в углу — двое зеков требуют 'отдать должок'. Ваши рёбра всё ещё болят после падения с баржи.",
+        choices: [
+            { text: "👊 Драться (риск травмы)", outcome: { days_lost: 1, health: -20, money: 0, death_chance: 10 }, result: "Вы победили, но сломали палец. Уважение +10." },
+            { text: "🛡️ Защищаться и отступить", outcome: { days_lost: 1, health: -5, money: 0, death_chance: 0 }, result: "Вы увернулись, но получили пару синяков." },
+            { text: "💰 Отдать деньги", outcome: { days_lost: 1, health: 0, money: -30, death_chance: 0 }, result: "Вы отдали 30 CR. Мир в камере восстановлен." }
+        ]
+    },
+    {
+        day: 6,
+        title: "Смена охраны",
+        text: "Новый надзиратель — молодой парень, явно первый день. Он забыл заблокировать терминал. Вы видите, как он вводит код от склада: 1-2-3-4. Старый зек шепчет: 'Сваливай, пока не поздно'.",
+        choices: [
+            { text: "🏃 Сбежать через склад", outcome: { days_lost: 0, health: 0, money: 0, death_chance: 0 }, result: "ПОБЕГ УДАЛСЯ! Вы на свободе, но без вещей.", escape: true },
+            { text: "📦 Украсть что-то со склада", outcome: { days_lost: 1, health: 0, money: 50, death_chance: 15 }, result: "Вы украли запчасти на 50 CR, но чуть не попались." },
+            { text: "🤐 Остаться и молчать", outcome: { days_lost: 1, health: 0, money: 0, death_chance: 0 }, result: "Благоразумие победило. Вы остались в тюрьме." }
+        ]
+    },
+    {
+        day: 7,
+        title: "Бунт в столовой",
+        text: "В меню снова 'брага-суррогат' и 'хлеб из опилок'. Кто-то кинул тарелку в надзирателя. Начался бунт! Зеки громят столовую. Вы можете присоединиться или спрятаться.",
+        choices: [
+            { text: "🔥 Жечь мебель (бунт)", outcome: { days_lost: 3, health: -10, money: 0, death_chance: 20 }, result: "Вас жестоко избили дубинками. 3 дня карцера." },
+            { text: "🍞 Украсть еду в суматохе", outcome: { days_lost: 1, health: 0, money: 25, death_chance: 5 }, result: "Вы набили карманы едой. Еды хватит надолго." },
+            { text: "🙈 Спрятаться под столом", outcome: { days_lost: 1, health: 5, money: 0, death_chance: 0 }, result: "Вы переждали бунт под столом. Мудрое решение." }
+        ]
+    },
+    {
+        day: 8,
+        title: "Медосмотр",
+        text: "Тюремный врач, похожий на скелет в халате, осматривает вас. У вас кашель — наверное, лёгкие пострадали от Завесы. Он предлагает 'экспериментальное лекарство' сомнительного вида.",
+        choices: [
+            { text: "💊 Выпить лекарство", outcome: { days_lost: 1, health: 20, money: -10, death_chance: 10 }, result: "Вы чувствуете себя на 20 лет моложе! Или это галлюцинация?" },
+            { text: "🏃 Убежать от врача", outcome: { days_lost: 1, health: -5, money: 0, death_chance: 0 }, result: "Охранник поймал вас. Удар дубинкой по спине." },
+            { text: "🗣️ Жаловаться на боли", outcome: { days_lost: 1, health: 10, money: 0, death_chance: 0 }, result: "Вас положили в 'лазарет'. Там кормят лучше." }
+        ]
+    },
+    {
+        day: 9,
+        title: "Одиночная камера",
+        text: "За нарушение режима вас кинули в 'одиночку'. Тесная клетка, свет только из коридора. Стены покрыты надписями. Вы нашли царапину: 'Интеграл вернётся'. Крысы смотрят на вас с надеждой.",
+        choices: [
+            { text: "🧘 Медитировать (сохранение рассудка)", outcome: { days_lost: 1, health: 5, money: 0, death_chance: 0 }, result: "Вы обрели внутренний покой. Почти как в гхибли-храме." },
+            { text: "🐀 Кормить крыс", outcome: { days_lost: 1, health: -5, money: 0, death_chance: 0 }, result: "Крысы стали вашими друзьями. Они хотят вашу руку." },
+            { text: "🔨 Соскоблить надпись", outcome: { days_lost: 1, health: -10, money: 0, death_chance: 5 }, result: "Вы соскоблили 'Интеграл'. Стражник ударил вас за порчу имущества." }
+        ]
+    },
+    {
+        day: 10,
+        title: "Суд и освобождение",
+        text: "Ваш последний день. Судья в мантии из облачного шёлка смотрит на вас с высоты. 'Вы обвиняетесь в контрабанде мезия и антигравия. Но тюрьма вас исправила, верно?' Вы смотрите на свои дрожащие руки.",
+        choices: [
+            { text: "🙏 Покаяться и обещать исправиться", outcome: { days_lost: 0, health: 0, money: 0, death_chance: 0 }, result: "Судья смягчился. ВЫ СВОБОДНЫ! Но без имущества.", release: true },
+            { text: "💼 Сказать, что у вас есть деньги для взятки", outcome: { days_lost: 0, health: 0, money: -100, death_chance: 0 }, result: "Судья взял взятку. Вы свободны и можете купить новый корабль!" },
+            { text: "😤 Кричать о несправедливости", outcome: { days_lost: 5, health: -20, money: 0, death_chance: 25 }, result: "Судья в ярости. 5 лет дополнительно! Вы умрёте здесь..." }
+        ]
+    }
+];
+
+// Bar system data - 10 branching scenarios
+const BAR_SCENARIOS = [
+    {
+        id: 'dice_game',
+        title: "Игра в кости",
+        text: "За столиком в углу сидит человек в потёртой куртке. Он щелкает двумя костями по столу. 'Хочешь попробовать удачу, пилот? Ставка 50 CR. Может, сегодня твой день.'",
+        choices: [
+            { text: "🎲 Играть честно (ставка 50 CR)", outcome: { health: 0, money: 0 }, next: 'dice_fair' },
+            { text: "🕵️ Подглядеть его кости (риск разоблачения)", outcome: { health: 0, money: 0 }, next: 'dice_cheat' },
+            { text: "🚪 Отказаться и уйти", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'neutral', title: 'УШЛИ', text: 'Вы решаете не рисковать. Человек пожимает плечами.' } }
+        ]
+    },
+    {
+        id: 'dice_fair',
+        title: "Игра в кости — Честная игра",
+        text: "Вы садитесь. Кости щелкают по столу. Ваши: [4, 3] = 7. Его: [5, 2] = 7. Ничья! 'Хорошая игра, пилот. Ещё раз?'",
+        choices: [
+            { text: "🎲 Ещё раунд (ставка 50 CR)", outcome: { health: 0, money: 0 }, next: 'dice_fair2' },
+            { text: "📋 Повысить ставку до 100 CR", outcome: { health: 0, money: 0 }, next: 'dice_high' },
+            { text: "🚪 Выйти из игры", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'neutral', title: 'КОНЕЦ ИГРЫ', text: 'Вы уходите с пустыми руками, но и без потерь.' } }
+        ]
+    },
+    {
+        id: 'dice_fair2',
+        title: "Игра в кости — Второй раунд",
+        text: "Новое броскание. Ваши кости: [2, 6] = 8. Его кости: [3, 6] = 9. Вы проиграли 50 CR. 'Ха! Сегодня не твой день, пилот.'",
+        choices: [
+            { text: "😤 Потребовать реванш на 100 CR", outcome: { health: 0, money: -100 }, next: 'dice_revenge' },
+            { text: "😓 Смириться и уйти", outcome: { health: 0, money: -50 }, next: null, exit: true, result: { type: 'failure', title: 'ПРОИГРЫШ', text: 'Вы потеряли 50 CR. Человек ухмыляется.' } }
+        ]
+    },
+    {
+        id: 'dice_high',
+        title: "Игра в кости — Высокие ставки",
+        text: "Ставки повышены до 100 CR! Базовый инстинкт кричит 'играй', но здравый смысл советует уйти. 'Ну что, пилот? Бросаем?'",
+        choices: [
+            { text: "🎲 Бросить кости", outcome: { health: 0, money: 0 }, next: 'dice_high_result' },
+            { text: "🚪 Передумать и уйти (-50 CR)", outcome: { health: 0, money: -50 }, next: null, exit: true, result: { type: 'failure', title: 'ОТСТУПИЛИ', text: 'Вы теряете 50 CR за трусость и уходите.' } }
+        ]
+    },
+    {
+        id: 'dice_high_result',
+        title: "Игра в кости — Решающий бросок",
+        text: "Кости взлетают в воздух... Вы卖了 все. Ваши: [6, 6] = 12! Критический успех! Человек бледнеет: 'Как... Ты мухлевал!'",
+        choices: [
+            { text: "😈 Забрать выигрыш (200 CR)", outcome: { health: 0, money: 200 }, next: null, exit: true, result: { type: 'success', title: 'ПОБЕДА!', text: 'Вы уходите с 200 CR. Человек смотрит вам в спину с ненавистью.' } }
+        ]
+    },
+    {
+        id: 'dice_cheat',
+        title: "Игра в кости — Попытка мухлежа",
+        text: "Вы пытаетесь подсмотреть его кости в отражении стакана. Но человек заметил! 'Эй! Ты что делаешь, пилот?!'",
+        choices: [
+            { text: "🤥 Притвориться пьяным", outcome: { health: 0, money: 0 }, next: 'dice_cheat_deny' },
+            { text: "🏃 Бежать со стулом", outcome: { health: -10, money: 0 }, next: null, exit: true, result: { type: 'failure', title: 'ПОБЕГ', text: 'Вы опрокинули стул и сбежали. Человек кричит вдогонку. -10 HP от удара об угол.' } }
+        ]
+    },
+    {
+        id: 'dice_cheat_deny',
+        title: "Игра в кости — Отрицание",
+        text: "'Я... просто смотрел на стену за тобой, приятель. Ты что, параноик?' Человек щурится, но его друзья смеются: 'Да ладно, отпусти его, Грон.' Он неохотно кивает.",
+        choices: [
+            { text: "🍺 Предложить угостить его пивом", outcome: { health: 0, money: -20 }, next: null, exit: true, result: { type: 'neutral', title: 'МИр', text: 'Вы помирились. Грон рассказал, что на Кибо можно купить контрабанду втридорога.' } },
+            { text: "🚶 Просто уйти", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'neutral', title: 'УШЛИ', text: 'Вы решаете не испытывать удачу. Человек качает головой.' } }
+        ]
+    },
+    {
+        id: 'dice_revenge',
+        title: "Игра в кости — Реванш",
+        text: "'Хочешь отыграться? Ну давай!' Вы бросаете все в бой. Ваши кости: [1, 1] = 2. Его кости: [4, 4] = 8. Разгром! Ваши 100 CR ушли в его карман.",
+        choices: [
+            { text: "😡 Обвинить в жульничестве", outcome: { health: -15, money: 0 }, next: null, exit: true, result: { type: 'failure', title: 'ПОБОЙ', text: "Грон ударил вас в лицо. '-100 CR и фонарь под глазом. Не обвиняй честных игроков, пилот.'" } },
+            { text: "😭 Уйти с оставшимся достоинством", outcome: { health: 0, money: -100 }, next: null, exit: true, result: { type: 'failure', title: 'ПОТЕРЯ', text: "Вы уходите с пустым кошельком. Грон машет вам рукой: 'Возвращайся, когда будут деньги!'" } }
+        ]
+    },
+    {
+        id: 'drunk_bartender',
+        title: "Пьяный бармен",
+        text: "Бармен, на вид ветеран Завесы, наливает себе браги прямо из бочки. 'Садись, пилот. Расскажу кое-что... даром.' Он хихикает. 'Ты знаешь, что на Секунде цены на латекс падают каждую вторую луну?'",
+        choices: [
+            { text: "🍺 Выпить с барменом", outcome: { health: -5, money: 0 }, next: 'drunk_bartender_drink' },
+            { text: "👂 Слушать внимательно", outcome: { health: 0, money: 0 }, next: 'drunk_bartender_info' },
+            { text: "🚶 Уйти", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'neutral', title: 'УШЛИ', text: 'Бармен пожимает плечами и допивает свою брагу.' } }
+        ]
+    },
+    {
+        id: 'drunk_bartender_drink',
+        title: "Пьяный бармен — Угощение",
+        text: "Бармен наливает вам стакана три 'Облачной браги'. Мир плывёт перед глазами. 'Так вот, пилот... Третий город, Квартус... Там делают лучшие моторы. Но у них вечно не хватает маг-сердечников.'",
+        choices: [
+            { text: "😵 Поблагодарить и уйти (опьянение)", outcome: { health: -15, money: 0 }, next: null, exit: true, result: { type: 'neutral', title: 'ОПЬЯНЕНИЕ', text: "Вы выходите, покачиваясь. На стене написано: 'Маг-сердечники = прибыль на Квартусе'." } }
+        ]
+    },
+    {
+        id: 'drunk_bartender_info',
+        title: "Пьяный бармен — Информация",
+        text: "'Слушай сюда!' Бармен понижает голос. 'Торговец по имени Рашид на Эльбрусе... Он покупает украшения за двойную цену. Но только если они 'с историей'. Понимаешь?' Он подмигивает.",
+        choices: [
+            { text: "👍 Понял, спасибо!", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'success', title: 'ПОДСКАЗКА', text: 'Бармен кивает и возвращается к своей браге. Вы узнали: на Эльбрусе украшения стоят дорого!' } }
+        ]
+    },
+    {
+        id: 'bar_fight',
+        title: "Драка в баре",
+        text: "Какой-то здоровяк в кожаной куртке задевает вас плечом. 'Эй ты, мелкий торгаш! Ты на моей летательной траектории!' Его кулачище размером с вашу голову.",
+        choices: [
+            { text: "👊 Вмазать ему первому", outcome: { health: -20, money: 0 }, next: 'bar_fight_start' },
+            { text: "😰 Попытаться договориться", outcome: { health: 0, money: -30 }, next: null, exit: true, result: { type: 'neutral', title: 'МШАНИЕ', text: "'Вот 30 CR, приятель. Купи себе пива.' Здоровяк хмыкает и отступает." } },
+            { text: "🏃 Отступить к выходу", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'neutral', title: 'ОТСТУПЛЕНИЕ', text: 'Вы решаете не связываться. Здоровяк смеётся вам вслед.' } }
+        ]
+    },
+    {
+        id: 'bar_fight_start',
+        title: "Драка — Начало",
+        text: "Вы бьёте первым! Удар попадает ему в челюсть. Но он даже не шатается. 'Хороший удар, мелкий. Дай-ка я тебе отвечу...'",
+        choices: [
+            { text: "🛡️ Защищаться (блок)", outcome: { health: -10, money: 0 }, next: 'bar_fight_block' },
+            { text: "⚡ Атаковать снова!", outcome: { health: -25, money: 0 }, next: 'bar_fight_attack' },
+            { text: "🏃 Бежать!", outcome: { health: -5, money: 0 }, next: null, exit: true, result: { type: 'failure', title: 'ПОБЕГ', text: 'Вы бежите, но он догоняет и бьёт в спину. -5 HP.' } }
+        ]
+    },
+    {
+        id: 'bar_fight_block',
+        title: "Драка — Блок",
+        text: "Вы подставляете руку. Его удар обрушивается на ваш предплечье. Больно, но вы устояли! 'Ещё раунд?'",
+        choices: [
+            { text: "👊 Финальный удар!", outcome: { health: -15, money: 50 }, next: null, exit: true, result: { type: 'success', title: 'ПОБЕДА!', text: "Вы делаете подсечку! Здоровяк падает. Бармен выдаёт вам 50 CR: 'За зрелищность!'" } },
+            { text: "🤝 Протянуть руку", outcome: { health: -10, money: 0 }, next: null, exit: true, result: { type: 'neutral', title: 'МИР', text: "'Неплохо, мелкий.' Он пожимает вам руку. Вы подружились. '-10 HP, но без денежных потерь.'" } }
+        ]
+    },
+    {
+        id: 'bar_fight_attack',
+        title: "Драка — Атака",
+        text: "Вы бросаетесь в атаку! Но он ловит вас за горло и поднимает в воздух. 'Ты что, самоубийца?'",
+        choices: [
+            { text: "😵 Сдаться", outcome: { health: -25, money: 0 }, next: null, exit: true, result: { type: 'failure', title: 'ПОРАЖЕНИЕ', text: "'Умный выбор.' Он бросает вас на пол. '-25 HP, но выжили.'" } },
+            { text: "🦵 Ударить ногой в пах", outcome: { health: -15, money: 100 }, next: null, exit: true, result: { type: 'success', title: 'ПОБЕДА!', text: "Он согнулся пополам. Бармен даёт вам 100 CR: 'Грязный приём, но рабочий!'" } }
+        ]
+    },
+    {
+        id: 'black_market',
+        title: "Странный торговец",
+        text: "К вам подходит человек в капюшоне. 'Тсс... Ты ведь торгуешь, пилот? У меня есть кое-что для настоящих дельцов. Модуль 'Туман' называется. Позволяет проходить таможню без осмотра. 300 CR. Гарантия на слово.'",
+        choices: [
+            { text: "💰 Купить модуль", outcome: { health: 0, money: -300 }, next: 'blackmarket_buy' },
+            { text: "🔍 Потребовать показать товар", outcome: { health: 0, money: 0 }, next: 'blackmarket_check' },
+            { text: "🚓 Вызвать охрану", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'neutral', title: 'ОТКАЗ', text: "'Охрана? Ха! Ты ещё об этом пожалеешь, пилот.' Человек исчезает в толпе." } }
+        ]
+    },
+    {
+        id: 'blackmarket_buy',
+        title: "Странный торговец — Покупка",
+        text: "Вы отдаёте 300 CR. Торговец вкладывает вам в руку маленькую коробку. 'Установи на корабль. И помни: никто не должен знать, откуда это.'",
+        choices: [
+            { text: "👍 Принять", outcome: { health: 0, money: -300 }, next: null, exit: true, result: { type: 'success', title: 'ПРИОБРЕТЕНО', text: "Вы получили 'Туман' (модуль контрабанды)! +13% шанс избежать ареста." } }
+        ]
+    },
+    {
+        id: 'blackmarket_check',
+        title: "Странный торговец — Проверка",
+        text: "'Товар покажешь? А то мало ли...' Торговец оскаливается: 'Ты что, не доверяешь Рашиду? Ну и иди к чертям!'",
+        choices: [
+            { text: "😠 Извиниться и купить", outcome: { health: 0, money: -300 }, next: 'blackmarket_buy' },
+            { text: "🚶 Уйти", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'neutral', title: 'УШЛИ', text: "'Рашид' исчезает. Вы так и не узнали, был ли это настоящий модуль." } }
+        ]
+    },
+    {
+        id: 'old_pilot',
+        title: "Старый пилот",
+        text: "За стойкой сидит седой человек с протезом руки. Когда-то он вёл грузовой корабль. 'Сядешь, пилот? Помню твой тип... Такие раньше вёз мне 'Интеграл'.'",
+        choices: [
+            { text: "🍺 Угостить ветерана", outcome: { health: 0, money: -15 }, next: 'oldpilot_stories' },
+            { text: "👂 Спросить о Завесе", outcome: { health: 0, money: 0 }, next: 'oldpilot_veil' },
+            { text: "🚶 Уйти", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'neutral', title: 'УШЛИ', text: "Ветеран качает головой: 'Молодёжь...'" } }
+        ]
+    },
+    {
+        id: 'oldpilot_stories',
+        title: "Старый пилот — Истории",
+        text: "'Хороший из тебя пилот, коли угощаешь.' Он смеётся. 'Знаешь, где я спрятал свою пенсию? В заброшенном доке на Кибо. Там ящик с маг-сердечниками. Забирай, если найдёшь.'",
+        choices: [
+            { text: "🙏 Спасибо за наводку!", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'success', title: 'ПОДСКАЗКА', text: 'Старый пилот дал вам координаты тайника на Кибо! (+маг-сердечники)' } }
+        ]
+    },
+    {
+        id: 'oldpilot_veil',
+        title: "Старый пилот — Завеса",
+        text: "'Завеса? Опасное место. Но я там бывал.' Он понижает голос. 'Один совет: никогда не верь торговцам на Тертиусе. Они продают воду как антигравий, если понимаешь о чём я.'",
+        choices: [
+            { text: "👍 Запомню", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'success', title: 'ПОДСКАЗКА', text: 'Вы узнали: на Тертиусе разводняют антигравий! Проверяйте товар перед покупкой.' } }
+        ]
+    },
+    {
+        id: 'manager_job',
+        title: "Бар-менеджер",
+        text: "Хозяин бара, важный человек в костюме, подходит к вам. 'Пилот! Слышал, ты надёжный. Мне нужна доставка: 5 единиц медикаментов в Квартус. Заплачу 200 CR. Но если попадёшься с этим на таможне — я знать тебя не знаю.'",
+        choices: [
+            { text: "📦 Взять контракт", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'success', title: 'КОНТРАКТ', text: 'Вы приняли контракт: доставить медикаменты в Квартус. Внимание: это контрабанда!' } },
+            { text: "🤔 Потребовать больше", outcome: { health: 0, money: 0 }, next: 'manager_negotiate' },
+            { text: "🚫 Отказаться", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'neutral', title: 'ОТКАЗ', text: "'Ну и ладно. Найду другого дурака.' Менеджер уходит." } }
+        ]
+    },
+    {
+        id: 'manager_negotiate',
+        title: "Бар-менеджер — Торг",
+        text: "'Больше? Ха! Хорошо, 250 CR. Но медикаменты ты берёшь у меня. Это тебе скидка.'",
+        choices: [
+            { text: "👍 Договорились!", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'success', title: 'КОНТРАКТ', text: 'Вы приняли контракт: доставить медикаменты в Квартус за 250 CR.' } },
+            { text: "🚪 Выйти", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'neutral', title: 'УШЛИ', text: 'Вы уходите. Менеджер пожимает плечами.' } }
+        ]
+    },
+    {
+        id: 'thugs',
+        title: "Хулиганы",
+        text: "Трое здоровых парней围着 ваш столик. 'Деньги, пилот. Или мы тебя из окна.' Бармен делает вид, что не замечает. Похоже, никто вам не поможет.",
+        choices: [
+            { text: "💵 Отдать деньги (50 CR)", outcome: { health: 0, money: -50 }, next: null, exit: true, result: { type: 'failure', title: 'ОГРАБЛЕНИЕ', text: "'Умный выбор.' Они забирают 50 CR и уходят." } },
+            { text: "🍺 Бросить стакан в главаря", outcome: { health: -15, money: 0 }, next: 'thugs_fight' },
+            { text: "🗣️ Попытаться договориться", outcome: { health: 0, money: -20 }, next: null, exit: true, result: { type: 'neutral', title: 'СДЕЛКА', text: "'Ладно, 20 CR и мы в расчёте.' Вы платите и решаете уйти." } }
+        ]
+    },
+    {
+        id: 'thugs_fight',
+        title: "Хулиганы — Битва",
+        text: "Стакан разбивается о голову главаря. Он взвыл! 'Убейте его!' Двое бросаются на вас. Но бармен неожиданно грохает об стену одного из них: 'Никакого насилия в моём баре!'",
+        choices: [
+            { text: "🏆 Помочь бармену", outcome: { health: -10, money: 30 }, next: null, exit: true, result: { type: 'success', title: 'ПОБЕДА!', text: "'Спасибо, приятель!' Бармен даёт вам 30 CR и бесплатную выпивку." } },
+            { text: "🏃 Бежать!", outcome: { health: -5, money: 0 }, next: null, exit: true, result: { type: 'failure', title: 'ПОБЕГ', text: "Вы бежите, но один успевает ударить вас в спину. '-5 HP.'" } }
+        ]
+    },
+    {
+        id: 'musician',
+        title: "Музыкант",
+        text: "В углу бара сидит слепой музыкант с гитарой. Он играет старую песню про 'Интеграл'. В баре становится тихо. 'Это для тебя, пилот.'",
+        choices: [
+            { text: "💰 Бросить монету (10 CR)", outcome: { health: 0, money: -10 }, next: 'musician_tip' },
+            { text: "🎵 Попросить другую песню", outcome: { health: 0, money: 0 }, next: 'musician_song' },
+            { text: "🚶 Просто уйти", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'neutral', title: 'УШЛИ', text: 'Музыкант продолжает играть, но вы уходите.' } }
+        ]
+    },
+    {
+        id: 'musician_tip',
+        title: "Музыкант — Чаевые",
+        text: "'Спасибо, добрый пилот!' Музыкант улыбается. 'Знаешь, что самое ценное в этом мире? Не деньги. Информация. А она часто прячется в книгах.'",
+        choices: [
+            { text: "👂 Продолжать слушать", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'success', title: 'ПОДСКАЗКА', text: "'Книги на Кибо стоят дёшево. Но те, что с Эльбруса — там секреты торговцев.' Вы узнали что-то полезное." } }
+        ]
+    },
+    {
+        id: 'musician_song',
+        title: "Музыкант — Другая песня",
+        text: "'Хочешь другую? Могу спеть про любовь, про войну... или про то, как один пилот обманул всю таможню Завесы.'",
+        choices: [
+            { text: "🎶 Спой про таможню", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'success', title: 'СЕКРЕТ', text: "'Жил пилот хитрый, знал он путь — где туман гуще, там заблудишься...'Музыкант поёт о тайных маршрутах. Вы узнали о 'Туманном пути' через Эльбрус." } },
+            { text: "💔 Спой про любовь", outcome: { health: 5, money: 0 }, next: null, exit: true, result: { type: 'neutral', title: 'БАЛЛАДА', text: "'Любовь прошла, как облако, — и ты остался один...' От этой песни стало тепло на душе. +5 HP." } }
+        ]
+    },
+    {
+        id: 'missing_package',
+        title: "Пропавшая посылка",
+        text: "К вам подбегает женщина в слезах. 'Вы пилот! Вы должны мне помочь! Моя посылка с украшениями пропала! Говорят, это вы её украли!' Охрана бара смотрит в вашу сторону.",
+        choices: [
+            { text: "😠 Это не я! Давайте разберёмся", outcome: { health: 0, money: 0 }, next: 'package_innocent' },
+            { text: "💰 Предложить 50 CR за молчание", outcome: { health: 0, money: -50 }, next: null, exit: true, result: { type: 'neutral', title: 'ВЗЯТКА', text: "'Думаешь, деньги решат всё?' Но она берёт 50 CR и уходит. Вы вне подозрений." } },
+            { text: "🏃 Бежать!", outcome: { health: -10, money: 0 }, next: null, exit: true, result: { type: 'failure', title: 'ПОБЕГ', text: "Охрана ловит вас и избивает. '-10 HP. Вас все ещё подозревают.'" } }
+        ]
+    },
+    {
+        id: 'package_innocent',
+        title: "Пропавшая посылка — Невиновность",
+        text: "'Я не брал никаких посылок! Давайте проверим мои вещи.' Охрана обыскивает вас — ничего нет. Женщина бледнеет: 'Тогда кто...? Ой...'",
+        choices: [
+            { text: "👀 Кто-то другой!", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'success', title: 'НЕВИНОВЕН', text: "'Это был... нет, не скажу.' Женщина убегает. Охрана извиняется. Вы стали популярнее в баре за честность." } },
+            { text: "🔍 Помочь найти виновного", outcome: { health: 0, money: 75 }, next: null, exit: true, result: { type: 'success', title: 'РАССЛЕДОВАНИЕ', text: "'Я видел, как кто-то в сером выходил через заднюю дверь...' Охрана ловит вора. Вам дают 75 CR за помощь." } }
+        ]
+    },
+    {
+        id: 'drunk_arguments',
+        title: "Пьяные споры",
+        text: "За соседним столиком двое пьяных торговцев громко спорят. 'На Эльбрусе цены на украшения упадут через неделю!' — 'Глупости! Рашид скупает всё подряд!'",
+        choices: [
+            { text: "👂 Внимательно слушать", outcome: { health: 0, money: 0 }, next: 'drunk_listen' },
+            { text: "🍺 Присоединиться к спору", outcome: { health: -5, money: 0 }, next: 'drunk_join' },
+            { text: "🚶 Игнорировать", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'neutral', title: 'УШЛИ', text: 'Вы не обращаете внимания на пьяниц. Напрасно — информация была ценной.' } }
+        ]
+    },
+    {
+        id: 'drunk_listen',
+        title: "Пьяные споры — Подслушанное",
+        text: "Один торговец спотыкается и падает. Другой смеётся: 'Рашид — жмот! Я сам продал ему украшений на 500 CR по дешёвке!' Вы усвоили: на Эльбрусе Рашид — ключевой покупатель.",
+        choices: [
+            { text: "👍 Полезно", outcome: { health: 0, money: 0 }, next: null, exit: true, result: { type: 'success', title: 'ПОДСКАЗКА', text: 'Вы узнали: Рашид на Эльбрусе скупает украшения оптом. Прибыльная цель!' } }
+        ]
+    },
+    {
+        id: 'drunk_join',
+        title: "Пьяные споры — Участие",
+        text: "'Эй, вы чушь несёте!' Оба торговца поворачиваются к вам. 'А ты откуда знаешь, мелкий?' Начинается спор... который переходит в драку.",
+        choices: [
+            { text: "🍻 Выпить с ними и помириться", outcome: { health: -10, money: -20 }, next: null, exit: true, result: { type: 'neutral', title: 'МИР', text: "'Ладно, милый пилот, садись!' Вы пьёте вместе. Они раскрывают секрет: 'Квартус закупает запчасти у всех, но платит в 2 раза больше.' '-20 CR и -10 HP, но ценная информация.'" } },
+            { text: "🏃 Уйти пока цел", outcome: { health: -5, money: 0 }, next: null, exit: true, result: { type: 'failure', title: 'ПОБЕГ', text: "Вы уходите, но один успел бросить в вас кружкой. '-5 HP.'" } }
+        ]
+    }
+];
+
+class GameState {
+    constructor() { this.reset(); }
+    reset() {
+        this.credits = 800;
+        this.currentCity = 'primum';
+        this.cargo = {};
+        this.markets = {};
+        this.tick = 0;
+        this.timePhase = 0;
+        this.shipCondition = 100;
+        this.shipFuel = 100;
+        this.shipType = 'dinghy';
+        this.ship = { docked: true, traveling: false, destination: null, travelProgress: 0, travelDuration: 0, broken: false };
+        this.contracts = [];
+        this.shipModules = [];
+        this.activeEvents = [];
+        this.eventLog = [];
+        this.portLevels = {};
+        for (let cityId in PORT_CONFIG) {
+            this.portLevels[cityId] = 0;
+        }
+        this.pirateCombat = {
+            active: false,
+            playerHP: 3,
+            enemies: [],
+            bullets: [],
+            score: 0,
+            keys: {},
+            mouse: { x: 0, y: 0, pressed: false },
+            touch: { active: false, x: 0, y: 0, shooting: false },
+            playerX: 400,
+            playerY: 300,
+            playerAngle: 0,
+            lastShot: 0,
+            enemyBullets: [],
+            nearestCity: null
+        };
+        this.initMarkets();
+    }
+    initMarkets() {
+        for (let cityId in CITIES) {
+            this.markets[cityId] = {};
+            for (let itemId in ITEMS) {
+                this.markets[cityId][itemId] = {
+                    demandFactor: 0.1 + Math.random() * 0.3,
+                    supplyFactor: Math.random() * 0.3
+};
+            }
+        }
+    }
+    getTotalCargoWeight() {
+        let weight = 0;
+        for (let itemId in this.cargo) weight += (this.cargo[itemId] || 0) * ITEMS[itemId].weight;
+        return weight;
+    }
+    getTotalCargoBonus() {
+        let bonus = 0;
+        for (let mod of this.shipModules) { if (MODULES[mod]) bonus += MODULES[mod].cargoBonus || 0; }
+        return bonus;
+    }
+    getTotalSpeedBonus() {
+        let bonus = 0;
+        for (let mod of this.shipModules) { if (MODULES[mod]) bonus += MODULES[mod].speedBonus || 0; }
+        return bonus;
+    }
+    getExtraCargoPenalty() {
+        let penalty = 0;
+        for (let mod of this.shipModules) { if (MODULES[mod]) penalty += MODULES[mod].cargoMod || 0; }
+        return penalty;
+    }
+    getEffectiveCargo() { return SHIPS[this.shipType].cargo + this.getTotalCargoBonus(); }
+    getEffectiveSpeed() { return SHIPS[this.shipType].speed * (1 + this.getTotalSpeedBonus()); }
+    getEffectiveCargoLimit() { return this.getEffectiveCargo() + this.getExtraCargoPenalty(); }
+    getAvailableSlots() { return SHIPS[this.shipType].slots; }
+    getUsedSlots() { return this.shipModules.length; }
+    canAddModule() { return this.getUsedSlots() < this.getAvailableSlots(); }
+    calculatePrice(cityId, itemId) {
+        let item = ITEMS[itemId];
+        if (!item || !this.markets[cityId] || !this.markets[cityId][itemId]) return item ? item.basePrice : 0;
+        let market = this.markets[cityId][itemId];
+        let price = item.basePrice * (1 + market.demandFactor - market.supplyFactor);
+        price *= this.getPriceModifier();
+        return Math.max(1, Math.round(price));;
+    }
+    hasContrabandModule() { return this.shipModules.includes('contraband_sol'); }
+    hasActiveEvent(eventId) {
+        return this.activeEvents.some(e => e.id === eventId);
+    }
+    isCityBlocked(cityId) {
+        return this.activeEvents.some(e => e.type === 'city_block' && e.blockedCity === cityId);
+    }
+    isRouteBlocked(routeKey) {
+        return this.activeEvents.some(e => e.type === 'route_block' && e.blockedRoutes && e.blockedRoutes.includes(routeKey));
+    }
+    getPriceModifier() {
+        let modifier = 1.0;
+        for (let event of this.activeEvents) {
+            if (event.priceModifier) {
+                if (event.effect === 'up') {
+                    modifier = Math.max(modifier, event.priceModifier);
+                } else if (event.effect === 'down') {
+                    modifier = Math.min(modifier, event.priceModifier);
+                } else {
+                    modifier *= event.priceModifier;
+                }
+            }
+        }
+        return modifier;
+    }
+    getRepairCostModifier() {
+        let modifier = 1.0;
+        for (let event of this.activeEvents) {
+            if (event.repairCostModifier) {
+                modifier *= event.repairCostModifier;
+            }
+        }
+        return modifier;
+    }
+    getFuelCostModifier() {
+        let modifier = 1.0;
+        for (let event of this.activeEvents) {
+            if (event.fuelCostModifier) {
+                modifier *= event.fuelCostModifier;
+            }
+        }
+        return modifier;
+    }
+    // ==================== PORT SYSTEM METHODS ====================
+    getPortLevel(cityId) {
+        return this.portLevels[cityId] || 0;
+    }
+    getPortMaxLevel(cityId) {
+        return PORT_CONFIG[cityId] ? PORT_CONFIG[cityId].maxLevel : 0;
+    }
+    getPortUpgradeCost(cityId) {
+        let level = this.getPortLevel(cityId);
+        return (level + 1) * (level + 1) * 500;
+    }
+    getPortFuelDiscount(cityId) {
+        let level = this.getPortLevel(cityId);
+        return level * 0.10; // 10% per level, 100% at level 10
+    }
+    getPortPassiveIncome(cityId) {
+        let level = this.getPortLevel(cityId);
+        return level * (level + 1) / 2;
+    }
+    getTotalPassiveIncome() {
+        let total = 0;
+        for (let cityId in this.portLevels) {
+            total += this.getPortPassiveIncome(cityId);
+        }
+        return total;
+    }
+    // ==================== END PORT METHODS ====================
+    addEventToLog(event, action) {
+        this.eventLog.unshift({
+            tick: this.tick,
+            eventName: event.name,
+            action: action,
+            description: event.description
+        });
+        if (this.eventLog.length > 10) this.eventLog.pop();
+    }
+    save() {
+        let data = { credits: this.credits, currentCity: this.currentCity, cargo: this.cargo, markets: this.markets, tick: this.tick, timePhase: this.timePhase, shipCondition: this.shipCondition, shipFuel: this.shipFuel, ship: this.ship, contracts: this.contracts, shipType: this.shipType, shipModules: this.shipModules };
+        localStorage.setItem('cloudtrader_save', JSON.stringify(data));
+    }
+    load() {
+        let data = localStorage.getItem('cloudtrader_save');
+        if (data) {
+            let saved = JSON.parse(data);
+            Object.assign(this, saved);
+            this.shipModules = this.shipModules || [];
+            if (!this.markets || Object.keys(this.markets).length === 0) { this.initMarkets(); }
+            if (!this.contracts) this.contracts = [];
+            if (this.tick === undefined) this.tick = 0;
+            if (this.timePhase === undefined) this.timePhase = 0;
+            if (this.shipCondition === undefined) this.shipCondition = 100;
+            if (!this.ship) { this.ship = { docked: true, traveling: false, destination: null, travelProgress: 0, travelDuration: 0, broken: false }; }
+            if (this.shipFuel === undefined) this.shipFuel = 100;
+            if (!this.shipType) this.shipType = 'dinghy';
+            return true;
+        }
+        return false;
+    }
+}
+
+class Game {
+    constructor() {
+        this.state = new GameState();
+        this.cityNames = Object.fromEntries(Object.entries(CITIES).map(([id, city]) => [id, city.name]));
+        this.sound = new Soundscape();
+        this.paused = true;
+        this.lastFrame = performance.now();
+        this.uiClock = 0;
+        this.canvas = document.getElementById('map-canvas');
+        this.selectedCity = null;
+        this.marketTab = 'buy';
+        this.qtyValues = {};
+        this.qtyMax = {};
+        this.setupCanvas();
+        this.bindEvents();
+        let loaded = this.state.load();
+        if (!loaded) {
+            this.generateContract();
+            this.generateContract();
+        }
+        if (loaded && this.state.contracts.length === 0) {
+            this.generateContract();
+        }
+        this.setupClouds();
+        this.initStars();
+        // Initialize time phase CSS
+        this.updateTimePhaseCSS();
+        this.renderAll();
+        this.gameLoop();
+    }
+    setupCanvas() {
+        this.world = new World3D(this.canvas, this);
+    }
+    setupClouds() {
+        // Атмосфера создаётся в Three.js сцене.
+    }
+    bindEvents() {
+        this.bindShellEvents();
+        this.setupMobileCityList();
+        document.querySelectorAll('.market-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.market-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                this.marketTab = tab.dataset.tab;
+                this.renderMarket();
+            });
+        });
+        document.getElementById('launch-btn').addEventListener('click', () => this.launchShip());
+        document.getElementById('restart-btn').addEventListener('click', () => this.restartGame());
+        document.getElementById('repair-btn').addEventListener('click', () => this.payRepairs());
+        document.getElementById('reset-btn').addEventListener('click', () => this.confirmReset());
+        document.getElementById('fuel-btn').addEventListener('click', () => this.refuel());
+        document.getElementById('repair-btn-hud').addEventListener('click', () => this.repairShip());
+        document.getElementById('bar-btn').addEventListener('click', () => this.enterBar());
+        document.getElementById('log-btn').addEventListener('click', () => this.showLog());
+        document.getElementById('log-back-btn').addEventListener('click', () => this.hideLog());
+        document.getElementById('prison-continue-btn').addEventListener('click', () => this.continueAfterPrison());
+        document.getElementById('bar-back-btn').addEventListener('click', () => this.barExit());
+        this.bindPirateControls();
+    }
+    bindShellEvents() {
+        const start = () => {
+            this.paused = false;
+            this.sound.start();
+            this.sound.cue('launch');
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('pause-screen').classList.add('hidden');
+            this.lastFrame = performance.now();
+        };
+        document.getElementById('start-btn').addEventListener('click', start);
+        document.getElementById('resume-btn').addEventListener('click', start);
+        document.getElementById('pause-btn').addEventListener('click', () => this.togglePause());
+        document.getElementById('mute-btn').addEventListener('click', () => {
+            this.sound.start();
+            const muted = this.sound.toggle();
+            document.getElementById('mute-btn').classList.toggle('is-muted', muted);
+            document.getElementById('mute-btn').setAttribute('aria-label', muted ? 'Включить звук' : 'Выключить звук');
+        });
+        document.getElementById('mute-btn').classList.toggle('is-muted', this.sound.muted);
+        document.addEventListener('keydown', (event) => {
+            if (event.code === 'Space' && !document.getElementById('start-screen').classList.contains('hidden')) {
+                event.preventDefault(); start();
+            } else if (event.code === 'Escape' && !this.state.pirateCombat.active) {
+                this.togglePause();
+            }
+        });
+        window.__GAME_READY__ = true;
+        window.__gameProbe = () => ({ paused: this.paused, city: this.state.currentCity, credits: this.state.credits, traveling: this.state.ship.traveling, world: window.__worldStats });
+    }
+    togglePause() {
+        if (!document.getElementById('start-screen').classList.contains('hidden')) return;
+        this.paused = !this.paused;
+        document.getElementById('pause-screen').classList.toggle('hidden', !this.paused);
+        this.lastFrame = performance.now();
+    }
+    setupMobileCityList() {
+        let container = document.getElementById('mobile-city-list');
+        if (!container) return;
+        let html = '';
+        for (let cityId in CITIES) {
+            if (cityId === this.state.currentCity) continue;
+            let city = CITIES[cityId];
+            html += '<button class="mobile-city-btn" data-city="' + cityId + '" style="display:block;width:100%;padding:8px;margin-bottom:4px;background:rgba(79,195,247,0.1);border:1px solid rgba(79,195,247,0.3);border-radius:6px;color:var(--text-primary);font-family:Orbitron,monospace;font-size:10px;cursor:pointer;text-align:left;min-height:44px;">' +
+                '<span style="color:' + city.color + ';">●</span> ' + city.name + ' <span style="color:var(--text-secondary);">(' + city.distance + ' уд)</span>' +
+                '</button>';
+        }
+        container.innerHTML = html;
+        // Add event listeners
+        let self = this;
+        container.querySelectorAll('.mobile-city-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() { self.selectCity(btn.dataset.city); });
+        });
+        // Show on mobile
+        if (window.innerWidth <= 700) {
+            container.style.display = 'block';
+        }
+    }
+    selectCity(cityId) {
+        if (this.state.ship.traveling) return;
+        this.selectedCity = cityId;
+        this.world?.focusCity(cityId);
+        this.sound.cue('ui');
+        this.renderRoute();
+        document.getElementById('launch-btn').disabled = false;
+        this.notify('Выбран город: ' + CITIES[cityId].name, 'success');
+    }
+    handleMapClick(e) {
+        if (this.state.ship.traveling) return;
+        let rect = this.canvas.getBoundingClientRect();
+        let x = (e.clientX - rect.left) / this.canvas.width;
+        let y = (e.clientY - rect.top) / this.canvas.height;
+        let closest = null;
+        let minDist = 0.1;
+        for (let cityId in CITIES) {
+            let city = CITIES[cityId];
+            let dist = Math.sqrt(Math.pow(x - city.x, 2) + Math.pow(y - city.y, 2));
+            if (dist < minDist) { minDist = dist; closest = cityId; }
+        }
+        if (closest && closest !== this.state.currentCity) {
+            this.selectedCity = closest;
+            this.renderRoute();
+            document.getElementById('launch-btn').disabled = false;
+        }
+    }
+    calculateFlightStats(fromId, toId) {
+        let dist = Math.abs(CITIES[fromId].distance - CITIES[toId].distance) || 1;
+        let cargoWeight = this.state.getTotalCargoWeight();
+        let cargoLimit = this.state.getEffectiveCargoLimit();
+        let speedMod = 1 - (cargoWeight / cargoLimit) * 0.4;
+        speedMod *= this.state.getEffectiveSpeed();
+        let duration = Math.round(BASE_FLIGHT_TIME * dist / speedMod);
+        let fuelCost = Math.round(dist * dist * FUEL_COST_PER_KM * 10);
+        let breakageChance = BREAKAGE_BASE_CHANCE * (dist / 3) * (1 + (100 - this.state.shipCondition) / 100);
+        return { dist, duration, fuelCost, breakageChance };
+    }
+    launchShip() {
+        if (!this.selectedCity || this.state.ship.traveling || this.state.ship.broken) return;
+
+        // Check if route is blocked by events
+        let routeKey = this._getRouteKey(this.state.currentCity, this.selectedCity);
+        if (this.state.isRouteBlocked(routeKey)) {
+            this.notify('Маршрут заблокирован событием!', 'error'); return;
+        }
+
+        // Check if destination city is blocked
+        if (this.state.isCityBlocked(this.selectedCity)) {
+            // Check if player has bypass option
+            let bypassEvent = this.state.activeEvents.find(e => e.type === 'city_block' && e.blockedCity === this.selectedCity);
+            if (bypassEvent && bypassEvent.bypassCost) {
+                if (this.state.credits >= bypassEvent.bypassCost) {
+                    // Offer bypass option
+                    if (confirm('Город на карантине! Заплатить ' + bypassEvent.bypassCost + ' CR для прохода?')) {
+                        this.state.credits -= bypassEvent.bypassCost;
+                        this.state.addEventToLog(bypassEvent, 'bypass');
+                        this.notify('Вы заплатили пошлину: ' + bypassEvent.bypassCost + ' CR', 'warning');
+                    } else {
+                        this.notify('Полёт отменён', 'error'); return;
+                    }
+                } else {
+                    this.notify('Город заблокирован! Нужно ' + bypassEvent.bypassCost + ' CR для прохода', 'error'); return;
+                }
+            } else if (bypassEvent && bypassEvent.forceLandDamage) {
+                // Force land with damage
+                if (confirm('Город на карантине! Приземлиться с повреждениями (-' + bypassEvent.forceLandDamage + ' HP)?')) {
+                    // Continue with flight, will apply damage on arrival
+                    this._forceLandDamage = bypassEvent.forceLandDamage;
+                } else {
+                    this.notify('Полёт отменён', 'error'); return;
+                }
+            } else {
+                this.notify('Город заблокирован событием!', 'error'); return;
+            }
+        }
+
+        let stats = this.calculateFlightStats(this.state.currentCity, this.selectedCity);
+        let fuelNeeded = stats.fuelCost;
+        if (this.state.shipFuel < fuelNeeded) {
+            this.notify('Недостаточно топлива! Заправьте корабль', 'error'); return;
+        }
+
+        // Roll for pirate attack based on distance
+        let attackChance = 0.13 + (stats.dist * 0.02);
+        if (Math.random() < attackChance) {
+            this.startPirateCombat(stats.dist);
+            return; // Don't launch until combat ends
+        }
+
+        this.state.shipFuel -= fuelNeeded;
+        this.state.ship = {
+            docked: false, traveling: true, destination: this.selectedCity,
+            travelProgress: 0, travelDuration: stats.duration,
+            startPos: { x: CITIES[this.state.currentCity].x, y: CITIES[this.state.currentCity].y },
+            endPos: { x: CITIES[this.selectedCity].x, y: CITIES[this.selectedCity].y },
+            breakageChance: stats.breakageChance
+        };
+        this.selectedCity = null;
+        let btn = document.getElementById('launch-btn');
+        btn.textContent = 'В ПУТИ... ' + stats.duration + 'с';
+        btn.classList.add('traveling');
+        btn.disabled = true;
+        this.sound.cue('launch');
+        this.notify('Взлёт! Топливо: -' + fuelNeeded, 'warning');
+        this.state.save();
+        this.renderAll();
+    }
+    _getRouteKey(city1, city2) {
+        return [city1, city2].sort().join('-');
+    }
+    checkRandomEvent() {
+        // Events do NOT trigger if player is in bar or prison
+        if (document.getElementById('bar-screen').style.display === 'flex' ||
+            document.getElementById('prison-screen').style.display === 'flex') {
+            return;
+        }
+        if (Math.random() < 0.15) {
+            let availableEvents = EVENTS.filter(e => !this.state.hasActiveEvent(e.id));
+            if (availableEvents.length > 0) {
+                let event = availableEvents[Math.floor(Math.random() * availableEvents.length)];
+                this.activateEvent(event);
+            }
+        }
+    }
+    activateEvent(event) {
+        let activeEvent = Object.assign({}, event, { remaining: event.duration });
+        this.state.activeEvents.push(activeEvent);
+        this.state.addEventToLog(event, 'started');
+        this.notify('СОБЫТИЕ: ' + event.name, 'warning');
+        this.renderAll();
+    }
+    processEventTick() {
+        for (let i = this.state.activeEvents.length - 1; i >= 0; i--) {
+            let event = this.state.activeEvents[i];
+            event.remaining--;
+            if (event.remaining <= 0) {
+                this.expireEvent(i);
+            }
+        }
+    }
+    expireEvent(index) {
+        let event = this.state.activeEvents[index];
+        this.state.activeEvents.splice(index, 1);
+        this.state.addEventToLog(event, 'expired');
+        this.notify('Событие завершено: ' + event.name, 'success');
+        this.renderAll();
+    }
+    refuel() {
+        if (this.state.ship.traveling) return;
+        let cost = Math.round(20 * this.state.getFuelCostModifier());
+        if (this.state.credits < cost) { this.notify('Недостаточно CR!', 'error'); return; }
+        if (this.state.shipFuel >= 100) { this.notify('Бак полон!', 'error'); return; }
+        this.state.credits -= cost;
+        this.state.shipFuel = Math.min(100, this.state.shipFuel + 30);
+        this.notify('Заправка +30 (-' + cost + ' CR)', 'success');
+        this.state.save();
+        this.renderHUD();
+    }
+    repairShip() {
+        if (this.state.ship.traveling) return;
+        let cost = this.calculateRepairCost();
+        if (this.state.credits < cost) { this.notify('Недостаточно CR!', 'error'); return; }
+        if (this.state.shipCondition >= 100) { this.notify('Не требуется ремонт!', 'error'); return; }
+        this.state.credits -= cost;
+        this.state.shipCondition = 100;
+        this.state.ship.broken = false;
+        document.getElementById('repair-screen').style.display = 'none';
+        this.notify('Ремонт завершён: ' + cost + ' CR', 'success');
+        this.state.save();
+        this.renderAll();
+    }
+    updateShip(dt) {
+        if (!this.state.ship.traveling) return;
+        this.state.ship.travelProgress += dt;
+        if (this.state.ship.travelProgress >= this.state.ship.travelDuration) {
+            let destId = this.state.ship.destination;
+            this.state.currentCity = destId;
+
+            // Apply force land damage if applicable
+            if (this._forceLandDamage) {
+                this.state.shipCondition = Math.max(0, this.state.shipCondition - this._forceLandDamage);
+                this.notify('Принудительная посадка! Урон: -' + this._forceLandDamage + ' HP', 'error');
+                this._forceLandDamage = null;
+                if (this.state.shipCondition <= 0) {
+                    this.state.ship.broken = true;
+                    document.getElementById('repair-screen').style.display = 'flex';
+                    document.getElementById('repair-cost').textContent = 'Ремонт: ' + this.calculateRepairCost() + ' CR';
+                }
+            }
+
+            if (Math.random() < this.state.ship.breakageChance) {
+                this.state.ship.broken = true;
+                let damage = 20 + Math.random() * 40;
+                this.state.shipCondition = Math.max(0, this.state.shipCondition - damage);
+                document.getElementById('repair-screen').style.display = 'flex';
+                document.getElementById('repair-cost').textContent = 'Ремонт: ' + this.calculateRepairCost() + ' CR';
+            } else {
+                let healBonus = Math.round(this.state.ship.travelDuration / 30);
+                this.state.shipCondition = Math.min(100, this.state.shipCondition + healBonus);
+                this.notify('Прибыли в ' + CITIES[destId].name + '. Корабль: ' + this.state.shipCondition + '%', 'success');
+            }
+            this.state.ship = { docked: true, traveling: false, destination: null, travelProgress: 0, travelDuration: 0, broken: false };
+            this.state.tick++;
+            this.decayFactors();
+            this.refreshCityStock(destId);
+            if (this.state.tick % 2 === 0) this.generateContract();
+
+             // Process event tick and check for new random events after arrival
+             this.processEventTick();
+             this.checkRandomEvent();
+
+             // Check for skip events (player waits in current city for a tick)
+             let skipEvent = this.state.activeEvents.find(e => e.skip);
+             if (skipEvent) {
+                 this.state.tick++;
+                 this.notify('Вы ждёте в ' + CITIES[destId].name + ' (скип тика из-за события)', 'warning');
+             }
+
+            let btn = document.getElementById('launch-btn');
+            btn.textContent = 'ВЫБЕРИТЕ ГОРОД';
+            btn.classList.remove('traveling');
+            btn.disabled = true;
+            this.checkWin();
+        }
+    }
+    calculateRepairCost() { return Math.round(100 * (1 + (100 - this.state.shipCondition) / 50) * 2 * this.state.getRepairCostModifier()); }
+    payRepairs() {
+        let cost = this.calculateRepairCost();
+        if (this.state.credits < cost) { this.notify('Недостаточно CR!', 'error'); return; }
+        this.state.credits -= cost;
+        this.state.shipCondition = 100;
+        this.state.ship.broken = false;
+        document.getElementById('repair-screen').style.display = 'none';
+        this.notify('Ремонт завершён: ' + cost + ' CR', 'success');
+        this.state.save();
+        this.renderAll();
+    }
+    decayFactors() {
+        for (let cityId in this.state.markets) {
+            for (let itemId in this.state.markets[cityId]) {
+                this.state.markets[cityId][itemId].demandFactor *= 0.95;
+                this.state.markets[cityId][itemId].supplyFactor *= 0.95;
+            }
+        }
+    }
+    refreshCityStock(cityId) {
+        if (Math.random() < 0.4) {
+            let city = CITIES[cityId];
+            let allItems = Object.keys(ITEMS);
+            let available = allItems.filter(id => city.items.includes(id));
+            let missing = allItems.filter(id => !city.items.includes(id));
+            if (available.length > 3 && missing.length > 0) {
+                let removeIdx = Math.floor(Math.random() * available.length);
+                let addIdx = Math.floor(Math.random() * missing.length);
+                city.items = city.items.filter(i => i !== available[removeIdx]);
+                city.items.push(missing[addIdx]);
+                this.notify('В ' + city.name + ' товар "' + ITEMS[missing[addIdx]].name + '" появился в продаже', 'warning');
+            }
+        }
+        if (Math.random() < 0.3) {
+            let city = CITIES[cityId];
+            let allShips = Object.keys(SHIPS);
+            let available = city.ships.filter(id => SHIPS[id]);
+            let missing = allShips.filter(id => !city.ships.includes(id));
+            if (available.length > 1 && missing.length > 0) {
+                let removeIdx = Math.floor(Math.random() * available.length);
+                let addIdx = Math.floor(Math.random() * missing.length);
+                city.ships = city.ships.filter(i => i !== available[removeIdx]);
+                city.ships.push(missing[addIdx]);
+                this.notify('В ' + city.name + ' появился корабль "' + SHIPS[missing[addIdx]].name + '"', 'warning');
+            }
+        }
+    }
+    getTotalCargoWeight() {
+        let weight = 0;
+        for (let itemId in this.state.cargo) weight += (this.state.cargo[itemId] || 0) * ITEMS[itemId].weight;
+        return weight;
+    }
+    generateContract() {
+        if (this.state.contracts.length >= 2) return;
+        let cities = Object.keys(CITIES).filter(c => c !== this.state.currentCity);
+        if (cities.length === 0) return;
+        let destination = cities[Math.floor(Math.random() * cities.length)];
+        let itemIds = Object.keys(ITEMS);
+        let itemId = itemIds[Math.floor(Math.random() * itemIds.length)];
+        let quantity = Math.floor(Math.random() * 5) + 2;
+        let reward = Math.round(ITEMS[itemId].basePrice * quantity * CONTRACT_REWARD_RATE * (1 + CITIES[destination].distance / 5));
+        this.state.contracts.push({ id: Date.now(), itemId, quantity, destination, reward });
+    }
+    buyItem(itemId) {
+        if (!ITEMS[itemId]) { this.notify('Ошибка товара!', 'error'); return false; }
+        let quantity = this.qtyValues[itemId] || 1;
+        let price = this.state.calculatePrice(this.state.currentCity, itemId);
+        let totalCost = price * quantity;
+        let weight = quantity * ITEMS[itemId].weight;
+        if (totalCost > this.state.credits) { this.notify('Недостаточно CR!', 'error'); return false; }
+        if (this.state.getTotalCargoWeight() + weight > this.state.getEffectiveCargoLimit()) { this.notify('Недостаточно места!', 'error'); return false; }
+        let cityMarket = this.state.markets[this.state.currentCity];
+        if (!cityMarket || !cityMarket[itemId]) { this.notify('Ошибка рынка!', 'error'); return false; }
+        this.state.credits -= totalCost;
+        this.state.cargo[itemId] = (this.state.cargo[itemId] || 0) + quantity;
+        this.state.markets[this.state.currentCity][itemId].demandFactor += quantity * 0.03;
+        this.notify('Куплено ' + ITEMS[itemId].name + ' x' + quantity, 'success');
+        this.state.save();
+        this.renderHUD();
+        this.renderCargo();
+        this.renderRoute();
+        return true;
+    }
+    sellItem(itemId) {
+        let quantity = this.qtyValues[itemId] || 1;
+        if (!this.state.cargo[itemId] || this.state.cargo[itemId] < quantity) { this.notify('Недостаточно товара!', 'error'); return false; }
+        if (!ITEMS[itemId]) { this.notify('Ошибка товара!', 'error'); return false; }
+        let cityMarket = this.state.markets[this.state.currentCity];
+        if (!cityMarket || !cityMarket[itemId]) { this.notify('Ошибка рынка!', 'error'); return false; }
+
+        // Check for contraband arrest
+        if (CONTRABAND_ITEMS.includes(itemId)) {
+            if (Math.random() < 0.13) {
+                // ARRESTED!
+                this.notify('⛓ ВАС АРЕСТОВАЛИ ЗА КОНТРАБАНДУ!', 'error');
+                this.arrestPlayer();
+                return false;
+            }
+        }
+
+        let price = this.state.calculatePrice(this.state.currentCity, itemId);
+        let totalSell = price * quantity * (1 - TRADE_TAX);
+        this.state.credits += totalSell;
+        this.state.cargo[itemId] -= quantity;
+        if (this.state.cargo[itemId] === 0) delete this.state.cargo[itemId];
+        this.state.markets[this.state.currentCity][itemId].supplyFactor += quantity * 0.03;
+        this.notify('Продано x' + quantity + ' за ' + Math.round(totalSell) + ' CR', 'success');
+        this.state.save();
+        this.checkWin();
+        this.renderHUD();
+        this.renderCargo();
+        this.renderRoute();
+        return true;
+    }
+    buyShip(shipId) {
+        let ship = SHIPS[shipId];
+        if (!ship || shipId === this.state.shipType) return;
+        if (ship.price > this.state.credits) { this.notify('Недостаточно CR!', 'error'); return; }
+        if (ship.slots < this.state.shipModules.length) { this.notify('Не хватает слотов! Снимите модули', 'error'); return; }
+        this.state.credits -= ship.price;
+        this.state.shipType = shipId;
+        this.state.cargo = {};
+        this.notify('Куплен ' + ship.name + '! Груз: ' + ship.cargo + ' кг', 'success');
+        this.state.save();
+        this.renderAll();
+    }
+    buyModule(modId) {
+        let mod = MODULES[modId];
+        if (!mod) return;
+        if (this.state.shipModules.includes(modId)) { this.notify('Модуль уже установлен!', 'error'); return; }
+        if (!this.state.canAddModule()) { this.notify('Нет свободных слотов!', 'error'); return; }
+        if (mod.price > this.state.credits) { this.notify('Недостаточно CR!', 'error'); return; }
+        this.state.credits -= mod.price;
+        this.state.shipModules.push(modId);
+        this.notify('Установлен ' + mod.name + ' [' + mod.tier + ']', 'success');
+        this.state.save();
+        this.renderAll();
+    }
+    acceptContract(contractId) {
+        let contract = this.state.contracts.find(c => c.id === contractId);
+        if (!contract) return;
+        let requiredWeight = contract.quantity * ITEMS[contract.itemId].weight;
+        if (this.state.getTotalCargoWeight() + requiredWeight > this.state.getEffectiveCargoLimit()) { this.notify('Недостаточно места!', 'error'); return; }
+        this.state.cargo[contract.itemId] = (this.state.cargo[contract.itemId] || 0) + contract.quantity;
+        contract.accepted = true;
+        this.selectedCity = contract.destination;
+        this.state.save();
+        this.renderAll();
+        this.renderRoute();
+        this.notify('Контракт: доставить ' + ITEMS[contract.itemId].name + ' x' + contract.quantity + ' в ' + CITIES[contract.destination].name, 'success');
+    }
+    completeContract() {
+        let contract = this.state.contracts.find(c => c.destination === this.state.currentCity && c.accepted);
+        if (!contract) { this.notify('Нет активного контракта!', 'error'); return; }
+        if (!this.state.cargo[contract.itemId] || this.state.cargo[contract.itemId] < contract.quantity) { this.notify('Нет нужного товара!', 'error'); return; }
+        this.state.cargo[contract.itemId] -= contract.quantity;
+        if (this.state.cargo[contract.itemId] === 0) delete this.state.cargo[contract.itemId];
+        this.state.credits += contract.reward;
+        this.notify('Контракт выполнен! +' + contract.reward + ' CR', 'success');
+        this.state.contracts = this.state.contracts.filter(c => c.id !== contract.id);
+        this.state.save();
+        this.checkWin();
+        this.renderAll();
+    }
+    checkWin() { if (this.state.credits >= WIN_AMOUNT) document.getElementById('win-screen').style.display = 'flex'; }
+    confirmReset() {
+        if (confirm('Сбросить игру? Весь прогресс будет потерян.')) {
+            this.state.reset();
+            localStorage.removeItem('cloudtrader_save');
+            document.getElementById('win-screen').style.display = 'none';
+            document.getElementById('repair-screen').style.display = 'none';
+            this.selectedCity = null;
+            this.generateContract();
+            this.generateContract();
+            this.renderAll();
+            this.notify('Игра сброшена', 'warning');
+        }
+    }
+    restartGame() {
+        this.state.reset();
+        localStorage.removeItem('cloudtrader_save');
+        document.getElementById('win-screen').style.display = 'none';
+        document.getElementById('repair-screen').style.display = 'none';
+        this.selectedCity = null;
+        this.renderAll();
+    }
+    notify(message, type) {
+        let container = document.getElementById('notifications');
+        let div = document.createElement('div');
+        div.className = 'notification ' + type;
+        div.textContent = message;
+        this.sound.cue(type === 'error' ? 'error' : type === 'success' ? 'success' : 'ui');
+        container.appendChild(div);
+        setTimeout(() => div.remove(),3000);
+    }
+    showLog() {
+        this.renderLog();
+        document.getElementById('log-screen').style.display = 'block';
+    }
+    hideLog() {
+        document.getElementById('log-screen').style.display = 'none';
+    }
+    renderLog() {
+        let logEntries = document.getElementById('log-entries');
+        let panelEntries = document.getElementById('log-panel-entries');
+        let html = '';
+        if (this.state.eventLog.length === 0) {
+            html = '<div style="color:var(--text-secondary);font-size:11px;text-align:center;padding:20px;">Журнал пуст</div>';
+        } else {
+            for (let entry of this.state.eventLog) {
+                let actionText = { 'started': '▶ НАЧАЛОСЬ', 'expired': '■ ЗАВЕРШЕНО', 'bypass': '⚡ ПРОХОД', 'forceLand': '💥 ПРИНУДИТЕЛЬНАЯ ПОСАДКА' }[entry.action] || entry.action;
+                html += '<div style="background:rgba(255,255,255,0.05);border-radius:6px;padding:10px;margin-bottom:8px;border-left:3px solid var(--ui-accent);">' +
+                    '<div style="font-size:10px;color:var(--text-secondary);">Тик ' + entry.tick + '</div>' +
+                    '<div style="font-size:12px;color:var(--text-primary);margin:4px 0;">' + entry.eventName + '</div>' +
+                    '<div style="font-size:9px;color:var(--ui-accent);">' + actionText + '</div>' +
+                    '<div style="font-size:10px;color:var(--text-secondary);margin-top:4px;">' + entry.description + '</div>' +
+                '</div>';
+            }
+        }
+        if (logEntries) logEntries.innerHTML = html;
+        if (panelEntries) panelEntries.innerHTML = html;
+    }
+    renderAll() { this.renderHUD(); this.renderCargo(); this.renderModules(); this.renderMarket(); this.renderRoute(); this.renderLog(); }
+    renderModules() {
+        let container = document.getElementById('modules-display');
+        let slots = this.state.getAvailableSlots();
+        let used = this.state.getUsedSlots();
+        let html = '<div style="font-size:9px;color:#888;margin-bottom:4px;">СЛОТЫ: ' + used + '/' + slots + '</div>';
+        for (let modId of this.state.shipModules) {
+            let mod = MODULES[modId];
+            let tierColor = { C: '#888', B: '#4FC3F7', A: '#FFB74D', S: '#AB47BC' }[mod.tier];
+            let bgColor = mod.type === 'cargo' ? 'rgba(79,195,247,0.2)' : 'rgba(255,183,77,0.2)';
+            html += '<div style="display:inline-block;background:' + bgColor + ';border-radius:3px;padding:2px 5px;margin:2px;font-size:9px;color:' + tierColor + ';">' + mod.name + '</div>';
+        }
+        container.innerHTML = html;
+    }
+    renderHUD() {
+        document.getElementById('credits').innerHTML = this.state.credits.toLocaleString() + ' <span>CR</span>';
+        document.getElementById('location-info').textContent = CITIES[this.state.currentCity].name;
+        document.getElementById('tick-timer').textContent = 'Тик: ' + this.state.tick;
+        let shipName = SHIPS[this.state.shipType].name;
+        let condPct = Math.round(this.state.shipCondition);
+        let condColor = this.state.ship.broken ? '#E57373' : this.state.shipCondition < 50 ? '#FFB74D' : '#78909C';
+        document.getElementById('ship-title').textContent = 'КОРАБЛЬ: ' + shipName;
+        document.getElementById('ship-status').textContent = this.state.ship.broken ? 'ПОЛОМКА!' : condPct + '%';
+        document.getElementById('ship-status').style.color = this.state.ship.broken ? 'var(--negative)' : condColor;
+        document.getElementById('fuel-fill').style.width = this.state.shipFuel + '%';
+        document.getElementById('fuel-text').textContent = Math.round(this.state.shipFuel) + '%';
+        document.getElementById('fuel-btn').disabled = this.state.ship.traveling || this.state.shipFuel >= 100;
+        document.getElementById('condition-fill').style.width = this.state.shipCondition + '%';
+        document.getElementById('condition-fill').style.background = condColor;
+        document.getElementById('condition-text').textContent = condPct + '%';
+        document.getElementById('condition-text').style.color = condColor;
+        document.getElementById('repair-btn-hud').style.background = condColor;
+        document.getElementById('repair-btn-hud').disabled = this.state.ship.traveling || this.state.shipCondition >= 100;
+        document.getElementById('bar-btn').disabled = this.state.ship.traveling;
+    }
+    renderCargo() {
+        let weight = this.state.getTotalCargoWeight();
+        let limit = this.state.getEffectiveCargoLimit();
+        document.getElementById('cargo-fill').style.width = (weight / limit * 100) + '%';
+        document.getElementById('cargo-text').textContent = weight + ' кг / ' + limit + ' кг';
+        let html = '';
+        for (let itemId in this.state.cargo) {
+            let qty = this.state.cargo[itemId];
+            if (qty > 0) html += '<div class="cargo-item"><span>' + ITEMS[itemId].name + '</span><span>x' + qty + '</span></div>';
+        }
+        if (html === '') html = '<div style="color:var(--text-secondary);font-size:11px;">Пусто</div>';
+        document.getElementById('cargo-items').innerHTML = html;
+    }
+    renderMarket() {
+        document.getElementById('market-city').textContent = CITIES[this.state.currentCity].name;
+        let container = document.getElementById('market-items');
+        let html = '';
+        if (this.marketTab === 'contracts') {
+            let curContract = this.state.contracts.find(c => c.destination === this.state.currentCity && c.accepted && ITEMS[c.itemId] && CITIES[c.destination]);
+            if (curContract) {
+                let hasItem = this.state.cargo[curContract.itemId] && this.state.cargo[curContract.itemId] >= curContract.quantity;
+                html += '<div class="contract-item"><div class="contract-header">АКТИВНЫЙ КОНТРАКТ</div><div class="contract-details">' + ITEMS[curContract.itemId].name + ' x' + curContract.quantity + ' → ' + CITIES[curContract.destination].name + '</div><div class="contract-reward">+' + curContract.reward + ' CR</div><button class="trade-btn" onclick="game.completeContract()" ' + (hasItem ? '' : 'disabled') + '>ВЫПОЛНИТЬ</button></div>';
+            }
+            this.state.contracts.filter(c => !c.accepted && ITEMS[c.itemId] && CITIES[c.destination]).forEach(c => {
+                html += '<div class="contract-item"><div class="contract-header">' + CITIES[c.destination].name + '</div><div class="contract-details">' + ITEMS[c.itemId].name + ' x' + c.quantity + '</div><div class="contract-reward">+' + c.reward + ' CR</div><button class="trade-btn" onclick="game.acceptContract(' + c.id + ')">ПРИНЯТЬ</button></div>';
+            });
+            if (html === '') html = '<div style="color:var(--text-secondary);font-size:11px;">Нет контрактов</div>';
+        } else if (this.marketTab === 'ships') {
+            let cityShips = CITIES[this.state.currentCity].ships;
+            let currentShip = SHIPS[this.state.shipType];
+            html += '<div style="color:var(--text-secondary);font-size:10px;margin-bottom:8px;">ТЕКУЩИЙ: ' + currentShip.name + ' (' + currentShip.cargo + ' кг груза, скорость x' + currentShip.speed + ')</div>';
+            for (let shipId of cityShips) {
+                let ship = SHIPS[shipId];
+                let isCurrent = shipId === this.state.shipType;
+                html += '<div class="contract-item"><div class="contract-header">' + ship.name + '</div><div class="contract-details">Груз: ' + ship.cargo + ' кг | Скор: x' + ship.speed + '</div><div class="contract-reward">' + (ship.price === 0 ? 'Стартовый' : ship.price + ' CR') + '</div><button class="trade-btn" onclick="game.buyShip(\'' + shipId + '\')" ' + (isCurrent || ship.price > this.state.credits ? 'disabled' : '') + '>' + (isCurrent ? 'ТЕКУЩИЙ' : (ship.price === 0 ? 'БЕСПЛАТНО' : 'КУПИТЬ')) + '</button></div>';
+            }
+            if (cityShips.length === 0) html += '<div style="color:var(--text-secondary);font-size:11px;">Нет кораблей в продаже</div>';
+        } else if (this.marketTab === 'modules') {
+            let slots = this.state.getAvailableSlots();
+            let used = this.state.getUsedSlots();
+            html += '<div style="color:var(--text-secondary);font-size:10px;margin-bottom:8px;">СЛОТЫ: ' + used + '/' + slots + ' | ГРУЗ: ' + this.state.getEffectiveCargoLimit() + ' кг | СКОР: x' + this.state.getEffectiveSpeed().toFixed(2) + '</div>';
+            for (let modId in MODULES) {
+                let mod = MODULES[modId];
+                let tierColor = { C: '#888', B: '#4FC3F7', A: '#FFB74D', S: '#AB47BC' }[mod.tier];
+                let canAdd = this.state.canAddModule() && mod.price <= this.state.credits;
+                html += '<div class="contract-item"><div class="contract-header" style="color:' + tierColor + '">' + mod.name + '</div><div class="contract-details">' + (mod.type === 'cargo' ? '+' + mod.cargoBonus + ' кг груза | -' + Math.round((1-mod.speedMod)*100) + '% скор' : '+' + Math.round(mod.speedBonus*100) + '% скор | +' + mod.cargoMod + ' кг') + '</div><div class="contract-reward">' + mod.price + ' CR</div><button class="trade-btn" onclick="game.buyModule(\'' + modId + '\')" ' + (canAdd ? '' : 'disabled') + '>' + (this.state.shipModules.includes(modId) ? 'УЖЕ ЕСТЬ' : 'КУПИТЬ') + '</button></div>';
+            }
+        } else if (this.marketTab === 'ports') {
+            // Render ports panel content
+            this.renderPortPanel();
+            html = document.getElementById('port-content').innerHTML;
+        } else {
+            let cityItems = CITIES[this.state.currentCity].items;
+            let itemsToShow = this.marketTab === 'sell'
+                ? Object.keys(this.state.cargo).filter(id => this.state.cargo[id] > 0)
+                : cityItems;
+            let hasContrabandModule = this.state.hasContrabandModule();
+            for (let itemId of itemsToShow) {
+                let item = ITEMS[itemId];
+                let price = this.state.calculatePrice(this.state.currentCity, itemId);
+                let maxQty = this.marketTab === 'sell' ? (this.state.cargo[itemId] || 0) : 20;
+                this.qtyMax[itemId] = maxQty;
+                if (!this.qtyValues[itemId] || this.qtyValues[itemId] > maxQty) this.qtyValues[itemId] = 1;
+                // Highlight contraband items if module is installed
+                let isContraband = hasContrabandModule && CONTRABAND_ITEMS.includes(itemId);
+                let itemNameClass = 'item-name' + (isContraband ? ' contraband-item' : '');
+                html += '<div class="market-item"><div class="' + itemNameClass + '">' + item.name + '</div><div class="item-price">' + price + '</div><div class="qty-controls"><button class="qty-btn" onclick="game.changeQty(\'' + itemId + '\',-1)">-</button><span class="qty-value" id="qty-' + itemId + '">' + this.qtyValues[itemId] + '</span><button class="qty-btn" onclick="game.changeQty(\'' + itemId + '\',1)">+</button></div><button class="trade-btn" onclick="game.' + (this.marketTab === 'buy' ? 'buyItem' : 'sellItem') + '(\'' + itemId + '\')">' + (this.marketTab === 'buy' ? 'КУПИТЬ' : 'ПРОДАТЬ') + '</button></div>';
+            }
+            if (html === '') html = '<div style="color:var(--text-secondary);font-size:11px;">' + (this.marketTab === 'sell' ? 'Нет товаров для продажи' : 'Нет товаров') + '</div>';
+        }
+        container.innerHTML = html;
+    }
+    changeQty(itemId, delta) {
+        let max = this.qtyMax[itemId] || 20;
+        this.qtyValues[itemId] = Math.max(1, Math.min(max, (this.qtyValues[itemId] || 1) + delta));
+        document.getElementById('qty-' + itemId).textContent = this.qtyValues[itemId];
+    }
+    renderRoute() {
+        let destEl = document.getElementById('route-dest');
+        let statsEl = document.getElementById('route-stats');
+        let profitEl = document.getElementById('profit-estimate');
+        if (this.state.ship.traveling) {
+            destEl.textContent = '-> ' + CITIES[this.state.ship.destination].name;
+            statsEl.textContent = 'В пути... ' + Math.ceil(this.state.ship.travelDuration - this.state.ship.travelProgress) + 'с';
+            profitEl.textContent = '';
+            return;
+        }
+        if (!this.selectedCity) {
+            destEl.textContent = 'Выберите город';
+            statsEl.textContent = '';
+            profitEl.textContent = '';
+            return;
+        }
+        let stats = this.calculateFlightStats(this.state.currentCity, this.selectedCity);
+        destEl.textContent = CITIES[this.selectedCity].name + ' (уд: ' + CITIES[this.selectedCity].distance + ')';
+        let fuelOk = this.state.shipFuel >= stats.fuelCost;
+        statsEl.innerHTML = 'Расстояние: ' + stats.dist + ' | Топливо: <span style="color:' + (fuelOk ? 'var(--positive)' : 'var(--negative)') + '">' + stats.fuelCost + '% бака</span> | Время: ' + stats.duration + 'с<br>Риск поломки: ' + Math.round(stats.breakageChance * 100) + '%';
+        if (Object.keys(this.state.cargo).length > 0) {
+            let profit = 0;
+            for (let itemId in this.state.cargo) {
+                let qty = this.state.cargo[itemId];
+                if (qty > 0) {
+                    let buyPrice = this.state.calculatePrice(this.state.currentCity, itemId);
+                    let sellPrice = this.state.calculatePrice(this.selectedCity, itemId);
+                    profit += (sellPrice - buyPrice) * qty * (1 - TRADE_TAX);
+                }
+            }
+            profit -= stats.fuelCost * 0.5;
+            profitEl.innerHTML = '<span class="' + (profit > 0 ? 'profit-positive' : 'profit-negative') + '">Прибыль: ' + Math.round(profit) + ' CR</span>';
+        } else {
+            profitEl.textContent = '';
+        }
+    }
+    render() {
+        this.world?.render();
+    }
+
+    drawLightning(ctx) {
+        let x = Math.random() * this.canvas.width;
+        let y = 0;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        while (y < this.canvas.height * 0.7) {
+            x += (Math.random() - 0.5) * 30;
+            y += 15 + Math.random() * 20;
+            ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = 'rgba(107, 91, 149, 0.6)';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        ctx.strokeStyle = 'rgba(127, 219, 218, 0.7)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+    }
+    gameLoop() {
+        const now = performance.now();
+        const dt = Math.min(0.05, (now - this.lastFrame) / 1000);
+        this.lastFrame = now;
+        if (!this.paused) this.updateShip(dt);
+        this.render();
+        this.uiClock += dt;
+        if (this.uiClock > 0.2) {
+            this.uiClock = 0;
+            this.renderHUD();
+            if (this.state.ship.traveling) this.renderRoute();
+        }
+        requestAnimationFrame(() => this.gameLoop());
+    }
+
+    // ==================== PORT SYSTEM METHODS ====================
+
+    // Stars array for night sky
+    stars = [];
+    initStars() {
+        // Звёзды создаются в Three.js сцене.
+    }
+
+    buyPortUpgrade(cityId) {
+        if (!PORT_CONFIG[cityId]) { this.notify('Ошибка города!', 'error'); return false; }
+        if (this.state.ship.traveling) { this.notify('Нельзя улучшить порт в пути!', 'error'); return false; }
+
+        let currentLevel = this.state.getPortLevel(cityId);
+        let maxLevel = this.state.getPortMaxLevel(cityId);
+
+        if (currentLevel >= maxLevel) { this.notify('Порт уже максимального уровня!', 'error'); return false; }
+
+        let cost = this.state.getPortUpgradeCost(cityId);
+        if (this.state.credits < cost) { this.notify('Недостаточно CR! Нужно: ' + cost, 'error'); return false; }
+
+        this.state.credits -= cost;
+        this.state.portLevels[cityId] = currentLevel + 1;
+
+        this.notify('Порт ' + PORT_CONFIG[cityId].name + ' улучшен до уровня ' + (currentLevel + 1) + '!', 'success');
+        this.state.save();
+        this.renderAll();
+        this.renderPortPanel();
+        return true;
+    }
+
+    refuel() {
+        if (this.state.ship.traveling) return;
+        let cost = Math.round(20 * this.state.getFuelCostModifier());
+
+        // Apply port fuel discount for current city
+        let portDiscount = this.state.getPortFuelDiscount(this.state.currentCity);
+        if (portDiscount > 0) {
+            cost = Math.round(cost * (1 - portDiscount));
+        }
+
+        if (this.state.credits < cost) { this.notify('Недостаточно CR!', 'error'); return; }
+        if (this.state.shipFuel >= 100) { this.notify('Бак полон!', 'error'); return; }
+        this.state.credits -= cost;
+        this.state.shipFuel = Math.min(100, this.state.shipFuel + 30);
+
+        let discountText = portDiscount > 0 ? ' (скидка порта ' + Math.round(portDiscount * 100) + '%)' : '';
+        this.notify('Заправка +30 (-' + cost + ' CR)' + discountText, 'success');
+        this.state.save();
+        this.renderHUD();
+    }
+
+    updateShip(dt) {
+        if (!this.state.ship.traveling) return;
+        this.state.ship.travelProgress += dt;
+        if (this.state.ship.travelProgress >= this.state.ship.travelDuration) {
+            let destId = this.state.ship.destination;
+            this.state.currentCity = destId;
+
+            // Apply force land damage if applicable
+            if (this._forceLandDamage) {
+                this.state.shipCondition = Math.max(0, this.state.shipCondition - this._forceLandDamage);
+                this.notify('Принудительная посадка! Урон: -' + this._forceLandDamage + ' HP', 'error');
+                this._forceLandDamage = null;
+                if (this.state.shipCondition <= 0) {
+                    this.state.ship.broken = true;
+                    document.getElementById('repair-screen').style.display = 'flex';
+                    document.getElementById('repair-cost').textContent = 'Ремонт: ' + this.calculateRepairCost() + ' CR';
+                }
+            }
+
+            if (Math.random() < this.state.ship.breakageChance) {
+                this.state.ship.broken = true;
+                let damage = 20 + Math.random() * 40;
+                this.state.shipCondition = Math.max(0, this.state.shipCondition - damage);
+                document.getElementById('repair-screen').style.display = 'flex';
+                document.getElementById('repair-cost').textContent = 'Ремонт: ' + this.calculateRepairCost() + ' CR';
+            } else {
+                let healBonus = Math.round(this.state.ship.travelDuration / 30);
+                this.state.shipCondition = Math.min(100, this.state.shipCondition + healBonus);
+                this.notify('Прибыли в ' + CITIES[destId].name + '. Корабль: ' + this.state.shipCondition + '%', 'success');
+            }
+            this.state.ship = { docked: true, traveling: false, destination: null, travelProgress: 0, travelDuration: 0, broken: false };
+            this.state.tick++;
+
+            // Advance time phase every 3 ticks (full day cycle = 12 ticks)
+            if (this.state.tick % 3 === 0) {
+                this.state.timePhase = (this.state.timePhase + 1) % 4;
+                this.updateTimePhaseCSS();
+                this.notify('Время суток: ' + TIME_PHASES[this.state.timePhase].name, 'warning');
+            }
+
+            this.decayFactors();
+            this.refreshCityStock(destId);
+            if (this.state.tick % 2 === 0) this.generateContract();
+
+             // Process event tick and check for new random events after arrival
+             this.processEventTick();
+             this.checkRandomEvent();
+
+             // Check for skip events (player waits in current city for a tick)
+             let skipEvent = this.state.activeEvents.find(e => e.skip);
+             if (skipEvent) {
+                 this.state.tick++;
+
+                 // Also advance time phase on skip tick
+                 if (this.state.tick % 3 === 0) {
+                     this.state.timePhase = (this.state.timePhase + 1) % 4;
+                     this.updateTimePhaseCSS();
+                 }
+
+                 this.notify('Вы ждёте в ' + CITIES[destId].name + ' (скип тика из-за события)', 'warning');
+             }
+
+             // Add passive income from ports on tick increment (arrival in new city)
+             let passiveIncome = this.state.getTotalPassiveIncome();
+             if (passiveIncome > 0) {
+                 this.state.credits += passiveIncome;
+                 this.notify('Пассивный доход от портов: +' + passiveIncome + ' CR', 'success');
+             }
+
+            let btn = document.getElementById('launch-btn');
+            btn.textContent = 'ВЫБЕРИТЕ ГОРОД';
+            btn.classList.remove('traveling');
+            btn.disabled = true;
+            this.checkWin();
+        }
+    }
+
+    renderPortRings() {
+        let ctx = this.ctx;
+        for (let cityId in CITIES) {
+            let city = CITIES[cityId];
+            let portLevel = this.state.getPortLevel(cityId);
+            let maxLevel = this.state.getPortMaxLevel(cityId);
+
+            if (portLevel <= 0) continue;
+
+            let x = city.x * this.canvas.width;
+            let y = city.y * this.canvas.height;
+            let ringRadius = 45; // Slightly larger than city glow
+            let segmentAngle = (Math.PI * 2) / maxLevel;
+
+            // Draw empty ring outline
+            ctx.beginPath();
+            ctx.arc(x, y, ringRadius, 0, Math.PI * 2);
+            ctx.strokeStyle = city.color + '30';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Draw filled segments proportional to level/max
+            for (let i = 0; i < portLevel; i++) {
+                let startAngle = i * segmentAngle - Math.PI / 2;
+                let endAngle = startAngle + segmentAngle;
+
+                ctx.beginPath();
+                ctx.arc(x, y, ringRadius, startAngle, endAngle);
+                ctx.arc(x, y, ringRadius - 4, endAngle, startAngle, true);
+                ctx.closePath();
+
+                ctx.fillStyle = city.color + 'AA';
+                ctx.fill();
+
+                // Glowing effect
+                ctx.shadowColor = city.color;
+                ctx.shadowBlur = 10;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+    }
+
+    renderPortPanel() {
+        // This will be called to update the ports tab content
+        let portContent = document.getElementById('port-content');
+        if (!portContent) return;
+
+        let html = '';
+        for (let cityId in PORT_CONFIG) {
+            let config = PORT_CONFIG[cityId];
+            let level = this.state.getPortLevel(cityId);
+            let maxLevel = config.maxLevel;
+            let upgradeCost = this.state.getPortUpgradeCost(cityId);
+            let fuelDiscount = this.state.getPortFuelDiscount(cityId);
+            let passiveIncome = this.state.getPortPassiveIncome(cityId);
+            let isCurrentCity = cityId === this.state.currentCity;
+            let canUpgrade = level < maxLevel && this.state.credits >= upgradeCost && !this.state.ship.traveling;
+
+            let city = CITIES[cityId];
+            html += '<div class="port-item" style="background:rgba(255,255,255,0.05);border-radius:10px;padding:12px;margin-bottom:10px;border-left:3px solid ' + city.color + ';">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
+                    '<div style="font-size:12px;color:' + city.color + ';font-weight:700;">' + config.name + (isCurrentCity ? ' ★' : '') + '</div>' +
+                    '<div style="font-size:10px;color:var(--text-secondary);">Уровень ' + level + '/' + maxLevel + '</div>' +
+                '</div>' +
+                '<div style="display:flex;gap:8px;margin-bottom:8px;align-items:center;">';
+
+            // Progress bar for mobile
+            html += '<div style="flex:1;height:12px;background:rgba(255,248,231,0.08);border-radius:8px;overflow:hidden;">' +
+                        '<div style="width:' + (level/maxLevel*100) + '%;height:100%;background:' + city.color + ';border-radius:8px;transition:width 0.3s ease;"></div>' +
+                    '</div>';
+
+            html += '</div>' +
+                '<div style="font-size:9px;color:var(--text-secondary);margin-bottom:6px;">' +
+                    'Топливо: -' + Math.round(fuelDiscount * 100) + '% | Доход: ' + passiveIncome + ' CR/тик' +
+                '</div>';
+
+            if (level < maxLevel) {
+                html += '<button class="trade-btn" onclick="game.buyPortUpgrade(\'' + cityId + '\')" ' + (canUpgrade ? '' : 'disabled') + ' style="width:100%;font-size:9px;">' +
+                    'УЛУЧШИТЬ (' + upgradeCost + ' CR)' +
+                '</button>';
+            } else {
+                html += '<div style="font-size:9px;color:var(--positive);text-align:center;">МАКСИМАЛЬНЫЙ УРОВЕНЬ</div>';
+            }
+
+            html += '</div>';
+        }
+
+        portContent.innerHTML = html;
+
+        // Update total passive income display if exists
+        let totalIncomeEl = document.getElementById('total-passive-income');
+        if (totalIncomeEl) {
+            totalIncomeEl.textContent = 'Пассивный доход: ' + this.state.getTotalPassiveIncome() + ' CR/тик';
+        }
+    }
+
+    // Call renderPortRings in the render method
+    updateTimePhaseCSS() {
+        let phase = TIME_PHASES[this.state.timePhase];
+        document.body.style.setProperty('--ui-bg', phase.uiBg);
+        document.body.style.setProperty('--text-primary', phase.textPrimary);
+        document.body.style.setProperty('--text-secondary', phase.textSecondary);
+        document.body.style.setProperty('--city-glow', phase.cityGlow);
+        document.body.style.setProperty('--sky-top', phase.skyTop);
+        document.body.style.setProperty('--sky-bottom', phase.skyBottom);
+        document.body.style.setProperty('--cloud-color', phase.cloudColor);
+        document.body.style.setProperty('--star-alpha', phase.starAlpha);
+    }
+
+    // ==================== PRISON SYSTEM ====================
+
+    arrestPlayer() {
+        // Initialize prison state
+        this.prisonState = {
+            daysLeft: 3 + Math.floor(Math.random() * 8), // 3-10 days
+            currentDay: 0,
+            health: 100,
+            moneyEarned: 0,
+            scenarioIndex: 0
+        };
+
+        // Confiscate all contraband items
+        let confiscatedItems = [];
+        for (let itemId in this.state.cargo) {
+            if (CONTRABAND_ITEMS.includes(itemId)) {
+                confiscatedItems.push(ITEMS[itemId].name + ' x' + this.state.cargo[itemId]);
+                delete this.state.cargo[itemId];
+            }
+        }
+
+        if (confiscatedItems.length > 0) {
+            this.notify('Конфисковано: ' + confiscatedItems.join(', '), 'error');
+        }
+
+        // Remove contraband module if installed
+        if (this.state.shipModules.includes('contraband_sol')) {
+            this.state.shipModules = this.state.shipModules.filter(m => m !== 'contraband_sol');
+            this.notify('Модуль "ОБХОД СОЛ" конфискован!', 'error');
+        }
+
+        // Show prison screen
+        document.getElementById('prison-screen').classList.add('active');
+        this.renderPrisonUI();
+    }
+
+    renderPrisonUI() {
+        if (!this.prisonState) return;
+
+        let ps = this.prisonState;
+        document.getElementById('prison-days-left').textContent = ps.daysLeft;
+        document.getElementById('prison-health').textContent = ps.health;
+        document.getElementById('prison-money').textContent = ps.moneyEarned;
+
+        // Hide outcome, show scenario
+        document.getElementById('prison-scenario-view').style.display = 'block';
+        document.getElementById('prison-outcome-view').classList.remove('active');
+
+        // Get current scenario
+        let scenario;
+        if (ps.scenarioIndex < PRISON_SCENARIOS.length) {
+            scenario = PRISON_SCENARIOS[ps.scenarioIndex];
+        } else {
+            // Random scenario if we've gone through all
+            scenario = PRISON_SCENARIOS[Math.floor(Math.random() * PRISON_SCENARIOS.length)];
+        }
+
+        document.getElementById('prison-day-text').textContent = 'ДЕНЬ ' + (ps.currentDay + 1);
+        document.getElementById('prison-scenario-text').textContent = scenario.text;
+
+        // Render choices
+        let choicesHTML = '';
+        for (let i = 0; i < scenario.choices.length; i++) {
+            let choice = scenario.choices[i];
+            let outcomeText = '';
+            if (choice.outcome.days_lost) outcomeText += ' -' + choice.outcome.days_lost + ' дн';
+            if (choice.outcome.health) outcomeText += ' ' + (choice.outcome.health > 0 ? '+' : '') + choice.outcome.health + ' HP';
+            if (choice.outcome.money) outcomeText += ' ' + (choice.outcome.money > 0 ? '+' : '') + choice.outcome.money + ' CR';
+            if (choice.outcome.death_chance > 0) outcomeText += ' 💀' + choice.outcome.death_chance + '%';
+
+            choicesHTML += '<button class="prison-choice" onclick="game.prisonChoice(' + i + ')">' +
+                '<div>' + choice.text + '</div>' +
+                '<div class="prison-choice-outcome">' + outcomeText + '</div>' +
+                '</button>';
+        }
+        document.getElementById('prison-choices').innerHTML = choicesHTML;
+    }
+
+    prisonChoice(choiceIndex) {
+        if (!this.prisonState) return;
+
+        let ps = this.prisonState;
+        let scenario = PRISON_SCENARIOS[ps.scenarioIndex] || PRISON_SCENARIOS[Math.floor(Math.random() * PRISON_SCENARIOS.length)];
+        let choice = scenario.choices[choiceIndex];
+        let outcome = choice.outcome;
+
+        // Apply outcome
+        ps.currentDay++;
+        ps.daysLeft -= outcome.days_lost || 1;
+        ps.health += outcome.health || 0;
+        ps.moneyEarned += outcome.money || 0;
+        ps.health = Math.max(0, Math.min(100, ps.health));
+
+        // Check for death
+        if (outcome.death_chance && Math.random() * 100 < outcome.death_chance) {
+            this.prisonOutcome('death', choice.result);
+            return;
+        }
+
+        // Check for escape
+        if (outcome.escape) {
+            this.prisonOutcome('escape', choice.result);
+            return;
+        }
+
+        // Check for release (days over or release choice)
+        if (ps.daysLeft <= 0 || outcome.release) {
+            this.prisonOutcome('release', choice.result);
+            return;
+        }
+
+        // Next scenario
+        ps.scenarioIndex++;
+        if (ps.scenarioIndex >= PRISON_SCENARIOS.length) {
+            ps.scenarioIndex = Math.floor(Math.random() * PRISON_SCENARIOS.length);
+        }
+
+        this.renderPrisonUI();
+    }
+
+    prisonOutcome(type, message) {
+        let outcomeView = document.getElementById('prison-outcome-view');
+        let scenarioView = document.getElementById('prison-scenario-view');
+        let titleEl = document.getElementById('prison-outcome-title');
+        let textEl = document.getElementById('prison-outcome-text');
+        let statsEl = document.getElementById('prison-outcome-stats');
+        let continueBtn = document.getElementById('prison-continue-btn');
+
+        scenarioView.style.display = 'none';
+        outcomeView.classList.add('active');
+
+        if (type === 'death') {
+            titleEl.textContent = '☠ СМЕРТЬ';
+            titleEl.className = 'prison-outcome-title death';
+            textEl.textContent = message + '\n\nВаше тело осталось в тюрьме. Игра окончена.';
+            statsEl.textContent = '';
+            continueBtn.style.display = 'none';
+
+            // Add game over logic - reset after delay
+            setTimeout(() => {
+                if (confirm('Вы умерли в тюрьме! Начать заново?')) {
+                    this.state.reset();
+                    localStorage.removeItem('cloudtrader_save');
+                    location.reload();
+                }
+            }, 2000);
+
+        } else if (type === 'escape') {
+            titleEl.textContent = '🏃 ПОБЕГ!';
+            titleEl.className = 'prison-outcome-title release';
+            textEl.textContent = message;
+            statsEl.textContent = 'Вы сбежали из тюрьмы! Статус: ОСВОБОЖДЁН';
+            continueBtn.style.display = 'inline-block';
+            continueBtn.textContent = 'ПРОДОЛЖИТЬ ИГРУ';
+
+            // Lose all cargo on escape
+            this.state.cargo = {};
+
+        } else {
+            // Release
+            titleEl.textContent = '✓ ОСВОБОЖДЁН';
+            titleEl.className = 'prison-outcome-title release';
+            textEl.textContent = message;
+
+            let statsText = '';
+            if (this.prisonState.moneyEarned > 0) {
+                statsText += 'Заработано в тюрьме: +' + this.prisonState.moneyEarned + ' CR. ';
+                this.state.credits += this.prisonState.moneyEarned;
+            }
+            statsText += 'Дней проведено: ' + this.prisonState.currentDay;
+            statsEl.textContent = statsText;
+            continueBtn.style.display = 'inline-block';
+            continueBtn.textContent = 'ПРОДОЛЖИТЬ ИГРУ';
+        }
+
+        this.state.save();
+    }
+
+    continueAfterPrison() {
+        // Hide prison screen
+        document.getElementById('prison-screen').classList.remove('active');
+
+        // Clear prison state
+        this.prisonState = null;
+
+        // Re-render game
+        this.renderAll();
+        this.notify('Вы вышли на свободу!', 'success');
+    }
+
+    // ==================== BAR SYSTEM ====================
+
+    enterBar() {
+        if (!CITIES[this.state.currentCity]) return;
+
+        this.barState = {
+            currentScenario: null,
+            health: this.state.shipCondition,
+            moneyEarned: 0,
+            flags: {}
+        };
+
+        let cityName = CITIES[this.state.currentCity].name;
+        let barNames = {
+            primum: '"Облачный Покоц"',
+            secundus: '"У Барсука"',
+            tertius: '"Туманная Капля"',
+            quartus: '"Гхали-бар"',
+            kibwe: '"Кривой Гикори"',
+            elbrus: '"Вершина"'
+        };
+        document.getElementById('bar-location').textContent = barNames[this.state.currentCity] + ' — ' + cityName;
+
+        document.getElementById('bar-screen').classList.add('active');
+        this.barShowScenario();
+    }
+
+    barShowScenario() {
+        if (!this.barState) return;
+
+        let bs = this.barState;
+        document.getElementById('bar-health').textContent = bs.health;
+        document.getElementById('bar-money').textContent = bs.moneyEarned;
+
+        if (!bs.currentScenario) {
+            let randomScenario = BAR_SCENARIOS[Math.floor(Math.random() * BAR_SCENARIOS.length)];
+            bs.currentScenario = randomScenario;
+        }
+
+        let scenario = bs.currentScenario;
+
+        document.getElementById('bar-scenario-view').style.display = 'block';
+        document.getElementById('bar-outcome-view').classList.remove('active');
+
+        document.getElementById('bar-title-text').textContent = scenario.title;
+        document.getElementById('bar-scenario-text').textContent = scenario.text;
+
+        let choicesHTML = '';
+        for (let i = 0; i < scenario.choices.length; i++) {
+            let choice = scenario.choices[i];
+            let outcomeText = '';
+            if (choice.outcome.health) outcomeText += (choice.outcome.health > 0 ? '+' : '') + choice.outcome.health + ' HP';
+            if (choice.outcome.money) outcomeText += (choice.outcome.money > 0 ? '+' : '') + choice.outcome.money + ' CR';
+
+            choicesHTML += '<button class="bar-choice" onclick="game.barChoice(' + i + ')">' +
+                '<div>' + choice.text + '</div>' +
+                (outcomeText ? '<div class="bar-choice-outcome">' + outcomeText + '</div>' : '') +
+                '</button>';
+        }
+        document.getElementById('bar-choices').innerHTML = choicesHTML;
+    }
+
+    barChoice(choiceIndex) {
+        if (!this.barState) return;
+
+        let bs = this.barState;
+        let scenario = bs.currentScenario;
+        let choice = scenario.choices[choiceIndex];
+        let outcome = choice.outcome;
+
+        bs.health += outcome.health || 0;
+        bs.health = Math.max(0, Math.min(100, bs.health));
+        bs.moneyEarned += outcome.money || 0;
+
+        if (choice.exit) {
+            this.barOutcome(choice.result, outcome);
+            return;
+        }
+
+        if (choice.next) {
+            let nextScenario = BAR_SCENARIOS.find(s => s.id === choice.next);
+            if (nextScenario) {
+                bs.currentScenario = nextScenario;
+                this.barShowScenario();
+            } else {
+                this.barExit();
+            }
+            return;
+        }
+
+        this.barExit();
+    }
+
+    barOutcome(result, outcome) {
+        let outcomeView = document.getElementById('bar-outcome-view');
+        let scenarioView = document.getElementById('bar-scenario-view');
+
+        scenarioView.style.display = 'none';
+        outcomeView.classList.add('active');
+
+        let titleEl = document.getElementById('bar-outcome-title');
+        let textEl = document.getElementById('bar-outcome-text');
+        let statsEl = document.getElementById('bar-outcome-stats');
+
+        titleEl.textContent = result.title;
+        titleEl.className = 'bar-outcome-title ' + result.type;
+        textEl.textContent = result.text;
+
+        let statsText = '';
+        if (outcome.health) statsText += (outcome.health > 0 ? '+' : '') + outcome.health + ' HP. ';
+        if (outcome.money) {
+            let moneyChange = outcome.money;
+            if (moneyChange > 0) {
+                this.state.credits += moneyChange;
+                this.barState.moneyEarned += moneyChange;
+            } else {
+                this.state.credits = Math.max(0, this.state.credits + moneyChange);
+            }
+            statsText += (moneyChange > 0 ? '+' : '') + moneyChange + ' CR. ';
+        }
+        if (this.state.shipCondition !== this.barState.health) {
+            this.state.shipCondition = this.barState.health;
+        }
+        statsEl.textContent = statsText || 'Без изменений';
+
+        let continueBtn = document.getElementById('bar-continue-btn');
+        continueBtn.onclick = () => this.barExit();
+    }
+
+    barExit() {
+        if (this.barState) {
+            if (this.state.shipCondition !== this.barState.health) {
+                this.state.shipCondition = this.barState.health;
+            }
+            if (this.barState.moneyEarned > 0) {
+                this.state.credits += this.barState.moneyEarned;
+                this.notify('Заработано в баре: +' + this.barState.moneyEarned + ' CR', 'success');
+            }
+        }
+        document.getElementById('bar-screen').classList.remove('active');
+        this.barState = null;
+        this.renderAll();
+    }
+
+    // ==================== PIRATE COMBAT SYSTEM ====================
+
+    startPirateCombat(distance) {
+        let isBoss = distance >= 4 && Math.random() < 0.05;
+        let enemyCount = isBoss ? 1 : Math.floor(2 + Math.random() * 3);
+
+        let pc = this.state.pirateCombat;
+        pc.active = true;
+        pc.playerHP = 3;
+        pc.enemies = [];
+        pc.bullets = [];
+        pc.enemyBullets = [];
+        pc.score = 0;
+        pc.playerX = 400;
+        pc.playerY = 500;
+        pc.playerAngle = -Math.PI / 2;
+        pc.lastShot = 0;
+        pc.isBoss = isBoss;
+        pc.nearestCity = this.state.currentCity;
+        pc.gameLoopId = null;
+        pc.lastTime = 0;
+        pc.keys = {};
+        pc.mouse = { x: 400, y: 500, pressed: false };
+        pc.touch = { aiming: false, touchAimX: 0, touchAimY: 0 };
+        pc.phase = 'countdown';
+        pc.countdown = 5;
+
+        this.initPirateEnemies(enemyCount, isBoss);
+
+        let screen = document.getElementById('pirate-screen');
+        screen.style.display = 'flex';
+        screen.classList.add('active');
+
+        let canvas = document.getElementById('pirate-canvas');
+        let isMobile = window.innerWidth < 800 || ('ontouchstart' in window && window.innerWidth < 1024);
+
+        let mobileControls = document.getElementById('pirate-mobile-controls');
+        if (isMobile) {
+            mobileControls.classList.add('active');
+        } else {
+            mobileControls.classList.remove('active');
+        }
+
+        if (isMobile) {
+            let availW = window.innerWidth * 0.98;
+            let availH = window.innerHeight * 0.55;
+            let aspect = 800 / 600;
+            let w = availW;
+            let h = w / aspect;
+            if (h > availH) { h = availH; w = h * aspect; }
+            canvas.width = Math.floor(w);
+            canvas.height = Math.floor(h);
+            pc.scale = 0.6;
+        } else {
+            canvas.width = 800;
+            canvas.height = 600;
+            pc.scale = 1;
+        }
+        pc.touch.touchStartX = 100 * pc.scale;
+        pc.touch.touchStartY = canvas.height - 100 * pc.scale;
+        let ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        this.updatePirateHUD();
+        this.bindPirateControls();
+
+        this.notify('☠ ПИРАТЫ АТАКУЮТ!', 'error');
+
+        this.pirateCountdownInterval = setInterval(() => {
+            pc.countdown--;
+            this.renderPirateCombat();
+            if (pc.countdown <= 0) {
+                clearInterval(this.pirateCountdownInterval);
+                this.pirateCountdownInterval = null;
+                pc.phase = 'combat';
+                pc.lastTime = 0;
+                pc.gameLoopId = requestAnimationFrame((t) => this.pirateGameLoop(t));
+            }
+        }, 1000);
+    }
+
+    pirateGameLoop(timestamp) {
+        let pc = this.state.pirateCombat;
+        if (!pc.active) return;
+
+        if (pc.lastTime === 0) pc.lastTime = timestamp;
+        let dt = Math.min((timestamp - pc.lastTime) / 1000, 0.1);
+        pc.lastTime = timestamp;
+
+        if (pc.phase === 'countdown') {
+            this.renderPirateCombat();
+            pc.gameLoopId = requestAnimationFrame((t) => this.pirateGameLoop(t));
+            return;
+        }
+
+        this.updatePirateCombat(dt);
+        this.renderPirateCombat();
+
+        pc.gameLoopId = requestAnimationFrame((t) => this.pirateGameLoop(t));
+    }
+
+    initPirateEnemies(count, isBoss) {
+        let pc = this.state.pirateCombat;
+        let canvas = document.getElementById('pirate-canvas');
+        let scale = pc.scale || 1;
+
+        if (isBoss) {
+            pc.enemies.push({
+                x: canvas.width / 2,
+                y: -50 * scale,
+                vx: 1.5,
+                vy: 0.5,
+                hp: 10,
+                maxHP: 10,
+                size: 35,
+                isBoss: true,
+                shootTimer: 0,
+                speed: 1.2
+            });
+        } else {
+            for (let i = 0; i < count; i++) {
+                let margin = 80 * scale;
+                pc.enemies.push({
+                    x: margin + Math.random() * (canvas.width - margin * 2),
+                    y: -50 - Math.random() * 50,
+                    vx: 1 + Math.random() * 2,
+                    vy: 0.5 + Math.random() * 1,
+                    hp: 2,
+                    maxHP: 2,
+                    size: 20,
+                    isBoss: false,
+                    shootTimer: Math.random() * 2,
+                    speed: 0.8 + Math.random() * 1.2
+                });
+            }
+        }
+    }
+
+    updatePirateCombat(dt) {
+        let pc = this.state.pirateCombat;
+        let canvas = document.getElementById('pirate-canvas');
+
+        if (pc.phase !== 'combat') return;
+
+        let moveSpeed = 200;
+
+        if (pc.keys['w'] || pc.keys['W'] || pc.keys['ArrowUp']) pc.playerY -= moveSpeed * dt;
+        if (pc.keys['s'] || pc.keys['S'] || pc.keys['ArrowDown']) pc.playerY += moveSpeed * dt;
+        if (pc.keys['a'] || pc.keys['A'] || pc.keys['ArrowLeft']) pc.playerX -= moveSpeed * dt;
+        if (pc.keys['d'] || pc.keys['D'] || pc.keys['ArrowRight']) pc.playerX += moveSpeed * dt;
+
+        pc.playerX = Math.max(20, Math.min(canvas.width - 20, pc.playerX));
+        pc.playerY = Math.max(20, Math.min(canvas.height - 20, pc.playerY));
+
+        if (pc.touch.aiming) {
+            let rect = canvas.getBoundingClientRect();
+            let aimX = pc.touchAimX - rect.left;
+            let aimY = pc.touchAimY - rect.top;
+            pc.playerAngle = Math.atan2(aimY - pc.playerY, aimX - pc.playerX);
+        } else {
+            let targetX = pc.mouse.x || pc.playerX;
+            let targetY = pc.mouse.y || pc.playerY;
+            pc.playerAngle = Math.atan2(targetY - pc.playerY, targetX - pc.playerX);
+        }
+
+        pc.lastShot += dt;
+        let shootRequested = pc.keys[' '] || pc.mouse.pressed;
+        if (shootRequested && pc.lastShot > 0.2) {
+            this.shootBullet(pc.playerX, pc.playerY, pc.playerAngle, true);
+            pc.lastShot = 0;
+        }
+
+        for (let i = pc.bullets.length - 1; i >= 0; i--) {
+            let b = pc.bullets[i];
+            b.x += Math.cos(b.angle) * b.speed * dt;
+            b.y += Math.sin(b.angle) * b.speed * dt;
+            if (b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height) {
+                pc.bullets.splice(i, 1);
+            }
+        }
+
+        for (let i = pc.enemyBullets.length - 1; i >= 0; i--) {
+            let b = pc.enemyBullets[i];
+            b.x += Math.cos(b.angle) * b.speed * dt;
+            b.y += Math.sin(b.angle) * b.speed * dt;
+            if (b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height) {
+                pc.enemyBullets.splice(i, 1);
+            }
+        }
+
+        for (let i = pc.enemies.length - 1; i >= 0; i--) {
+            let e = pc.enemies[i];
+            let scale = pc.scale || 1;
+            let border = 30 * scale;
+
+            let dx = pc.playerX - e.x;
+            let dy = pc.playerY - e.y;
+            let dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist > 0) {
+                e.x += (dx / dist) * e.speed * scale;
+                e.y += (dy / dist) * e.speed * scale;
+            }
+
+            if (e.x < border) e.x = border;
+            if (e.x > canvas.width - border) e.x = canvas.width - border;
+            if (e.y < border) e.y = border;
+            if (e.y > canvas.height - border * 3) e.y = canvas.height - border * 3;
+
+            e.shootTimer += dt;
+            if (dist < 300 && e.shootTimer > (e.isBoss ? 0.8 : 1.8)) {
+                let angle = Math.atan2(dy, dx);
+                this.shootBullet(e.x, e.y, angle, false);
+                e.shootTimer = 0;
+            }
+
+            for (let j = pc.bullets.length - 1; j >= 0; j--) {
+                let b = pc.bullets[j];
+                let bdx = b.x - e.x;
+                let bdy = b.y - e.y;
+                if (Math.sqrt(bdx * bdx + bdy * bdy) < e.size) {
+                    e.hp--;
+                    pc.bullets.splice(j, 1);
+                    if (e.hp <= 0) {
+                        pc.score += e.isBoss ? 100 : 20;
+                        pc.enemies.splice(i, 1);
+                    }
+                    break;
+                }
+            }
+        }
+
+        for (let i = pc.enemyBullets.length - 1; i >= 0; i--) {
+            let b = pc.enemyBullets[i];
+            let dx = b.x - pc.playerX;
+            let dy = b.y - pc.playerY;
+            if (Math.sqrt(dx * dx + dy * dy) < 15) {
+                pc.playerHP--;
+                pc.enemyBullets.splice(i, 1);
+                this.updatePirateHUD();
+                if (pc.playerHP <= 0) {
+                    this.endPirateCombat(false);
+                    return;
+                }
+            }
+        }
+
+        if (pc.enemies.length === 0) {
+            this.endPirateCombat(true);
+            return;
+        }
+
+        this.updatePirateHUD();
+    }
+
+    renderPirateCombat() {
+        let pc = this.state.pirateCombat;
+        let canvas = document.getElementById('pirate-canvas');
+        let ctx = canvas.getContext('2d');
+        let scale = pc.scale || 1;
+
+        ctx.fillStyle = '#0a0000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.strokeStyle = 'rgba(229, 115, 115, 0.08)';
+        ctx.lineWidth = 1;
+        for (let x = 0; x < canvas.width; x += 40 * scale) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, canvas.height);
+            ctx.stroke();
+        }
+        for (let y = 0; y < canvas.height; y += 40 * scale) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(canvas.width, y);
+            ctx.stroke();
+        }
+
+        ctx.save();
+        ctx.translate(pc.playerX, pc.playerY);
+        ctx.rotate(pc.playerAngle);
+        ctx.scale(scale, scale);
+        ctx.fillStyle = '#7FDBDA';
+        ctx.beginPath();
+        ctx.moveTo(18, 0);
+        ctx.lineTo(-12, -10);
+        ctx.lineTo(-6, 0);
+        ctx.lineTo(-12, 10);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#FFF8E7';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.restore();
+
+        ctx.fillStyle = '#80DEEA';
+        ctx.shadowColor = '#80DEEA';
+        ctx.shadowBlur = 8 * scale;
+        for (let b of pc.bullets) {
+            ctx.beginPath();
+            ctx.arc(b.x, b.y, 5 * scale, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.shadowBlur = 0;
+
+        ctx.fillStyle = '#FFB74D';
+        ctx.shadowColor = '#FFB74D';
+        ctx.shadowBlur = 6 * scale;
+        for (let b of pc.enemyBullets) {
+            ctx.beginPath();
+            ctx.arc(b.x, b.y, 6 * scale, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.shadowBlur = 0;
+
+        for (let e of pc.enemies) {
+            ctx.fillStyle = e.isBoss ? '#E57373' : '#FF6F00';
+            ctx.beginPath();
+            ctx.arc(e.x, e.y, e.size * scale, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#FFF';
+            ctx.lineWidth = 2 * scale;
+            ctx.stroke();
+
+            if (e.isBoss) {
+                ctx.fillStyle = 'rgba(229, 115, 115, 0.3)';
+                ctx.beginPath();
+                ctx.arc(e.x, e.y, (e.size + 8) * scale, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            let barWidth = e.size * 2 * scale;
+            let barHeight = 5 * scale;
+            ctx.fillStyle = 'rgba(0,0,0,0.6)';
+            ctx.fillRect(e.x - barWidth / 2, e.y - e.size * scale - 12 * scale, barWidth, barHeight);
+            ctx.fillStyle = e.hp > e.maxHP * 0.5 ? '#81C784' : '#E57373';
+            ctx.fillRect(e.x - barWidth / 2, e.y - e.size * scale - 12 * scale, barWidth * (e.hp / e.maxHP), barHeight);
+        }
+
+        ctx.fillStyle = '#FFF8E7';
+        ctx.font = 'bold ' + (18 * scale) + 'px Orbitron, monospace';
+        ctx.textAlign = 'right';
+        ctx.fillText('СЧЁТ: ' + pc.score, canvas.width - 20 * scale, 30 * scale);
+
+        if (pc.phase === 'countdown') {
+            ctx.fillStyle = '#E57373';
+            ctx.font = 'bold ' + (72 * scale) + 'px Orbitron, monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(pc.countdown.toString(), canvas.width / 2, canvas.height / 2);
+            ctx.font = 'bold ' + (24 * scale) + 'px Orbitron, monospace';
+            ctx.fillText('ПРИГОТОВЬТЕСЬ!', canvas.width / 2, canvas.height / 2 - 80 * scale);
+        }
+    }
+
+endPirateCombat(victory) {
+        let pc = this.state.pirateCombat;
+        pc.active = false;
+
+        if (this.pirateCountdownInterval) {
+            clearInterval(this.pirateCountdownInterval);
+            this.pirateCountdownInterval = null;
+        }
+
+        if (pc.gameLoopId) {
+            cancelAnimationFrame(pc.gameLoopId);
+            pc.gameLoopId = null;
+        }
+
+        if (pc._cleanup) pc._cleanup();
+
+        pc.lastTime = 0;
+        pc.keys = {};
+        pc.mouse = { x: 0, y: 0, pressed: false };
+
+        let screen = document.getElementById('pirate-screen');
+        screen.classList.remove('active');
+        screen.style.display = 'none';
+
+        let mobileControls = document.getElementById('pirate-mobile-controls');
+        mobileControls.classList.remove('active');
+
+        if (victory) {
+            let reward = 50 + pc.score;
+            this.state.credits += reward;
+            this.notify('☠ ПИРАТЫ ПОБЕЖДЕНЫ! +' + reward + ' CR', 'success');
+
+            let dest = this.selectedCity || this.state.ship.destination;
+            let stats = this.calculateFlightStats(this.state.currentCity, dest);
+            this.state.shipFuel -= stats.fuelCost;
+            this.state.ship = {
+                docked: false, traveling: true, destination: dest,
+                travelProgress: 0, travelDuration: stats.duration,
+                startPos: { x: CITIES[this.state.currentCity].x, y: CITIES[this.state.currentCity].y },
+                endPos: { x: CITIES[dest].x, y: CITIES[dest].y },
+                breakageChance: stats.breakageChance
+            };
+            this.selectedCity = null;
+            let btn = document.getElementById('launch-btn');
+            btn.textContent = 'В ПУТИ... ' + stats.duration + 'с';
+            btn.classList.add('traveling');
+            btn.disabled = true;
+            this.state.save();
+            this.renderAll();
+        } else {
+            let hasCargo = Object.keys(this.state.cargo).length > 0;
+            if (hasCargo) {
+                this.state.cargo = {};
+                this.state.shipCondition = Math.max(0, this.state.shipCondition - 30);
+                this.notify('☠ КОРАБЛЬ ЗАХВАЧЕН! Груз потерян, -30 HP', 'error');
+            } else {
+                this.state.shipType = 'dinghy';
+                this.state.shipModules = [];
+                this.state.credits = Math.max(500, this.state.credits);
+                this.state.shipCondition = 100;
+                this.state.shipFuel = 100;
+                this.notify('☠ КОРАБЛЬ ПОТЕРЯН! Возрождение в ' + CITIES[pc.nearestCity].name + ' с 500 CR', 'error');
+            }
+
+            this.state.ship = { docked: true, traveling: false, destination: null, travelProgress: 0, travelDuration: 0, broken: false };
+            this.state.currentCity = pc.nearestCity;
+
+            let btn = document.getElementById('launch-btn');
+            btn.textContent = 'ВЫБЕРИТЕ ГОРОД';
+            btn.classList.remove('traveling');
+            btn.disabled = true;
+
+            this.state.save();
+            this.renderAll();
+        }
+    }
+
+    shootBullet(x, y, angle, isPlayer) {
+        let bullet = {
+            x: x,
+            y: y,
+            angle: angle,
+            speed: isPlayer ? 450 : 220
+        };
+
+        if (isPlayer) {
+            this.state.pirateCombat.bullets.push(bullet);
+        } else {
+            this.state.pirateCombat.enemyBullets.push(bullet);
+        }
+    }
+
+    updatePirateHUD() {
+        let pc = this.state.pirateCombat;
+        let healthEl = document.getElementById('pirate-health');
+        let enemiesEl = document.getElementById('pirate-enemies');
+        if (healthEl) healthEl.textContent = 'HP: ' + pc.playerHP + '/3';
+        if (enemiesEl) enemiesEl.textContent = 'Врагов: ' + pc.enemies.length;
+    }
+
+    bindPirateControls() {
+        let canvas = document.getElementById('pirate-canvas');
+        let pc = this.state.pirateCombat;
+
+        let keyHandler = (e) => {
+            if (!pc.active) return;
+            let key = e.key;
+            if (e.key.length === 1) key = e.key.toLowerCase();
+            pc.keys[key] = e.type === 'keydown';
+        };
+
+        let mouseMoveHandler = (e) => {
+            if (!pc.active) return;
+            let rect = canvas.getBoundingClientRect();
+            pc.mouse.x = e.clientX - rect.left;
+            pc.mouse.y = e.clientY - rect.top;
+        };
+
+        let mouseDownHandler = (e) => {
+            if (!pc.active) return;
+            pc.mouse.pressed = true;
+        };
+
+        let mouseUpHandler = (e) => {
+            if (!pc.active) return;
+            pc.mouse.pressed = false;
+        };
+
+        document.addEventListener('keydown', keyHandler);
+        document.addEventListener('keyup', keyHandler);
+        canvas.addEventListener('mousemove', mouseMoveHandler);
+        canvas.addEventListener('mousedown', mouseDownHandler);
+        canvas.addEventListener('mouseup', mouseUpHandler);
+
+        document.querySelectorAll('.pirate-dpad-btn').forEach(btn => {
+            let dir = btn.dataset.dir;
+            let key = dir === 'up' ? 'ArrowUp' : dir === 'down' ? 'ArrowDown' : dir === 'left' ? 'ArrowLeft' : 'ArrowRight';
+
+            let pressHandler = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                pc.keys[key] = true;
+                btn.classList.add('pressed');
+            };
+
+            let releaseHandler = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                pc.keys[key] = false;
+                btn.classList.remove('pressed');
+            };
+
+            btn.addEventListener('touchstart', pressHandler, { passive: false });
+            btn.addEventListener('touchend', releaseHandler, { passive: false });
+            btn.addEventListener('touchcancel', releaseHandler, { passive: false });
+            btn.addEventListener('mousedown', pressHandler);
+            btn.addEventListener('mouseup', releaseHandler);
+            btn.addEventListener('mouseleave', releaseHandler);
+        });
+
+        let aimZone = document.getElementById('pirate-aim');
+        let aimTouchId = null;
+
+        let aimStartHandler = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            let touch = e.changedTouches[0];
+            aimTouchId = touch.identifier;
+            pc.touch.aiming = true;
+            pc.touchAimX = touch.clientX;
+            pc.touchAimY = touch.clientY;
+            pc.mouse.pressed = true;
+            aimZone.classList.add('aiming');
+        };
+
+        let aimMoveHandler = (e) => {
+            if (aimTouchId === null) return;
+            e.preventDefault();
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                let touch = e.changedTouches[i];
+                if (touch.identifier === aimTouchId) {
+                    pc.touchAimX = touch.clientX;
+                    pc.touchAimY = touch.clientY;
+                    break;
+                }
+            }
+        };
+
+        let aimEndHandler = (e) => {
+            if (aimTouchId === null) return;
+            e.preventDefault();
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                let touch = e.changedTouches[i];
+                if (touch.identifier === aimTouchId) {
+                    aimTouchId = null;
+                    pc.touch.aiming = false;
+                    pc.mouse.pressed = false;
+                    aimZone.classList.remove('aiming');
+                    break;
+                }
+            }
+        };
+
+        aimZone.addEventListener('touchstart', aimStartHandler, { passive: false });
+        aimZone.addEventListener('touchmove', aimMoveHandler, { passive: false });
+        aimZone.addEventListener('touchend', aimEndHandler, { passive: false });
+        aimZone.addEventListener('touchcancel', aimEndHandler, { passive: false });
+
+        pc._cleanup = () => {
+            document.removeEventListener('keydown', keyHandler);
+            document.removeEventListener('keyup', keyHandler);
+            canvas.removeEventListener('mousemove', mouseMoveHandler);
+            canvas.removeEventListener('mousedown', mouseDownHandler);
+            canvas.removeEventListener('mouseup', mouseUpHandler);
+            document.querySelectorAll('.pirate-dpad-btn').forEach(btn => {
+                let dir = btn.dataset.dir;
+                let key = dir === 'up' ? 'ArrowUp' : dir === 'down' ? 'ArrowDown' : dir === 'left' ? 'ArrowLeft' : 'ArrowRight';
+                pc.keys[key] = false;
+            });
+            aimZone.removeEventListener('touchstart', aimStartHandler);
+            aimZone.removeEventListener('touchmove', aimMoveHandler);
+            aimZone.removeEventListener('touchend', aimEndHandler);
+            aimZone.removeEventListener('touchcancel', aimEndHandler);
+        };
+    }
+
+    unbindPirateControls() {
+        let pc = this.state.pirateCombat;
+        if (pc._cleanup) pc._cleanup();
+    }
+}
+
+// Mobile tab switching
+function switchMobileTab(panelId) {
+    // Update tab buttons
+    document.querySelectorAll('.mobile-tab').forEach(tab => {
+        tab.classList.remove('active');
+        if (tab.dataset.panel === panelId) tab.classList.add('active');
+    });
+    // Update panels
+    document.querySelectorAll('#bottom-panels .panel').forEach(panel => {
+        panel.classList.remove('mobile-active');
+        panel.style.removeProperty('display');
+    });
+    let targetPanel = document.getElementById(panelId);
+    if (targetPanel) {
+        targetPanel.classList.add('mobile-active');
+        targetPanel.style.removeProperty('display');
+    }
+    // Show bottom panels on mobile
+    let bottomPanels = document.getElementById('bottom-panels');
+    if (window.innerWidth <= 700) {
+        bottomPanels.classList.add('mobile-visible');
+    }
+}
+
+// Show mobile tabs on small screens
+if (window.innerWidth <= 700) {
+    document.getElementById('mobile-tabs').style.display = 'flex';
+    document.getElementById('bottom-panels').classList.add('mobile-visible');
+    // Show default panel (ship-panel)
+    document.getElementById('ship-panel').classList.add('mobile-active');
+}
+
+window.addEventListener('resize', function() {
+    let mobileTabs = document.getElementById('mobile-tabs');
+    if (window.innerWidth <= 700) {
+        mobileTabs.style.display = 'flex';
+        document.getElementById('bottom-panels').classList.add('mobile-visible');
+    } else {
+        mobileTabs.style.display = 'none';
+        document.getElementById('bottom-panels').classList.remove('mobile-visible');
+    }
+});
+
+let game = new Game();
+window.game = game;
+window.switchMobileTab = switchMobileTab;
+switchMobileTab('ship-panel');

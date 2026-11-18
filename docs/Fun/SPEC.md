@@ -1,6 +1,8 @@
-# SPEC.md — CloudTrader: 2D HTML Prototype
+# SPEC.md — CloudTrader: Skyward Edition
 
-**Версия:** 2.0 | **Дата:** 2 мая 2026 г. | **Статус:** Прототип
+**Версия:** 3.0 | **Дата:** 18 ноября 2026 г. | **Статус:** 3D-прототип
+
+> Актуальная версия использует Three.js: изометрическая 3D-карта, процедурные города на скалах, облачные слои, модели барж и адаптивный liquid-glass HUD. Игровые системы и формулы исходного прототипа сохранены. Ниже разделы 1–5 описывают исходный игровой дизайн; технический раздел 6 обновлён.
 
 ---
 
@@ -163,9 +165,12 @@ price = base_price × (1 + demand_factor - supply_factor)
 ## 6. Technical Approach
 
 ### Stack
-- **Pure HTML/CSS/JavaScript** (single file)
-- **LocalStorage** для сохранения прогресса
-- **Canvas API** для карты
+- **Vite + HTML/CSS/JavaScript**, точка входа `index.html`
+- **Three.js / WebGL** для 3D-карты (`src/scene3d.js`)
+- **Игровые системы** и исходный контент (`src/game.js`)
+- **Web Audio** для атмосферы и сигналов (`src/audio.js`)
+- **LocalStorage** для локального сохранения прогресса
+- Запуск: `npm run dev`; production-сборка: `npm run build` → `dist/`
 
 ### Key Data Structures
 ```javascript

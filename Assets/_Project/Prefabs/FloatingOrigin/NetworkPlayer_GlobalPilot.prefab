@@ -85,9 +85,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Player.NetworkPlayer
   ShowTopMostFoldoutHeaderGroup: 1
   walkSpeed: 5
-  runSpeed: 50
+  runSpeed: 10
   rotationSpeed: 12
-  jumpForce: 8
+  jumpForce: 2
   gravity: -20
   _platformCarryEnabled: 1
   _platformMask:

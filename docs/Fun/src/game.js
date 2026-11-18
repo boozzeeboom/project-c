@@ -81,6 +81,28 @@ const MODULE_CHANCES = { primum: { C: 40, B: 30, A: 20, S: 10 }, secundus: { C: 
 // Contraband items - items that trigger arrest chance when sold
 const CONTRABAND_ITEMS = ['errey_drug', 'encrypted_doc', 'jewelry', 'antique', 'stimulant'];
 
+const ITEM_ICON_GROUPS = {
+    Food: ['food_ration', 'food_braga', 'water_purified', 'crop_harvest', 'grain'],
+    Medical: ['mnp_dose', 'errey_drug', 'medical_kit', 'stimulant'],
+    Fuel: ['mezium', 'fuel_cell'],
+    Antigrav: ['antigrav', 'battery_antigrav'],
+    Meziy: ['mag_core', 'generator_mag', 'control_unit'],
+    Resources: ['latex_raw', 'hull_plate', 'wire_copper', 'rope', 'clothing_warm'],
+    Tech: ['spare_parts', 'rotor_assembly', 'compass', 'sol_tracker', 'tools_wrench', 'tools_drill', 'lantern', 'gas_filter'],
+    Equipment: ['armor_plate', 'book', 'encrypted_doc', 'jewelry', 'antique']
+};
+function itemIcon(itemId) {
+    const category = Object.keys(ITEM_ICON_GROUPS).find(key => ITEM_ICON_GROUPS[key].includes(itemId)) || 'Resources';
+    return `./icons/categories/Icon_Cat_${category}.png`;
+}
+function itemIconHTML(itemId) {
+    return `<img class="item-icon" src="${itemIcon(itemId)}" alt="" loading="lazy">`;
+}
+function shipIcon(shipId) {
+    const type = shipId === 'dinghy' ? 'Light' : shipId === 'hauler' ? 'Medium' : shipId === 'freighter' ? 'Heavy' : 'HeavyII';
+    return `./icons/ships/Icon_ShipClass_${type}.png`;
+}
+
 // Port System Configuration
 const PORT_CONFIG = {
     primum: { name: "Примум", maxLevel: 10, baseIncome: 1 },
@@ -1053,8 +1075,8 @@ class Game {
     }
     checkRandomEvent() {
         // Events do NOT trigger if player is in bar or prison
-        if (document.getElementById('bar-screen').style.display === 'flex' ||
-            document.getElementById('prison-screen').style.display === 'flex') {
+        if (document.getElementById('bar-screen').classList.contains('active') ||
+            document.getElementById('prison-screen').classList.contains('active')) {
             return;
         }
         if (Math.random() < 0.15) {
@@ -1432,7 +1454,7 @@ class Game {
         let html = '';
         for (let itemId in this.state.cargo) {
             let qty = this.state.cargo[itemId];
-            if (qty > 0) html += '<div class="cargo-item"><span>' + ITEMS[itemId].name + '</span><span>x' + qty + '</span></div>';
+            if (qty > 0) html += '<div class="cargo-item"><span class="item-name">' + itemIconHTML(itemId) + ITEMS[itemId].name + '</span><span>x' + qty + '</span></div>';
         }
         if (html === '') html = '<div style="color:var(--text-secondary);font-size:11px;">Пусто</div>';
         document.getElementById('cargo-items').innerHTML = html;
@@ -1445,10 +1467,10 @@ class Game {
             let curContract = this.state.contracts.find(c => c.destination === this.state.currentCity && c.accepted && ITEMS[c.itemId] && CITIES[c.destination]);
             if (curContract) {
                 let hasItem = this.state.cargo[curContract.itemId] && this.state.cargo[curContract.itemId] >= curContract.quantity;
-                html += '<div class="contract-item"><div class="contract-header">АКТИВНЫЙ КОНТРАКТ</div><div class="contract-details">' + ITEMS[curContract.itemId].name + ' x' + curContract.quantity + ' → ' + CITIES[curContract.destination].name + '</div><div class="contract-reward">+' + curContract.reward + ' CR</div><button class="trade-btn" onclick="game.completeContract()" ' + (hasItem ? '' : 'disabled') + '>ВЫПОЛНИТЬ</button></div>';
+                html += '<div class="contract-item"><img class="item-icon" src="./icons/contracts/Icon_ContractType_Standard.png" alt=""><div class="contract-header">АКТИВНЫЙ КОНТРАКТ</div><div class="contract-details">' + ITEMS[curContract.itemId].name + ' x' + curContract.quantity + ' → ' + CITIES[curContract.destination].name + '</div><div class="contract-reward">+' + curContract.reward + ' CR</div><button class="trade-btn" onclick="game.completeContract()" ' + (hasItem ? '' : 'disabled') + '>ВЫПОЛНИТЬ</button></div>';
             }
             this.state.contracts.filter(c => !c.accepted && ITEMS[c.itemId] && CITIES[c.destination]).forEach(c => {
-                html += '<div class="contract-item"><div class="contract-header">' + CITIES[c.destination].name + '</div><div class="contract-details">' + ITEMS[c.itemId].name + ' x' + c.quantity + '</div><div class="contract-reward">+' + c.reward + ' CR</div><button class="trade-btn" onclick="game.acceptContract(' + c.id + ')">ПРИНЯТЬ</button></div>';
+                html += '<div class="contract-item"><img class="item-icon" src="./icons/contracts/Icon_ContractType_Standard.png" alt=""><div class="contract-header">' + CITIES[c.destination].name + '</div><div class="contract-details">' + ITEMS[c.itemId].name + ' x' + c.quantity + '</div><div class="contract-reward">+' + c.reward + ' CR</div><button class="trade-btn" onclick="game.acceptContract(' + c.id + ')">ПРИНЯТЬ</button></div>';
             });
             if (html === '') html = '<div style="color:var(--text-secondary);font-size:11px;">Нет контрактов</div>';
         } else if (this.marketTab === 'ships') {
@@ -1458,7 +1480,7 @@ class Game {
             for (let shipId of cityShips) {
                 let ship = SHIPS[shipId];
                 let isCurrent = shipId === this.state.shipType;
-                html += '<div class="contract-item"><div class="contract-header">' + ship.name + '</div><div class="contract-details">Груз: ' + ship.cargo + ' кг | Скор: x' + ship.speed + '</div><div class="contract-reward">' + (ship.price === 0 ? 'Стартовый' : ship.price + ' CR') + '</div><button class="trade-btn" onclick="game.buyShip(\'' + shipId + '\')" ' + (isCurrent || ship.price > this.state.credits ? 'disabled' : '') + '>' + (isCurrent ? 'ТЕКУЩИЙ' : (ship.price === 0 ? 'БЕСПЛАТНО' : 'КУПИТЬ')) + '</button></div>';
+                html += '<div class="contract-item"><img class="ship-icon" src="' + shipIcon(shipId) + '" alt=""><div class="contract-header">' + ship.name + '</div><div class="contract-details">Груз: ' + ship.cargo + ' кг | Скор: x' + ship.speed + '</div><div class="contract-reward">' + (ship.price === 0 ? 'Стартовый' : ship.price + ' CR') + '</div><button class="trade-btn" onclick="game.buyShip(\'' + shipId + '\')" ' + (isCurrent || ship.price > this.state.credits ? 'disabled' : '') + '>' + (isCurrent ? 'ТЕКУЩИЙ' : (ship.price === 0 ? 'БЕСПЛАТНО' : 'КУПИТЬ')) + '</button></div>';
             }
             if (cityShips.length === 0) html += '<div style="color:var(--text-secondary);font-size:11px;">Нет кораблей в продаже</div>';
         } else if (this.marketTab === 'modules') {
@@ -1490,7 +1512,7 @@ class Game {
                 // Highlight contraband items if module is installed
                 let isContraband = hasContrabandModule && CONTRABAND_ITEMS.includes(itemId);
                 let itemNameClass = 'item-name' + (isContraband ? ' contraband-item' : '');
-                html += '<div class="market-item"><div class="' + itemNameClass + '">' + item.name + '</div><div class="item-price">' + price + '</div><div class="qty-controls"><button class="qty-btn" onclick="game.changeQty(\'' + itemId + '\',-1)">-</button><span class="qty-value" id="qty-' + itemId + '">' + this.qtyValues[itemId] + '</span><button class="qty-btn" onclick="game.changeQty(\'' + itemId + '\',1)">+</button></div><button class="trade-btn" onclick="game.' + (this.marketTab === 'buy' ? 'buyItem' : 'sellItem') + '(\'' + itemId + '\')">' + (this.marketTab === 'buy' ? 'КУПИТЬ' : 'ПРОДАТЬ') + '</button></div>';
+                html += '<div class="market-item"><div class="' + itemNameClass + '">' + itemIconHTML(itemId) + '<span>' + item.name + '</span></div><div class="item-price">' + price + '</div><div class="qty-controls"><button class="qty-btn" onclick="game.changeQty(\'' + itemId + '\',-1)">-</button><span class="qty-value" id="qty-' + itemId + '">' + this.qtyValues[itemId] + '</span><button class="qty-btn" onclick="game.changeQty(\'' + itemId + '\',1)">+</button></div><button class="trade-btn" onclick="game.' + (this.marketTab === 'buy' ? 'buyItem' : 'sellItem') + '(\'' + itemId + '\')">' + (this.marketTab === 'buy' ? 'КУПИТЬ' : 'ПРОДАТЬ') + '</button></div>';
             }
             if (html === '') html = '<div style="color:var(--text-secondary);font-size:11px;">' + (this.marketTab === 'sell' ? 'Нет товаров для продажи' : 'Нет товаров') + '</div>';
         }
@@ -2073,7 +2095,6 @@ class Game {
 
         bs.health += outcome.health || 0;
         bs.health = Math.max(0, Math.min(100, bs.health));
-        bs.moneyEarned += outcome.money || 0;
 
         if (choice.exit) {
             this.barOutcome(choice.result, outcome);
@@ -2136,9 +2157,9 @@ class Game {
                 this.state.shipCondition = this.barState.health;
             }
             if (this.barState.moneyEarned > 0) {
-                this.state.credits += this.barState.moneyEarned;
                 this.notify('Заработано в баре: +' + this.barState.moneyEarned + ' CR', 'success');
             }
+            this.state.save();
         }
         document.getElementById('bar-screen').classList.remove('active');
         this.barState = null;

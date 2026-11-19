@@ -668,6 +668,11 @@ namespace ProjectC.World.FloatingOrigin.Network
                     GlobalMotionRuntimeEvidenceProbe.RecordEvent("runtimeRebase", "ClientShiftApplied", "ok=False;error=translation_not_finite");
                     return;
                 }
+                // T-FO09T: клиентские authored→runtime пересчёты используют тот же
+                // кумулятив, что и сервер. Обновить ДО сдвига локальных участников,
+                // чтобы их немедленный re-push в шейдер увидел новый runtime-origin.
+                CumulativeRebaseOffset += translation;
+                CumulativeRebaseFrame = (int)message.FrameGeneration;
                 ShiftCameraHistory(translation);
                 if (TryResolveLocalPlayer(out Transform playerRoot, out _))
                     ShiftPlayerFrameReferences(playerRoot, translation);

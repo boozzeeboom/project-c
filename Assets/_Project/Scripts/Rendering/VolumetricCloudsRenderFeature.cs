@@ -11,6 +11,7 @@ using UnityEngine.Rendering.RenderGraphModule.Util;
 using UnityEngine.Rendering.Universal;
 using ProjectC.Core;
 using ProjectC.World.Clouds;
+using ProjectC.World.FloatingOrigin.Network;
 
 namespace ProjectC.Rendering
 {
@@ -303,13 +304,19 @@ namespace ProjectC.Rendering
             // ── Collect active layers ──
             CloudLayerDef[] layers = { Layer0, Layer1, Layer2, Layer3 };
             int count = Mathf.Clamp(ActiveLayerCount, 1, 4);
+            // T-FO09T: инспектор хранит authored-высоты исходного мира, а камера
+            // и raymarch работают в rebased world space. Не мутируем настройки
+            // слоёв: переводим только runtime-копии границ, как у Veil.
+            float rebaseY = GlobalMotionControlledRebaseSlice.CumulativeRebaseOffset.y;
             float globalBottom = float.MaxValue, globalTop = float.MinValue;
             for (int i = 0; i < count; i++)
             {
                 var l = layers[i];
-                globalBottom = Mathf.Min(globalBottom, l.BottomY);
-                globalTop    = Mathf.Max(globalTop, l.TopY);
-                _boundsCache[i]  = new Vector4(l.BottomY, l.TopY, l.CoverageThreshold, l.DensityMultiplier);
+                float runtimeBottom = l.BottomY + rebaseY;
+                float runtimeTop = l.TopY + rebaseY;
+                globalBottom = Mathf.Min(globalBottom, runtimeBottom);
+                globalTop    = Mathf.Max(globalTop, runtimeTop);
+                _boundsCache[i]  = new Vector4(runtimeBottom, runtimeTop, l.CoverageThreshold, l.DensityMultiplier);
                 _dayTopCache[i]  = l.DayRampTop;
                 _dayMidCache[i]  = l.DayRampMid;
                 _dayBotCache[i]  = l.DayRampBot;

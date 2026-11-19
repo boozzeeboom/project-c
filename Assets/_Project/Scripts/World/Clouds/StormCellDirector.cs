@@ -6,6 +6,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using ProjectC.Core;
+using ProjectC.World.FloatingOrigin.Network;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -113,6 +114,13 @@ namespace ProjectC.World.Clouds
         private readonly List<StormCell> _cells = new();
         private float _nextPushLogTime;
 
+        // T-FO09T: CellBottomY/CellTopY остаются authored-настройками. Все
+        // runtime-потребители используют границы в текущем rebased world space.
+        private float RuntimeCellBottomY =>
+            CellBottomY + GlobalMotionControlledRebaseSlice.CumulativeRebaseOffset.y;
+        private float RuntimeCellTopY =>
+            GlobalMotionControlledRebaseSlice.CumulativeRebaseOffset.y + CellTopY;
+
         // ═══════════════════════════════════════════
         // Unity Lifecycle
         // ═══════════════════════════════════════════
@@ -197,10 +205,10 @@ namespace ProjectC.World.Clouds
                     var c = _cells[i];
                     float r = c.Radius;
                     Vector3 center = c.WorldPosition;
-                    Vector3 bot = new Vector3(center.x, CellBottomY, center.z);
-                    Vector3 top = new Vector3(center.x, CellTopY, center.z);
+                    Vector3 bot = new Vector3(center.x, RuntimeCellBottomY, center.z);
+                    Vector3 top = new Vector3(center.x, RuntimeCellTopY, center.z);
 
-                    for (float y = CellBottomY; y <= CellTopY; y += 500f)
+                    for (float y = RuntimeCellBottomY; y <= RuntimeCellTopY; y += 500f)
                         DrawDebugRing(new Vector3(center.x, y, center.z), r, Color.magenta);
 
                     for (int seg = 0; seg < 8; seg++)
@@ -210,7 +218,7 @@ namespace ProjectC.World.Clouds
                         Debug.DrawLine(bot + new Vector3(x, 0, z), top + new Vector3(x, 0, z), Color.magenta, 0f, false);
                     }
 
-                    Vector3 mid = new Vector3(center.x, (CellBottomY + CellTopY) * 0.5f, center.z);
+                    Vector3 mid = new Vector3(center.x, (RuntimeCellBottomY + RuntimeCellTopY) * 0.5f, center.z);
                     Debug.DrawLine(mid + Vector3.left * 300f, mid + Vector3.right * 300f, Color.yellow, 0f, false);
                     Debug.DrawLine(mid + Vector3.forward * 300f, mid + Vector3.back * 300f, Color.yellow, 0f, false);
                     Debug.DrawLine(playerPos, mid, new Color(1f, 0.5f, 0f, 0.8f), 0f, false);
@@ -234,8 +242,8 @@ namespace ProjectC.World.Clouds
         {
             if (!ShowDebugMarkers) { ClearDebugMarkers(); return; }
             float baseW = MarkerWidth;
-            float baseH = MarkerHeight > 0f ? MarkerHeight : (CellTopY - CellBottomY);
-            float midY = (CellBottomY + CellTopY) * 0.5f;
+            float baseH = MarkerHeight > 0f ? MarkerHeight : (RuntimeCellTopY - RuntimeCellBottomY);
+            float midY = (RuntimeCellBottomY + RuntimeCellTopY) * 0.5f;
 
             while (_debugMarkers.Count < _cells.Count)
             {
@@ -375,7 +383,7 @@ namespace ProjectC.World.Clouds
                 {
                     var c = _cells[i];
                     _stormPosCache[i]    = new Vector4(c.WorldPosition.x, c.WorldPosition.y, c.WorldPosition.z, c.Intensity);
-                    _stormParamsCache[i] = new Vector4(c.Radius, CellBottomY, CellTopY, 0f);
+                    _stormParamsCache[i] = new Vector4(c.Radius, RuntimeCellBottomY, RuntimeCellTopY, 0f);
                 }
                 else
                 {
@@ -497,7 +505,7 @@ namespace ProjectC.World.Clouds
             {
                 float angle = (360f / TestCellCount) * i + Random.Range(-30f, 30f);
                 float dist = TestSpawnDistance + Random.Range(-300f, 300f);
-                float midY = (CellBottomY + CellTopY) * 0.5f;
+                float midY = (RuntimeCellBottomY + RuntimeCellTopY) * 0.5f;
                 Vector3 pos = center + new Vector3(
                     Mathf.Cos(angle * Mathf.Deg2Rad) * dist,
                     midY - center.y + Random.Range(-200f, 200f),
@@ -508,7 +516,7 @@ namespace ProjectC.World.Clouds
 
             if (_logDebug)
                 Debug.Log($"[StormCellDirector] ⛈ Spawned {TestCellCount} test cells. " +
-                    $"Columns {CellBottomY}→{CellTopY}m, radius={CellRadius}m, verticalPeak={StormVerticalPeak:F2}.");
+                    $"Columns {RuntimeCellBottomY}→{RuntimeCellTopY}m, radius={CellRadius}m, verticalPeak={StormVerticalPeak:F2}.");
         }
 
 #if UNITY_EDITOR
@@ -520,16 +528,16 @@ namespace ProjectC.World.Clouds
                 var c = _cells[i];
                 float r = c.Radius;
                 Vector3 center = c.WorldPosition;
-                Vector3 bot = new Vector3(center.x, CellBottomY, center.z);
-                Vector3 top = new Vector3(center.x, CellTopY, center.z);
-                Vector3 mid = new Vector3(center.x, (CellBottomY + CellTopY) * 0.5f, center.z);
+                Vector3 bot = new Vector3(center.x, RuntimeCellBottomY, center.z);
+                Vector3 top = new Vector3(center.x, RuntimeCellTopY, center.z);
+                Vector3 mid = new Vector3(center.x, (RuntimeCellBottomY + RuntimeCellTopY) * 0.5f, center.z);
 
                 Gizmos.color = new Color(1f, 0.15f, 0.7f, 0.06f);
-                for (float y = CellBottomY + 200f; y < CellTopY; y += 400f)
+                for (float y = RuntimeCellBottomY + 200f; y < RuntimeCellTopY; y += 400f)
                     Gizmos.DrawSphere(new Vector3(center.x, y, center.z), r * 0.4f);
 
                 Gizmos.color = new Color(1f, 0.3f, 0.9f, 0.3f);
-                for (float y = CellBottomY; y <= CellTopY; y += 500f)
+                for (float y = RuntimeCellBottomY; y <= RuntimeCellTopY; y += 500f)
                     DrawGizmoRing(new Vector3(center.x, y, center.z), r);
 
                 for (int seg = 0; seg < 4; seg++)

@@ -4,6 +4,10 @@
 
 ---
 
+## T-FO09T — 2026-11-19
+**Статус:** реализовано, runtime и визуальная F8/F9 — NOT RUN.
+Исправлен вертикальный Floating Origin для volumetric clouds и штормов. Authored-границы в инспекторе сохраняются без изменений; в raymarch передаются `BottomY/TopY + CumulativeRebaseOffset.y`. Те же runtime-границы используются штормовым шейдером, тестовым спавном, маркерами и gizmos. На втором клиенте `CumulativeRebaseOffset` теперь обновляется из success/rollback broadcast до сдвига локальных участников. Raymarch, LocalDensity и центры ячеек остаются в rebased world space. Проверено через anklebreaker MCP: Play Mode выключен, компиляция завершена, Console — 0 errors. Текущие настройки v4 не изменялись.
+
 ## T-CLOUD44 — 2026-11-19
 **Статус:** реализовано, визуальная приёмка NOT RUN.
 Второй этап Clouds v4: coverage-дом с сужением кверху, перистый низ через переворот только Worley-деталей и постепенное разделение шумовых смещений слоёв. Базовый Perlin, границы слоёв, StormDensity и LocalDensity не изменены. Добавлены `CloudShapeV4` и `ShapeV4Strength = 0.65`; принятое пользователем `LightingV4Strength = 0.70` сохранено. Проверено через anklebreaker MCP: Play Mode выключен, компиляция завершена, Console — 0 errors, параметры и ссылка на шейдер сохранены. Runtime, визуальная проверка, F8/F9 и GPU-замеры — NOT RUN.

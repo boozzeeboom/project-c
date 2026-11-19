@@ -21,6 +21,7 @@ RWTexture3D<float4> _DensityNextDisp;  // write into current frame (displacement
 
 // ── Toroidal Window ──
 float3 _Center;                    // world-space center of the toroidal window
+float3 _CenterDelta;               // T-CLOUD50: Center_new - Center_old (world units)
 float  _TexelSize;                 // world units per texel
 uint   _Resolution;                // texture resolution (e.g. 96)
 
@@ -55,6 +56,58 @@ float3 ToroidalUvwToWorld(float3 uvw)
     return _Center + (uvw - 0.5) * windowSize;
 }
 
+// ── T-CLOUD50: трилинейная выборка прошлого кадра с тороидальным wrap.
+// Раньше был nearest — поле дёргалось на границах текселей (~3 Гц при 60 м/с).
+uint3 WrapTexel(int3 c)
+{
+    int r = (int)_Resolution;
+    return uint3(((c % r) + r) % r);
+}
+
+float3 PrevSampleUvw(float3 uvw, float3 windWorldOffset)
+{
+    float windowSize = (float)_Resolution * _TexelSize;
+    // Тот же world-point в прошлом кадре: uvw + (Center_new - Center_old)/windowSize.
+    // Без компенсации сдвига центра поле «прилипало» к окну и шло рывками.
+    return uvw + (_CenterDelta + windWorldOffset) / windowSize;
+}
+
+float SamplePrevDensityTrilinear(float3 uvw)
+{
+    float3 texel = uvw * (float)_Resolution - 0.5;
+    int3 b = int3(floor(texel));
+    float3 f = frac(texel);
+    float v000 = _DensityPrev[WrapTexel(b + int3(0,0,0))];
+    float v100 = _DensityPrev[WrapTexel(b + int3(1,0,0))];
+    float v010 = _DensityPrev[WrapTexel(b + int3(0,1,0))];
+    float v110 = _DensityPrev[WrapTexel(b + int3(1,1,0))];
+    float v001 = _DensityPrev[WrapTexel(b + int3(0,0,1))];
+    float v101 = _DensityPrev[WrapTexel(b + int3(1,0,1))];
+    float v011 = _DensityPrev[WrapTexel(b + int3(0,1,1))];
+    float v111 = _DensityPrev[WrapTexel(b + int3(1,1,1))];
+    float v00 = lerp(v000, v100, f.x), v10 = lerp(v010, v110, f.x);
+    float v01 = lerp(v001, v101, f.x), v11 = lerp(v011, v111, f.x);
+    return lerp(lerp(v00, v10, f.y), lerp(v01, v11, f.y), f.z);
+}
+
+float4 SamplePrevDispTrilinear(float3 uvw)
+{
+    float3 texel = uvw * (float)_Resolution - 0.5;
+    int3 b = int3(floor(texel));
+    float3 f = frac(texel);
+    float4 v000 = _DensityPrevDisp[WrapTexel(b + int3(0,0,0))];
+    float4 v100 = _DensityPrevDisp[WrapTexel(b + int3(1,0,0))];
+    float4 v010 = _DensityPrevDisp[WrapTexel(b + int3(0,1,0))];
+    float4 v110 = _DensityPrevDisp[WrapTexel(b + int3(1,1,0))];
+    float4 v001 = _DensityPrevDisp[WrapTexel(b + int3(0,0,1))];
+    float4 v101 = _DensityPrevDisp[WrapTexel(b + int3(1,0,1))];
+    float4 v011 = _DensityPrevDisp[WrapTexel(b + int3(0,1,1))];
+    float4 v111 = _DensityPrevDisp[WrapTexel(b + int3(1,1,1))];
+    float4 v00 = lerp(v000, v100, f.x), v10 = lerp(v010, v110, f.x);
+    float4 v01 = lerp(v001, v101, f.x), v11 = lerp(v011, v111, f.x);
+    return lerp(lerp(v00, v10, f.y), lerp(v01, v11, f.y), f.z);
+}
+
 // ─────────────────────────────────────────────────
 // Kernel: AdvectAndRelax
 // Reads _DensityPrev, applies wind advection + relaxation, writes _DensityNext
@@ -71,18 +124,11 @@ void AdvectAndRelax(uint3 id : SV_DispatchThreadID)
     // World position of this cell
     float3 worldPos = ToroidalUvwToWorld(uvw);
 
-    // Wind offset in texel units
-    // windOffset = WindDirection * AdvectionStrength * DeltaTime (world units)
-    // convert world offset to UVW offset: worldOffset / windowSize
-    float windowSize = (float)_Resolution * _TexelSize;
+    // Wind offset (world units); UVW-смещение считается в PrevSampleUvw.
     float3 windWorldOffset = _WindDirection * _AdvectionStrength * _DeltaTime;
-    float3 windUvwOffset = windWorldOffset / windowSize;
 
-    // Sample previous frame with wind advection (toroidal wrap via frac)
-    float3 sampleUvw = frac(uvw + windUvwOffset);
-    float3 sampleTexel = sampleUvw * (float)_Resolution;
-    sampleTexel = clamp(sampleTexel, 0.0, (float)_Resolution - 1.0);
-    float sample = _DensityPrev[uint3(sampleTexel)];
+    // Sample previous frame: центр- и ветровая компенсация + trilinear (T-CLOUD50)
+    float sample = SamplePrevDensityTrilinear(frac(PrevSampleUvw(uvw, windWorldOffset)));
 
     // Relaxation: exponential decay toward zero
     float relaxed = max(0.0, sample - _RelaxationRate * _DeltaTime);
@@ -147,14 +193,9 @@ void AdvectAndRelax_Disp(uint3 id : SV_DispatchThreadID)
         return;
 
     float3 uvw = (float3(id) + 0.5) / (float)_Resolution;
-    float windowSize = (float)_Resolution * _TexelSize;
     float3 windWorldOffset = _WindDirection * _AdvectionStrength * _DeltaTime;
-    float3 windUvwOffset = windWorldOffset / windowSize;
 
-    float3 sampleUvw = frac(uvw + windUvwOffset);
-    float3 sampleTexel = sampleUvw * (float)_Resolution;
-    sampleTexel = clamp(sampleTexel, 0.0, (float)_Resolution - 1.0);
-    float4 prev = _DensityPrevDisp[uint3(sampleTexel)];
+    float4 prev = SamplePrevDispTrilinear(frac(PrevSampleUvw(uvw, windWorldOffset)));
 
     // Multiplicative decay toward zero (preserves direction, shrinks magnitude)
     float decay = max(0.0, 1.0 - _RelaxationRate * _DeltaTime);

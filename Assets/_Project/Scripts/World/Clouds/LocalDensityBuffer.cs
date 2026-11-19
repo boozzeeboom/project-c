@@ -100,6 +100,12 @@ namespace ProjectC.World.Clouds
         private RenderTexture _activeReadRT;
         public Vector3 Center { get; private set; }
 
+        // T-CLOUD50: компенсация сдвига окна при advection + сброс при ребейзе.
+        private Vector3 _centerDelta;
+        private bool _centerInitialized;
+        private int _lastRebaseFrame = -1;
+        private static readonly int CenterDeltaId = Shader.PropertyToID("_CenterDelta");
+
         /// <summary>
         /// Struct matching compute shader SplatData (16 bytes).
         /// </summary>
@@ -171,10 +177,27 @@ namespace ProjectC.World.Clouds
             if (kAdv < 0 || kSpl < 0) return;
 
             // Update toroidal center
+            Vector3 newCenter = Center;
             if (FollowTarget != null)
-                Center = FollowTarget.position;
+                newCenter = FollowTarget.position;
             else if (Camera.main != null)
-                Center = Camera.main.transform.position;
+                newCenter = Camera.main.transform.position;
+
+            // T-CLOUD50: сдвиг окна передаём в advection, иначе поле «прилипает»
+            // к окну и дёргается на границах текселей (мерцание ~3 Гц за кораблём).
+            _centerDelta = _centerInitialized ? newCenter - Center : Vector3.zero;
+            Center = newCenter;
+            _centerInitialized = true;
+
+            // T-CLOUD50: F8/F9/авторебейз сдвигает мир целиком — это не движение
+            // окна. Буфер очищаем, чтобы сдвиг не читался как гигантский delta.
+            int rebaseFrame = ProjectC.World.FloatingOrigin.Network.GlobalMotionControlledRebaseSlice.CumulativeRebaseFrame;
+            if (rebaseFrame != _lastRebaseFrame)
+            {
+                _lastRebaseFrame = rebaseFrame;
+                _centerDelta = Vector3.zero;
+                Clear();
+            }
 
             // Read wind
             Vector3 windDir = Vector3.right;
@@ -311,6 +334,7 @@ namespace ProjectC.World.Clouds
         private void SetCommonParams(int kernel, Vector3 windDir, float dt)
         {
             _compute.SetVector(CenterId, Center);
+            _compute.SetVector(CenterDeltaId, _centerDelta);
             _compute.SetFloat(TexelSizeId, TexelSize);
             _compute.SetInt(ResolutionId, Resolution);
             _compute.SetVector(WindDirectionId, windDir);

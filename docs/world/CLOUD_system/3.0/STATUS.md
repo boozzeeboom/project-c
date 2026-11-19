@@ -2,7 +2,7 @@
 
 **Дата:** 2026-11-20
 **Версия:** 3.0 → 4.0 (поэтапная интеграция cloudscape)
-**Статус:** 🟡 T-CLOUD50 (фикс мерцания displacement ~3 Гц) реализован и ожидает визуальной приёмки; T-CLOUD47/48/49 приняты пользователем («остальное принимаем пока»); T-CLOUD46 принят; T-FO09T ожидает F8/F9; GPU-замеры отложены по решению пользователя
+**Статус:** 🟡 T-CLOUD51 (предел displacement + FollowTarget только игрока) реализован и ожидает визуальной приёмки; T-CLOUD47/48/49 приняты пользователем («остальное принимаем пока»); T-CLOUD46 принят; T-FO09T ожидает F8/F9; GPU-замеры отложены по решению пользователя
 
 ---
 
@@ -40,6 +40,7 @@ CloudDensity(worldPos) =
 | v4.6 | T-CLOUD48: temporal History — ping-pong, репроекция prevVP, 3×3 clamp, сброс при ребейзе/телепорте | 🟡 Компиляция и шейдер 0 errors; приёмка, F8/F9 и GPU-замеры NOT RUN |
 | v4.7 | T-CLOUD49: sun-space карта пропускания, self-shadowing слоёв, лучи; FO-safe (пересчёт каждый кадр) | 🟡 Компиляция и шейдер 0 errors; приёмка, F8/F9 и GPU-замеры NOT RUN |
 | v4.8 | T-CLOUD50: displacement — компенсация CenterDelta + trilinear advection, сброс буфера при ребейзе | 🟡 Компиляция 0 errors; приёмка и F8/F9 NOT RUN |
+| v4.9 | T-CLOUD51: MaxDisplacement=4 против runaway-накопления; FollowTarget только у игрока | 🟡 Компиляция 0 errors; приёмка и F8/F9 NOT RUN |
 | FO | T-FO09T: authored→runtime высоты облаков/штормов на сервере и клиенте | 🟡 Компиляция 0 errors; F8/F9 NOT RUN |
 
 **Итог:** 4-слойный реймарч работает. Утверждение о приемлемом перформансе снято до отдельных GPU-замеров. Переключатели v4 и `HalfResRender` позволяют независимо сравнивать этапы. Последнее наблюденное состояние в Unity: `LightingV4Strength = 0.70`, `ShapeV4Strength = 0.21`, `DetailV4Strength = 1.00`, `StableV4Strength = 1.00`, `HalfResRender = true`, `DepthAwareUpscale = true`, `DepthUpscaleSigma = 0.03`, `TemporalReprojection = true`, `TemporalBlend = 0.85`, `TemporalTeleportResetDistance = 100`, `CloudShadowsV4 = true`, `ShadowMapResolution = 1024`, `ShadowAreaSize = 8192`, `ShadowMarchSteps = 48`, `ShadowV4Strength = 0.65`. Temporal реализован (T-CLOUD48): сброс истории при ребейзе (F8/F9/авто), телепорте камеры >100 м и смене размера history-RT. Тени реализованы (T-CLOUD49): sun-space карта пересчитывается каждый кадр, истории нет; геометрия мира не затемняется.

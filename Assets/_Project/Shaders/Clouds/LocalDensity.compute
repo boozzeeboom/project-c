@@ -30,6 +30,7 @@ float3 _WindDirection;             // normalized
 float  _AdvectionStrength;         // how strongly wind moves the field
 float  _RelaxationRate;            // relaxation per second
 float  _DeltaTime;                 // frame delta time
+float  _MaxDisplacement;           // T-CLOUD51: предел |displacement| (безразмерный)
 
 // ── Splats ──
 struct SplatData
@@ -254,6 +255,13 @@ void ApplySplats_Disp(uint3 id : SV_DispatchThreadID)
         float3 pushDir = normalize(bestToCell + 0.0001);
         displacement += pushDir * splat.amount * gauss;
     }
+
+    // T-CLOUD51: накопление без предела давало |disp| ~100 → сдвиг шумовых
+    // координат на километры и тряску всего облачного массива вокруг корабля.
+    // Ограничиваем суммарный вектор: кильватер локальный и стабильный.
+    float dispMag = length(displacement);
+    if (dispMag > _MaxDisplacement && dispMag > 1e-5)
+        displacement *= _MaxDisplacement / dispMag;
 
     _DensityNextDisp[id] = float4(displacement, 0);
 }

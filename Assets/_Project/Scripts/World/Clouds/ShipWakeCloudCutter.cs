@@ -45,9 +45,12 @@ namespace ProjectC.World.Clouds
                 ShipTransform = transform;
             _lastPos = ShipTransform.position;
 
-            // Point LocalDensityBuffer window at the ship (not camera)
+            // Point LocalDensityBuffer window at the LOCAL PLAYER ship (not camera).
+            // T-CLOUD51: раньше окно перехватывал первый инициализировавшийся
+            // корабль, включая NPC — его кильватер деформировал облака по всему
+            // экрану. Если локального игрока нет, окно следует за Camera.main.
             var ld = LocalDensityBuffer.Instance;
-            if (ld != null && ld.FollowTarget == null)
+            if (ld != null && ld.FollowTarget == null && ShipTransform.root.CompareTag("Player"))
             {
                 ld.FollowTarget = ShipTransform;
                 Debug.Log($"[ShipWakeCloudCutter] LocalDensityBuffer.FollowTarget → {ShipTransform.name}");

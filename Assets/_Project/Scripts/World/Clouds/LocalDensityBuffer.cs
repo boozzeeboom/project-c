@@ -41,6 +41,8 @@ namespace ProjectC.World.Clouds
         [Header("Splat")]
         [Tooltip("Максимальный радиус сплата. При CutRadius > этого значения сплаты обрезаются.")]
         public float MaxSplatRadius = 300f;
+        [Tooltip("T-CLOUD51: предел длины вектора displacement. Итоговый сдвиг шумовых координат = значение × DisplacementStrength рендерера.")]
+        [Range(0.5f, 16f)] public float MaxDisplacement = 4f;
 
         [Header("Target")]
         [Tooltip("Transform to follow (player/camera). If null, uses Camera.main.")]
@@ -105,6 +107,7 @@ namespace ProjectC.World.Clouds
         private bool _centerInitialized;
         private int _lastRebaseFrame = -1;
         private static readonly int CenterDeltaId = Shader.PropertyToID("_CenterDelta");
+        private static readonly int MaxDisplacementId = Shader.PropertyToID("_MaxDisplacement");
 
         /// <summary>
         /// Struct matching compute shader SplatData (16 bytes).
@@ -335,6 +338,7 @@ namespace ProjectC.World.Clouds
         {
             _compute.SetVector(CenterId, Center);
             _compute.SetVector(CenterDeltaId, _centerDelta);
+            _compute.SetFloat(MaxDisplacementId, MaxDisplacement);
             _compute.SetFloat(TexelSizeId, TexelSize);
             _compute.SetInt(ResolutionId, Resolution);
             _compute.SetVector(WindDirectionId, windDir);

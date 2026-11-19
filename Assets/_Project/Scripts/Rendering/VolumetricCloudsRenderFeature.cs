@@ -117,6 +117,12 @@ namespace ProjectC.Rendering
         [Tooltip("0 = форма 3.0, 1 = форма v4. Промежуточные значения смешивают обе модели.")]
         [Range(0f, 1f)] public float ShapeV4Strength = 0.65f;
 
+        [Header("Clouds v4 — Detail (T-CLOUD45)")]
+        [Tooltip("Двухстадийная эрозия краёв и умеренный remap резкости. Выключение возвращает плотность T-CLOUD44.")]
+        public bool CloudDetailV4 = true;
+        [Tooltip("0 = без эрозии, 1 = полная сила деталей v4. Начальное значение снижено против шиммера.")]
+        [Range(0f, 1f)] public float DetailV4Strength = 0.55f;
+
         [Header("Quality")]
         public bool HalfResRender = true;
         public bool TemporalReprojection = true;
@@ -162,6 +168,7 @@ namespace ProjectC.Rendering
         private static readonly int TemporalBlendId     = Shader.PropertyToID("_TemporalBlend");
         private static readonly int LightingV4StrengthId = Shader.PropertyToID("_CloudLightingV4Strength");
         private static readonly int ShapeV4StrengthId = Shader.PropertyToID("_CloudShapeV4Strength");
+        private static readonly int DetailV4StrengthId = Shader.PropertyToID("_CloudDetailV4Strength");
         private static readonly int WindOffsetId        = Shader.PropertyToID("_WindOffset");
         private static readonly int SunDirectionId      = Shader.PropertyToID("_SunDirection");
         internal static readonly int BlueNoiseTexId      = Shader.PropertyToID("_BlueNoiseTex");
@@ -338,6 +345,7 @@ namespace ProjectC.Rendering
             mat.SetFloat(TemporalBlendId, (TemporalReprojection && _prevViewProjValid) ? 0.9f : 0f);
             mat.SetFloat(LightingV4StrengthId, CloudLightingV4 ? LightingV4Strength : 0f);
             mat.SetFloat(ShapeV4StrengthId, CloudShapeV4 ? ShapeV4Strength : 0f);
+            mat.SetFloat(DetailV4StrengthId, CloudDetailV4 ? DetailV4Strength : 0f);
 
             // Layer arrays
             mat.SetVectorArray(LayerBoundsId, _boundsCache);

@@ -2,7 +2,7 @@
 
 **Дата:** 2026-11-19
 **Версия:** 3.0 → 4.0 (поэтапная интеграция cloudscape)
-**Статус:** 🟡 T-FO09T (вертикальный FO) реализован и ожидает F8/F9; T-CLOUD44 ожидает визуальной приёмки
+**Статус:** 🟡 T-CLOUD45 (чистые края v4) реализован и ожидает визуальной приёмки; T-FO09T ожидает F8/F9
 
 ---
 
@@ -34,9 +34,10 @@ CloudDensity(worldPos) =
 | 1.7 | `CloudPerfMonitor` | 🟡 Инструмент есть; подтверждённых GPU-замеров cloud-pass нет |
 | v4.1 | T-CLOUD43: dual-HG, 3-член Beer–Lambert, powder, crease | ✅ Пользователь: «визуально лучше»; F8/F9 не подтверждены |
 | v4.2 | T-CLOUD44: coverage-дом, перистый низ, разделение шума слоёв | 🟡 Код и импорт готовы; визуальная приёмка NOT RUN |
+| v4.3 | T-CLOUD45: mid→fine эрозия, early-out, remap края | 🟡 Компиляция 0 errors; визуальная приёмка и F8/F9 NOT RUN |
 | FO | T-FO09T: authored→runtime высоты облаков/штормов на сервере и клиенте | 🟡 Компиляция 0 errors; F8/F9 NOT RUN |
 
-**Итог:** 4-слойный реймарч работает. Утверждение о приемлемом перформансе снято до отдельных GPU-замеров. Переключатели `CloudLightingV4` и `CloudShapeV4` позволяют независимо сравнивать освещение и форму с v3. Последнее наблюденное состояние в Unity: `CloudLightingV4 = true`, `LightingV4Strength = 0.70`, `CloudShapeV4 = false`, `ShapeV4Strength = 1.00`; T-FO09T эти значения не менял.
+**Итог:** 4-слойный реймарч работает. Утверждение о приемлемом перформансе снято до отдельных GPU-замеров. Переключатели `CloudLightingV4`, `CloudShapeV4` и `CloudDetailV4` позволяют независимо сравнивать этапы с v3. Последнее наблюденное состояние в Unity: `CloudLightingV4 = true`, `LightingV4Strength = 0.70`, `CloudShapeV4 = true`, `ShapeV4Strength = 0.21`, `CloudDetailV4 = true`, `DetailV4Strength = 0.55`.
 
 ---
 

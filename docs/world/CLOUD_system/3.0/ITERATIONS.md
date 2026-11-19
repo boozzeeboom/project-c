@@ -4,6 +4,10 @@
 
 ---
 
+## T-CLOUD45 — 2026-11-19
+**Статус:** реализовано, визуальная приёмка и F8/F9 — NOT RUN.
+Третий этап Clouds v4: двухстадийная mid→fine эрозия существующими GBA-каналами 128³ noise-текстуры, early-out перед fine при плотности ≤0.003 и консервативный remap слабого ореола. Camera/debug лучи получают обе стадии; light march — только mid, без fine и дополнительной резкости. Эрозия применяется к нормированной плотности слоя до `DensityMultiplier`, поэтому сила эффекта не зависит от множителя слоя. StormDensity, LocalDensity, bounds и FO-контракт не изменены. Добавлены `CloudDetailV4` и `DetailV4Strength = 0.55`. Проверено через anklebreaker MCP: Play Mode выключен, компиляция завершена, Console — 0 errors, шейдер найден. Текущая ручная настройка формы пользователя сохранена; `ProjectC_URP_Renderer.asset` не включается в коммит этапа.
+
 ## T-FO09T — 2026-11-19
 **Статус:** реализовано, runtime и визуальная F8/F9 — NOT RUN.
 Исправлен вертикальный Floating Origin для volumetric clouds и штормов. Authored-границы в инспекторе сохраняются без изменений; в raymarch передаются `BottomY/TopY + CumulativeRebaseOffset.y`. Те же runtime-границы используются штормовым шейдером, тестовым спавном, маркерами и gizmos. На втором клиенте `CumulativeRebaseOffset` теперь обновляется из success/rollback broadcast до сдвига локальных участников. Raymarch, LocalDensity и центры ячеек остаются в rebased world space. Проверено через anklebreaker MCP: Play Mode выключен, компиляция завершена, Console — 0 errors. Текущие настройки v4 не изменялись.

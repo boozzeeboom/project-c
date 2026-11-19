@@ -79,6 +79,7 @@ Shader "Hidden/ProjectC/VolumetricClouds"
         float _CloudColorIntensity;
         float _CloudLightingV4Strength;
         float _CloudShapeV4Strength;
+        float _CloudDetailV4Strength;
         float3 _SunDirection;
 
         TEXTURE3D(_CloudNoise3D);
@@ -216,6 +217,38 @@ Shader "Hidden/ProjectC/VolumetricClouds"
             float noiseB = lerp(noise.b, 1.0 - noise.b, wispyWeight);
             float s = noise.r * lerp(0.5, 1.0, noiseA) + (noiseG + noiseB) * 0.15;
             return saturate(s);
+        }
+
+        // T-CLOUD45: mid → fine эрозия по каналам существующей 128³ текстуры.
+        // Light march получает только mid; fine и резкость нужны лучу камеры.
+        float LayerDensityDetailV4(float baseDensity, float3 samplePos, int layerIndex,
+                                   float height01, bool allowFineDetail)
+        {
+            if (_CloudDetailV4Strength <= 0.001 || baseDensity <= 0.003)
+                return baseDensity;
+
+            float seed = (float)(layerIndex + 1) * 53.0;
+            float3 detailPos = samplePos + float3(seed, seed * 0.7, seed * 1.3);
+            float4 midTex = SAMPLE_TEXTURE3D_LOD(_CloudNoise3D, sampler_CloudNoise3D,
+                frac(detailPos / max(_NoiseTileSize * 0.25, 1.0)), 0);
+            float mid = dot(midTex.gba, float3(0.5, 0.3, 0.2));
+            mid = lerp(mid, 1.0 - mid, saturate(height01 * 8.0));
+            float midAmount = _CloudDetailV4Strength * lerp(0.30, 0.18, height01);
+            float eroded = CloudRemap(baseDensity, mid * midAmount, 1.0, 0.0, 1.0);
+            if (eroded <= 0.003)
+                return 0.0;
+            if (!allowFineDetail)
+                return eroded;
+
+            float4 fineTex = SAMPLE_TEXTURE3D_LOD(_CloudNoise3D, sampler_CloudNoise3D,
+                frac(detailPos / max(_NoiseTileSize * 0.0625, 1.0)), 0);
+            float fine = dot(fineTex.gba, float3(0.25, 0.35, 0.4));
+            eroded = CloudRemap(eroded, fine * _CloudDetailV4Strength * 0.10, 1.0, 0.0, 1.0);
+
+            // Консервативный remap: обрезаем слабый ореол, но не повышаем
+            // пространственную частоту контура до заметного шиммера.
+            float sharpnessWidth = lerp(1.0, 0.65, _CloudDetailV4Strength);
+            return saturate((eroded - _CloudDetailV4Strength * 0.015) / sharpnessWidth);
         }
 
         // ---------------------------------------------------------------------------
@@ -387,7 +420,7 @@ Shader "Hidden/ProjectC/VolumetricClouds"
 
         // Density + blended color per step. Returns density; outputs blended layer color.
         float CloudDensity(float3 worldPos, float3 cameraPos, float coverageNoise,
-                           float rampBlend, out float3 layerColor)
+                           float rampBlend, bool allowFineDetail, out float3 layerColor)
         {
         #if defined(_LOCALDENSITY_DISPLACEMENT)
             // Save original position for storm — displacement should NOT punch holes
@@ -431,7 +464,9 @@ Shader "Hidden/ProjectC/VolumetricClouds"
                 float dome = lerp(1.0, 0.5, h01 * h01);
                 float coverageDome = lerp(1.0, dome, _CloudShapeV4Strength);
                 float layerCov = smoothstep(b.z, b.z + 0.15, coverageNoise * coverageDome);
-                float ld = shape * hFade * layerCov * b.w;
+                float normalizedDensity = LayerDensityDetailV4(
+                    shape * hFade * layerCov, samplePos, l, h01, allowFineDetail);
+                float ld = normalizedDensity * b.w;
                 totalDensity += ld;
 
                 // Blend color by per-layer density contribution
@@ -492,7 +527,7 @@ Shader "Hidden/ProjectC/VolumetricClouds"
                     float t = tMin + ((float)i + 0.5) * stepSize;
                     if (t > tMax) break;
                     float3 c;
-                    totalDensity += CloudDensity(rayOrigin + rayDir * t, rayOrigin, covNoise, rampBlend, c) * stepSize;
+                    totalDensity += CloudDensity(rayOrigin + rayDir * t, rayOrigin, covNoise, rampBlend, true, c) * stepSize;
                 }
                 float d = saturate(totalDensity * _DebugDensityScale);
                 return float4(d.xxx, d);
@@ -569,7 +604,7 @@ Shader "Hidden/ProjectC/VolumetricClouds"
 
                     float3 samplePos = rayOrigin + rayDir * t;
                     float3 cloudColor;
-                    float density = CloudDensity(samplePos, rayOrigin, covNoise, rampBlend, cloudColor);
+                    float density = CloudDensity(samplePos, rayOrigin, covNoise, rampBlend, true, cloudColor);
 
                     if (density > 0.001)
                     {
@@ -579,7 +614,7 @@ Shader "Hidden/ProjectC/VolumetricClouds"
                         {
                             float3 lightPos = samplePos + _SunDirection * ((float)j + 0.5) * lightStepSize;
                             float3 dummy;
-                            float lightDensity = CloudDensity(lightPos, rayOrigin, covNoise, rampBlend, dummy);
+                            float lightDensity = CloudDensity(lightPos, rayOrigin, covNoise, rampBlend, false, dummy);
                             lightTransmittance *= exp(-lightDensity * lightStepSize * _LightAbsorption * 0.5);
                         }
 

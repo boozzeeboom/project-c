@@ -5,6 +5,7 @@
 // to avoid material-slot shadowing issues.
 
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
 using UnityEngine.Rendering.RenderGraphModule.Util;
@@ -130,7 +131,12 @@ namespace ProjectC.Rendering
         [Range(0f, 1f)] public float StableV4Strength = 0.65f;
 
         [Header("Quality")]
+        [Tooltip("T-CLOUD47: raymarch в 0.5 разрешения и отдельный depth-aware composite.")]
         public bool HalfResRender = true;
+        [Tooltip("Отбрасывает low-res сэмплы на противоположной стороне края геометрии.")]
+        public bool DepthAwareUpscale = true;
+        [Tooltip("Допустимый относительный перепад eye-depth; меньше = резче край.")]
+        [Range(0.001f, 0.2f)] public float DepthUpscaleSigma = 0.03f;
         public bool TemporalReprojection = true;
         public bool BlueNoiseDither = true;
         public Texture2D BlueNoiseTexture;
@@ -189,6 +195,9 @@ namespace ProjectC.Rendering
         internal static readonly int CloudOpacityId      = Shader.PropertyToID("_CloudOpacity");
         internal static readonly int CloudColorIntensityId = Shader.PropertyToID("_CloudColorIntensity");
         internal static readonly int CloudTargetSizeId   = Shader.PropertyToID("_CloudTargetSize");
+        internal static readonly int CloudLowResSizeId   = Shader.PropertyToID("_CloudLowResSize");
+        internal static readonly int DepthAwareUpscaleId = Shader.PropertyToID("_CloudDepthAwareUpscale");
+        internal static readonly int DepthUpscaleSigmaId = Shader.PropertyToID("_CloudDepthUpscaleSigma");
         internal static readonly int ViewToWorldId       = Shader.PropertyToID("_Cloud_ViewToWorld");
         internal static readonly int InvProjectionId     = Shader.PropertyToID("_Cloud_InvProj");
         internal static readonly int LocalDensityRTId     = Shader.PropertyToID("_LocalDensityRT");
@@ -356,9 +365,13 @@ namespace ProjectC.Rendering
             mat.SetFloat(ShapeV4StrengthId, CloudShapeV4 ? ShapeV4Strength : 0f);
             mat.SetFloat(DetailV4StrengthId, CloudDetailV4 ? DetailV4Strength : 0f);
             mat.SetFloat(StableV4StrengthId, CloudStableV4 ? StableV4Strength : 0f);
+            mat.SetFloat(DepthAwareUpscaleId, DepthAwareUpscale ? 1f : 0f);
+            mat.SetFloat(DepthUpscaleSigmaId, DepthUpscaleSigma);
             mat.SetFloat(NoiseMaxLodId, CloudNoise3D != null ? Mathf.Log(CloudNoise3D.width, 2f) : 0f);
+            // В half-res footprint одного raymarch-пикселя вдвое больше.
+            float raymarchHeight = camera.pixelHeight * (HalfResRender && !DebugDensityDirect ? 0.5f : 1f);
             mat.SetFloat(PixelAngleId, 2f * Mathf.Tan(camera.fieldOfView * Mathf.Deg2Rad * 0.5f)
-                / Mathf.Max(camera.pixelHeight, 1));
+                / Mathf.Max(raymarchHeight, 1f));
 
             // Layer arrays
             mat.SetVectorArray(LayerBoundsId, _boundsCache);
@@ -476,7 +489,7 @@ namespace ProjectC.Rendering
         {
             public Material Material;
             public TextureHandle CloudRT, HistoryRT;
-            public Vector4 TargetSize;
+            public Vector4 TargetSize, LowResSize;
             public Matrix4x4 ViewToWorld, InvProjection;
         }
 
@@ -523,13 +536,32 @@ namespace ProjectC.Rendering
                 return;
             }
 
-            // Pass 1 → colorTarget direct (cloudRT/history bypassed for tuning)
-            int cw2 = Mathf.Max(1, cam.pixelWidth), ch2 = Mathf.Max(1, cam.pixelHeight);
-            Vector4 fs2 = new Vector4(cw2, ch2, 1f / cw2, 1f / ch2);
-            using (var builder = renderGraph.AddRasterRenderPass<PassData>("VolumetricClouds_Direct", out var pd, profilingSampler))
+            // T-CLOUD47: raymarch в отдельную full/half-res текстуру,
+            // затем полноразмерный depth-aware composite. Temporal по-прежнему off.
+            int fullW = Mathf.Max(1, cam.pixelWidth), fullH = Mathf.Max(1, cam.pixelHeight);
+            float renderScale = _halfRes ? 0.5f : 1f;
+            int cloudW = Mathf.Max(1, Mathf.RoundToInt(fullW * renderScale));
+            int cloudH = Mathf.Max(1, Mathf.RoundToInt(fullH * renderScale));
+            Vector4 fullSize = new Vector4(fullW, fullH, 1f / fullW, 1f / fullH);
+            Vector4 cloudSize = new Vector4(cloudW, cloudH, 1f / cloudW, 1f / cloudH);
+            var depthTarget = resourceData.cameraDepthTexture;
+
+            var cloudDesc = new TextureDesc(cloudW, cloudH)
             {
-                pd.Material = _material; pd.TargetSize = fs2; pd.ViewToWorld = viewToWorld; pd.InvProjection = invProj;
-                builder.SetRenderAttachment(colorTarget, 0, AccessFlags.ReadWrite);
+                name = _halfRes ? "CloudRT_Half" : "CloudRT_Full",
+                colorFormat = GraphicsFormat.R16G16B16A16_SFloat,
+                filterMode = FilterMode.Bilinear,
+                wrapMode = TextureWrapMode.Clamp,
+                clearBuffer = true,
+                clearColor = Color.clear
+            };
+            TextureHandle cloudRT = renderGraph.CreateTexture(cloudDesc);
+
+            using (var builder = renderGraph.AddRasterRenderPass<PassData>("VolumetricClouds_Raymarch", out var pd, profilingSampler))
+            {
+                pd.Material = _material; pd.TargetSize = cloudSize; pd.ViewToWorld = viewToWorld; pd.InvProjection = invProj;
+                builder.SetRenderAttachment(cloudRT, 0, AccessFlags.Write);
+                if (depthTarget.IsValid()) builder.UseTexture(depthTarget, AccessFlags.Read);
                 builder.AllowPassCulling(false); builder.AllowGlobalStateModification(true);
                 builder.SetRenderFunc(static (PassData p, RasterGraphContext ctx) =>
                 {
@@ -537,6 +569,23 @@ namespace ProjectC.Rendering
                     ctx.cmd.SetGlobalMatrix(VolumetricCloudsRenderFeature.ViewToWorldId, p.ViewToWorld);
                     ctx.cmd.SetGlobalMatrix(VolumetricCloudsRenderFeature.InvProjectionId, p.InvProjection);
                     ctx.cmd.DrawProcedural(Matrix4x4.identity, p.Material, 1, MeshTopology.Triangles, 3, 1);
+                });
+            }
+
+            using (var builder = renderGraph.AddRasterRenderPass<PassData>("VolumetricClouds_Composite", out var pd, profilingSampler))
+            {
+                pd.Material = _material; pd.CloudRT = cloudRT;
+                pd.TargetSize = fullSize; pd.LowResSize = cloudSize;
+                builder.SetRenderAttachment(colorTarget, 0, AccessFlags.ReadWrite);
+                builder.UseTexture(cloudRT, AccessFlags.Read);
+                if (depthTarget.IsValid()) builder.UseTexture(depthTarget, AccessFlags.Read);
+                builder.AllowPassCulling(false); builder.AllowGlobalStateModification(true);
+                builder.SetRenderFunc(static (PassData p, RasterGraphContext ctx) =>
+                {
+                    ctx.cmd.SetGlobalTexture(VolumetricCloudsRenderFeature.CloudRTId, p.CloudRT);
+                    ctx.cmd.SetGlobalVector(VolumetricCloudsRenderFeature.CloudTargetSizeId, p.TargetSize);
+                    ctx.cmd.SetGlobalVector(VolumetricCloudsRenderFeature.CloudLowResSizeId, p.LowResSize);
+                    ctx.cmd.DrawProcedural(Matrix4x4.identity, p.Material, 2, MeshTopology.Triangles, 3, 1);
                 });
             }
         }

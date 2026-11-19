@@ -4,9 +4,13 @@
 
 ---
 
+## T-CLOUD47 — 2026-11-19
+**Статус:** реализовано, визуальная приёмка, F8/F9 и GPU-замеры — NOT RUN.
+Пятый этап Clouds v4: raymarch переведён с прямой записи в `colorTarget` на отдельную RGBA16F cloud-текстуру. При `HalfResRender = true` используется масштаб 0.5 по каждой оси, при выключении — full-res через тот же composite для сравнения. Полноразмерный Pass 2 выполняет четырёхточечный bilateral upscale с пространственными весами и относительной eye-depth; при нулевом весе используется ближайший сэмпл. `DepthAwareUpscale = true`, `DepthUpscaleSigma = 0.03`; при отключении depth-aware остаётся обычный bilinear. Footprint T-CLOUD46 учитывает удвоенный угловой размер half-res пикселя. Separate alpha blend сохраняет прежнюю direct-blend модель цвета. Temporal Pass 3 не изменён и остаётся заглушкой. Через anklebreaker MCP подтверждены загрузка новой C#-сборки, Play Mode выключен, Console — 0 errors, `ShaderHasError = false`; параметры сохранены. `ProjectC_URP_Renderer.asset` не включается в коммит этапа.
+
 ## T-CLOUD46 — 2026-11-19
-**Статус:** реализовано, визуальная приёмка и F8/F9 — NOT RUN.
-Четвёртый этап Clouds v4: у `CloudNoise3D` включён полный mip-chain; уровень MIP рассчитывается из мирового footprint пикселя и дистанции луча. Mid/fine детали получают согласованные +2/+4 LOD, light march использует тот же footprint без fine. Добавлен статический IGN по экранному пикселю для смещения стартового сэмпла; покадровый golden-ratio jitter намеренно отложен до реализации temporal, чтобы не вносить мерцание. Добавлены `CloudStableV4` и `StableV4Strength = 0.65`. Через anklebreaker MCP выполнены импорт и пересборка текстуры: Play Mode выключен, компиляция завершена, Console — 0 errors; mip 1 размером 64×64 успешно прочитан через GPU copy (4096 пикселей). Текущие Lighting/Shape/Detail настройки не изменялись; `ProjectC_URP_Renderer.asset` не включается в коммит этапа. Runtime, визуальная проверка, F8/F9 и GPU-замеры — NOT RUN.
+**Статус:** принято пользователем — «оставляем»; F8/F9 не подтверждены.
+Четвёртый этап Clouds v4: у `CloudNoise3D` включён полный mip-chain; уровень MIP рассчитывается из мирового footprint пикселя и дистанции луча. Mid/fine детали получают согласованные +2/+4 LOD, light march использует тот же footprint без fine. Добавлен статический IGN по экранному пикселю для смещения стартового сэмпла; покадровый golden-ratio jitter намеренно отложен до реализации temporal, чтобы не вносить мерцание. Добавлены `CloudStableV4` и `StableV4Strength = 0.65`. Через anklebreaker MCP выполнены импорт и пересборка текстуры: Play Mode выключен, компиляция завершена, Console — 0 errors; mip 1 размером 64×64 успешно прочитан через GPU copy (4096 пикселей). Текущие Lighting/Shape/Detail настройки не изменялись; `ProjectC_URP_Renderer.asset` не включается в коммит этапа. GPU-замеры — NOT RUN.
 
 ## T-CLOUD45 — 2026-11-19
 **Статус:** реализовано, визуальная приёмка и F8/F9 — NOT RUN.

@@ -1,7 +1,8 @@
 // VolumetricClouds.shader — CLOUD_system 3.0 TUNING
 // NO hardcoded values. All parameters via Shader.SetGlobal* uniforms.
 // Pass 0: B&W density (debug)
-// Pass 1: Full raymarch + depth-test → colorTarget direct
+// Pass 1: Raymarch + depth-test → full/half-res cloudRT
+// Pass 2: Full-res depth-aware composite → colorTarget (T-CLOUD47)
 // T-CLOUD43 lighting adapted from Fishypants/cloudscape (MIT).
 // Copyright (c) 2026 Michael Cook. Full notice:
 // docs/world/CLOUD_system/research/CLOUDSCAPE_LICENSE.txt
@@ -124,8 +125,13 @@ Shader "Hidden/ProjectC/VolumetricClouds"
         float _StormVerticalWarp;       // extra Y-axis warp multiplier (0–3)
 
         float4 _CloudTargetSize;
+        float4 _CloudLowResSize;
+        float _CloudDepthAwareUpscale;
+        float _CloudDepthUpscaleSigma;
         float4x4 _Cloud_ViewToWorld;
         float4x4 _Cloud_InvProj;
+        TEXTURE2D(_CloudRT);
+        SAMPLER(sampler_CloudRT);
 
         struct Attributes { uint vertexID : SV_VertexID; };
         struct Varyings { float4 positionCS : SV_POSITION; };
@@ -566,7 +572,9 @@ Shader "Hidden/ProjectC/VolumetricClouds"
         Pass
         {
             Name "VolumetricClouds_Color"
-            Blend SrcAlpha OneMinusSrcAlpha
+            // В cloudRT сохраняем исходную alpha отдельно от RGB. Composite
+            // использует One/OneMinusSrcAlpha и повторяет прежний direct-blend.
+            Blend SrcAlpha OneMinusSrcAlpha, One OneMinusSrcAlpha
 
             HLSLPROGRAM
             #pragma vertex vert
@@ -689,14 +697,57 @@ Shader "Hidden/ProjectC/VolumetricClouds"
             ENDHLSL
         }
 
+        // ============================================================
+        // Pass 2 — T-CLOUD47: full-res depth-aware upscale
+        // ============================================================
         Pass
         {
             Name "VolumetricClouds_Composite"
-            Blend SrcAlpha OneMinusSrcAlpha
+            // cloudRT содержит premultiplied RGB и исходную alpha.
+            Blend One OneMinusSrcAlpha
             HLSLPROGRAM
             #pragma vertex vert
             #pragma fragment frag
-            half4 frag(Varyings IN) : SV_Target { return half4(0,0,0,0); }
+
+            float CloudUpscaleDepthWeight(float2 sampleUv, float centerEyeDepth)
+            {
+                float sampleEyeDepth = LinearEyeDepth(SampleSceneDepth(sampleUv), _ZBufferParams);
+                float relativeDelta = abs(sampleEyeDepth - centerEyeDepth) / max(centerEyeDepth, 1.0);
+                return exp(-relativeDelta / max(_CloudDepthUpscaleSigma, 1e-4));
+            }
+
+            half4 frag(Varyings IN) : SV_Target
+            {
+                float2 uv = IN.positionCS.xy * _CloudTargetSize.zw;
+                if (_CloudDepthAwareUpscale < 0.5)
+                    return half4(SAMPLE_TEXTURE2D(_CloudRT, sampler_CloudRT, uv));
+
+                float2 coord = uv * _CloudLowResSize.xy - 0.5;
+                float2 baseTexel = floor(coord);
+                float2 f = frac(coord);
+                float2 uv00 = (baseTexel + float2(0.5, 0.5)) * _CloudLowResSize.zw;
+                float2 uv10 = (baseTexel + float2(1.5, 0.5)) * _CloudLowResSize.zw;
+                float2 uv01 = (baseTexel + float2(0.5, 1.5)) * _CloudLowResSize.zw;
+                float2 uv11 = (baseTexel + float2(1.5, 1.5)) * _CloudLowResSize.zw;
+
+                float centerEyeDepth = LinearEyeDepth(SampleSceneDepth(uv), _ZBufferParams);
+                float w00 = (1.0 - f.x) * (1.0 - f.y) * CloudUpscaleDepthWeight(uv00, centerEyeDepth);
+                float w10 = f.x * (1.0 - f.y) * CloudUpscaleDepthWeight(uv10, centerEyeDepth);
+                float w01 = (1.0 - f.x) * f.y * CloudUpscaleDepthWeight(uv01, centerEyeDepth);
+                float w11 = f.x * f.y * CloudUpscaleDepthWeight(uv11, centerEyeDepth);
+                float weightSum = w00 + w10 + w01 + w11;
+
+                float4 cloud = SAMPLE_TEXTURE2D(_CloudRT, sampler_CloudRT, uv00) * w00
+                    + SAMPLE_TEXTURE2D(_CloudRT, sampler_CloudRT, uv10) * w10
+                    + SAMPLE_TEXTURE2D(_CloudRT, sampler_CloudRT, uv01) * w01
+                    + SAMPLE_TEXTURE2D(_CloudRT, sampler_CloudRT, uv11) * w11;
+
+                if (weightSum > 1e-5)
+                    return half4(cloud / weightSum);
+
+                float2 nearestUv = (floor(coord + 0.5) + 0.5) * _CloudLowResSize.zw;
+                return half4(SAMPLE_TEXTURE2D(_CloudRT, sampler_CloudRT, nearestUv));
+            }
             ENDHLSL
         }
 

@@ -4,9 +4,13 @@
 
 ---
 
-## T-CLOUD43 — 2026-11-19
+## T-CLOUD44 — 2026-11-19
 **Статус:** реализовано, визуальная приёмка NOT RUN.
-Первый этап Clouds v4 по `Fishypants/cloudscape`: двулучевая HG-фаза, трёхчленный Beer–Lambert, powder и crease. Формулы адаптированы к метровой шкале ProjectC и ненормированной HG из `CloudCommon.hlsl`, а не скопированы с километровыми коэффициентами. Добавлены `CloudLightingV4` и `LightingV4Strength = 0.65` для сравнения с v3 без перезапуска. Проверено через anklebreaker MCP: Play Mode выключен, компиляция завершена, Console — 0 errors, ссылка на `Hidden/ProjectC/VolumetricClouds` сохранена. Runtime, визуальная проверка, F8/F9 и GPU-замеры — NOT RUN.
+Второй этап Clouds v4: coverage-дом с сужением кверху, перистый низ через переворот только Worley-деталей и постепенное разделение шумовых смещений слоёв. Базовый Perlin, границы слоёв, StormDensity и LocalDensity не изменены. Добавлены `CloudShapeV4` и `ShapeV4Strength = 0.65`; принятое пользователем `LightingV4Strength = 0.70` сохранено. Проверено через anklebreaker MCP: Play Mode выключен, компиляция завершена, Console — 0 errors, параметры и ссылка на шейдер сохранены. Runtime, визуальная проверка, F8/F9 и GPU-замеры — NOT RUN.
+
+## T-CLOUD43 — 2026-11-19
+**Статус:** принято пользователем — «визуально лучше стало»; F8/F9 не подтверждены.
+Первый этап Clouds v4 по `Fishypants/cloudscape`: двулучевая HG-фаза, трёхчленный Beer–Lambert, powder и crease. Формулы адаптированы к метровой шкале ProjectC и ненормированной HG из `CloudCommon.hlsl`, а не скопированы с километровыми коэффициентами. Добавлены `CloudLightingV4` и `LightingV4Strength` для сравнения с v3 без перезапуска; после ручной настройки сохранено значение 0.70. Проверено через anklebreaker MCP: Play Mode выключен, компиляция завершена, Console — 0 errors, ссылка на `Hidden/ProjectC/VolumetricClouds` сохранена. GPU-замеры — NOT RUN.
 
 ## T-CLOUD41 — 2026-08-04
 **Коммит:** `4cc74700`  

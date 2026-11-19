@@ -78,6 +78,7 @@ Shader "Hidden/ProjectC/VolumetricClouds"
         float _CloudOpacity;
         float _CloudColorIntensity;
         float _CloudLightingV4Strength;
+        float _CloudShapeV4Strength;
         float3 _SunDirection;
 
         TEXTURE3D(_CloudNoise3D);
@@ -195,19 +196,25 @@ Shader "Hidden/ProjectC/VolumetricClouds"
             return totalWeight > 0.001 ? color / totalWeight : 0;
         }
 
-        // Per-layer 3D noise shape. Each layer samples at a different offset
-        // so cloud shapes are uncorrelated — lower layers fill upper-layer holes.
-        float LayerNoiseShape(float3 samplePos, int layerIndex)
+        // Per-layer 3D noise shape. T-CLOUD44 разделяет слои постепенно,
+        // сохраняя LayerNoiseMask и возможность вернуть общий силуэт v3.
+        float LayerNoiseShape(float3 samplePos, int layerIndex, float height01)
         {
-            // LayerNoiseMask bit=0 → shared noise (same sample as layer 0 → beautiful uniform blanket)
-            // LayerNoiseMask bit=1 → independent noise (unique pattern per layer)
             int useOwnNoise = (_LayerNoiseMask >> layerIndex) & 1;
-            float seed = useOwnNoise ? ((float)(layerIndex) * 137.0 + 1.0) : 0.0;
+            float legacySeed = useOwnNoise ? ((float)(layerIndex) * 137.0 + 1.0) : 0.0;
+            float v4Seed = (float)(layerIndex) * 137.0 + 1.0;
+            float seed = lerp(legacySeed, v4Seed, _CloudShapeV4Strength);
             float3 layerPos = samplePos + float3(seed, seed * 1.7, seed * 0.3);
-            float3 uvw = layerPos / _NoiseTileSize;
-            uvw = frac(uvw);
+            float3 uvw = frac(layerPos / _NoiseTileSize);
             float4 noise = SAMPLE_TEXTURE3D_LOD(_CloudNoise3D, sampler_CloudNoise3D, uvw, 0);
-            float s = noise.r * lerp(0.5, 1.0, noise.a) + (noise.g + noise.b) * 0.15;
+
+            // Переворачиваем только Worley-детали у основания, а не базовый Perlin.
+            // Иначе менялась бы вся масса облака вместо появления перистого низа.
+            float wispyWeight = (1.0 - saturate(height01 * 8.0)) * _CloudShapeV4Strength;
+            float noiseA = lerp(noise.a, 1.0 - noise.a, wispyWeight);
+            float noiseG = lerp(noise.g, 1.0 - noise.g, wispyWeight);
+            float noiseB = lerp(noise.b, 1.0 - noise.b, wispyWeight);
+            float s = noise.r * lerp(0.5, 1.0, noiseA) + (noiseG + noiseB) * 0.15;
             return saturate(s);
         }
 
@@ -416,14 +423,18 @@ Shader "Hidden/ProjectC/VolumetricClouds"
                 float hFade = HeightProfileSimple(worldPos.y, b.x, b.y, _HeightEdgeSoftness);
                 if (hFade < 0.001) continue;
 
-                // Per-layer independent noise shape
-                float shape = LayerNoiseShape(samplePos, l);
-                float layerCov = smoothstep(b.z, b.z + 0.15, coverageNoise);
+                float h01 = saturate((worldPos.y - b.x) / max(b.y - b.x, 1e-4));
+                float shape = LayerNoiseShape(samplePos, l, h01);
+
+                // T-CLOUD44: coverage сужается кверху — купол вместо экструдированного слоя.
+                // Нижний слой с низким порогом остаётся плотным, верхние получают просветы.
+                float dome = lerp(1.0, 0.5, h01 * h01);
+                float coverageDome = lerp(1.0, dome, _CloudShapeV4Strength);
+                float layerCov = smoothstep(b.z, b.z + 0.15, coverageNoise * coverageDome);
                 float ld = shape * hFade * layerCov * b.w;
                 totalDensity += ld;
 
                 // Blend color by per-layer density contribution
-                float h01 = saturate((worldPos.y - b.x) / max(b.y - b.x, 1e-4));
                 float3 ramp = GhibliRamp(h01, rampBlend,
                     _LayerDayTop[l].rgb, _LayerDayMid[l].rgb, _LayerDayBot[l].rgb,
                     _LayerSunsetTop[l].rgb, _LayerSunsetMid[l].rgb, _LayerSunsetBot[l].rgb);

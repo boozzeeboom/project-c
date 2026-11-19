@@ -71,7 +71,9 @@ MonoBehaviour:
   LayerNoiseMask: 0
   DebugDensityScale: 0.05
   CloudLightingV4: 1
-  LightingV4Strength: 0.65
+  LightingV4Strength: 0.7
+  CloudShapeV4: 1
+  ShapeV4Strength: 0.65
   HalfResRender: 1
   TemporalReprojection: 1
   BlueNoiseDither: 1

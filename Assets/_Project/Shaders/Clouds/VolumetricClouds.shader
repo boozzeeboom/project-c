@@ -137,6 +137,14 @@ Shader "Hidden/ProjectC/VolumetricClouds"
         SAMPLER(sampler_CloudRT);
         TEXTURE2D(_CloudHistoryRT);
         SAMPLER(sampler_CloudHistoryRT);
+        // T-CLOUD49: sun-space карта пропускания (R16F).
+        // Params: x=сторона области, y=1/сторона, z=strength (0 = off), w=шаги марша.
+        TEXTURE2D(_CloudShadowRT);
+        SAMPLER(sampler_CloudShadowRT);
+        float3 _CloudShadowOrigin;
+        float3 _CloudShadowRight;
+        float3 _CloudShadowUp;
+        float4 _CloudShadowParams;
 
         struct Attributes { uint vertexID : SV_VertexID; };
         struct Varyings { float4 positionCS : SV_POSITION; };
@@ -658,13 +666,26 @@ Shader "Hidden/ProjectC/VolumetricClouds"
                             lightTransmittance *= exp(-lightDensity * lightStepSize * _LightAbsorption * 0.5);
                         }
 
+                        // T-CLOUD49: пропускание солнца из sun-space карты.
+                        // Только прямой свет: ambient и silver не затемняем.
+                        float cloudShadow = 1.0;
+                        if (_CloudShadowParams.z > 0.001)
+                        {
+                            float3 shadowRel = samplePos - _CloudShadowOrigin;
+                            float2 shadowUv = float2(dot(shadowRel, _CloudShadowRight), dot(shadowRel, _CloudShadowUp))
+                                * _CloudShadowParams.y + 0.5;
+                            if (all(shadowUv >= 0.0) && all(shadowUv <= 1.0))
+                                cloudShadow = SAMPLE_TEXTURE2D(_CloudShadowRT, sampler_CloudShadowRT, shadowUv).r;
+                        }
+                        float shadowFactor = lerp(1.0, cloudShadow, _CloudShadowParams.z);
+
                         float cosTheta = dot(rayDir, _SunDirection);
                         float hg = HG(cosTheta, 0.7);
                         float ms = MultiScatterApprox(lightTransmittance, 0.5);
 
                         float3 ambient = cloudColor * 0.25;
                         float silver = SilverLining(cosTheta, 0.3);
-                        float3 lighting = (cloudColor * hg * ms * lightTransmittance + ambient + silver * cloudColor) * _CloudColorIntensity;
+                        float3 lighting = (cloudColor * hg * ms * lightTransmittance * shadowFactor + ambient + silver * cloudColor) * _CloudColorIntensity;
 
                         if (_CloudLightingV4Strength > 0.001)
                         {
@@ -680,7 +701,7 @@ Shader "Hidden/ProjectC/VolumetricClouds"
                             float height01 = saturate((samplePos.y - _CloudBottomY) / max(_CloudTopY - _CloudBottomY, 1e-4));
                             float crease = CloudCreaseV4(density, height01);
                             float3 ambientV4 = ambient * lerp(1.0, crease, 0.6);
-                            float3 lightingV4 = (cloudColor * beer * powder * crease + ambientV4 + silver * cloudColor) * _CloudColorIntensity;
+                            float3 lightingV4 = (cloudColor * beer * powder * crease * shadowFactor + ambientV4 + silver * cloudColor) * _CloudColorIntensity;
                             lighting = lerp(lighting, lightingV4, _CloudLightingV4Strength);
                         }
 
@@ -813,6 +834,54 @@ Shader "Hidden/ProjectC/VolumetricClouds"
                 }
                 float4 clampedHistory = clamp(history, mn, mx);
                 return lerp(current, clampedHistory, _TemporalBlend);
+            }
+            ENDHLSL
+        }
+
+        // ============================================================
+        // Pass 4 — T-CLOUD49: sun-space карта пропускания (R16F)
+        // ============================================================
+        Pass
+        {
+            Name "VolumetricClouds_Shadow"
+            Blend One Zero
+            HLSLPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            #pragma multi_compile_local _ _LOCALDENSITY_DISPLACEMENT
+
+            float frag(Varyings IN) : SV_Target
+            {
+                float2 uv = IN.positionCS.xy * _CloudTargetSize.zw;
+                float2 centered = uv - 0.5;
+                // Точка на плоскости, перпендикулярной солнцу, вокруг камеры.
+                float3 origin = _CloudShadowOrigin
+                    + _CloudShadowRight * (centered.x * _CloudShadowParams.x)
+                    + _CloudShadowUp * (centered.y * _CloudShadowParams.x);
+                float3 rayDir = normalize(_SunDirection);
+
+                float tMin, tMax;
+                if (!RaySlabIntersection(origin, rayDir, _CloudBottomY, _CloudTopY, _MaxRayDistance, tMin, tMax))
+                    return 1.0; // вне облачных слоёв — полное пропускание
+
+                float2 covXZ = (origin.xz + rayDir.xz * tMin) * _CoverageScale + _WindOffset.xz * 0.25;
+                float covNoise = CloudCoverageNoise(covXZ);
+                float rampBlend = saturate(_SunDirection.y * 2.0);
+                int steps = max(1, (int)_CloudShadowParams.w);
+                float stepSize = (tMax - tMin) / steps;
+                float opticalDepth = 0.0;
+
+                // Базовая форма без fine-деталей: тень крупная и стабильная.
+                [loop] for (int i = 0; i < steps; i++)
+                {
+                    float t = tMin + ((float)i + 0.5) * stepSize;
+                    float3 dummy;
+                    float d = CloudDensity(origin + rayDir * t, origin, covNoise, rampBlend, 0.0, false, dummy);
+                    opticalDepth += d * stepSize;
+                }
+
+                // Та же шкала, что у light march: половинное поглощение.
+                return exp(-opticalDepth * _LightAbsorption * 0.5);
             }
             ENDHLSL
         }

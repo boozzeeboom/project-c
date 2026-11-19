@@ -145,6 +145,18 @@ namespace ProjectC.Rendering
         public bool BlueNoiseDither = true;
         public Texture2D BlueNoiseTexture;
 
+        [Header("Clouds v4 — Shadows (T-CLOUD49)")]
+        [Tooltip("Sun-space карта пропускания: self-shadowing слоёв и лучи между облаками. Геометрию мира не затемняет.")]
+        public bool CloudShadowsV4 = true;
+        [Tooltip("Разрешение карты теней по каждой оси.")]
+        [Range(256, 2048)] public int ShadowMapResolution = 1024;
+        [Tooltip("Сторона sun-space области вокруг камеры, метры.")]
+        [Range(1024f, 32768f)] public float ShadowAreaSize = 8192f;
+        [Tooltip("Шаги интегрирования плотности вдоль луча солнца.")]
+        [Range(16, 128)] public int ShadowMarchSteps = 48;
+        [Tooltip("0 = без теней, 1 = полное пропускание применяется к прямому солнечному свету.")]
+        [Range(0f, 1f)] public float ShadowV4Strength = 0.65f;
+
         [Header("Wind")]
         [Range(0f, 5f)] public float WindSpeedMultiplier = 1f;
 
@@ -194,6 +206,11 @@ namespace ProjectC.Rendering
         internal static readonly int CloudHistoryRTId    = Shader.PropertyToID("_CloudHistoryRT");
         internal static readonly int PrevViewProjId      = Shader.PropertyToID("_PrevViewProj");
         internal static readonly int CloudRTId           = Shader.PropertyToID("_CloudRT");
+        internal static readonly int CloudShadowRTId     = Shader.PropertyToID("_CloudShadowRT");
+        private static readonly int CloudShadowOriginId  = Shader.PropertyToID("_CloudShadowOrigin");
+        private static readonly int CloudShadowRightId   = Shader.PropertyToID("_CloudShadowRight");
+        private static readonly int CloudShadowUpId      = Shader.PropertyToID("_CloudShadowUp");
+        private static readonly int CloudShadowParamsId  = Shader.PropertyToID("_CloudShadowParams");
         internal static readonly int LayerNoiseMaskId    = Shader.PropertyToID("_LayerNoiseMask");
         internal static readonly int DebugDensityScaleId = Shader.PropertyToID("_DebugDensityScale");
         internal static readonly int CloudOpacityId      = Shader.PropertyToID("_CloudOpacity");
@@ -333,9 +350,21 @@ namespace ProjectC.Rendering
             _historyIdx ^= 1;
 
             var pass = new VolumetricCloudsPass(mat, HalfResRender, TemporalReprojection,
-                DebugDensityDirect, readHandle, writeHandle);
+                DebugDensityDirect, readHandle, writeHandle,
+                ShadowsActive(GetSunDirection()), ShadowMapResolution);
             pass.renderPassEvent = RenderPassEvent.BeforeRenderingTransparents;
             renderer.EnqueuePass(pass);
+        }
+
+        private static Vector3 GetSunDirection()
+        {
+            return RenderSettings.sun != null ? RenderSettings.sun.transform.forward : new Vector3(0.3f, 0.7f, -0.6f).normalized;
+        }
+
+        private bool ShadowsActive(Vector3 sunDir)
+        {
+            // Тот же знак, что у light march: _SunDirection направлен к солнцу.
+            return CloudShadowsV4 && ShadowV4Strength > 0f && sunDir.y > 0.02f;
         }
 
         /// <summary>true если RT был создан заново или перевыделен под новый размер.</summary>
@@ -487,8 +516,35 @@ namespace ProjectC.Rendering
             { windOffset = mat.GetVector(WindOffsetId); windOffset += (Vector4)(windDir * windSpeed * Time.deltaTime * windMult); }
             mat.SetVector(WindOffsetId, windOffset);
 
-            Vector3 sunDir = RenderSettings.sun != null ? RenderSettings.sun.transform.forward : new Vector3(0.3f, 0.7f, -0.6f).normalized;
+            Vector3 sunDir = GetSunDirection();
             mat.SetVector(SunDirectionId, sunDir);
+
+            // T-CLOUD49: sun-space базис карты теней. Строится от текущей
+            // rebased-позиции камеры каждый кадр, карта не хранит историю —
+            // F8/F9/авторебейз не оставляют устаревших данных по построению.
+            Vector3 shadowOrigin = Vector3.zero;
+            Vector3 shadowRight = Vector3.right, shadowUp = Vector3.up;
+            float shadowStrength = 0f;
+            if (ShadowsActive(sunDir))
+            {
+                Vector3 towardSun = sunDir.normalized;
+                shadowRight = Vector3.Cross(Vector3.up, towardSun).normalized;
+                if (shadowRight.sqrMagnitude < 1e-6f) shadowRight = Vector3.right;
+                shadowUp = Vector3.Cross(towardSun, shadowRight).normalized;
+                // Тексельный снэп центра в sun-space — карта не дрожит при движении.
+                float texel = ShadowAreaSize / Mathf.Max(1, ShadowMapResolution);
+                Vector3 c = camera.transform.position;
+                float cx = Mathf.Round(Vector3.Dot(c, shadowRight) / texel) * texel;
+                float cy = Mathf.Round(Vector3.Dot(c, shadowUp) / texel) * texel;
+                float cz = Vector3.Dot(c, towardSun);
+                shadowOrigin = shadowRight * cx + shadowUp * cy + towardSun * cz;
+                shadowStrength = ShadowV4Strength;
+            }
+            mat.SetVector(CloudShadowOriginId, shadowOrigin);
+            mat.SetVector(CloudShadowRightId, shadowRight);
+            mat.SetVector(CloudShadowUpId, shadowUp);
+            mat.SetVector(CloudShadowParamsId,
+                new Vector4(ShadowAreaSize, 1f / Mathf.Max(1f, ShadowAreaSize), shadowStrength, ShadowMarchSteps));
 
             if (BlueNoiseTexture != null) mat.SetTexture(BlueNoiseTexId, BlueNoiseTexture);
             if (mat.shader != null)
@@ -518,22 +574,26 @@ namespace ProjectC.Rendering
         private const string PassName = "VolumetricClouds";
         private Material _material;
         private readonly bool _halfRes, _temporal, _debugDirect;
+        private readonly bool _shadows;
+        private readonly int _shadowResolution;
         private RTHandle _historyRead, _historyWrite;
 
         private class PassData
         {
             public Material Material;
-            public TextureHandle CloudRT, HistoryRead;
+            public TextureHandle CloudRT, HistoryRead, ShadowRT;
             public Vector4 TargetSize, LowResSize;
             public Matrix4x4 ViewToWorld, InvProjection;
         }
 
         public VolumetricCloudsPass(Material material, bool halfRes, bool temporal,
-            bool debugDirect, RTHandle historyRead, RTHandle historyWrite)
+            bool debugDirect, RTHandle historyRead, RTHandle historyWrite,
+            bool shadows, int shadowResolution)
         {
             _material = material; _halfRes = halfRes; _temporal = temporal;
             _debugDirect = debugDirect;
             _historyRead = historyRead; _historyWrite = historyWrite;
+            _shadows = shadows; _shadowResolution = shadowResolution;
             profilingSampler = new ProfilingSampler(PassName);
             ConfigureInput(ScriptableRenderPassInput.Depth);
         }
@@ -592,17 +652,51 @@ namespace ProjectC.Rendering
             };
             TextureHandle cloudRT = renderGraph.CreateTexture(cloudDesc);
 
+            // T-CLOUD49: sun-space карта пропускания до raymarch — облачные
+            // тени и лучи. R16F, пересчёт каждый кадр, истории нет (FO-safe).
+            TextureHandle shadowRT = TextureHandle.nullHandle;
+            if (_shadows)
+            {
+                int res = Mathf.Clamp(_shadowResolution, 256, 2048);
+                var shadowDesc = new TextureDesc(res, res)
+                {
+                    name = "CloudShadowRT",
+                    colorFormat = GraphicsFormat.R16_SFloat,
+                    filterMode = FilterMode.Bilinear,
+                    wrapMode = TextureWrapMode.Clamp,
+                    clearBuffer = true,
+                    clearColor = Color.white
+                };
+                shadowRT = renderGraph.CreateTexture(shadowDesc);
+                using (var builder = renderGraph.AddRasterRenderPass<PassData>("VolumetricClouds_Shadow", out var sd, profilingSampler))
+                {
+                    sd.Material = _material;
+                    sd.TargetSize = new Vector4(res, res, 1f / res, 1f / res);
+                    builder.SetRenderAttachment(shadowRT, 0, AccessFlags.Write);
+                    builder.AllowPassCulling(false); builder.AllowGlobalStateModification(true);
+                    builder.SetRenderFunc(static (PassData p, RasterGraphContext ctx) =>
+                    {
+                        ctx.cmd.SetGlobalVector(VolumetricCloudsRenderFeature.CloudTargetSizeId, p.TargetSize);
+                        ctx.cmd.DrawProcedural(Matrix4x4.identity, p.Material, 4, MeshTopology.Triangles, 3, 1);
+                    });
+                }
+            }
+
             using (var builder = renderGraph.AddRasterRenderPass<PassData>("VolumetricClouds_Raymarch", out var pd, profilingSampler))
             {
                 pd.Material = _material; pd.TargetSize = cloudSize; pd.ViewToWorld = viewToWorld; pd.InvProjection = invProj;
+                pd.ShadowRT = shadowRT;
                 builder.SetRenderAttachment(cloudRT, 0, AccessFlags.Write);
                 if (depthTarget.IsValid()) builder.UseTexture(depthTarget, AccessFlags.Read);
+                if (shadowRT.IsValid()) builder.UseTexture(shadowRT, AccessFlags.Read);
                 builder.AllowPassCulling(false); builder.AllowGlobalStateModification(true);
                 builder.SetRenderFunc(static (PassData p, RasterGraphContext ctx) =>
                 {
                     ctx.cmd.SetGlobalVector(VolumetricCloudsRenderFeature.CloudTargetSizeId, p.TargetSize);
                     ctx.cmd.SetGlobalMatrix(VolumetricCloudsRenderFeature.ViewToWorldId, p.ViewToWorld);
                     ctx.cmd.SetGlobalMatrix(VolumetricCloudsRenderFeature.InvProjectionId, p.InvProjection);
+                    if (p.ShadowRT.IsValid())
+                        ctx.cmd.SetGlobalTexture(VolumetricCloudsRenderFeature.CloudShadowRTId, p.ShadowRT);
                     ctx.cmd.DrawProcedural(Matrix4x4.identity, p.Material, 1, MeshTopology.Triangles, 3, 1);
                 });
             }

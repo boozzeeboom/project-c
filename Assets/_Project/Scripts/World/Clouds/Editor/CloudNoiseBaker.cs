@@ -53,7 +53,8 @@ namespace ProjectC.World.Clouds
 
             // Readback: copy slice-by-slice via Graphics.CopyTexture
             // AsyncGPUReadback on Texture3D reads only 1 slice; synchronous CopyTexture is reliable.
-            Texture3D tex3D = new Texture3D(size, size, size, TextureFormat.RGBA32, false);
+            // T-CLOUD46: полный mip-chain нужен footprint-LOD в raymarch.
+            Texture3D tex3D = new Texture3D(size, size, size, TextureFormat.RGBA32, true);
             tex3D.wrapMode = TextureWrapMode.Repeat;
             tex3D.filterMode = FilterMode.Trilinear;
             tex3D.anisoLevel = 0;
@@ -75,7 +76,7 @@ namespace ProjectC.World.Clouds
             }
 
             tex3D.SetPixels(allPixels);
-            tex3D.Apply(false, true);
+            tex3D.Apply(true, true);
 
             Object.DestroyImmediate(slice2D);
             RenderTexture.ReleaseTemporary(rt);

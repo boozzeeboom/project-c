@@ -123,6 +123,12 @@ namespace ProjectC.Rendering
         [Tooltip("0 = без эрозии, 1 = полная сила деталей v4. Начальное значение снижено против шиммера.")]
         [Range(0f, 1f)] public float DetailV4Strength = 0.55f;
 
+        [Header("Clouds v4 — Stability (T-CLOUD46)")]
+        [Tooltip("MIP по угловому footprint и статический джиттер. Покадровый шум отложен до temporal.")]
+        public bool CloudStableV4 = true;
+        [Tooltip("0 = mip 0 и центр шага, 1 = полный footprint LOD и статический джиттер.")]
+        [Range(0f, 1f)] public float StableV4Strength = 0.65f;
+
         [Header("Quality")]
         public bool HalfResRender = true;
         public bool TemporalReprojection = true;
@@ -169,6 +175,9 @@ namespace ProjectC.Rendering
         private static readonly int LightingV4StrengthId = Shader.PropertyToID("_CloudLightingV4Strength");
         private static readonly int ShapeV4StrengthId = Shader.PropertyToID("_CloudShapeV4Strength");
         private static readonly int DetailV4StrengthId = Shader.PropertyToID("_CloudDetailV4Strength");
+        private static readonly int StableV4StrengthId = Shader.PropertyToID("_CloudStableV4Strength");
+        private static readonly int NoiseMaxLodId = Shader.PropertyToID("_CloudNoiseMaxLod");
+        private static readonly int PixelAngleId = Shader.PropertyToID("_CloudPixelAngle");
         private static readonly int WindOffsetId        = Shader.PropertyToID("_WindOffset");
         private static readonly int SunDirectionId      = Shader.PropertyToID("_SunDirection");
         internal static readonly int BlueNoiseTexId      = Shader.PropertyToID("_BlueNoiseTex");
@@ -346,6 +355,10 @@ namespace ProjectC.Rendering
             mat.SetFloat(LightingV4StrengthId, CloudLightingV4 ? LightingV4Strength : 0f);
             mat.SetFloat(ShapeV4StrengthId, CloudShapeV4 ? ShapeV4Strength : 0f);
             mat.SetFloat(DetailV4StrengthId, CloudDetailV4 ? DetailV4Strength : 0f);
+            mat.SetFloat(StableV4StrengthId, CloudStableV4 ? StableV4Strength : 0f);
+            mat.SetFloat(NoiseMaxLodId, CloudNoise3D != null ? Mathf.Log(CloudNoise3D.width, 2f) : 0f);
+            mat.SetFloat(PixelAngleId, 2f * Mathf.Tan(camera.fieldOfView * Mathf.Deg2Rad * 0.5f)
+                / Mathf.Max(camera.pixelHeight, 1));
 
             // Layer arrays
             mat.SetVectorArray(LayerBoundsId, _boundsCache);

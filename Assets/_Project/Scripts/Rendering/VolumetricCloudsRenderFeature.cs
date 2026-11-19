@@ -104,6 +104,12 @@ namespace ProjectC.Rendering
         [Tooltip("Debug pass density multiplier — raise to see faint upper layers.")]
         [Range(0.001f, 0.05f)] public float DebugDensityScale = 0.005f;
 
+        [Header("Clouds v4 — Lighting (T-CLOUD43)")]
+        [Tooltip("Переключает освещение cloudscape v4. Выключение возвращает вариант 3.0.")]
+        public bool CloudLightingV4 = true;
+        [Tooltip("0 = освещение 3.0, 1 = освещение v4. Промежуточные значения смешивают обе модели.")]
+        [Range(0f, 1f)] public float LightingV4Strength = 0.65f;
+
         [Header("Quality")]
         public bool HalfResRender = true;
         public bool TemporalReprojection = true;
@@ -147,6 +153,7 @@ namespace ProjectC.Rendering
         private static readonly int CoverageScaleId     = Shader.PropertyToID("_CoverageScale");
         private static readonly int DepthFadeId         = Shader.PropertyToID("_DepthFadeDistance");
         private static readonly int TemporalBlendId     = Shader.PropertyToID("_TemporalBlend");
+        private static readonly int LightingV4StrengthId = Shader.PropertyToID("_CloudLightingV4Strength");
         private static readonly int WindOffsetId        = Shader.PropertyToID("_WindOffset");
         private static readonly int SunDirectionId      = Shader.PropertyToID("_SunDirection");
         internal static readonly int BlueNoiseTexId      = Shader.PropertyToID("_BlueNoiseTex");
@@ -315,6 +322,7 @@ namespace ProjectC.Rendering
             mat.SetInt(LayerNoiseMaskId, LayerNoiseMask);
             mat.SetFloat(DebugDensityScaleId, DebugDensityScale);
             mat.SetFloat(TemporalBlendId, (TemporalReprojection && _prevViewProjValid) ? 0.9f : 0f);
+            mat.SetFloat(LightingV4StrengthId, CloudLightingV4 ? LightingV4Strength : 0f);
 
             // Layer arrays
             mat.SetVectorArray(LayerBoundsId, _boundsCache);

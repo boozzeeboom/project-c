@@ -2,6 +2,9 @@
 // NO hardcoded values. All parameters via Shader.SetGlobal* uniforms.
 // Pass 0: B&W density (debug)
 // Pass 1: Full raymarch + depth-test → colorTarget direct
+// T-CLOUD43 lighting adapted from Fishypants/cloudscape (MIT).
+// Copyright (c) 2026 Michael Cook. Full notice:
+// docs/world/CLOUD_system/research/CLOUDSCAPE_LICENSE.txt
 
 Shader "Hidden/ProjectC/VolumetricClouds"
 {
@@ -74,6 +77,7 @@ Shader "Hidden/ProjectC/VolumetricClouds"
         float _LightAbsorption;
         float _CloudOpacity;
         float _CloudColorIntensity;
+        float _CloudLightingV4Strength;
         float3 _SunDirection;
 
         TEXTURE3D(_CloudNoise3D);
@@ -501,6 +505,23 @@ Shader "Hidden/ProjectC/VolumetricClouds"
 
             #define LIGHT_STEPS 6
 
+            // T-CLOUD43: адаптация освещения Fishypants/cloudscape (MIT).
+            // HG в проекте не содержит 1/(4π), поэтому сохраняем его масштаб,
+            // а extinction для powder переводим из метров в километры.
+            float CloudPhaseV4(float cosTheta, float octaveScale)
+            {
+                return HG_DualLobe(cosTheta, 0.82 * octaveScale, -0.25 * octaveScale, 0.72);
+            }
+
+            float CloudCreaseV4(float density, float height01)
+            {
+                float depthExponent = clamp(CloudRemap(height01, 0.3, 0.85, 0.5, 2.0), 0.5, 2.0);
+                float depthP = 0.05 + pow(saturate(density * 1.5), depthExponent);
+                float verticalBase = clamp(CloudRemap(height01, 0.07, 0.14, 0.1, 1.0), 0.1, 1.0);
+                float verticalP = pow(verticalBase, 0.8);
+                return saturate(depthP * verticalP * 1.6);
+            }
+
             float4 frag(Varyings IN) : SV_Target
             {
                 float2 uv = IN.positionCS.xy * _CloudTargetSize.zw;
@@ -558,6 +579,24 @@ Shader "Hidden/ProjectC/VolumetricClouds"
                         float3 ambient = cloudColor * 0.25;
                         float silver = SilverLining(cosTheta, 0.3);
                         float3 lighting = (cloudColor * hg * ms * lightTransmittance + ambient + silver * cloudColor) * _CloudColorIntensity;
+
+                        if (_CloudLightingV4Strength > 0.001)
+                        {
+                            float opticalDepth = -log(max(lightTransmittance, 1e-4));
+                            float beer = CloudPhaseV4(cosTheta, 1.0) * exp(-opticalDepth)
+                                + 0.5 * CloudPhaseV4(cosTheta, 0.5) * exp(-opticalDepth * 0.5)
+                                + 0.25 * CloudPhaseV4(cosTheta, 0.25) * exp(-opticalDepth * 0.25);
+
+                            float powderWeight = 0.6 * saturate(0.5 - 0.5 * cosTheta) + 0.2;
+                            float extinctionPerKm = density * _LightAbsorption * 1000.0;
+                            float powder = lerp(1.0, 1.0 - exp(-extinctionPerKm * 0.15), powderWeight);
+
+                            float height01 = saturate((samplePos.y - _CloudBottomY) / max(_CloudTopY - _CloudBottomY, 1e-4));
+                            float crease = CloudCreaseV4(density, height01);
+                            float3 ambientV4 = ambient * lerp(1.0, crease, 0.6);
+                            float3 lightingV4 = (cloudColor * beer * powder * crease + ambientV4 + silver * cloudColor) * _CloudColorIntensity;
+                            lighting = lerp(lighting, lightingV4, _CloudLightingV4Strength);
+                        }
 
                         float stepTransmittance = BeerLambert(density, stepSize, _LightAbsorption);
                         float stepAbsorption = 1.0 - stepTransmittance;

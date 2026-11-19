@@ -4,6 +4,10 @@
 
 ---
 
+## T-CLOUD43 — 2026-11-19
+**Статус:** реализовано, визуальная приёмка NOT RUN.
+Первый этап Clouds v4 по `Fishypants/cloudscape`: двулучевая HG-фаза, трёхчленный Beer–Lambert, powder и crease. Формулы адаптированы к метровой шкале ProjectC и ненормированной HG из `CloudCommon.hlsl`, а не скопированы с километровыми коэффициентами. Добавлены `CloudLightingV4` и `LightingV4Strength = 0.65` для сравнения с v3 без перезапуска. Проверено через anklebreaker MCP: Play Mode выключен, компиляция завершена, Console — 0 errors, ссылка на `Hidden/ProjectC/VolumetricClouds` сохранена. Runtime, визуальная проверка, F8/F9 и GPU-замеры — NOT RUN.
+
 ## T-CLOUD41 — 2026-08-04
 **Коммит:** `4cc74700`  
 Штормовые облака иммунны к displacement (корабельный след не продавливает насквозь).

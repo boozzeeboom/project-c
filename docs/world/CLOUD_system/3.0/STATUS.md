@@ -1,8 +1,8 @@
 # CLOUD_system 3.0 — Итоговый статус
 
-**Дата:** 2026-08-04  
-**Версия:** 3.0 (Cloud Ocean Medium)  
-**Статус:** 🟢 Продакшн-готово. Оставшиеся задачи → v3.5
+**Дата:** 2026-11-19
+**Версия:** 3.0 → 4.0 (поэтапная интеграция cloudscape)
+**Статус:** 🟡 T-CLOUD43 (освещение v4) реализован, визуальная приёмка пользователем не выполнена
 
 ---
 
@@ -30,10 +30,11 @@ CloudDensity(worldPos) =
 | 1.3 | `VolumetricCloudsRenderFeature` + `VolumetricClouds.shader` | ✅ |
 | 1.4 | Height profile, coverage, wind (`_WindOffset` из WindManager) | ✅ |
 | 1.5 | Light marching (6 шагов), HG, multi-scatter, цветовые рампы | ✅ |
-| 1.6 | Half-res, blue-noise дизеринг, temporal reprojection | ✅ |
-| 1.7 | `CloudPerfMonitor` | ✅ |
+| 1.6 | Half-res, blue-noise дизеринг, temporal reprojection | ❌ Заглушки: Pass 1 идёт full-res напрямую, Pass 2/3 возвращают 0 |
+| 1.7 | `CloudPerfMonitor` | 🟡 Инструмент есть; подтверждённых GPU-замеров cloud-pass нет |
+| v4.1 | T-CLOUD43: dual-HG, 3-член Beer–Lambert, powder, crease | 🟡 Код и импорт готовы; визуальная приёмка NOT RUN |
 
-**Итог:** 4-слойный реймарч работает, облака визуально красивы, перформанс приемлем.
+**Итог:** 4-слойный реймарч работает. Утверждение о приемлемом перформансе снято до отдельных GPU-замеров. В Render Feature добавлены `CloudLightingV4` и `LightingV4Strength` (0 = v3, 1 = v4); текущее сохранённое значение — 0.65.
 
 ---
 

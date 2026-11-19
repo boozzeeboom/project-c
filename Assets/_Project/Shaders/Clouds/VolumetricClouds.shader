@@ -130,8 +130,13 @@ Shader "Hidden/ProjectC/VolumetricClouds"
         float _CloudDepthUpscaleSigma;
         float4x4 _Cloud_ViewToWorld;
         float4x4 _Cloud_InvProj;
+        // T-CLOUD48: temporal reprojection
+        float _TemporalBlend;
+        float4x4 _PrevViewProj;
         TEXTURE2D(_CloudRT);
         SAMPLER(sampler_CloudRT);
+        TEXTURE2D(_CloudHistoryRT);
+        SAMPLER(sampler_CloudHistoryRT);
 
         struct Attributes { uint vertexID : SV_VertexID; };
         struct Varyings { float4 positionCS : SV_POSITION; };
@@ -751,6 +756,9 @@ Shader "Hidden/ProjectC/VolumetricClouds"
             ENDHLSL
         }
 
+        // ============================================================
+        // Pass 3 — T-CLOUD48: temporal reprojection с neighborhood clamp
+        // ============================================================
         Pass
         {
             Name "VolumetricClouds_History"
@@ -758,7 +766,54 @@ Shader "Hidden/ProjectC/VolumetricClouds"
             HLSLPROGRAM
             #pragma vertex vert
             #pragma fragment frag
-            half4 frag(Varyings IN) : SV_Target { return half4(0,0,0,0); }
+
+            float4 frag(Varyings IN) : SV_Target
+            {
+                float2 uv = IN.positionCS.xy * _CloudTargetSize.zw;
+                float4 current = SAMPLE_TEXTURE2D(_CloudRT, sampler_CloudRT, uv);
+                // История невалидна (первый кадр, ребейз, телепорт): C# ставит blend=0.
+                if (_TemporalBlend <= 0.0) return current;
+
+                // Репроецируем середину облачного слоя в UV прошлого кадра.
+                float3 rayDir = GetWorldRay(uv);
+                float3 rayOrigin = _WorldSpaceCameraPos;
+                float tMin, tMax;
+                if (!RaySlabIntersection(rayOrigin, rayDir, _CloudBottomY, _CloudTopY, _MaxRayDistance, tMin, tMax))
+                    return current;
+                float sceneDepth = SampleSceneDepth(uv);
+                float sceneLinear01 = Linear01Depth(sceneDepth, _ZBufferParams);
+                if (sceneLinear01 < 0.999) // геометрия ближе облаков — край отсекается
+                {
+                    float sceneLinear = LinearEyeDepth(sceneDepth, _ZBufferParams);
+                    tMax = min(tMax, sceneLinear);
+                    if (tMax <= tMin) return current;
+                }
+                float cloudDepth = lerp(tMin, tMax, 0.5);
+                float3 worldPos = rayOrigin + rayDir * cloudDepth;
+
+                float4 prevClip = mul(_PrevViewProj, float4(worldPos, 1.0));
+                float3 prevNdc = prevClip.xyz / prevClip.w;
+                float2 prevUv = prevNdc.xy * 0.5 + 0.5;
+                if (prevUv.x < 0.0 || prevUv.x > 1.0 || prevUv.y < 0.0 || prevUv.y > 1.0)
+                    return current;
+
+                float4 history = SAMPLE_TEXTURE2D(_CloudHistoryRT, sampler_CloudHistoryRT, prevUv);
+
+                // 3×3 neighborhood clamp текущего кадра — режет ghosting при движении.
+                float4 mn = current, mx = current;
+                [unroll] for (int y = -1; y <= 1; y++)
+                {
+                    [unroll] for (int x = -1; x <= 1; x++)
+                    {
+                        float2 offset = float2((float)x, (float)y) * _CloudTargetSize.zw;
+                        float4 s = SAMPLE_TEXTURE2D(_CloudRT, sampler_CloudRT, uv + offset);
+                        mn = min(mn, s);
+                        mx = max(mx, s);
+                    }
+                }
+                float4 clampedHistory = clamp(history, mn, mx);
+                return lerp(current, clampedHistory, _TemporalBlend);
+            }
             ENDHLSL
         }
     }

@@ -2,7 +2,7 @@
 
 **Дата:** 2026-11-19
 **Версия:** 3.0 → 4.0 (поэтапная интеграция cloudscape)
-**Статус:** 🟡 T-CLOUD47 (half-res + depth-aware upscale) реализован и ожидает визуальной приёмки; T-CLOUD46 принят; T-FO09T ожидает F8/F9
+**Статус:** 🟡 T-CLOUD48 (temporal reprojection) реализован и ожидает визуальной приёмки; T-CLOUD46 принят; T-FO09T ожидает F8/F9
 
 ---
 
@@ -30,16 +30,17 @@ CloudDensity(worldPos) =
 | 1.3 | `VolumetricCloudsRenderFeature` + `VolumetricClouds.shader` | ✅ |
 | 1.4 | Height profile, coverage, wind (`_WindOffset` из WindManager) | ✅ |
 | 1.5 | Light marching (6 шагов), HG, multi-scatter, цветовые рампы | ✅ |
-| 1.6 | Half-res, depth-aware upscale, temporal reprojection | 🟡 Half-res и Composite реализованы (T-CLOUD47); temporal Pass 3 остаётся заглушкой |
+| 1.6 | Half-res, depth-aware upscale, temporal reprojection | 🟡 Half-res и Composite (T-CLOUD47) и temporal History с neighborhood clamp (T-CLOUD48) реализованы; приёмка и F8/F9 NOT RUN |
 | 1.7 | `CloudPerfMonitor` | 🟡 Инструмент есть; подтверждённых GPU-замеров cloud-pass нет |
 | v4.1 | T-CLOUD43: dual-HG, 3-член Beer–Lambert, powder, crease | ✅ Пользователь: «визуально лучше»; F8/F9 не подтверждены |
 | v4.2 | T-CLOUD44: coverage-дом, перистый низ, разделение шума слоёв | 🟡 Код и импорт готовы; визуальная приёмка NOT RUN |
 | v4.3 | T-CLOUD45: mid→fine эрозия, early-out, remap края | 🟡 Компиляция 0 errors; визуальная приёмка и F8/F9 NOT RUN |
 | v4.4 | T-CLOUD46: mip-chain, footprint LOD, статический IGN | ✅ Пользователь: «оставляем»; F8/F9 не подтверждены |
 | v4.5 | T-CLOUD47: half-res RGBA16F + depth-aware Composite | 🟡 Компиляция и шейдер 0 errors; приёмка, F8/F9 и GPU-замеры NOT RUN |
+| v4.6 | T-CLOUD48: temporal History — ping-pong, репроекция prevVP, 3×3 clamp, сброс при ребейзе/телепорте | 🟡 Компиляция и шейдер 0 errors; приёмка, F8/F9 и GPU-замеры NOT RUN |
 | FO | T-FO09T: authored→runtime высоты облаков/штормов на сервере и клиенте | 🟡 Компиляция 0 errors; F8/F9 NOT RUN |
 
-**Итог:** 4-слойный реймарч работает. Утверждение о приемлемом перформансе снято до отдельных GPU-замеров. Переключатели v4 и `HalfResRender` позволяют независимо сравнивать этапы. Последнее наблюденное состояние в Unity: `LightingV4Strength = 0.70`, `ShapeV4Strength = 0.21`, `DetailV4Strength = 1.00`, `StableV4Strength = 1.00`, `HalfResRender = true`, `DepthAwareUpscale = true`, `DepthUpscaleSigma = 0.03`. Temporal не реализован.
+**Итог:** 4-слойный реймарч работает. Утверждение о приемлемом перформансе снято до отдельных GPU-замеров. Переключатели v4 и `HalfResRender` позволяют независимо сравнивать этапы. Последнее наблюденное состояние в Unity: `LightingV4Strength = 0.70`, `ShapeV4Strength = 0.21`, `DetailV4Strength = 1.00`, `StableV4Strength = 1.00`, `HalfResRender = true`, `DepthAwareUpscale = true`, `DepthUpscaleSigma = 0.03`, `TemporalReprojection = true`, `TemporalBlend = 0.85`, `TemporalTeleportResetDistance = 100`. Temporal реализован (T-CLOUD48): сброс истории при ребейзе (F8/F9/авто), телепорте камеры >100 м и смене размера history-RT.
 
 ---
 

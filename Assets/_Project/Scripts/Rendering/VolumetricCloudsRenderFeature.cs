@@ -137,6 +137,10 @@ namespace ProjectC.Rendering
         public bool DepthAwareUpscale = true;
         [Tooltip("Допустимый относительный перепад eye-depth; меньше = резче край.")]
         [Range(0.001f, 0.2f)] public float DepthUpscaleSigma = 0.03f;
+        [Tooltip("T-CLOUD48: temporal reprojection против шиммера; 0 = только текущий кадр.")]
+        [Range(0f, 0.98f)] public float TemporalBlend = 0.85f;
+        [Tooltip("T-CLOUD48: сброс истории при скачке позиции камеры больше значения (телепорт, респавн).")]
+        [Range(10f, 1000f)] public float TemporalTeleportResetDistance = 100f;
         public bool TemporalReprojection = true;
         public bool BlueNoiseDither = true;
         public Texture2D BlueNoiseTexture;
@@ -221,7 +225,12 @@ namespace ProjectC.Rendering
         private static readonly int DebugLayerMaskId    = Shader.PropertyToID("_DebugLayerMask");
 
         private Matrix4x4 _prevViewProj = Matrix4x4.identity;
-        private bool _prevViewProjValid;
+        // T-CLOUD48: история валидна только если прошлый кадр реально записал
+        // history-RT (temporal был включён) и с тех пор не было ребейза/телепорта.
+        private bool _historyValid;
+        private Vector3 _lastHistoryCamPos;
+        private Vector3 _lastRebaseOffset;
+        private int _lastRebaseFrame = -1;
         private bool _loggedOnce;
 
         /// <summary>
@@ -278,7 +287,7 @@ namespace ProjectC.Rendering
         public override void Create()
         {
             EnsureLayerDefaults();
-            _prevViewProjValid = false;
+            _historyValid = false;
         }
 
         public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
@@ -286,32 +295,59 @@ namespace ProjectC.Rendering
             if (renderingData.cameraData.cameraType == CameraType.Preview) return;
             Material mat = GetOrCreateMaterial();
             if (mat == null) return;
-            ApplyProperties(mat, renderingData.cameraData.camera);
 
             Camera cam = renderingData.cameraData.camera;
+
+            // T-CLOUD48: точки сброса истории. F8/F9/авторебейз меняют кумулятивный
+            // сдвиг или номер фрейма — старая история ссылается на мир до сдвига.
+            // Сброс ДО ApplyProperties: материал на этом кадре получит TemporalBlend=0.
+            Vector3 rebaseOffset = GlobalMotionControlledRebaseSlice.CumulativeRebaseOffset;
+            int rebaseFrame = GlobalMotionControlledRebaseSlice.CumulativeRebaseFrame;
+            if (rebaseOffset != _lastRebaseOffset || rebaseFrame != _lastRebaseFrame)
+            {
+                _historyValid = false;
+                _lastRebaseOffset = rebaseOffset;
+                _lastRebaseFrame = rebaseFrame;
+            }
+            Vector3 camPos = cam.transform.position;
+            if (_historyValid &&
+                (camPos - _lastHistoryCamPos).sqrMagnitude > TemporalTeleportResetDistance * TemporalTeleportResetDistance)
+            {
+                _historyValid = false;
+            }
+            _lastHistoryCamPos = camPos;
+
+            ApplyProperties(mat, cam);
+
+            // History-RT того же размера, что cloudRT: при HalfResRender — 0.5 по обеим осям.
             int hw = Mathf.Max(1, cam.pixelWidth);
             int hh = Mathf.Max(1, cam.pixelHeight);
-            EnsureHistoryRT(ref _cloudHistoryA, hw, hh, "_CloudHistoryA");
-            EnsureHistoryRT(ref _cloudHistoryB, hw, hh, "_CloudHistoryB");
+            if (HalfResRender) { hw = Mathf.Max(1, hw / 2); hh = Mathf.Max(1, hh / 2); }
+            bool reallocated = EnsureHistoryRT(ref _cloudHistoryA, hw, hh, "_CloudHistoryA");
+            reallocated |= EnsureHistoryRT(ref _cloudHistoryB, hw, hh, "_CloudHistoryB");
+            // Свежесозданная текстура содержит мусор — историю нельзя использовать.
+            if (reallocated) _historyValid = false;
 
             RTHandle readHandle = _historyIdx == 0 ? _cloudHistoryA : _cloudHistoryB;
             RTHandle writeHandle = _historyIdx == 0 ? _cloudHistoryB : _cloudHistoryA;
             _historyIdx ^= 1;
 
             var pass = new VolumetricCloudsPass(mat, HalfResRender, TemporalReprojection,
-                DebugDensityDirect, _prevViewProj, _prevViewProjValid, readHandle, writeHandle);
+                DebugDensityDirect, readHandle, writeHandle);
             pass.renderPassEvent = RenderPassEvent.BeforeRenderingTransparents;
             renderer.EnqueuePass(pass);
         }
 
-        private static void EnsureHistoryRT(ref RTHandle handle, int w, int h, string name)
+        /// <summary>true если RT был создан заново или перевыделен под новый размер.</summary>
+        private static bool EnsureHistoryRT(ref RTHandle handle, int w, int h, string name)
         {
-            if (handle != null && handle.rt != null && handle.rt.width == w && handle.rt.height == h) return;
+            if (handle != null && handle.rt != null && handle.rt.width == w && handle.rt.height == h) return false;
             handle?.Release();
-            var rt = new RenderTexture(w, h, 0, RenderTextureFormat.ARGB32)
+            var rt = new RenderTexture(w, h, 0, RenderTextureFormat.ARGBHalf)
             { name = name, filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp, hideFlags = HideFlags.HideAndDontSave };
             rt.Create();
             handle = RTHandles.Alloc(rt, true);
+            return true;
         }
 
         private static readonly Vector4[] _boundsCache = new Vector4[4];
@@ -360,7 +396,7 @@ namespace ProjectC.Rendering
             mat.SetFloat(DepthFadeId, DepthFadeDistance);
             mat.SetInt(LayerNoiseMaskId, LayerNoiseMask);
             mat.SetFloat(DebugDensityScaleId, DebugDensityScale);
-            mat.SetFloat(TemporalBlendId, (TemporalReprojection && _prevViewProjValid) ? 0.9f : 0f);
+            mat.SetFloat(TemporalBlendId, (TemporalReprojection && _historyValid) ? TemporalBlend : 0f);
             mat.SetFloat(LightingV4StrengthId, CloudLightingV4 ? LightingV4Strength : 0f);
             mat.SetFloat(ShapeV4StrengthId, CloudShapeV4 ? ShapeV4Strength : 0f);
             mat.SetFloat(DetailV4StrengthId, CloudDetailV4 ? DetailV4Strength : 0f);
@@ -460,9 +496,10 @@ namespace ProjectC.Rendering
 
             Matrix4x4 proj = GL.GetGPUProjectionMatrix(camera.projectionMatrix, false);
             Matrix4x4 view = camera.worldToCameraMatrix;
-            if (_prevViewProjValid) mat.SetMatrix(PrevViewProjId, _prevViewProj);
+            if (_historyValid) mat.SetMatrix(PrevViewProjId, _prevViewProj);
             _prevViewProj = proj * view;
-            _prevViewProjValid = true;
+            // Текущий кадр пишет history → следующий может её использовать.
+            _historyValid = TemporalReprojection && TemporalBlend > 0f;
         }
 
         protected override void Dispose(bool disposing)
@@ -481,24 +518,21 @@ namespace ProjectC.Rendering
         private const string PassName = "VolumetricClouds";
         private Material _material;
         private readonly bool _halfRes, _temporal, _debugDirect;
-        private readonly Matrix4x4 _prevVp;
-        private readonly bool _prevVpValid;
         private RTHandle _historyRead, _historyWrite;
 
         private class PassData
         {
             public Material Material;
-            public TextureHandle CloudRT, HistoryRT;
+            public TextureHandle CloudRT, HistoryRead;
             public Vector4 TargetSize, LowResSize;
             public Matrix4x4 ViewToWorld, InvProjection;
         }
 
         public VolumetricCloudsPass(Material material, bool halfRes, bool temporal,
-            bool debugDirect, Matrix4x4 prevVp, bool prevVpValid,
-            RTHandle historyRead, RTHandle historyWrite)
+            bool debugDirect, RTHandle historyRead, RTHandle historyWrite)
         {
             _material = material; _halfRes = halfRes; _temporal = temporal;
-            _debugDirect = debugDirect; _prevVp = prevVp; _prevVpValid = prevVpValid;
+            _debugDirect = debugDirect;
             _historyRead = historyRead; _historyWrite = historyWrite;
             profilingSampler = new ProfilingSampler(PassName);
             ConfigureInput(ScriptableRenderPassInput.Depth);
@@ -537,7 +571,8 @@ namespace ProjectC.Rendering
             }
 
             // T-CLOUD47: raymarch в отдельную full/half-res текстуру,
-            // затем полноразмерный depth-aware composite. Temporal по-прежнему off.
+            // затем полноразмерный depth-aware composite.
+            // T-CLOUD48: между ними temporal reprojection с clamp-фильтром истории.
             int fullW = Mathf.Max(1, cam.pixelWidth), fullH = Mathf.Max(1, cam.pixelHeight);
             float renderScale = _halfRes ? 0.5f : 1f;
             int cloudW = Mathf.Max(1, Mathf.RoundToInt(fullW * renderScale));
@@ -572,12 +607,41 @@ namespace ProjectC.Rendering
                 });
             }
 
+            // T-CLOUD48: temporal history — читает cloudRT и прошлую историю,
+            // пишет новую (ping-pong RTHandle, импортированные в граф).
+            // Composite ниже читает именно historyWrite.
+            TextureHandle compositeSource = cloudRT;
+            if (_temporal && _historyRead != null && _historyWrite != null)
+            {
+                TextureHandle historyRead = renderGraph.ImportTexture(_historyRead);
+                TextureHandle historyWrite = renderGraph.ImportTexture(_historyWrite);
+                compositeSource = historyWrite;
+                using (var builder = renderGraph.AddRasterRenderPass<PassData>("VolumetricClouds_History", out var hd, profilingSampler))
+                {
+                    hd.Material = _material; hd.CloudRT = cloudRT;
+                    hd.HistoryRead = historyRead;
+                    hd.TargetSize = cloudSize;
+                    builder.UseTexture(cloudRT, AccessFlags.Read);
+                    builder.UseTexture(historyRead, AccessFlags.Read);
+                    builder.SetRenderAttachment(historyWrite, 0, AccessFlags.Write);
+                    if (depthTarget.IsValid()) builder.UseTexture(depthTarget, AccessFlags.Read);
+                    builder.AllowPassCulling(false); builder.AllowGlobalStateModification(true);
+                    builder.SetRenderFunc(static (PassData p, RasterGraphContext ctx) =>
+                    {
+                        ctx.cmd.SetGlobalTexture(VolumetricCloudsRenderFeature.CloudRTId, p.CloudRT);
+                        ctx.cmd.SetGlobalTexture(VolumetricCloudsRenderFeature.CloudHistoryRTId, p.HistoryRead);
+                        ctx.cmd.SetGlobalVector(VolumetricCloudsRenderFeature.CloudTargetSizeId, p.TargetSize);
+                        ctx.cmd.DrawProcedural(Matrix4x4.identity, p.Material, 3, MeshTopology.Triangles, 3, 1);
+                    });
+                }
+            }
+
             using (var builder = renderGraph.AddRasterRenderPass<PassData>("VolumetricClouds_Composite", out var pd, profilingSampler))
             {
-                pd.Material = _material; pd.CloudRT = cloudRT;
+                pd.Material = _material; pd.CloudRT = compositeSource;
                 pd.TargetSize = fullSize; pd.LowResSize = cloudSize;
                 builder.SetRenderAttachment(colorTarget, 0, AccessFlags.ReadWrite);
-                builder.UseTexture(cloudRT, AccessFlags.Read);
+                builder.UseTexture(compositeSource, AccessFlags.Read);
                 if (depthTarget.IsValid()) builder.UseTexture(depthTarget, AccessFlags.Read);
                 builder.AllowPassCulling(false); builder.AllowGlobalStateModification(true);
                 builder.SetRenderFunc(static (PassData p, RasterGraphContext ctx) =>

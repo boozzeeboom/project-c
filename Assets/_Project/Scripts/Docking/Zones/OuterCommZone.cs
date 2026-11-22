@@ -40,6 +40,17 @@ namespace ProjectC.Docking.Zones
         [Tooltip("Интервал поллинга (сек). По умолчанию 0.25.")]
         [SerializeField, Min(0.1f)] private float pollInterval = 0.25f;
 
+        // T-PERF03: триггерный объём отвязан от commRange.
+        // Захват 2026-11-22: 7 зон держали SphereCollider радиусом 500-1000 м в мире с 21 842
+        // коллайдерами, и Physics.SendTriggerEvents стоил 5.9 с на кадре старта + 20-30 МБ
+        // мусора на кадр (сами обработчики - ~10 ms и ~1.7 КБ). Полную дистанцию связи
+        // покрывает полл (pollInterval); триггер нужен только для мгновенной реакции у зоны.
+        [Tooltip("Радиус SphereCollider-триггера, м. Держать малым: объём радиусом commRange " +
+                 "(500-1000 м) даёт сотни тысяч broadphase-пар с геометрией мира " +
+                 "(Physics.SendTriggerEvents в захвате 2026-11-22: 5.9 с и 20-30 МБ на кадр). " +
+                 "Детект на всей дистанции связи делают поллы, а не триггер.")]
+        [SerializeField, Min(1f)] private float triggerRadius = 60f;
+
         // PERF: кешируем FindLocalPlayer чтобы не делать FindObjectsByType каждый кадр
         private static NetworkPlayer _cachedLocalPlayer;
         private static float _cachedLocalPlayerTime;
@@ -68,7 +79,7 @@ namespace ProjectC.Docking.Zones
         {
             _sphere = GetComponent<SphereCollider>();
             _sphere.isTrigger = true;
-            _sphere.radius = commRange;  // Q5: настраивается
+            _sphere.radius = triggerRadius;  // T-PERF03: не commRange (см. triggerRadius)
 
             _stationController = GetComponentInParent<DockStationController>();
             if (_stationController == null)

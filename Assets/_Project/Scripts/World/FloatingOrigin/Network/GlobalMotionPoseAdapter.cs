@@ -52,13 +52,15 @@ namespace ProjectC.World.FloatingOrigin.Network
         public bool Bind(GlobalMotionWorld world, int frameId)
         {
             if (!CoordinatesRequired || World != null || !isActiveAndEnabled || world == null || !world.TryGetFrame(frameId, out var frame)) return false;
-            _transport = GetComponent<GlobalMotionReplicator>();
+            TryGetComponent(out _transport);
             if (_transport == null || !_transport.IsSpawned || _transport.NetworkManager != world.Manager ||
                 _transport.NetworkObject == null || _transport.NetworkObject.gameObject != gameObject || HasCompetingWriter() ||
                 _transport.NetworkObject.SynchronizeTransform || _transport.NetworkObject.AutoObjectParentSync ||
                 !GlobalMotionNetworkStartup.IsInstalled(world.Manager) ||
                 !gameObject.scene.GetPhysicsScene().Equals(frame.Physics)) return false;
-            _body = GetComponent<Rigidbody>(); _controller = GetComponent<CharacterController>(); _agent = GetComponent<NavMeshAgent>();
+            // T-PERF05: TryGetComponent вместо GetComponent — на акторе без Rigidbody/CharacterController/
+            // NavMeshAgent (игрок) каждая проверка строила null-сообщение (~0.64 КБ).
+            TryGetComponent(out _body); TryGetComponent(out _controller); TryGetComponent(out _agent);
             if (!SupportedStructure() || !CollectParticipants()) return false;
             _objectId = _transport.NetworkObjectId;
             if (!world.RegisterActor(this, _objectId)) return false;
@@ -407,7 +409,9 @@ namespace ProjectC.World.FloatingOrigin.Network
 
         private bool SupportedStructure()
         {
-            _body = GetComponent<Rigidbody>(); _controller = GetComponent<CharacterController>(); _agent = GetComponent<NavMeshAgent>();
+            // T-PERF05: TryGetComponent вместо GetComponent — на акторе без Rigidbody/CharacterController/
+            // NavMeshAgent (игрок) каждая проверка строила null-сообщение (~0.64 КБ).
+            TryGetComponent(out _body); TryGetComponent(out _controller); TryGetComponent(out _agent);
             _bodies.Clear(); _joints.Clear();
             GetComponentsInChildren(true, _bodies); GetComponentsInChildren(true, _joints);
             if (_joints.Count != 0 || _bodies.Count > (_body != null ? 1 : 0) || (_body != null && _controller != null)) return false;
@@ -432,7 +436,7 @@ namespace ProjectC.World.FloatingOrigin.Network
             if (_transport != null) _transport.RevokeBaselineAcknowledgement();
             return false;
         }
-        private bool HasCompetingWriter() { var nt = GetComponent<NetworkTransform>(); return nt != null && nt.enabled; }
+        private bool HasCompetingWriter() { return TryGetComponent(out NetworkTransform nt) && nt.enabled; }
         private Vector3 CurrentPosition => _body != null ? _body.position : transform.position;
         private Quaternion CurrentRotation => _body != null ? _body.rotation : transform.rotation;
         private double RenderTime => _transport.NetworkManager.ServerTime.Time -

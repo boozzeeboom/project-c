@@ -998,9 +998,12 @@ namespace ProjectC.Player
             }
 
             // Update PlayerChunkTracker for server-side chunk streaming
-            if (_playerChunkTracker != null)
+            using (s_PerfChunkTracker.Auto())
             {
-                _playerChunkTracker.ForceUpdatePlayerChunk(OwnerClientId, transform.position);
+                if (_playerChunkTracker != null)
+                {
+                    _playerChunkTracker.ForceUpdatePlayerChunk(OwnerClientId, transform.position);
+                }
             }
             
 
@@ -1318,6 +1321,7 @@ namespace ProjectC.Player
 
         private void ProcessMovement(Vector2 moveInput, bool jump, bool run)
         {
+            using var _ = s_PerfMovement.Auto();
             if (!CanSimulateInCurrentCoordinates) return;
             // T-HP01: CharacterController может быть выключен (смерть) — не двигаем
             if (_controller == null || !_controller.enabled) return;
@@ -1337,21 +1341,24 @@ namespace ProjectC.Player
             if (groundedForMovement && _velocity.y < 0) _velocity.y = -2f;
 
             // R2-NONE: animator parameters
-            if (_animator != null)
+            using (s_PerfAnimator.Auto())
             {
-                _animator.SetBool("IsGrounded", _isGrounded);
-                float speed = moveInput.magnitude > 0.01f ? (run ? runSpeed : walkSpeed) : 0f;
-                _animator.SetFloat("Speed", speed);
-
-                // T-NPC-12: InCombat flag — true если экипировано WeaponMain.
-                bool inCombat = false;
-                if (EquipmentWorld.Instance != null)
+                if (_animator != null)
                 {
-                    var equip = EquipmentWorld.Instance.GetEquipment(OwnerClientId);
-                    if (equip != null && equip.TryGetItemId(EquipSlot.WeaponMain, out int weaponId) && weaponId > 0)
-                        inCombat = true;
+                    _animator.SetBool("IsGrounded", _isGrounded);
+                    float speed = moveInput.magnitude > 0.01f ? (run ? runSpeed : walkSpeed) : 0f;
+                    _animator.SetFloat("Speed", speed);
+
+                    // T-NPC-12: InCombat flag — true если экипировано WeaponMain.
+                    bool inCombat = false;
+                    if (EquipmentWorld.Instance != null)
+                    {
+                        var equip = EquipmentWorld.Instance.GetEquipment(OwnerClientId);
+                        if (equip != null && equip.TryGetItemId(EquipSlot.WeaponMain, out int weaponId) && weaponId > 0)
+                            inCombat = true;
+                    }
+                    _animator.SetBool("InCombat", inCombat);
                 }
-                _animator.SetBool("InCombat", inCombat);
             }
 
             Vector3 forward = _myCamera != null ? _myCamera.CameraForward : Vector3.forward;
@@ -1420,7 +1427,8 @@ namespace ProjectC.Player
 
             if (GlobalMotionRuntimeEvidenceProbe.IsActive)
                 GlobalMotionRuntimeEvidenceProbe.RecordEvent("movement", "CharacterController.Move.before", $"motion={controllerMotion} grounded={_controller.isGrounded} onPlatform={_onPlatform} platformDelta={_platformDelta}");
-            _controller.Move(controllerMotion);
+            using (s_PerfControllerMove.Auto())
+                _controller.Move(controllerMotion);
             if (GlobalMotionRuntimeEvidenceProbe.IsActive)
                 GlobalMotionRuntimeEvidenceProbe.RecordEvent("movement", "CharacterController.Move.after", $"pos={transform.position} grounded={_controller.isGrounded} velocity={_velocity}");
 
@@ -1544,6 +1552,7 @@ namespace ProjectC.Player
         /// </summary>
         private void ApplyPlatformCarry()
         {
+            using var _ = s_PerfPlatformCarry.Auto();
             // T-DIAG-FERRY Фаза 1e: счётчик вызовов за кадр (временно).
             if (_diagLastFrame == Time.frameCount)
             {
@@ -1692,6 +1701,7 @@ namespace ProjectC.Player
         /// </summary>
         private Vector3 GetGlobalWindTargetVelocity()
         {
+            using var _ = s_PerfWind.Auto();
             if (!_globalWindEnabled) return Vector3.zero;
             var wind = ProjectC.Core.WindManager.Instance;
             if (wind == null) return Vector3.zero;
@@ -1832,12 +1842,24 @@ namespace ProjectC.Player
         private const float INTERACTION_HINT_INTERVAL = 0.2f;
         private float _nextInteractionHintTime;
 
+        // T-PERF09: постоянная атрибуция горячих секций без Deep Profile и строковых аллокаций.
+        private static readonly ProfilerMarker s_PerfInputHeld = new("NetworkPlayer.Input.Held");
+        private static readonly ProfilerMarker s_PerfInputJustPressed = new("NetworkPlayer.Input.JustPressed");
+        private static readonly ProfilerMarker s_PerfInteractionHint = new("NetworkPlayer.InteractionHint");
+        private static readonly ProfilerMarker s_PerfChunkTracker = new("NetworkPlayer.ChunkTracker");
+        private static readonly ProfilerMarker s_PerfMovement = new("NetworkPlayer.Movement");
+        private static readonly ProfilerMarker s_PerfPlatformCarry = new("NetworkPlayer.Movement.PlatformCarry");
+        private static readonly ProfilerMarker s_PerfAnimator = new("NetworkPlayer.Movement.Animator");
+        private static readonly ProfilerMarker s_PerfWind = new("NetworkPlayer.Movement.Wind");
+        private static readonly ProfilerMarker s_PerfControllerMove = new("NetworkPlayer.Movement.ControllerMove");
+
         /// <summary>
         /// Вычисляет подсказку по тому же порядку F/E-flow, который уже используется в Update().
         /// Метод только наблюдает состояние сцены и не выбирает target для фактического действия.
         /// </summary>
         private void UpdateInteractionHint()
         {
+            using var _ = s_PerfInteractionHint.Auto();
             PublishInteractionHint(ResolveInteractionHint());
         }
 
@@ -2944,6 +2966,7 @@ namespace ProjectC.Player
 
         private bool IsActionHeld(InputBindingsConfig.GameAction action)
         {
+            using var _ = s_PerfInputHeld.Auto();
             var rt = ProjectC.Input.InputBindingsRuntime.Instance;
             var cfg = rt?.Config;
             if (cfg == null) return false;
@@ -2965,6 +2988,7 @@ namespace ProjectC.Player
 
         private bool IsActionJustPressed(InputBindingsConfig.GameAction action)
         {
+            using var _ = s_PerfInputJustPressed.Auto();
             var rt = ProjectC.Input.InputBindingsRuntime.Instance;
             var cfg = rt?.Config;
             if (cfg == null) return false;

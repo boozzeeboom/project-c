@@ -796,3 +796,15 @@ compile + domain reload — завершены, ошибок C# нет. Play Mod
 `NpcShipWorld.FixedUpdate` (1,69) и `WindManager.FixedUpdate` (1,08). Построчной CPU-атрибуции внутри
 `NetworkPlayer.Update` нет; рискованных правок ввода, движения или троттлинга по этой агрегации не делалось.
 `console.txt` остался старым экспортом 14:39:42. Play Mode агентом — **NOT RUN**.
+
+
+## T-PERF09 — точечная атрибуция `NetworkPlayer.Update`
+
+После подтверждения T-PERF08 главный managed self-кандидат — `Player.NetworkPlayer.Update` (5,32 мс/кадр
+на 570 steady-кадрах), но его внутренние секции в захвате не разделены. В `NetworkPlayer.cs` добавлены девять
+постоянных `ProfilerMarker`: Held/JustPressed ввод, InteractionHint, ChunkTracker, Movement целиком и вложенные
+PlatformCarry/Animator/Wind/ControllerMove. Игровая логика не изменена, Deep Profile не требуется.
+
+compile + domain reload — завершены, ошибок C# нет; `git diff --check` — чисто. Play Mode — **NOT RUN**.
+Протокол: 30–60 с после загрузки, стояние/ходьба/бег + посадка и полёт, Deep Profile OFF,
+Allocation Call Stacks OFF. Подробности — `07_T_PERF09_PLAYER_UPDATE_PROFILING.md`.

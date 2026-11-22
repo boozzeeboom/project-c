@@ -54,6 +54,23 @@ namespace ProjectC.Quests
         public NpcDefinition Definition => definition;
         public float InteractionDistance => interactionDistance;
 
+        /// <summary>
+        /// Пилотная толпа PRIMUM: личность выдаётся в рантайме (один шаблон — много разных NPC).
+        /// Аддитивно: регистрирует NPC в реестре (E-key пайплайн) и обновляет нейм-плейт.
+        /// Поведение scene-placed NPC не меняется.
+        /// </summary>
+        public void SetDefinition(NpcDefinition def, TextMeshPro label = null)
+        {
+            definition = def;
+            if (label != null) nameLabel = label;
+            if (!string.IsNullOrEmpty(NpcId)) Registry[NpcId] = this;
+            if (nameLabel != null && def != null)
+            {
+                nameLabel.text = def.displayName;
+                if (!nameLabel.gameObject.activeSelf) nameLabel.gameObject.SetActive(true);
+            }
+        }
+
         private void Awake()
         {
             // Ensure collider is trigger

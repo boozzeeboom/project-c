@@ -89,12 +89,15 @@ namespace ProjectC.PeacefulShip.Network
         /// Кандидаты в радиусе (broadphase): своя + соседние ячейки, точная дистанция —
         /// на вызывающей стороне. Пустой результат = рядом никого.
         /// </summary>
-        public static List<Stations.NpcShipController> QueryNearby(Vector3 pos, float radius)
+        /// T-PERF06/6: буфер принадлежит вызывающей стороне (реестр server-only, вызовы
+        //  в одном потоке). Замер 13-47-22 (call stacks): `new List(16)` здесь давал
+        //  350 аллокаций и 26,4 КБ на кадр на пути NpcShipWorld.FixedUpdate → NavTick.
+        public static void QueryNearby(Vector3 pos, float radius, List<Stations.NpcShipController> buffer)
         {
+            if (buffer == null) return;
+            buffer.Clear();
             RebuildCellsIfStale();
-            // Переиспользуемый буфер вызвающей стороны невозможен в static без аллокаций
-            // на всех — собираем короткий список (ячейки уже отфильтровали грубо).
-            var result = new List<Stations.NpcShipController>(16);
+            // Вызывающая сторона переиспользует свой буфер — ячейки уже отфильтровали грубо.
             var center = CellOf(pos);
             int range = Mathf.Max(1, Mathf.CeilToInt(radius / CellSize));
             for (int dx = -range; dx <= range; dx++)
@@ -106,10 +109,9 @@ namespace ProjectC.PeacefulShip.Network
                     {
                         var npc = list[i];
                         if (npc == null) continue;
-                        result.Add(npc);
+                        buffer.Add(npc);
                     }
                 }
-            return result;
         }
     }
 }

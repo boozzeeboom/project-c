@@ -202,7 +202,10 @@ namespace ProjectC.World.FloatingOrigin.Network
         {
             if (!CanStart(actor)) return false;
             var parentTransform = actor.transform.parent;
-            var parentObject = parentTransform != null ? parentTransform.GetComponent<NetworkObject>() : null;
+            // T-PERF06/6: GetComponent на промахе строит null-сообщение (~686 Б). Замер 13-47-22:
+            // 10 промахов на кадр в GlobalMotionWorld.FixedUpdate/Update (мир-актёр с корнем мира в предках).
+            NetworkObject parentObject = null;
+            if (parentTransform != null) parentTransform.TryGetComponent(out parentObject);
             if (parentObject != null)
             {
                 if (!TryGetActor(parentObject.NetworkObjectId, out var parent)) return false;

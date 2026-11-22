@@ -6,6 +6,7 @@
 //
 // Паттерн: OuterCommZone (Docking/Zones/OuterCommZone.cs).
 
+using System.Collections.Generic;
 using ProjectC.PeacefulShip.Network; // NpcShipZoneRegistry, NpcBuildZoneRegistry
 using UnityEngine;
 
@@ -72,6 +73,10 @@ namespace ProjectC.PeacefulShip.Stations
 
         private NpcShipController _self;
         private Collider _shipCollider;
+
+        // T-PERF06/6: переиспользуемый буфер broadphase — QueryNearby больше не аллоцирует
+        // (замер 13-47-22: 26,4 КБ/кадр на `new List` в реестре).
+        private readonly List<NpcShipController> _candidates = new List<NpcShipController>(16);
 
         private void Awake()
         {
@@ -227,7 +232,8 @@ namespace ProjectC.PeacefulShip.Stations
             NpcShipController closest = null;
             Vector3 myPos = transform.position;
 
-            var candidates = NpcShipZoneRegistry.QueryNearby(myPos, awarenessRadius);
+            NpcShipZoneRegistry.QueryNearby(myPos, awarenessRadius, _candidates);
+            var candidates = _candidates;
             for (int i = 0; i < candidates.Count; i++)
             {
                 var other = candidates[i];
@@ -282,8 +288,12 @@ namespace ProjectC.PeacefulShip.Stations
             if (verboseBuildLogging)
                 Debug.Log($"[NpcProximityZone:{gameObject.name}] scanning {NpcBuildZoneRegistry.All.Count} build zones...");
 
-            foreach (var build in NpcBuildZoneRegistry.All)
+            // T-PERF06/6: All — IReadOnlyList, foreach боксил энумератор (~46 Б/вызов,
+            // 60 вызовов и 2,7 КБ на кадр в замере 13-47-22). Индексный обход не аллоцирует.
+            var allBuilds = NpcBuildZoneRegistry.All;
+            for (int bi = 0; bi < allBuilds.Count; bi++)
             {
+                var build = allBuilds[bi];
                 if (build == null || !build.isActiveAndEnabled) continue;
                 if (!build.IsIntruding(myPos, myAvoid)) continue;
 

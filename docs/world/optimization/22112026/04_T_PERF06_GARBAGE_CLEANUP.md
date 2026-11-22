@@ -246,3 +246,68 @@ NPC запаркуется на 1–2 с и вернётся сам (сэмпл 
 - (б) разрешить в манифесте «неиспользуемую палубу» — правка контракта + прогон rebase;
 - (в) снижать цену одной регистрации: часть 513 KB — Editor-маршаллинг, и в билде цифра другая,
   т.е. сначала нужен не-Editor замер.
+
+## Замер I — `ProjectC_client_2026-11-22_13-47-22.data` + `console.txt` (Allocation Call Stacks ON)
+
+299 кадров, файл **700 MB** — включённые Allocation Call Stacks. Это первый замер, в котором видна
+**строка** аллокации, а не только узел дерева.
+
+**Консоль:** 548 записей (H: 582) — `Log` 461, `Warning` 87 (H: 122), `Error`/`Exception` **0**.
+`Failed to create agent` **18** (H: 56), из них managed `Location` есть только у двух
+(`ShipCrewSpawner.cs:154`, `NpcBrain.cs:915`), остальные 16 — нативные без стека.
+`PrimumCrowdNpc` в консоли **отсутствует** (в H — 38 × `PrimumCrowdNpc.cs:410`) ⇒ этап 4 по предупреждениям
+подтверждён. Строк пробы `[T-PERF06/4]` — **52**, т.е. 52 парковки за прогон (в H было 38).
+Предупреждения: 34 `EngineThrusterVisual.cs:185`, 23 `ShipCargoVisual.cs:211`, 2 `DoorVisibilityBudget.cs:256`,
+по одной в девяти местах (новые относительно H: `QuestWorld.cs:87`, `ShipPositionServer.cs:148`,
+`GlobalMotionControlledRebaseSlice.cs:1281`).
+
+**Профайлер:** GC/кадр — min 36.6, медиана **77.6** (H: 67.7), p90 165.3, max 12 719.9 (f0 — старт);
+`PlayerLoop` медиана 163.12 ms. Пики: f0 12 719.9, f50 6 577.3, f298 4 740.3 (стоп), f48 2 851.7.
+
+### Как читать байты в этом формате (важно для следующих замеров)
+
+| Наблюдение | Разрешение |
+|---|---|
+| узел `NpcShipWorld.FixedUpdate` = `47088`, листья = `46.0` | `HierarchyFrameDataView.columnGcMemory` — **байты**: 47 088 B = 45.98 KB. Это ошибка формата, а не агрегации |
+| сумма всех `GC.Alloc` кадра | 1 132 сэмпла = **80 779 B = 78.9 KB** = ровно `rootGcKB` у `PlayerLoop` |
+| f150 и f151 дают одинаковые 46.0 KB / 639 | не баг: те же NPC делают те же аллокации; f152 уже 56.2 KB / 781 (другой путь) |
+| размер одной аллокации | метаданные `GC.Alloc` (`GetSampleMetadataAsInt(i, 0)`) — 160 / 40 / 686 / 54 B |
+| имена кадров стека | `RawFrameDataView.ResolveMethodInfo` в загруженном профиле не резолвит **ничего** (0/300); работает только `HierarchyFrameDataView.ResolveItemMergedSampleCallstack(itemId, s)`, и только у листьев `GC.Alloc` — callstacks пишутся только для аллокаций |
+
+### Куда уходят 46.0 KB/кадр внутри `NpcShipWorld.FixedUpdate` (f150, 639 аллокаций → 3 строки)
+
+| Строка | Аллокаций | Байт | Механизм |
+|---|---|---|---|
+| `NpcShipZoneRegistry.cs:97` | 350 | 26 978 (26.4 KB) | `new List<NpcShipController>(16)` в каждом `QueryNearby` ← `NpcProximityZone.cs:230` (`FindClosestConflict`) ← `NpcShipController.cs:842` |
+| `MarketConfigCollector.cs:20` | 229 | 17 308 (16.9 KB) | `id.Trim().ToUpperInvariant()` в каждом `GetByLocation` (`DockingZoneRegistry.cs:68`) ← `NpcShipController.cs:1620` (`ResolveCommZone`) ← `TickCruise:1190` ← `NavTick:877` |
+| `NpcProximityZone.cs:285` | 60 | 2 802 (2.7 KB) | `foreach` по `NpcBuildZoneRegistry.All` (`IReadOnlyList`) боксит энумератор ≈46 B |
+
+### Промахи `GetComponent` — 14 вызовов / 9.39 KB (этап 5 закрыл не всё)
+
+| Узел | Промахов | Источник |
+|---|---|---|
+| `GlobalMotionWorld.FixedUpdate` | 9 | `GlobalMotionWorld.cs:205` — `parentTransform.GetComponent<NetworkObject>()` (`ReactivateFromCurrentPose`) |
+| `GlobalMotionWorld.Update` | 1 | тот же вызов |
+| `GlobalMotionPoseAdapter.LateUpdate` | 3 | на этом пути остался `GlobalMotionReplicator.cs:353` — `GetComponent<NetworkTransform>()` (`HasCompetingWriter`, зовётся из `IsBaselinePlaced`) |
+| `OuterCommZone.Update` | 1 | `OuterCommZone.cs:219` — `GetComponent<NetworkPlayerSpawner>()` |
+
+`NpcBrain.Update` (было 8 промахов) и `CurrentNetworkAncestor()` (было 10) в замере I **не промахиваются** —
+правки этапа 5 работают.
+
+## Этап 6 — сделано: аллокации в `NavTick` и остаток промахов
+
+| # | Файл / правка | Снято с кадра |
+|---|---|---|
+| 1 | `NpcShipZoneRegistry.QueryNearby(pos, radius, buffer)` — заполняет буфер вызывающей стороны; `NpcProximityZone`, `NpcShipController`, `NpcShipTrafficManager` держат свой `List` (реестр server-only, вызовы в одном потоке) | 26.4 KB |
+| 2 | `DockingZoneRegistry.GetByLocation` — прямой lookup по исходному `locationId` (он нормализуется при регистрации), `Trim/ToUpperInvariant` только при промахе | 16.9 KB |
+| 3 | `NpcProximityZone.FindClosestBuildConflict` — индексный обход `IReadOnlyList` вместо `foreach` | 2.7 KB |
+| 4 | `GlobalMotionWorld.cs:205` — `TryGetComponent(out parentObject)` | 6.86 KB |
+| 5 | `GlobalMotionReplicator.HasCompetingWriter` — `TryGetComponent(out NetworkTransform)` | 2.06 KB |
+| 6 | `OuterCommZone.cs:219` — `TryGetComponent<NetworkPlayerSpawner>(out _)` | 0.70 KB |
+
+Ожидание на следующем замере: 78.9 KB/кадр → **~2–3 KB** на том же кадре (остаются `ContractServer` 7.4,
+`GlobalMotionWorld` 6.0 + 3.2, `NpcBrain.Update` 1.4, URP 3.8, прочее).
+
+**Проверка:** `check_compile_errors` — 0 errors. Play Mode — **NOT RUN, за пользователем**.
+Осталось непроверенным прогоном: восстановление 52 запаркованных агентов толпы после F8 (проба пишет
+только факт парковки), поэтому сама проба `[T-PERF06/4]` пока остаётся.

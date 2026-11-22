@@ -65,8 +65,12 @@ namespace ProjectC.Docking.Network
 
         public static DockStationController GetByLocation(string locationId)
         {
+            // T-PERF06/6: locationId из конфигурации уже нормализован при регистрации —
+            // прямой lookup без Trim/ToUpperInvariant. Замер 13-47-22 (call stacks):
+            // нормализация давала 229 строк и 16,9 КБ на кадр на пути NavTick → TickCruise → ResolveCommZone.
+            if (_stationsByLocation.TryGetValue(locationId, out var direct)) return direct;
             var key = MarketConfigCollector.NormalizeLocationId(locationId);
-            if (string.IsNullOrEmpty(key)) return null;
+            if (string.IsNullOrEmpty(key) || key == locationId) return null; // уже нормализован и не найден выше
             _stationsByLocation.TryGetValue(key, out var s);
             return s;
         }

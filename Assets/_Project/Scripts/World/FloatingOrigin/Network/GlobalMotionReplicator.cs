@@ -350,7 +350,9 @@ namespace ProjectC.World.FloatingOrigin.Network
         private bool CustomHierarchyConfigured => NetworkObject != null && !NetworkObject.AutoObjectParentSync &&
             !NetworkObject.SynchronizeTransform && GlobalMotionNetworkStartup.IsInstalled(NetworkManager);
         private double ServerNow => Math.Max(0d, NetworkManager.ServerTime.Time);
-        private bool HasCompetingWriter() { var nt = GetComponent<NetworkTransform>(); return nt != null && nt.enabled; }
+        // T-PERF06/6: GetComponent на промахе строит null-сообщение (~686 Б). Замер 13-47-22:
+        // этот вызов — один из промахов внутри GlobalMotionPoseAdapter.LateUpdate.
+        private bool HasCompetingWriter() { return TryGetComponent(out NetworkTransform nt) && nt.enabled; }
         private void Unsubscribe() { if (_ticks != null) _ticks.Tick -= OnNetworkTick; _ticks = null; }
     }
 }

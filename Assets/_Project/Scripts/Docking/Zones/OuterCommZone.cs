@@ -216,7 +216,9 @@ namespace ProjectC.Docking.Zones
             for (int i = 0; i < players.Length; i++)
             {
                 if (players[i] == null || !players[i].IsOwner) continue;
-                if (players[i].GetComponent<NetworkPlayerSpawner>() != null) continue;
+                // T-PERF06/6: TryGetComponent вместо GetComponent — промах строил null-сообщение
+                // (~702 Б/кадр в замере 13-47-22 внутри OuterCommZone.Update).
+                if (players[i].TryGetComponent<NetworkPlayerSpawner>(out _)) continue;
                 _cachedLocalPlayer = players[i];
                 _cachedLocalPlayerTime = Time.time;
                 return players[i];

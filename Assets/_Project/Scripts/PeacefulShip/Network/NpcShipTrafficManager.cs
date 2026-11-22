@@ -213,6 +213,9 @@ namespace ProjectC.PeacefulShip.Network
             return pen;
         }
 
+        // T-PERF06/6: буфер broadphase (QueryNearby больше не аллоцирует).
+        private readonly List<Stations.NpcShipController> _nearbyScratch = new List<Stations.NpcShipController>(16);
+
         /// <summary>
         /// T-NS-WF06c: свободен ли взлёт у станции (departure mutex): никто чужой
         /// не в Lifting/Yawing в радиусе. Разносит вылеты пачкой — стая не стартует
@@ -220,7 +223,8 @@ namespace ProjectC.PeacefulShip.Network
         /// </summary>
         public bool IsDepartureClear(Vector3 stationPos, float radius, ulong requesterId)
         {
-            var nearby = NpcShipZoneRegistry.QueryNearby(stationPos, radius);
+            NpcShipZoneRegistry.QueryNearby(stationPos, radius, _nearbyScratch);
+            var nearby = _nearbyScratch;
             for (int i = 0; i < nearby.Count; i++)
             {
                 var npc = nearby[i];

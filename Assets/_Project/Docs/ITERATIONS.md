@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-11-22 (T-PERF06, этап 6 — аллокации в `NavTick` по call stacks)
+
+**Задача:** По замеру с Allocation Call Stacks (`ProjectC_client_2026-11-22_13-47-22.data`, 700 MB, 299 кадров) найти строки, которые дают 46.0 KB/кадр внутри `NpcShipWorld.FixedUpdate` → `NavTick`, и добить остаток null-`GetComponent`, который не закрыл этап 5. Play Mode не запускать.
+
+**Методика (первый замер с callstacks):** `HierarchyFrameDataView.columnGcMemory` — **байты** (узел `47 088` = 45.98 KB; «узел против листьев» — ошибка формата, а не агрегации), сумма всех 1 132 `GC.Alloc` кадра = 80 779 B = 78.9 KB = ровно `rootGcKB`. `RawFrameDataView.ResolveMethodInfo` в загруженном профиле не резолвит ничего (0/300); имена даёт только `HierarchyFrameDataView.ResolveItemMergedSampleCallstack` у листьев `GC.Alloc` (callstacks пишутся только для аллокаций).
+
+**Результат:** все 639 аллокаций `NavTick` дали ровно три строки: `NpcShipZoneRegistry.cs:97` — 350 алл. / 26.4 KB (`new List<NpcShipController>(16)` в каждом `QueryNearby` ← `FindClosestConflict` ← `NavTick:842`); `MarketConfigCollector.cs:20` — 229 / 16.9 KB (`id.Trim().ToUpperInvariant()` в каждом `GetByLocation` ← `ResolveCommZone:1620` ← `TickCruise:1190` ← `NavTick:877`); `NpcProximityZone.cs:285` — 60 / 2.7 KB (`foreach` по `IReadOnlyList` боксит энумератор). Остаток промахов `GetComponent` — 14 выз. / 9.39 KB: `GlobalMotionWorld.cs:205` (`GetComponent<NetworkObject>`) 9 + 1, `GlobalMotionReplicator.cs:353` (`GetComponent<NetworkTransform>` в `HasCompetingWriter`) 3 внутри `GlobalMotionPoseAdapter.LateUpdate`, `OuterCommZone.cs:219` 1. Правки: `QueryNearby` заполняет буфер вызывающей стороны, `GetByLocation` — прямой lookup без нормализации, индексный обход вместо `foreach`, три `TryGetComponent`.
+
+**Консоль того же прогона:** 548 записей, `Warning` 87 (H: 122), `Error` 0; `Failed to create agent` 18 (H: 56), `PrimumCrowdNpc` — 0 (этап 4 подтверждён), строки пробы `[T-PERF06/4]` — 52 парковки.
+
+**Проверка:** `check_compile_errors` — 0 errors. Play Mode — **NOT RUN, за пользователем**. Ожидание: 78.9 → ~2–3 KB/кадр (снято 26.4 + 16.9 + 2.7 + 6.86 + 2.06 + 0.70 KB). Не подтверждено прогоном: возврат в движение 52 запаркованных агентов толпы после F8 (проба пишет только парковку), поэтому проба пока остаётся.
+
 ## Итерация от 2026-11-22 (T-PERF06, этап 5 — null-GetComponent в кадре)
 
 **Задача:** По замеру H снять остаток мусора, который профайлер показал только сейчас: `GetComponentNullErrorMessage` — 18 вызовов и 11.7 KB на геймплейный кадр (20% кадра). Поведение не менять, Play Mode не запускать.

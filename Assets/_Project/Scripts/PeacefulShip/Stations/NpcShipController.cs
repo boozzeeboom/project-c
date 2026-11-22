@@ -1514,6 +1514,9 @@ namespace ProjectC.PeacefulShip.Stations
             if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Stuck ({cause}) — scattering");
         }
 
+        // T-PERF06/6: буфер broadphase для разлёта (QueryNearby больше не аллоцирует).
+        private readonly List<NpcShipController> _nearbyScratch = new List<NpcShipController>(16);
+
         /// <summary>
         /// T-NS-NAV12a: направление разлёта — от ближайшего соседа, проверенное
         /// лидаром (чтобы не разлететься в соседнюю скалу). Никого рядом —
@@ -1522,7 +1525,8 @@ namespace ProjectC.PeacefulShip.Stations
         Vector3 ComputeScatterDir(Rigidbody rb) {
             Vector3 away = Vector3.zero;
             float bestD = float.MaxValue;
-            var near = NpcShipZoneRegistry.QueryNearby(rb.position, 500f);
+            NpcShipZoneRegistry.QueryNearby(rb.position, 500f, _nearbyScratch);
+            var near = _nearbyScratch;
             for (int i = 0; i < near.Count; i++) {
                 var o = near[i];
                 if (o == null || o == this) continue;

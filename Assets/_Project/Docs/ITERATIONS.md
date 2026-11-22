@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-11-22 (T-PERF04 — TryGetComponent в триггер-колбэках корабля и консоли)
+
+**Задача:** Снять P0 из двух независимых замеров (`...11-00-03.data` сессия B и `...11-18-18.data`): `other.GetComponent<CharacterController>() != null` выполнялся на каждом чужом коллайдере в `ShipController.OnTriggerEnter` (600) / `OnTriggerExit` (609) и `ShipCargoConsole.OnTriggerEnter` (89) / `OnTriggerExit` (97) и давал `GetComponentNullErrorMessage` — 70.6 MB из 131.0 MB GC сессии (54%, 111 853 вызова, из них 65.7 MB под этими четырьмя колбэками).
+
+**Результат:** В обоих классах проверка вынесена в `private static bool IsPlayerCollider(Collider other) => other.CompareTag("Player") || other.TryGetComponent(out CharacterController _);`. Семантика 1:1: короткое замыкание по тегу сохранено, компонент ищется на том же GameObject, `InteractableManager.Register*/Unregister*` вызываются на тех же условиях — но `TryGetComponent` на отсутствующем компоненте не строит null-сообщение.
+
+**Проверка:** `check_compile_errors` — 0 errors (первый вызов упал на domain reload, повтор чистый). Play Mode / новый захват / поведение (подсказка взаимодействия на палубе и её снятие, доступность грузовой консоли, T-клавиша и CommPanel, `ShipDeckNav.DumpStats()` → `spawn ≈ 20, drift ≈ 0`) — NOT RUN, за пользователем; протокол замера — в `docs/world/optimization/22112026/02_TRIGGER_CALLBACKS_FIX.md`.
+
+**Ожидание на следующем замере:** `GetComponentNullErrorMessage` пропадает из-под этих четырёх колбэков (было 65.7 MB/сессию = 50% всего GC), итоговый GC сессии ~131 MB → ~65 MB, GC в среднем 376.5 → ~190 KB/кадр. `Physics.SendTriggerEvents` (27.8 ms/кадр) и `PlayerLoop` (67.5 ms медиана) почти не изменятся — это объём событий и CPU, а не мусор.
+
+**Файлы:** `Assets/_Project/Scripts/Player/ShipController.cs`, `Assets/_Project/Scripts/Ship/Cargo/ShipCargoConsole.cs`, `docs/world/optimization/22112026/02_TRIGGER_CALLBACKS_FIX.md`, `docs/world/optimization/22112026/ITERATIONS.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
 ## Итерация от 2026-11-22 (T-PERF03 — зоны связи, подсказка игрока, кап регистрации палуб)
 
 **Задача:** Разобрать захват `ProjectC_client_2026-11-22_10-39-14.data` и снять найденные точки (план: `docs/world/optimization/22112026/01_FIX_PLAN.md`); Play Mode не запускать — runtime-замер за пользователем.

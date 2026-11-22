@@ -236,3 +236,24 @@ drift ≈ 0`; экипаж ходит по палубам (первая реги
 Итог по замерам 2 и 3: из семи фаз T-PERF03 невыжатыми остались две метрики
 (`Physics.SendTriggerEvents` и `GetComponentNullErrorMessage`), и обе ведут к одному месту —
 триггеры корабля и грузового консоли.
+
+## T-PERF04 — `TryGetComponent` в четырёх триггер-колбэках (коммит `a2bc7c06`)
+
+Правка: `ShipController.OnTriggerEnter/OnTriggerExit` и `ShipCargoConsole.OnTriggerEnter/OnTriggerExit`
+проверяют игрока через `private static bool IsPlayerCollider(Collider other)
+=> other.CompareTag("Player") || other.TryGetComponent(out CharacterController _);` — вместо
+`other.GetComponent<CharacterController>() != null`. Семантика 1:1 (короткое замыкание по тегу
+сохранено, проверка идёт по тому же GameObject), но `TryGetComponent` на отсутствующем
+компоненте не строит null-сообщение. Рабочий документ — `02_TRIGGER_CALLBACKS_FIX.md`.
+
+Проверка: `check_compile_errors` — 0 errors (первый вызов упал на domain reload, повтор чистый).
+Play Mode / новый захват — NOT RUN, за пользователем; протокол — в `02_TRIGGER_CALLBACKS_FIX.md`.
+
+Ожидание на следующем замере: `GetComponentNullErrorMessage` пропадает из-под этих четырёх
+колбэков (было 65.7 MB/сессию = 50% всего GC), итоговый GC сессии ~131 MB → ~65 MB,
+GC в среднем 376.5 → ~190 KB/кадр. `Physics.SendTriggerEvents` (27.8 ms/кадр) и `PlayerLoop`
+почти не изменятся — это объём событий и CPU, а не мусор.
+
+Не сделано сознательно: объём триггеров (см. п.1 «Остаток» в рабочем документе) — требует правки
+геометрии триггерных коллайдеров на префабе корабля и `_interactionRadius` консоли, т.е. данных
+префаба, а не кода.

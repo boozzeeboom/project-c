@@ -67,18 +67,15 @@ namespace ProjectC.Trade.Network
         // Серверные данные
         private readonly HashSet<ulong> _playersInZone = new HashSet<ulong>();
         private readonly HashSet<ulong> _shipsInZone = new HashSet<ulong>();
-        // FIX: debounce counter для PollPlayersInRadius — счётчик подряд
-        // пропущенных OverlapSphere-тиков на clientId. Удаляем игрока из
+        // FIX: debounce counter для PollActorsInRadius — счётчик подряд
+        // пропущенных polling-тиков на clientId. Удаляем игрока из
         // _playersInZone только когда счётчик >= MISS_THRESHOLD.
         private readonly Dictionary<ulong, int> _missingTicks = new Dictionary<ulong, int>();
         // T-PERF02: переиспользуемые буферы полла — без new HashSet/List каждый тик.
         private readonly HashSet<ulong> _pollFound = new HashSet<ulong>();
         private readonly List<ulong> _pollToRemove = new List<ulong>();
-        // T-PERF03: буфер NonAlloc — раньше каждый Physics.OverlapSphere отдавал новый
-        // Collider[] (12 зон x 2 вызова x 4 Гц = 96 массивов в секунду). Радиусы рынков
-        // 5-30 м, попаданий мало, поэтому NonAlloc с запасом безопасен, а промах одного
-        // тика гасит debounce (_missingTicks / MISS_THRESHOLD).
-        private readonly Collider[] _overlapHits = new Collider[128];
+        // T-PERF07: отдельные найденные корабли — polling идёт по SpawnedObjects без физики.
+        private readonly HashSet<ulong> _pollShipsFound = new HashSet<ulong>();
 
         public IReadOnlyCollection<ulong> PlayersInZone => _playersInZone;
         public IReadOnlyCollection<ulong> ShipsInZone => _shipsInZone;
@@ -94,8 +91,8 @@ namespace ProjectC.Trade.Network
             // Раньше был Max(tradeRadius, shipDockRadius) = 591 — это заставляло
             // OnTriggerEnter срабатывать в 171м от зоны, и LocalPlayerZone
             // устанавливался преждевременно (до входа игрока в реальный tradeRadius).
-            // Корабли по-прежнему детектятся через PollShipsInRadius (OverlapSphere
-            // с shipDockRadius, см. ниже) — для них SphereCollider не нужен.
+            // Корабли по-прежнему детектятся через PollActorsInRadius
+            // с shipDockRadius, см. ниже — для них SphereCollider не нужен.
             _sphere.radius = tradeRadius;
         }
 
@@ -158,7 +155,7 @@ namespace ProjectC.Trade.Network
         // ========================================================
         // SERVER: TRIGGERS (быстрый путь) + UPDATE POLL (fallback)
         // CharacterController + SphereCollider Trigger иногда не дружат
-        // (зависит от Layer collision matrix). OverlapSphere — гарантированный путь.
+        // (зависит от Layer collision matrix). Polling по SpawnedObjects — гарантированный путь.
         // ========================================================
 
         private float _pollTimer;
@@ -172,8 +169,7 @@ namespace ProjectC.Trade.Network
 
             if (_isServer)
             {
-                PollPlayersInRadius();
-                PollShipsInRadius();
+                PollActorsInRadius();
             }
             // Клиентская часть — ищем локального игрока для LocalPlayerZone
             PollLocalPlayerZone();
@@ -259,20 +255,33 @@ namespace ProjectC.Trade.Network
             return null;
         }
 
-        private void PollPlayersInRadius()
+        private void PollActorsInRadius()
         {
-            // Ищем всех NetworkPlayer в радиусе tradeRadius.
-            // Серверная сторона — здесь точно все NetworkObject'ы спавнены.
-            // T-PERF03: NonAlloc в переиспользуемый буфер.
-            int count = Physics.OverlapSphereNonAlloc(transform.position, tradeRadius, _overlapHits, ~0, QueryTriggerInteraction.Ignore);
+            // T-PERF07: два OverlapSphere по всей физической сцене заменены одним проходом
+            // по сетевым актёрам. NetworkPlayer и ShipController лежат на корне NetworkObject.
+            var nm = NetworkManager.Singleton;
+            if (nm == null || nm.SpawnManager == null) return;
+
+            Vector3 center = transform.position;
+            float sqrTradeRadius = tradeRadius * tradeRadius;
+            float sqrShipDockRadius = shipDockRadius * shipDockRadius;
             _pollFound.Clear();
-            for (int i = 0; i < count; i++)
+            _pollShipsFound.Clear();
+
+            foreach (var spawned in nm.SpawnManager.SpawnedObjects)
             {
-                var np = _overlapHits[i] != null ? _overlapHits[i].GetComponentInParent<NetworkPlayer>() : null;
-                if (np == null || !np.IsSpawned) continue;
-                _pollFound.Add(np.OwnerClientId);
+                var obj = spawned.Value;
+                if (obj == null || !obj.IsSpawned) continue;
+
+                float sqrDistance = (obj.transform.position - center).sqrMagnitude;
+                if (sqrDistance > sqrShipDockRadius && sqrDistance > sqrTradeRadius) continue;
+
+                if (sqrDistance <= sqrTradeRadius && obj.TryGetComponent<NetworkPlayer>(out var np))
+                    _pollFound.Add(np.OwnerClientId);
+                else if (sqrDistance <= sqrShipDockRadius && obj.TryGetComponent<ShipController>(out var ship))
+                    _pollShipsFound.Add(ship.NetworkObject.NetworkObjectId);
             }
-            // Добавляем новых
+
             foreach (var id in _pollFound)
             {
                 if (_playersInZone.Add(id))
@@ -281,11 +290,8 @@ namespace ProjectC.Trade.Network
                     if (_debugLog) Debug.Log($"[MarketZone:{LocationId}] server detected player in zone: clientId={id}");
                 }
             }
-            // FIX: debounce на diff-remove. Раньше удаляли за один тик — один
-            // "промах" OverlapSphere (CharacterController timing / NetworkTransform
-            // interpolation) выкидывал игрока из _playersInZone на 250мс, и за это
-            // время RequestBuyRpc получал NotInZone. Теперь удаляем только после
-            // MISS_THRESHOLD подряд "пустых" тиков (~0.75с при POLL_INTERVAL=0.25).
+
+            // Debounce сохраняет прежнюю устойчивость к временному промаху детекта (~0.75 с).
             const int MISS_THRESHOLD = 3;
             _pollToRemove.Clear();
             foreach (var id in _playersInZone)
@@ -308,23 +314,11 @@ namespace ProjectC.Trade.Network
                 _missingTicks.Remove(id);
                 if (_debugLog) Debug.Log($"[MarketZone:{LocationId}] server: player {id} left zone (after {MISS_THRESHOLD} missed polls)");
             }
-        }
 
-        private void PollShipsInRadius()
-        {
-            // T-PERF03: NonAlloc в переиспользуемый буфер.
-            int count = Physics.OverlapSphereNonAlloc(transform.position, shipDockRadius, _overlapHits, ~0, QueryTriggerInteraction.Ignore);
-            _pollFound.Clear();
-            for (int i = 0; i < count; i++)
-            {
-                var ship = _overlapHits[i] != null ? _overlapHits[i].GetComponentInParent<ShipController>() : null;
-                if (ship == null || !ship.IsSpawned) continue;
-                _pollFound.Add(ship.NetworkObject.NetworkObjectId);
-            }
-            foreach (var id in _pollFound) _shipsInZone.Add(id);
+            foreach (var id in _pollShipsFound) _shipsInZone.Add(id);
             _pollToRemove.Clear();
             foreach (var id in _shipsInZone)
-                if (!_pollFound.Contains(id)) _pollToRemove.Add(id);
+                if (!_pollShipsFound.Contains(id)) _pollToRemove.Add(id);
             foreach (var id in _pollToRemove) _shipsInZone.Remove(id);
         }
 

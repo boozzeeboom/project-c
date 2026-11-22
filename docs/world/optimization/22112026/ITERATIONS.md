@@ -746,3 +746,18 @@ sample → callstack в загруженном профиле смешивает
 открытых домов. `PrimumCrowdNpc` — проба `[T-PERF06/4]` удалена.
 
 compile — 0 errors; Play Mode — **NOT RUN, за пользователем**. Ожидание: 31.6 → **~10 KB/кадр и ниже**.
+
+
+## T-PERF07 — CPU зон связи и рынка (`ProjectC_client_2026-11-22_14-39-13.data`)
+
+289 кадров, call stacks ON. Агрегация всех кадров main thread: `Physics.SendTriggerEvents` — 82,83 мс total /
+61,50 мс self на кадр; `OuterCommZone.OnTriggerEnter` — 5 541 вызов, 18,38 / 17,18 мс;
+`MarketZone.Update` — 4,56 / 3,97 мс. Подробности и следующие кандидаты — `05_T_PERF07_ZONE_CPU.md`.
+
+`OuterCommZone`: SphereCollider выключен — прежний polling по `SpawnedObjects` и клиентский polling локального
+игрока покрывают детект без событий от городской геометрии. `MarketZone`: два `OverlapSphereNonAlloc` заменены
+одним `PollActorsInRadius` по `SpawnedObjects`; радиусы и debounce сохранены.
+
+compile + domain reload — завершены, ошибок C# нет; `git diff --check` — чисто. Play Mode — **NOT RUN,
+за пользователем**. Ожидание: исчезновение `OuterCommZone.OnTriggerEnter`, существенное снижение
+`Physics.SendTriggerEvents` и `MarketZone.Update`; фактические цифры — после нового захвата.

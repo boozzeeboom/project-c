@@ -83,6 +83,11 @@ namespace ProjectC.Docking.Zones
             _sphere = GetComponent<SphereCollider>();
             _sphere.isTrigger = true;
             _sphere.radius = triggerRadius;  // T-PERF03: не commRange (см. triggerRadius)
+            // T-PERF07: polling по SpawnedObjects полностью покрывает игроков и корабли.
+            // Даже triggerRadius = 60 м в плотном городе давал 5 541 OnTriggerEnter за 289 кадров:
+            // 18.38 ms/кадр в обработчике и 82.83 ms/кадр Physics.SendTriggerEvents.
+            // Коллайдер оставлен для совместимости данных сцены, но не участвует в simulation.
+            _sphere.enabled = false;
 
             _stationController = GetComponentInParent<DockStationController>();
             if (_stationController == null)

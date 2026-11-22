@@ -1212,7 +1212,8 @@ namespace ProjectC.Player
                     SubmitJumpRpc();
                 }
 
-                GlobalMotionRuntimeEvidenceProbe.RecordEvent("player", "Update.beforeProcessMovement", $"position={transform.position} moveInput={_moveInput} jump={_jumpPressed} run={_runPressed}");
+                if (GlobalMotionRuntimeEvidenceProbe.IsActive)
+                    GlobalMotionRuntimeEvidenceProbe.RecordEvent("player", "Update.beforeProcessMovement", $"position={transform.position} moveInput={_moveInput} jump={_jumpPressed} run={_runPressed}");
                 ProcessMovement(_moveInput, _jumpPressed, _runPressed);
 
                 // Снос ветром интегрирован в ProcessMovement (единый Move, без подпрыгивания)
@@ -1260,7 +1261,8 @@ namespace ProjectC.Player
         private void FixedUpdate()
         {
             if (!IsOwner) return;
-            GlobalMotionRuntimeEvidenceProbe.RecordEvent("player", "FixedUpdate.begin", $"pos={transform.position} grounded={_controller != null && _controller.isGrounded} velocity={_velocity}");
+            if (GlobalMotionRuntimeEvidenceProbe.IsActive)
+                GlobalMotionRuntimeEvidenceProbe.RecordEvent("player", "FixedUpdate.begin", $"pos={transform.position} grounded={_controller != null && _controller.isGrounded} velocity={_velocity}");
             if (!CanSimulateInCurrentCoordinates)
             {
                 ClearCoordinateInput();
@@ -1284,7 +1286,8 @@ namespace ProjectC.Player
             }
 
             transform.rotation = Quaternion.Slerp(transform.rotation, transform.rotation, rotationSpeed * Time.fixedDeltaTime);
-            GlobalMotionRuntimeEvidenceProbe.RecordEvent("player", "FixedUpdate.end", $"pos={transform.position} grounded={_controller != null && _controller.isGrounded} velocity={_velocity}");
+            if (GlobalMotionRuntimeEvidenceProbe.IsActive)
+                GlobalMotionRuntimeEvidenceProbe.RecordEvent("player", "FixedUpdate.end", $"pos={transform.position} grounded={_controller != null && _controller.isGrounded} velocity={_velocity}");
         }
 
         /// <summary>
@@ -1415,9 +1418,11 @@ namespace ProjectC.Player
                 controllerMotion.z = bakedDisplacement.z + _platformDelta.z;
             }
 
-            GlobalMotionRuntimeEvidenceProbe.RecordEvent("movement", "CharacterController.Move.before", $"motion={controllerMotion} grounded={_controller.isGrounded} onPlatform={_onPlatform} platformDelta={_platformDelta}");
+            if (GlobalMotionRuntimeEvidenceProbe.IsActive)
+                GlobalMotionRuntimeEvidenceProbe.RecordEvent("movement", "CharacterController.Move.before", $"motion={controllerMotion} grounded={_controller.isGrounded} onPlatform={_onPlatform} platformDelta={_platformDelta}");
             _controller.Move(controllerMotion);
-            GlobalMotionRuntimeEvidenceProbe.RecordEvent("movement", "CharacterController.Move.after", $"pos={transform.position} grounded={_controller.isGrounded} velocity={_velocity}");
+            if (GlobalMotionRuntimeEvidenceProbe.IsActive)
+                GlobalMotionRuntimeEvidenceProbe.RecordEvent("movement", "CharacterController.Move.after", $"pos={transform.position} grounded={_controller.isGrounded} velocity={_velocity}");
 
             // T-DIAG-FERRY (ВРЕМЕННО, удалить после замеров): диагностика езды.
             // Считаем, пока стоим на платформе; лог раз в секунду, только если
@@ -1659,7 +1664,8 @@ namespace ProjectC.Player
                 deltaPos.y = -_platformMaxStepDown;
             }
             _platformDelta = deltaPos;
-            GlobalMotionRuntimeEvidenceProbe.RecordEvent("movement", "PlatformCarry", $"platform={platform.name} delta={deltaPos} yaw={_carryYaw}");
+            if (GlobalMotionRuntimeEvidenceProbe.IsActive)
+                GlobalMotionRuntimeEvidenceProbe.RecordEvent("movement", "PlatformCarry", $"platform={platform.name} delta={deltaPos} yaw={_carryYaw}");
 
             _platformLastPos = platform.position;
             _platformLastRot = platform.rotation;
@@ -1909,23 +1915,10 @@ namespace ProjectC.Player
 
         private bool HasNearbyDoorForInteraction(Vector3 position)
         {
-            var allDoors = FindObjectsByType<ProjectC.Ship.DoorController>(FindObjectsInactive.Exclude);
+            // T-PERF06: реестр вместо FindObjectsByType<DoorController> — 2 800 дверей давали
+            // массив 21.94 KB на каждый кадр (5 000 KB за сессию замера G).
             float range = Mathf.Max(pickupRange, boardDistance);
-
-            foreach (var door in allDoors)
-            {
-                if (door == null || !door.isActiveAndEnabled) continue;
-
-                var collider = door.GetComponent<Collider>();
-                float distance = collider != null
-                    ? Vector3.Distance(position, collider.bounds.ClosestPoint(position))
-                    : Vector3.Distance(position, door.transform.position);
-
-                if (distance < range)
-                    return true;
-            }
-
-            return false;
+            return InteractableManager.FindNearestDoor(position, range, out _) != null;
         }
 
         private bool HasNearbyNpcForInteraction(Vector3 position)
@@ -2196,35 +2189,7 @@ namespace ProjectC.Player
         {
             if (_inShip) return false;
 
-            var allDoors = FindObjectsByType<ProjectC.Ship.DoorController>(FindObjectsInactive.Exclude);
-            ProjectC.Ship.DoorController nearest = null;
-            float minDist = float.MaxValue;
-            Vector3 pos = GetEffectivePosition();
-            float range = Mathf.Max(pickupRange, boardDistance);
-
-            foreach (var door in allDoors)
-            {
-                if (door == null || !door.gameObject.activeSelf) continue;
-
-                float dist;
-                var col = door.GetComponent<Collider>();
-                if (col != null)
-                {
-                    Vector3 closest = col.bounds.ClosestPoint(pos);
-                    dist = Vector3.Distance(pos, closest);
-                }
-                else
-                {
-                    dist = Vector3.Distance(pos, door.transform.position);
-                }
-
-                if (dist < range && dist < minDist)
-                {
-                    minDist = dist;
-                    nearest = door;
-                }
-            }
-
+            var nearest = InteractableManager.FindNearestDoor(GetEffectivePosition(), Mathf.Max(pickupRange, boardDistance), out float minDist);
             if (nearest == null) return false;
 
             Debug.Log($"[NetworkPlayer:{OwnerClientId}] F → Door '{nearest.name}' (dist={minDist:F2}m)");

@@ -389,9 +389,14 @@ namespace ProjectC.World.FloatingOrigin.Network
                 if (!transform.localScale.Equals(plan.Scale)) transform.localScale = plan.Scale;
                 if (baseline || _body == null)
                 {
-                    GlobalMotionRuntimeEvidenceProbe.RecordEvent("physics", "SyncTransforms.begin", $"baseline={baseline} role={role} binding={plan.Binding.SessionId}/{plan.Binding.NetworkObjectId}/{plan.Binding.SpawnGeneration}/{plan.Binding.AuthorityGeneration}/{plan.Binding.DiscontinuityGeneration}");
+                    // T-PERF06: выполняется каждый кадр для актёров без Rigidbody (игрок на CharacterController) —
+                    // payload-строка строится только при включённом пробнике.
+                    bool probe = GlobalMotionRuntimeEvidenceProbe.IsActive;
+                    if (probe)
+                        GlobalMotionRuntimeEvidenceProbe.RecordEvent("physics", "SyncTransforms.begin", $"baseline={baseline} role={role} binding={plan.Binding.SessionId}/{plan.Binding.NetworkObjectId}/{plan.Binding.SpawnGeneration}/{plan.Binding.AuthorityGeneration}/{plan.Binding.DiscontinuityGeneration}");
                     Physics.SyncTransforms();
-                    GlobalMotionRuntimeEvidenceProbe.RecordEvent("physics", "SyncTransforms.end", $"baseline={baseline} role={role}");
+                    if (probe)
+                        GlobalMotionRuntimeEvidenceProbe.RecordEvent("physics", "SyncTransforms.end", $"baseline={baseline} role={role}");
                 }
                 return true;
             }

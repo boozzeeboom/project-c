@@ -333,7 +333,10 @@ namespace ProjectC.World.FloatingOrigin.Network
 
         private void OnNetworkTick()
         {
-            GlobalMotionRuntimeEvidenceProbe.RecordEvent("ngo", "NetworkTick", $"tick={(NetworkManager != null ? NetworkManager.ServerTime.Tick : -1)} server={IsServer} spawned={IsSpawned} active={_serverControl.IsActive}");
+            // T-PERF06: до 30 интерполяций в секунду на каждого актора — строка-пayload строится
+            // только при включённом пробнике (RecordEvent и так no-op).
+            if (GlobalMotionRuntimeEvidenceProbe.IsActive)
+                GlobalMotionRuntimeEvidenceProbe.RecordEvent("ngo", "NetworkTick", $"tick={(NetworkManager != null ? NetworkManager.ServerTime.Tick : -1)} server={IsServer} spawned={IsSpawned} active={_serverControl.IsActive}");
             if (IsServer && IsSpawned && isActiveAndEnabled && _serverControl.IsActive)
                 GlobalMotionPlayerBootstrap.RefreshSpawnSeed(this);
             if (!IsServer || !IsSpawned || !isActiveAndEnabled || !_serverControl.IsActive || ServerNow < _nextKeyframeTime) return;

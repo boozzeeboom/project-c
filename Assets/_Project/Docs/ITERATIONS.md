@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-11-22 (T-PERF06, этап 3 — мусор в горячих путях)
+
+**Задача:** После замера G снять найденные адреса мусора, которые не меняют поведение: `NetworkPlayer.Update` 5 000 KB за сессию (18.9 KB на вызов, 15 289 `GC.Alloc`) и неохраняемые payload-строки `GlobalMotionRuntimeEvidenceProbe` в кадрах и тиках. Остальные три этапа (агенты вне меша, проба PRIMUM, ленивая регистрация палуб) — следом, отдельными коммитами; Play Mode не запускать.
+
+**Результат:** Реестр дверей вместо `FindObjectsByType`: `InteractableManager` держит `List<DoorController>` (ёмкость 4096), `DoorController.OnEnable/OnDisable` регистрирует и снимает дверь, `FindNearestDoor` обходит список без аллокаций, `DistanceToInteraction` меряет до ближайшей точки кэшированного коллайдера (было — 2 800 дверей = массив 21.94 KB на каждый тик подсказки; 227 из 265 вызовов доходили до строки при `INTERACTION_HINT_INTERVAL` 0.2 с и кадре ~200 ms = 4 980 KB из измеренных 5 000). Кэш коллайдера посадки: `PilotSeatController.SeatCollider` из `Awake` + `Dictionary<ShipController, ShipBoardingTarget>` с повтором резолва через 60 кадров вместо `GetComponentInChildren<T>(true)` (этот overload аллоцирует массив) по 20 кораблям на каждый тик; семантика радиуса посадки сохранена 1:1. Под `GlobalMotionRuntimeEvidenceProbe.IsActive` убраны оставшиеся периодические вызовы: `NetworkPlayer` (`Update.beforeProcessMovement`, `FixedUpdate.begin/end`, `CharacterController.Move.before/after`, `PlatformCarry`), `PlayerRespawnTracker.Update.begin`, `GlobalMotionReplicator.NetworkTick`, `GlobalMotionPoseAdapter.SyncTransforms.begin/end` (каждый кадр для актёров без `Rigidbody`). Событийные вызовы пробника (спавн, baseline, телепорт, rebase, respawn) намеренно не тронуты — это доказательная база FO.
+
+**Проверка:** `check_compile_errors` — 0 errors. Play Mode и новый замер — **NOT RUN, за пользователем**: ожидается `NetworkPlayer.Update` 18.9 KB/вызов → ~0 и −5 000 KB из установившегося мусора сессии.
+
+**Не сделано (по плану 3 → 1 → 4 → 2):** этап 1 — не держать `NavMeshAgent` с `enabled = true` вне навмеша (304 из 391 предупреждений G из `ShipDeckNav.cs:342`, меняет поведение, нужен прогон); этап 4 — временная проба в `PrimumCrowdNpc.ApplyWorldRebase` для 53 предупреждений из `:401`; этап 2 — ленивая регистрация навмеша палуб (42.0 KB/кадр установившегося мусора G), блокер — FO-контракт `ship_deck_nav_not_ready`. Остаток `O(N)` обхода 2 800 дверей по CPU не изменился — снят только массив; пространственная разбивка отдельной задачей. Разбор и план — `docs/world/optimization/22112026/04_T_PERF06_GARBAGE_CLEANUP.md`.
+
+**Файлы:** `Assets/_Project/Scripts/Core/InteractableManager.cs`, `Assets/_Project/Scripts/Ship/DoorController.cs`, `Assets/_Project/Scripts/Ship/PilotSeatController.cs`, `Assets/_Project/Scripts/Player/NetworkPlayer.cs`, `Assets/_Project/Scripts/Player/PlayerRespawnTracker.cs`, `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionReplicator.cs`, `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionPoseAdapter.cs`, `docs/world/optimization/22112026/04_T_PERF06_GARBAGE_CLEANUP.md`, `docs/world/optimization/22112026/ITERATIONS.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
 ## Итерация от 2026-11-22 (T-PERF05 — null-GetComponent в FO-слое, разбор консоли)
 
 **Задача:** После T-PERF04 (GC сессии 131 → 98.6 MB) снять остаток null-сообщений и разобрать сохранённую консоль, чтобы убрать самые шумные логи.

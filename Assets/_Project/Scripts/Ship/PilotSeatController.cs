@@ -55,6 +55,13 @@ namespace ProjectC.Ship
         /// </summary>
         public PilotSeatType SeatType => seatType;
 
+        /// <summary>
+        /// T-PERF06: коллайдер зоны посадки, закэшированный в Awake.
+        /// Раньше InteractableManager.FindNearestShip тянул его через GetComponentInChildren&lt;T&gt;(true),
+        /// а этот overload аллоцирует массив на каждый вызов (20 кораблей × каждый кадр).
+        /// </summary>
+        public Collider SeatCollider { get; private set; }
+
         private void Awake()
         {
             // Кешируем корневой ShipController через ShipRootReference
@@ -82,6 +89,7 @@ namespace ProjectC.Ship
 
             // Гарантируем что коллайдер — триггер
             var col = GetComponent<Collider>();
+            SeatCollider = col;
             if (col != null && !col.isTrigger)
             {
                 col.isTrigger = true;

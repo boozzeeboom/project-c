@@ -26,6 +26,29 @@ namespace ProjectC.Core
         private static readonly List<ProjectC.Ship.Cargo.ShipCargoConsole> _shipCargoConsoles = new List<ProjectC.Ship.Cargo.ShipCargoConsole>(8);
         private static readonly List<ProjectC.Ship.RepairManager> _repairManagers = new List<ProjectC.Ship.RepairManager>(4);
 
+        // T-PERF06: реестр дверей. До правки NetworkPlayer дважды за кадр делал
+        // FindObjectsByType<DoorController> (2 800 дверей в мире = массив 21.94 KB) —
+        // в замере G это 5 000 KB за сессию (18.9 KB на вызов Update).
+        // Регистрация — из DoorController.OnEnable/OnDisable, т.е. ровно "active and enabled".
+        private static readonly List<DoorController> _doors = new List<DoorController>(4096);
+
+        // T-PERF06: кэш коллайдера посадки на корабль. GetComponentInChildren<T>(true) аллоцирует
+        // массив на каждый вызов, а FindNearestShip зовётся из подсказки взаимодействия каждый кадр
+        // и обходит все живые корабли (20 штук).
+        private struct ShipBoardingTarget
+        {
+            public PilotSeatController Seat;
+            public Collider Collider;
+            public int ResolvedFrame;
+        }
+
+        private static readonly Dictionary<ShipController, ShipBoardingTarget> _shipBoardingTargets =
+            new Dictionary<ShipController, ShipBoardingTarget>(8);
+
+        // Повторная попытка резолва для корабля, у которого кресла/коллайдера пока нет
+        // (префаб догружается). Уже разрезолвленный коллайдер держится без ограничений.
+        private const int BoardingTargetRetryFrames = 60;
+
         /// <summary>
                 /// Register a pickup item when it enters player's trigger.
                 /// </summary>
@@ -135,6 +158,7 @@ namespace ProjectC.Core
             if (ship != null)
             {
                 _ships.Remove(ship);
+                _shipBoardingTargets.Remove(ship);
             }
         }
 
@@ -283,6 +307,76 @@ namespace ProjectC.Core
             return nearest;
         }
 
+        // ==========================================================
+        // DoorController (T-PERF06)
+        // ==========================================================
+
+        /// <summary>Register a door while it is active and enabled.</summary>
+        public static void RegisterDoor(DoorController door)
+        {
+            if (door != null) _doors.Add(door);
+        }
+
+        /// <summary>Unregister a door when it is disabled or destroyed.</summary>
+        public static void UnregisterDoor(DoorController door)
+        {
+            if (door != null) _doors.Remove(door);
+        }
+
+        /// <summary>
+        /// Find nearest door within range: distance to the closest point of its interaction collider
+        /// (fallback — distance to the transform). Same rule the two FindObjectsByType call sites used.
+        /// Zero allocations.
+        /// </summary>
+        public static DoorController FindNearestDoor(Vector3 position, float range, out float distance)
+        {
+            DoorController nearest = null;
+            float minDist = float.MaxValue;
+            for (int i = 0; i < _doors.Count; i++)
+            {
+                var door = _doors[i];
+                if (door == null) { _doors.RemoveAt(i--); continue; }
+                if (!door.isActiveAndEnabled) continue;
+
+                float dist = door.DistanceToInteraction(position);
+                if (dist < range && dist < minDist) { minDist = dist; nearest = door; }
+            }
+
+            distance = nearest != null ? minDist : 0f;
+            return nearest;
+        }
+
+        /// <summary>
+        /// T-PERF06: collider the player boards a ship through (PilotSeat, fallback — first collider),
+        /// resolved once per ship instead of GetComponentInChildren&lt;T&gt;(true) on every query.
+        /// <paramref name="seat"/> — null, когда коллайдера кресла нет и сработал fallback:
+        /// тогда радиус посадки — переданный range (ровно как до правки).
+        /// </summary>
+        private static Collider ResolveBoardingCollider(ShipController ship, out PilotSeatController seat)
+        {
+            if (_shipBoardingTargets.TryGetValue(ship, out var cached))
+            {
+                if (cached.Collider != null) { seat = cached.Seat; return cached.Collider; }
+                if (Time.frameCount - cached.ResolvedFrame < BoardingTargetRetryFrames) { seat = null; return null; }
+            }
+
+            seat = ship.GetComponentInChildren<PilotSeatController>(true);
+            Collider collider = seat != null ? seat.SeatCollider : null;
+            // Кресло есть, но его Awake ещё не проставил кэш — берём коллайдер напрямую
+            // (GetComponent не аллоцирует), иначе кэш навсегда зафиксирует чужой коллайдер.
+            if (collider == null && seat != null) collider = seat.GetComponent<Collider>();
+            if (collider == null) seat = null;
+            if (collider == null) collider = ship.GetComponentInChildren<Collider>();
+
+            _shipBoardingTargets[ship] = new ShipBoardingTarget
+            {
+                Seat = seat,
+                Collider = collider,
+                ResolvedFrame = Time.frameCount
+            };
+            return collider;
+        }
+
         public static void ClearAll()
         {
             _pickups.Clear();
@@ -292,6 +386,8 @@ namespace ProjectC.Core
             _craftingStations.Clear();
             _shipCargoConsoles.Clear();
             _repairManagers.Clear();
+            _doors.Clear();
+            _shipBoardingTargets.Clear();
         }
 
         /// <summary>
@@ -364,27 +460,22 @@ namespace ProjectC.Core
                 if (ship == null || !ship.gameObject.activeSelf) continue;
 
                 // COMPOSITE SHIP: distance до PilotSeat (если есть), иначе fallback.
-                var pilotSeat = ship.GetComponentInChildren<PilotSeatController>(true);
-                Collider targetCollider = pilotSeat != null ? pilotSeat.GetComponent<Collider>() : null;
+                // T-PERF06: коллайдер кресла резолвится один раз на корабль (кэш), а не
+                // GetComponentInChildren<T>(true) на каждый запрос.
+                Collider targetCollider = ResolveBoardingCollider(ship, out PilotSeatController pilotSeat);
+                if (targetCollider == null) continue;
 
                 // COMPOSITE SHIP (Phase 1): если есть PilotSeat — радиус посадки = размер
                 // коллайдера кресла (обычно ~1-2м). Без PilotSeat (старые корабли) —
                 // используем переданный range (boardDistance, ~5м).
                 float effectiveRange = range;
-                if (pilotSeat != null && targetCollider != null)
+                if (pilotSeat != null)
                 {
                     // Радиус от кресла: половина диагонали коллайдера + запас 0.3м
                     Vector3 colSize = targetCollider.bounds.size;
                     float seatRadius = Mathf.Max(colSize.x, colSize.y, colSize.z) * 0.6f + 0.3f;
                     effectiveRange = Mathf.Min(range, Mathf.Max(seatRadius, 1.5f));
                 }
-
-                if (targetCollider == null)
-                {
-                    // Fallback: первый collider в детях (старое поведение для префабов без PilotSeat)
-                    targetCollider = ship.GetComponentInChildren<Collider>();
-                }
-                if (targetCollider == null) continue;
 
                 Vector3 closest = targetCollider.bounds.ClosestPoint(position);
                 float dist = Vector3.Distance(position, closest);

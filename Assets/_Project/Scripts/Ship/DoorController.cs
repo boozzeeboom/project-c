@@ -282,6 +282,47 @@ namespace ProjectC.Ship
             ApplyPose(SampleCurve(_openAmount));
         }
 
+        // T-PERF06: дверь живёт в реестре InteractableManager, пока активна и включена.
+        // До правки NetworkPlayer каждый кадр делал FindObjectsByType<DoorController>
+        // по 2 800 дверям (массив 21.94 KB) — 5 000 KB за сессию замера G.
+        private bool _registeredInInteractableManager;
+        private Collider _interactionCollider;
+
+        private void OnEnable()
+        {
+            if (_registeredInInteractableManager) return;
+            _registeredInInteractableManager = true;
+            ProjectC.Core.InteractableManager.RegisterDoor(this);
+        }
+
+        private void OnDisable()
+        {
+            if (!_registeredInInteractableManager) return;
+            _registeredInInteractableManager = false;
+            ProjectC.Core.InteractableManager.UnregisterDoor(this);
+        }
+
+        /// <summary>Коллайдер зоны взаимодействия (кэш; EnsureCollider гарантирует его наличие).</summary>
+        public Collider InteractionCollider
+        {
+            get
+            {
+                if (_interactionCollider == null) _interactionCollider = GetComponent<Collider>();
+                return _interactionCollider;
+            }
+        }
+
+        /// <summary>
+        /// T-PERF06: расстояние от точки до зоны взаимодействия — до ближайшей точки коллайдера,
+        /// иначе до трансформа. Zero allocations (без GetComponent на каждом запросе).
+        /// </summary>
+        public float DistanceToInteraction(Vector3 position)
+        {
+            var col = InteractionCollider;
+            if (col == null) return Vector3.Distance(position, transform.position);
+            return Vector3.Distance(position, col.bounds.ClosestPoint(position));
+        }
+
         // Свежий компонент: разумные дефолты + пропуск legacy-миграции.
         private void Reset()
         {

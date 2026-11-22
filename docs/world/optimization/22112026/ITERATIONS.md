@@ -493,3 +493,54 @@ boot (первые 41 кадр) = 54 053 KB = **62% всего мусора се
 Следующие рычаги (не делал, ждут решения): дрейф палуб (`ShipDeckNav`, 30% установившегося мусора + 391
 предупреждение), реестр дверей вместо `FindObjectsByType` в резолвере подсказки, старт хоста и постановка меню.
 Подробности — `03_FO_NULL_COMPONENT_AND_CONSOLE.md`, раздел «Замер G».
+
+## T-PERF06 — четыре этапа, порядок 3 → 1 → 4 → 2
+
+Замер G дал три адреса, и они разные по риску: мусор без изменения поведения, агенты вне меша (меняет
+поведение), проба PRIMUM (диагностика), дрейф палуб (упирается в FO-контракт). Пользователь выбрал
+порядок «сначала безрисковое, потом требующее Play-прогона»; отдельный коммит на этап.
+План и состояние этапов — `04_T_PERF06_GARBAGE_CLEANUP.md`.
+
+## T-PERF06/3 — мусор в горячих путях без изменения поведения
+
+Файлы: `Assets/_Project/Scripts/Core/InteractableManager.cs`, `Assets/_Project/Scripts/Ship/DoorController.cs`,
+`Assets/_Project/Scripts/Ship/PilotSeatController.cs`, `Assets/_Project/Scripts/Player/NetworkPlayer.cs`,
+`Assets/_Project/Scripts/Player/PlayerRespawnTracker.cs`,
+`Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionReplicator.cs`,
+`Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionPoseAdapter.cs`.
+
+**Реестр дверей.** `NetworkPlayer` дважды за тик подсказки собирал `FindObjectsByType<DoorController>`
+по 2 800 дверям — 21.94 KB на вызов, 227 из 265 вызовов доходили до строки (`INTERACTION_HINT_INTERVAL`
+0.2 с при кадре ~200 ms пропускает каждый кадр) = **4 980 KB** из измеренных 5 000. Теперь
+`InteractableManager` держит `List<DoorController>` (ёмкость 4096), `DoorController.OnEnable/OnDisable`
+регистрирует и снимает дверь (локальный флаг — защита от двойной активации), `FindNearestDoor` обходит
+список без аллокаций и вычищает уничтоженные элементы по месту. Расстояние — `DistanceToInteraction`:
+до ближайшей точки коллайдера (кэш `InteractionCollider`), fallback — до трансформа; ровно та же формула,
+что была в двух старых циклах. Набор дверей = «активна и включена», как и было в
+`FindObjectsByType(FindObjectsInactive.Exclude)`; `TryInteractNearestDoor` раньше фильтровал по `activeSelf` —
+теперь оба пути согласованы (практической разницы нет, дверей с выключенным `DoorController` в сцене нет).
+
+**Кэш коллайдера посадки.** `FindNearestShip` вызывал `GetComponentInChildren<PilotSeatController>(true)`
+и `GetComponentInChildren<Collider>()` на каждый из 20 кораблей на каждый тик; этот overload реализован
+через `GetComponentsInChildren` и потому аллоцирует массив. Теперь `PilotSeatController.SeatCollider`
+кэшируется в `Awake`, а `InteractableManager` держит `Dictionary<ShipController, ShipBoardingTarget>` с
+повтором резолва через 60 кадров, если кресло/коллайдер ещё не готовы. Семантика ветки 1:1: нет коллайдера
+кресла — `seat = null`, fallback на первый коллайдер в детях, радиус = переданный `boardDistance`.
+Если кресло есть, но его `Awake` ещё не проставил кэш, берётся `seat.GetComponent<Collider>()` (без
+аллокаций), иначе кэш зафиксировал бы чужой коллайдер навсегда.
+
+**Payload-строки пробника.** `RecordEvent` сам no-op при выключенном захвате, но строка интерполируется
+у вызывающего. Под `IsActive` переведены оставшиеся периодические вызовы: `NetworkPlayer`
+`Update.beforeProcessMovement`, `FixedUpdate.begin/end`, `CharacterController.Move.before/after`,
+`PlatformCarry`; `PlayerRespawnTracker.Update.begin`; `GlobalMotionReplicator.NetworkTick`;
+`GlobalMotionPoseAdapter.SyncTransforms.begin/end` (каждый кадр для актёров без `Rigidbody` — игрок на
+`CharacterController`). Событийные вызовы (спавн, baseline, телепорт, rebase, respawn-переходы) не тронуты:
+они идут единицами за сессию и служат доказательной базой FO.
+
+**Ожидание:** `NetworkPlayer.Update` 18.9 KB/вызов → ~0 (остаток — `FindObjectsByType<NpcController>` в
+`HasNearbyNpcForInteraction`, 25–30 NPC ≈ 0.3 KB); `GlobalMotionPoseAdapter`/`PlayerRespawnTracker`/
+`GlobalMotionReplicator` — по строке на кадр или тик. CPU-порядок обхода дверей не изменился (O(N) по
+2 800), снят только массив; пространственная разбивка — отдельная задача.
+
+**Проверка:** `check_compile_errors` — 0 errors. Play Mode и новый замер — **NOT RUN, за пользователем**.
+Дальше по плану: этап 1 (агенты вне меша), этап 4 (проба PRIMUM), этап 2 (ленивая регистрация палуб).

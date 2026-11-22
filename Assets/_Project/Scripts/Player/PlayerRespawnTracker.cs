@@ -96,7 +96,10 @@ namespace ProjectC.Player
             if (_respawnManager == null) return;
 
             float y = transform.position.y;
-            GlobalMotionRuntimeEvidenceProbe.RecordEvent("respawn", "Update.begin", $"owner={OwnerClientId} y={y:F3} deathY={_deathY:F3} respawning={_isRespawning} fallStart={_fallStartTime:F3}");
+            // T-PERF06: payload-строка строится только при включённом пробнике — иначе это
+            // одна промежуточная строка на игрока каждый кадр (RecordEvent и так no-op).
+            if (GlobalMotionRuntimeEvidenceProbe.IsActive)
+                GlobalMotionRuntimeEvidenceProbe.RecordEvent("respawn", "Update.begin", $"owner={OwnerClientId} y={y:F3} deathY={_deathY:F3} respawning={_isRespawning} fallStart={_fallStartTime:F3}");
 
             if (y <= _deathY)
             {

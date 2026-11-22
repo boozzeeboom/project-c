@@ -86,7 +86,8 @@ namespace ProjectC.Ship.Cargo
 
         private void OnTriggerEnter(Collider other)
         {
-            if (other.CompareTag("Player") || other.GetComponent<CharacterController>() != null)
+            // T-PERF04: IsPlayerCollider вместо GetComponent — см. комментарий у хелпера.
+            if (IsPlayerCollider(other))
             {
                 InteractableManager.RegisterShipCargoConsole(this);
             }
@@ -94,11 +95,19 @@ namespace ProjectC.Ship.Cargo
 
         private void OnTriggerExit(Collider other)
         {
-            if (other.CompareTag("Player") || other.GetComponent<CharacterController>() != null)
+            if (IsPlayerCollider(other))
             {
                 InteractableManager.UnregisterShipCargoConsole(this);
             }
         }
+
+        /// <summary>
+        /// T-PERF04: коллайдер принадлежит игроку (тег Player или CharacterController).
+        /// TryGetComponent не строит null-сообщение, в отличие от GetComponent: в захвате
+        /// 2026-11-22 эти два колбэка давали 24.7 МБ мусора на 36 817 вызовов.
+        /// </summary>
+        private static bool IsPlayerCollider(Collider other)
+            => other.CompareTag("Player") || other.TryGetComponent(out CharacterController _);
 
         private void OnDisable()
         {

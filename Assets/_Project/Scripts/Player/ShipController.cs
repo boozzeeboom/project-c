@@ -597,7 +597,10 @@ namespace ProjectC.Player
         private void OnTriggerEnter(Collider other)
         {
             // Also register with InteractableManager when player enters trigger
-            if (other.CompareTag("Player") || other.GetComponent<CharacterController>() != null)
+            // T-PERF04: IsPlayerCollider вместо GetComponent — GetComponent на чужом коллайдере
+            // строит null-сообщение (~0.64 КБ); в захвате 2026-11-22 этот колбэк давал
+            // 16.1 МБ мусора на 24 434 вызова.
+            if (IsPlayerCollider(other))
             {
                 Core.InteractableManager.RegisterShip(this);
             }
@@ -606,11 +609,20 @@ namespace ProjectC.Player
         private void OnTriggerExit(Collider other)
         {
             // Unregister when player exits trigger
-            if (other.CompareTag("Player") || other.GetComponent<CharacterController>() != null)
+            if (IsPlayerCollider(other))
             {
                 Core.InteractableManager.UnregisterShip(this);
             }
         }
+
+        /// <summary>
+        /// T-PERF04: коллайдер принадлежит игроку (есть CharacterController или тег Player).
+        /// TryGetComponent — аллокационно-свободный путь: GetComponent на отсутствующем компоненте
+        /// строит null-сообщение, и эти четыре триггер-колбэка давали 65 МБ мусора за сессию
+        /// (половину всех аллокаций в замере 2026-11-22).
+        /// </summary>
+        private static bool IsPlayerCollider(Collider other)
+            => other.CompareTag("Player") || other.TryGetComponent(out CharacterController _);
 
         // ========================================================
         // T-CARGO-04: Повреждение груза при столкновении

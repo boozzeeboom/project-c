@@ -1,5 +1,22 @@
 # Iterations
 
+## Итерация от 2026-11-22 (DayNight — тонирование окружения: `colorFilter` и изоляция Volume-профилей)
+
+**Задача:** Убрать пересыщение цветовым тоном, из-за которого объекты теряют цвет материала, и объяснить, почему картинка со временем деградирует («сначала легкая вариативность, потом всё розовее»). Play Mode не запускать — визуальную оценку делает пользователь.
+
+**Результат (аудит):** тонирование складывалось из трёх слоёв. 1) `ColorAdjustments.colorFilter` фазовых профилей — мультипликативный фильтр, который не подкрашивает, а гасит каналы: Day (0.9434, 0.7298, 0.3693), Twilight (0.5306, 0.3968, 0.9245), Night (0.1407, 0.1588, 0.9623) — ночью R/G падают до ~15%, лист (0.2, 0.5, 0.2) превращается в (0.028, 0.079, 0.19). 2) Температурный оверлей (priority 200 против 100 у фазовых): `temperatureEffectStrength = 0.75` при рекомендованных тултипом 0.2–0.4, а пороги `TemperatureFilterConfig` = 0/25 °C дают при 20 °C `tempFactor = 0.8` → вес 0.6, то есть том включён практически всегда и лерпит фазовый грейдинг на 60–75% в сторону своего. 3) `ApplyTemperatureFilter` безусловно перезаписывает `fogColor` и `ambientSkyColor` абсолютным `Lerp(cold, hot, tempFactor)` **после** `ApplyFogSmooth`/`ApplyAmbientLightingSmooth`, выбрасывая авторские значения фазы (при 20 °C туман ≈ (0.72, 0.58, 0.46), ambient ≈ (0.49, 0.42, 0.32)).
+
+**Результат (главная причина дрейфа):** `Object.Instantiate(VolumeProfile)` не клонирует `VolumeComponent` — `components[i]` указывают на те же объекты, что и в ассете (`sameRef = True`), поэтому `WriteHueShift` и `ApplyPostProcessing` писали прямо в `ColorAdjustments`/`Bloom` исходных профилей и ближайший `AssetDatabase.SaveAssets` запекал это на диск. В git HEAD `hueShift: 0` у всех трёх, на диске было Day **−180** (упёрлось в кламп = полный разворот hue на 180°), Twilight −100.57, Night −29.37. В edit mode `ServerWeatherController.Instance == null` → `GetDaySeed() = 0`, поэтому `seededRand(0 + 0.13, (−5, 5))` всегда даёт **−4.196556**: шаг на каждый домен-релоад, 0 → −4.1966 → −8.393 → … → −180. Отсюда и «лёгкая вариативность → всё розовее».
+
+**Правки:**
+- `DayVolumeProfile.asset` / `TwilightVolumeProfile.asset` / `NightVolumeProfile.asset` — только `ColorAdjustments.colorFilter`: Day (1.00, 0.92, 0.78), Twilight (0.72, 0.62, 1.00), Night (0.50, 0.56, 1.00). `postExposure`/`saturation`/`contrast` не тронуты; настроение фазы остаётся за ними и за авторскими `sun/ambient/fog` из фазовых ассетов.
+- `DayNightController.InitializeVolumeProfileInstances` больше не делает `Instantiate(profile)`: добавлен `CreateIsolatedProfileCopy` — `CreateInstance<VolumeProfile>()` (`hideFlags = DontSave`) + `Instantiate(sourceComponent)` на каждый компонент (сериализационный round-trip даёт новые `VolumeParameter`). Тем же фиксом перестал мутировать ассеты `ApplyPostProcessing` (`Bloom.intensity/threshold` при `useCustomBloom`).
+- `hueShift` всех трёх профилей возвращён в авторский `0`.
+
+**Проверка:** `check_compile_errors` — 0 errors. Изоляция подтверждена в редакторе без Play Mode: `same ColorAdjustments object? False`, `same parameter object? False`; запись `hueShift = −77` и `colorFilter` в копию не меняет ассет (`isDirty = False`); имитация домен-релоада (`InitializeVolumeProfileInstances` на контроллере из сцены) — копия получает `hueShift = −4.196556`, ассет остаётся `0`, `isDirty = False`. Play Mode — **NOT RUN, за пользователем**.
+
+**Отложено:** шаги 2 и 3 (температурный оверлей: `temperatureEffectStrength` → 0.3, пороги 10/30, замешивание fog/ambient по весу тома вместо перезаписи) ждут визуальной оценки шага 1.
+
 ## Итерация от 2026-11-22 (T-PERF06, этап 7 — мусор на стороне Update; замер J)
 
 **Задача:** По замеру `ProjectC_client_2026-11-22_14-22-32.data` (309 кадров, call stacks ON) + `console.txt` подтвердить этап 6 и снять мусор, который после него остался в Update. Play Mode не запускать.

@@ -70,7 +70,10 @@ namespace ProjectC.Core
         private float _smoothedAmbientIntensity = 0.5f;
 
         // Runtime copies of volume profiles (CRITICAL: prevents external modifications!)
-        // Original assets should never be modified at runtime
+        // Original assets should never be modified at runtime.
+        // NOTE: Instantiate(VolumeProfile) does NOT isolate anything — the profile's component
+        // list holds references to separate sub-assets, so the clone keeps pointing at the SAME
+        // VolumeComponent objects as the .asset. Use CreateIsolatedProfileCopy instead.
         private VolumeProfile _dayVolumeProfileInstance;
         private VolumeProfile _nightVolumeProfileInstance;
         private VolumeProfile _twilightVolumeProfileInstance;
@@ -200,16 +203,14 @@ namespace ProjectC.Core
         }
 
         /// <summary>
-        /// Create runtime instances of volume profiles to prevent modification of original assets.
-        /// CRITICAL: Volume profiles that are assigned to Volume components get serialized as references.
-        /// When play mode starts, Unity may serialize/deserialize these references in ways that reset values.
-        /// Using runtime instances prevents any external code from modifying the original assets.
+        /// Create runtime copies of volume profiles so that runtime Override() calls never reach
+        /// the .asset files.
         /// </summary>
         private void InitializeVolumeProfileInstances()
         {
-            _dayVolumeProfileInstance = dayVolumeProfile != null ? Instantiate(dayVolumeProfile) : null;
-            _nightVolumeProfileInstance = nightVolumeProfile != null ? Instantiate(nightVolumeProfile) : null;
-            _twilightVolumeProfileInstance = twilightVolumeProfile != null ? Instantiate(twilightVolumeProfile) : null;
+            _dayVolumeProfileInstance = CreateIsolatedProfileCopy(dayVolumeProfile);
+            _nightVolumeProfileInstance = CreateIsolatedProfileCopy(nightVolumeProfile);
+            _twilightVolumeProfileInstance = CreateIsolatedProfileCopy(twilightVolumeProfile);
 
             if (logInitialization) Debug.Log($"[DayNightController] Created runtime profile instances: Day={_dayVolumeProfileInstance != null}, Night={_nightVolumeProfileInstance != null}, Twilight={_twilightVolumeProfileInstance != null}");
 
@@ -217,6 +218,41 @@ namespace ProjectC.Core
             CacheBaseHueShiftValues();
             _appliedHueShiftDay = float.MinValue;
             ApplyDailyHueShiftIfNeeded();
+        }
+
+        /// <summary>
+        /// Build a runtime VolumeProfile whose VolumeComponents are real copies.
+        ///
+        /// Instantiate(VolumeProfile) is NOT enough: VolumeProfile.components holds references to
+        /// separate objects (sub-assets of the .asset), so a profile clone still points at the very
+        /// same VolumeComponent instances — every Override() written at runtime lands in the .asset
+        /// and gets baked to disk by the next AssetDatabase.SaveAssets. That is what made the daily
+        /// hue shift accumulate in Day/Twilight/NightVolumeProfile (up to the ±180 clamp) over
+        /// successive sessions.
+        ///
+        /// Cloning each component individually goes through a serialization round-trip, which gives
+        /// fresh VolumeParameter objects — that is what actually isolates runtime writes.
+        /// </summary>
+        private static VolumeProfile CreateIsolatedProfileCopy(VolumeProfile source)
+        {
+            if (source == null) return null;
+
+            var copy = ScriptableObject.CreateInstance<VolumeProfile>();
+            copy.name = source.name + " (Runtime)";
+            copy.hideFlags = HideFlags.DontSave;
+
+            int componentCount = source.components.Count;
+            for (int i = 0; i < componentCount; i++)
+            {
+                VolumeComponent sourceComponent = source.components[i];
+                if (sourceComponent == null) continue;
+
+                VolumeComponent componentCopy = Instantiate(sourceComponent);
+                componentCopy.hideFlags = HideFlags.DontSave;
+                copy.components.Add(componentCopy);
+            }
+
+            return copy;
         }
 
         /// <summary>

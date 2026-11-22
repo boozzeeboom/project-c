@@ -255,30 +255,49 @@ namespace ProjectC.Trade.Network
             return null;
         }
 
-        private void PollActorsInRadius()
+        // T-PERF10: все зоны используют один снапшот актёров на кадр вместо
+        // повторного обхода SpawnedObjects в каждом таймере.
+        private static readonly List<NetworkPlayer> _polledPlayers = new List<NetworkPlayer>(16);
+        private static readonly List<ShipController> _polledShips = new List<ShipController>(32);
+        private static int _polledActorsFrame = -1;
+
+        private static void RefreshPollActors()
         {
-            // T-PERF07: два OverlapSphere по всей физической сцене заменены одним проходом
-            // по сетевым актёрам. NetworkPlayer и ShipController лежат на корне NetworkObject.
+            if (_polledActorsFrame == Time.frameCount) return;
+            _polledActorsFrame = Time.frameCount;
+            _polledPlayers.Clear();
+            _polledShips.Clear();
+
             var nm = NetworkManager.Singleton;
             if (nm == null || nm.SpawnManager == null) return;
+            foreach (var spawned in nm.SpawnManager.SpawnedObjects)
+            {
+                var obj = spawned.Value;
+                if (obj == null || !obj.IsSpawned) continue;
+                if (obj.TryGetComponent<NetworkPlayer>(out var np)) _polledPlayers.Add(np);
+                else if (obj.TryGetComponent<ShipController>(out var ship)) _polledShips.Add(ship);
+            }
+        }
 
+        private void PollActorsInRadius()
+        {
+            RefreshPollActors();
             Vector3 center = transform.position;
             float sqrTradeRadius = tradeRadius * tradeRadius;
             float sqrShipDockRadius = shipDockRadius * shipDockRadius;
             _pollFound.Clear();
             _pollShipsFound.Clear();
 
-            foreach (var spawned in nm.SpawnManager.SpawnedObjects)
+            for (int i = 0; i < _polledPlayers.Count; i++)
             {
-                var obj = spawned.Value;
-                if (obj == null || !obj.IsSpawned) continue;
-
-                float sqrDistance = (obj.transform.position - center).sqrMagnitude;
-                if (sqrDistance > sqrShipDockRadius && sqrDistance > sqrTradeRadius) continue;
-
-                if (sqrDistance <= sqrTradeRadius && obj.TryGetComponent<NetworkPlayer>(out var np))
+                var np = _polledPlayers[i];
+                if ((np.transform.position - center).sqrMagnitude <= sqrTradeRadius)
                     _pollFound.Add(np.OwnerClientId);
-                else if (sqrDistance <= sqrShipDockRadius && obj.TryGetComponent<ShipController>(out var ship))
+            }
+            for (int i = 0; i < _polledShips.Count; i++)
+            {
+                var ship = _polledShips[i];
+                if ((ship.transform.position - center).sqrMagnitude <= sqrShipDockRadius)
                     _pollShipsFound.Add(ship.NetworkObject.NetworkObjectId);
             }
 

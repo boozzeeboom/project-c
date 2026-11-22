@@ -135,3 +135,24 @@ Compile и domain reload завершены, `is_compiling == false`; ошибо
 Compile и domain reload завершены, `is_compiling == false`; ошибок C# нет (Error-выдача содержит
 только transport-сообщения MCP). `git diff --check` — чисто. Play Mode, тесты и Build агентом
 не запускались. Следующий захват должен показать снижение self-time `Player.NetworkPlayer.Update`.
+
+
+## Подтверждение реестра сундуков захватом `ProjectC_client_2026-11-22_20-27-55.data`
+
+781 кадр; steady-state 30..775 — 746 кадров. `Player.NetworkPlayer.Update` вызывался на 686 кадрах
+(остальное — состояние в корабле). Сравнение с 19-37 по steady-state:
+
+| Маркер | 19-37 | 20-27 |
+|---|---:|---:|
+| `Player.NetworkPlayer.Update`, total мс/кадр | 3,922 | **0,886 (−77,4 %)** |
+| `Player.NetworkPlayer.Update`, self мс/кадр | 2,851 | **0,033 (−98,8 %)** |
+| `NetworkPlayer.InteractionHint`, total/self мс/кадр | 0,730 / 0,727 | 0,681 / 0,671 |
+| `NetworkPlayer.Movement`, total/self мс/кадр | 0,154 / 0,0147 | 0,154 / 0,0156 |
+
+Устранён большой неатрибутированный self-участок `FindNearestInteractable`; подсказка и движение
+сохраняют прежний порядок стоимости. Общие маркеры `Main Thread`/`PlayerLoop` между прогонами
+не используются для атрибуции выигрыша этой правки.
+
+Следующие managed self-кандидаты — `MarketZone.Update` (1,382 мс/кадр, 8 206 вызовов) и
+`OuterCommZone.Update` (1,134 мс/кадр, 6 714 вызовов). Их polling выполняется с периодом 0,25 с,
+но каждая из 11/9 зон заново обходит `SpawnedObjects` на своём тике.

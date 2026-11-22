@@ -251,30 +251,52 @@ namespace ProjectC.Docking.Zones
         // Проход по словарю не аллоцирует; N = игроки + корабли (в сцене 20 кораблей).
         // NonAlloc здесь не годится: буфер на 64-256 слотов при 5 000 попаданий и маске -1
         // молча обрезает результат и может потерять игрока.
-        private void PollActorsInRange()
+        // T-PERF10: все зоны используют один снапшот актёров на кадр вместо
+        // повторного обхода SpawnedObjects в каждом таймере.
+        private static readonly List<NetworkPlayer> _polledPlayers = new List<NetworkPlayer>(16);
+        private static readonly List<ShipController> _polledShips = new List<ShipController>(32);
+        private static int _polledActorsFrame = -1;
+
+        private static void RefreshPollActors()
         {
+            if (_polledActorsFrame == Time.frameCount) return;
+            _polledActorsFrame = Time.frameCount;
+            _polledPlayers.Clear();
+            _polledShips.Clear();
+
             var nm = NetworkManager.Singleton;
             if (nm == null || nm.SpawnManager == null) return;
+            foreach (var spawned in nm.SpawnManager.SpawnedObjects)
+            {
+                var obj = spawned.Value;
+                if (obj == null || !obj.IsSpawned) continue;
+                if (obj.TryGetComponent<NetworkPlayer>(out var np)) _polledPlayers.Add(np);
+                else if (obj.TryGetComponent<ShipController>(out var ship)) _polledShips.Add(ship);
+            }
+        }
 
+        private void PollActorsInRange()
+        {
+            RefreshPollActors();
             Vector3 center = transform.position;
             float sqrRange = commRange * commRange;
 
             _pollPlayersFound.Clear();
             _pollShipsFound.Clear();
 
-            foreach (var spawned in nm.SpawnManager.SpawnedObjects)
+            for (int i = 0; i < _polledPlayers.Count; i++)
             {
-                var obj = spawned.Value;
-                if (obj == null || !obj.IsSpawned) continue;
-                // Маска применяется к GameObject сетевого объекта (раньше — к коллайдерам).
-                if ((pollLayerMask & (1 << obj.gameObject.layer)) == 0) continue;
-                if ((obj.transform.position - center).sqrMagnitude > sqrRange) continue;
-
-                // NetworkPlayer и ShipController — NetworkBehaviour, значит лежат на корне
-                // NetworkObject; старый код искал их GetComponentInParent от коллайдера.
-                if (obj.TryGetComponent<NetworkPlayer>(out var np))
+                var np = _polledPlayers[i];
+                // Маска по-прежнему применяется к GameObject сетевого объекта.
+                if ((pollLayerMask & (1 << np.gameObject.layer)) == 0) continue;
+                if ((np.transform.position - center).sqrMagnitude <= sqrRange)
                     _pollPlayersFound.Add(np.OwnerClientId);
-                else if (obj.TryGetComponent<ShipController>(out var ship))
+            }
+            for (int i = 0; i < _polledShips.Count; i++)
+            {
+                var ship = _polledShips[i];
+                if ((pollLayerMask & (1 << ship.gameObject.layer)) == 0) continue;
+                if ((ship.transform.position - center).sqrMagnitude <= sqrRange)
                     _pollShipsFound.Add(ship.NetworkObject.NetworkObjectId);
             }
 

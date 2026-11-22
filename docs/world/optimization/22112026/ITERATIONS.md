@@ -856,3 +856,24 @@ compile + domain reload — завершены, ошибок C# нет; `git dif
 
 compile + domain reload — завершены, ошибок C# нет; `git diff --check` — чисто. Play Mode, тесты
 и Build агентом — **NOT RUN**. Следующий захват должен подтвердить снижение self-time Update.
+
+
+## T-PERF09 — подтверждение реестра сундуков (`ProjectC_client_2026-11-22_20-27-55.data`)
+
+781 кадр; steady-state 30..775 = 746 кадров. `Player.NetworkPlayer.Update` total/self:
+3,922 / 2,851 → **0,886 / 0,033 мс/кадр**. Устранение ежекадрового FindObjectsByType
+NetworkChestContainer подтверждено; `InteractionHint` — 0,681 / 0,671 мс/кадр, движение без
+регрессии по агрегированному маркеру. Подробности — `07_T_PERF09_PLAYER_UPDATE_PROFILING.md`.
+
+## T-PERF10 — общий снапшот актёров для зон
+
+На том же steady-state `MarketZone.Update` — 1,443 / 1,382 мс total/self на кадр (8 206 вызовов),
+`OuterCommZone.Update` — 1,183 / 1,134 мс (6 714 вызовов). Зоны уже имеют polling 0,25 с, но каждая
+на своём тике повторно обходит все `SpawnedObjects`.
+
+В обоих классах добавлен static per-frame снапшот `NetworkPlayer`/`ShipController`: полный обход
+выполняется максимум один раз за кадр для каждого типа зоны, а каждая зона затем проверяет только
+актуальных актёров. Радиусы, layer mask, debounce, LocalPlayerZone/Station и период polling не изменены.
+
+compile + domain reload — завершены, ошибок C# нет; `git diff --check` — чисто. Play Mode, тесты
+и Build агентом — **NOT RUN**. Следующий захват должен подтвердить снижение обоих Update-маркеров.

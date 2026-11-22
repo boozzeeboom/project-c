@@ -89245,6 +89245,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   pollInterval: 0.25
+  triggerRadius: 60
 --- !u!135 &182231087
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -103491,6 +103492,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   pollInterval: 0.25
+  triggerRadius: 60
 --- !u!135 &226542072
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -458350,6 +458352,14 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 6e98f00c24c3f654b97e1e459467acb3, type: 2}
+    - target: {fileID: 8894099600901931686, guid: 65688424f24ada3429701ef06b353548, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.0116
+      objectReference: {fileID: 0}
+    - target: {fileID: 8894099600901931686, guid: 65688424f24ada3429701ef06b353548, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 11.184
+      objectReference: {fileID: 0}
     - target: {fileID: 9078521894809474107, guid: 65688424f24ada3429701ef06b353548, type: 3}
       propertyPath: m_LocalScale.x
       value: 30.273392
@@ -1245890,6 +1245900,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   pollInterval: 0.25
+  triggerRadius: 60
 --- !u!135 &1177720404
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -1266342,12 +1266353,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.NpcPrimum.PrimumNpcCrowdDirector
   config: {fileID: 11400000, guid: 2b2de4c328f28fb4cae8d89c07e9c5da, type: 2}
-  tier: 10000
+  tier: 100
   overrideTargetCount: 0
   spawnBudgetMs: 4
   tickBudgetMs: 2
   spawnOnStart: 1
-  logStats: 1
+  logStats: 0
 --- !u!1 &1207536516
 GameObject:
   m_ObjectHideFlags: 0
@@ -1287668,6 +1287679,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   pollInterval: 0.25
+  triggerRadius: 60
 --- !u!135 &1266341968
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -1385755,6 +1385767,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   pollInterval: 0.25
+  triggerRadius: 60
 --- !u!135 &1505408859
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -1451254,6 +1451267,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   pollInterval: 0.25
+  triggerRadius: 60
 --- !u!135 &1631178281
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -1462785,6 +1462799,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   pollInterval: 0.25
+  triggerRadius: 60
 --- !u!135 &1656927032
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -1633421,6 +1633436,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   pollInterval: 0.25
+  triggerRadius: 60
 --- !u!135 &1987571268
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -1681862,6 +1681878,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   pollInterval: 0.25
+  triggerRadius: 60
 --- !u!135 &2099880790
 SphereCollider:
   m_ObjectHideFlags: 0

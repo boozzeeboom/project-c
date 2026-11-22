@@ -605,3 +605,41 @@ NPC это безопасное направление — приём baseline �
 Этап закрыт как «решение требуется», код не менялся. Варианты: (а) оставить как есть;
 (б) разрешить в манифесте неиспользуемую палубу (правка контракта + прогон rebase); (в) сначала снять
 не-Editor замер цены одной регистрации, потому что 513 KB в значительной части — редакторный маршаллинг.
+
+## Замер H — `ProjectC_client_2026-11-22_12-52-39.data` + `console.txt` (после этапов 3/1/4)
+
+237 кадров (f0..f236). Консоль: 582 записи (G: 878) — `Log` 460, `Warning` 122, `Error`/`Exception` **0**.
+`Failed to create agent` **56** (G: 391, F: 671); `ShipDeckNav.cs:342` **304 → 0**; `NavMeshSurface.cs:221` 16 → 0.
+Из 56 нативных 40 имеют managed `Location`: 38 — `PrimumCrowdNpc.cs:410`, 1 — `NpcBrain.cs:913` (прокси),
+1 — `ShipCrewSpawner.cs:154`; остальные 16 — без `Location`. Предупреждения (122): 38 `PrimumCrowdNpc.cs:410`,
+34 `EngineThrusterVisual.cs:185`, 23 `ShipCargoVisual.cs:211`, 2 `DoorVisibilityBudget.cs:256`, по одной в девяти местах.
+
+GC в установившемся режиме: медиана **67.7 KB**/кадр, p90 179.7, min 29.2. Сумма по сессии 72.0 MB, но
+46.9 MB из неё — четыре кадра (f0 20.8 MB старт, f16 10.8, f17 8.8, f236 4.6 стоп). Геймплейный f120
+(59.1 KB) раскладывается так:
+
+| Источник | KB/кадр | Доля | Вердикт |
+|---|---|---|---|
+| `NpcShipWorld.FixedUpdate` → `NavTick` | 26.9 | 45% | остаток: 372 `GC.Alloc`, `Physics.Raycast` ×71 |
+| `GetComponentNullErrorMessage` ×18 | 11.7 | 20% | починен этапом 5 |
+| `ContractServer.FixedUpdate` | 4.9 | 8% | не в этих этапах |
+| `NetworkPlayer.Update` | 3.3 | 6% | этап 3 подтверждён (было 18.9 KB/вызов) |
+| URP / PlayMode-view рендер | 5.0 | 8% | — |
+
+`ShipDeckNav.LateUpdate` на f100/f120/f152 — **0 KB** при тех же 20 вызовах: вывод этапа 2 подтверждён
+(42 KB/кадр в G — разовая очередь регистрации, а не дрейф). `NpcShipWorld.FixedUpdate` — 372 `GC.Alloc`
+и 71 `Physics.Raycast` на 6 вызовов: без Allocation Call Stacks атрибуция внутри `NavTick` невозможна.
+
+В f17 `LogStringToConsole` = 5 464 KB на 236 вызовов (≈23 KB на запись), `CallLogCallback` — 303 ms self:
+в редакторе предупреждение дороже самой логики, т.е. гасить надо причину, а не фильтр.
+
+## T-PERF06/4 — сделано: парковка толпы вместо `Warp` в пустоту
+
+Проба дала 38 строк, все формы `onBefore=True enabled=True sample4m=False onAfter=False`: агент приходил
+на rebase «на меше», меша в 4 м под пост-ребейз позицией не было, `Warp` отцеплял его и рождал нативное
+предупреждение. `pos` = `home` − один и тот же сдвиг (≈39 680 / 2 562 / 39 937): тело на месте, навмеш
+переезжает вместе с `WorldRoot_0_0` **не в тот же кадр**. Правка: `TryRefreshAgentOnNavMesh()`
+(Sample → Warp на найденный меш, иначе `ParkAgent()`), `ReLandOnNavMesh` — no-op на выключенном агенте,
+`Tick` будит `TryRestoreParkedAgent()` (тело садится на меш до `enabled = true`). compile — 0 errors;
+Play Mode — **NOT RUN, за пользователем**. Ожидание: 38 предупреждений `PrimumCrowdNpc.cs:410` → 0,
+`Failed to create agent` 56 → ~18. Проба остаётся до этого прогона.

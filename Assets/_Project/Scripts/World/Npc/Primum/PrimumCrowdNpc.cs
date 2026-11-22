@@ -28,6 +28,9 @@ namespace ProjectC.World.NpcPrimum
         // Буфер зонда земли под NPC (без аллокаций в Tick/спавне).
         private static readonly RaycastHit[] GroundHits = new RaycastHit[8];
 
+        // Радиус поиска меша при ребейзе/восстановлении: высота агента ×2 (2 м → 4 м).
+        private const float RebaseSampleRadius = 4f;
+
         private PrimumNpcCrowdDirector _director;
         private PrimumCrowdConfig _config;
         private NavMeshAgent _agent;
@@ -53,6 +56,9 @@ namespace ProjectC.World.NpcPrimum
         private bool _animatorActive = true;
         private bool _nameplateActive = true;
         private bool _initialized;
+
+        // Агент запаркован (выключен) из-за отсутствия меша под телом; снимет Tick.
+        private bool _parkedForRebase;
 
         public string NpcId { get; private set; } = string.Empty;
         public string HouseId { get; private set; } = string.Empty;
@@ -187,7 +193,10 @@ namespace ProjectC.World.NpcPrimum
             {
                 // Слетел с навмеша (сдвиг корня мира / пересборка навмеша): сам агент не вернётся,
                 // без этого он навсегда замирает на месте и копит ошибки в консоль.
-                ReLandOnNavMesh();
+                // Запаркованного ребейзом агента будит отдельный путь: ReLandOnNavMesh на выключенном
+                // агенте — no-op, Warp по нему даёт нативное "Failed to create agent".
+                if (_parkedForRebase) TryRestoreParkedAgent();
+                else ReLandOnNavMesh();
                 ApplyVisualLod(cameraPosition, true);
                 return;
             }
@@ -402,39 +411,71 @@ namespace ProjectC.World.NpcPrimum
             float probeSampleDeltaY = probeSampled ? probeHit.position.y - transform.position.y : 0f;
 #endif
 
-            // Навмеш едет вместе с WorldRoot_0_0: сразу после сдвига агент может оказаться вне него,
-            // и тогда и Warp, и ResetPath ругаются в консоль. Сначала сажаем обратно.
-            if (_agent.isOnNavMesh)
+            // Навмеш переезжает вместе с WorldRoot_0_0 НЕ в тот же кадр: сразу после сдвига под телом
+            // агента меша может ещё не быть. Warp по «сырой» позиции в этом состоянии отцепляет агента
+            // и даёт нативное "Failed to create agent" (замер 12-52-39: 38 из 38 ребейзов, меша в 4 м нет).
+            // Поэтому Warp идёт только на найденный меш, иначе агент паркуется до восстановления в Tick.
+            if (!TryRefreshAgentOnNavMesh())
             {
-                _agent.ResetPath();
-                _agent.Warp(transform.position);
 #if UNITY_EDITOR
-                if (!probeSampled) LogRebaseProbe(probeWasOnMesh, probeSampled, probeSampleDeltaY);
+                LogRebaseProbe(probeWasOnMesh, probeSampled, probeSampleDeltaY);
 #endif
-            }
-            else
-            {
-                ReLandOnNavMesh();
-#if UNITY_EDITOR
-                if (!_agent.isOnNavMesh) LogRebaseProbe(probeWasOnMesh, probeSampled, probeSampleDeltaY);
-#endif
-                if (!_agent.isOnNavMesh) return;
+                return;
             }
 
             if (_state != State.Moving || _director == null || _director.WorldRoot == null) return;
 
             Vector3 world = _director.WorldRoot.TransformPoint(_targetLocal);
-            if (NavMesh.SamplePosition(world, out var hit, 4f, NavMesh.AllAreas))
+            if (NavMesh.SamplePosition(world, out var hit, RebaseSampleRadius, NavMesh.AllAreas))
                 _agent.SetDestination(hit.position);
             else
                 EnterIdle(Time.time);
         }
 
+        /// <summary>
+        /// Ставит агента на меш по текущей позиции. false — меша в радиусе зонда нет, агент запаркован
+        /// (Tick вернёт его сам, когда меш окажется под телом).
+        /// </summary>
+        private bool TryRefreshAgentOnNavMesh()
+        {
+            if (_agent == null) return false;
+            if (!_agent.enabled) { _parkedForRebase = true; return false; } // ждём Tick, второй раз не паркуем
+
+            if (NavMesh.SamplePosition(transform.position, out var land, RebaseSampleRadius, NavMesh.AllAreas))
+            {
+                if (_agent.isOnNavMesh) _agent.ResetPath();
+                _agent.Warp(land.position);
+                if (_agent.isOnNavMesh) return true;
+            }
+
+            ParkAgent();
+            return false;
+        }
+
+        /// <summary>Гасит агента вне меша: включённый агент копит ошибки и не даёт себя вернуть.</summary>
+        private void ParkAgent()
+        {
+            if (_agent == null) return;
+            if (_agent.isOnNavMesh) _agent.ResetPath();
+            _agent.enabled = false;
+            _parkedForRebase = true;
+        }
+
+        /// <summary>Возвращает запаркованного агента на меш: тело садится на меш до включения агента.</summary>
+        private void TryRestoreParkedAgent()
+        {
+            if (!_parkedForRebase || _agent == null) return;
+            if (!NavMesh.SamplePosition(transform.position, out var land, RebaseSampleRadius, NavMesh.AllAreas)) return;
+            transform.position = land.position;
+            _agent.enabled = true;
+            _parkedForRebase = !_agent.isOnNavMesh;
+        }
+
         /// <summary>Возвращает агента на навмеш по текущей позиции (после сдвига Floating Origin).</summary>
         private void ReLandOnNavMesh()
         {
-            if (_agent == null) return;
-            if (!NavMesh.SamplePosition(transform.position, out var land, 4f, NavMesh.AllAreas)) return;
+            if (_agent == null || !_agent.enabled) return;
+            if (!NavMesh.SamplePosition(transform.position, out var land, RebaseSampleRadius, NavMesh.AllAreas)) return;
             _agent.Warp(land.position);
         }
 

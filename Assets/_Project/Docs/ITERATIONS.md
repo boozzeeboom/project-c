@@ -1,5 +1,15 @@
 # Iterations
 
+## Итерация от 2026-11-22 (T-PERF06, этап 4 — парковка толпы при rebase; замер H)
+
+**Задача:** По замерам `console.txt` + `ProjectC_client_2026-11-22_12-52-39.data` объяснить оставшиеся нативные `Failed to create agent` и закрыть этап 4: 38 из 56 приходили из `PrimumCrowdNpc.cs:410` (`_agent.Warp(transform.position)` при rebase Floating Origin). Play Mode не запускать; сцену и `.gitignore` не трогать.
+
+**Результат:** Проба этапа 4 дала 38 строк одной формы — `onBefore=True enabled=True sample4m=False onAfter=False`: агент приходил на rebase «на меше», но меша в 4 м под пост-ребейз позицией не было, и `Warp` в сырую позицию отцеплял его (отсюда нативное предупреждение). Координаты дают причину: `pos` = `home` минус один и тот же сдвиг (≈39 680 / 2 562 / 39 937) — тело стоит там, где надо, а навмеш переезжает вместе с `WorldRoot_0_0` не в тот же кадр. Правка в `PrimumCrowdNpc`: `TryRefreshAgentOnNavMesh()` (SamplePosition 4 м → `Warp` только на найденный меш, иначе `ParkAgent()` с `enabled = false` и флагом), `ReLandOnNavMesh` стал no-op на выключенном агенте, `Tick` при запаркованном агенте зовёт `TryRestoreParkedAgent()` (тело садится на меш до `enabled = true`, иначе остаётся запаркован). Радиус зонда `RebaseSampleRadius = 4f` — как у прежнего `ReLandOnNavMesh`.
+
+**Замер H (до правки):** 237 кадров, консоль 582 записи (`Warning` 122, ошибок 0); `ShipDeckNav.cs:342` 304 → 0 (этап 1 подтверждён), `NavMeshSurface.cs:221` 16 → 0. GC в установившемся режиме — медиана 67.7 KB/кадр, p90 179.7; 4 кадра из 237 дают 46.9 MB из 72.0 MB сессии. Геймплейный f120 (59.1 KB): 26.9 KB — `NpcShipWorld.FixedUpdate` → `NavTick`, 11.7 KB — 18 промахов null-`GetComponent`, 4.9 KB — `ContractServer`, 3.3 KB — `NetworkPlayer.Update` (этап 3 подтверждён: было 18.9 KB/вызов). `ShipDeckNav.LateUpdate` — 0 KB на f100/f120/f152, т.е. вывод этапа 2 подтверждён.
+
+**Проверка:** `check_compile_errors` — 0 errors. Play Mode — **NOT RUN, за пользователем**. Ожидание: 38 предупреждений `PrimumCrowdNpc.cs:410` → 0, `Failed to create agent` 56 → ~18 (16 нативных без `Location`, 1 `NpcBrain.cs:913`, 1 `ShipCrewSpawner.cs:154`), NPC толпы не остаются запаркованными после F8. Проба `[T-PERF06/4]` оставлена до этого прогона.
+
 ## Итерация от 2026-11-22 (T-PERF06, этап 3 — мусор в горячих путях)
 
 **Задача:** После замера G снять найденные адреса мусора, которые не меняют поведение: `NetworkPlayer.Update` 5 000 KB за сессию (18.9 KB на вызов, 15 289 `GC.Alloc`) и неохраняемые payload-строки `GlobalMotionRuntimeEvidenceProbe` в кадрах и тиках. Остальные три этапа (агенты вне меша, проба PRIMUM, ленивая регистрация палуб) — следом, отдельными коммитами; Play Mode не запускать.

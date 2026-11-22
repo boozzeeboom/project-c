@@ -74,6 +74,11 @@ namespace ProjectC.Trade.Network
         // T-PERF02: переиспользуемые буферы полла — без new HashSet/List каждый тик.
         private readonly HashSet<ulong> _pollFound = new HashSet<ulong>();
         private readonly List<ulong> _pollToRemove = new List<ulong>();
+        // T-PERF03: буфер NonAlloc — раньше каждый Physics.OverlapSphere отдавал новый
+        // Collider[] (12 зон x 2 вызова x 4 Гц = 96 массивов в секунду). Радиусы рынков
+        // 5-30 м, попаданий мало, поэтому NonAlloc с запасом безопасен, а промах одного
+        // тика гасит debounce (_missingTicks / MISS_THRESHOLD).
+        private readonly Collider[] _overlapHits = new Collider[128];
 
         public IReadOnlyCollection<ulong> PlayersInZone => _playersInZone;
         public IReadOnlyCollection<ulong> ShipsInZone => _shipsInZone;
@@ -258,11 +263,12 @@ namespace ProjectC.Trade.Network
         {
             // Ищем всех NetworkPlayer в радиусе tradeRadius.
             // Серверная сторона — здесь точно все NetworkObject'ы спавнены.
-            var hits = Physics.OverlapSphere(transform.position, tradeRadius, ~0, QueryTriggerInteraction.Ignore);
+            // T-PERF03: NonAlloc в переиспользуемый буфер.
+            int count = Physics.OverlapSphereNonAlloc(transform.position, tradeRadius, _overlapHits, ~0, QueryTriggerInteraction.Ignore);
             _pollFound.Clear();
-            for (int i = 0; i < hits.Length; i++)
+            for (int i = 0; i < count; i++)
             {
-                var np = hits[i].GetComponentInParent<NetworkPlayer>();
+                var np = _overlapHits[i] != null ? _overlapHits[i].GetComponentInParent<NetworkPlayer>() : null;
                 if (np == null || !np.IsSpawned) continue;
                 _pollFound.Add(np.OwnerClientId);
             }
@@ -306,11 +312,12 @@ namespace ProjectC.Trade.Network
 
         private void PollShipsInRadius()
         {
-            var hits = Physics.OverlapSphere(transform.position, shipDockRadius, ~0, QueryTriggerInteraction.Ignore);
+            // T-PERF03: NonAlloc в переиспользуемый буфер.
+            int count = Physics.OverlapSphereNonAlloc(transform.position, shipDockRadius, _overlapHits, ~0, QueryTriggerInteraction.Ignore);
             _pollFound.Clear();
-            for (int i = 0; i < hits.Length; i++)
+            for (int i = 0; i < count; i++)
             {
-                var ship = hits[i].GetComponentInParent<ShipController>();
+                var ship = _overlapHits[i] != null ? _overlapHits[i].GetComponentInParent<ShipController>() : null;
                 if (ship == null || !ship.IsSpawned) continue;
                 _pollFound.Add(ship.NetworkObject.NetworkObjectId);
             }

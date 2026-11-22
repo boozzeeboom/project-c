@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using ProjectC.Core;
 using ProjectC.Quests;
 using UnityEngine;
 using UnityEngine.AI;
@@ -48,6 +49,7 @@ namespace ProjectC.World.NpcPrimum
 
         private Transform _worldRoot;
         private Transform _cameraTransform;
+        private SpringArmCamera _cameraRig;
         private Transform _container;
         private Vector3 _lastWorldRootPosition;
         private float _cameraRefreshTime;
@@ -364,12 +366,27 @@ namespace ProjectC.World.NpcPrimum
 
         private void RefreshCamera()
         {
-            if (_cameraTransform != null) return;
             float now = Time.unscaledTime;
             if (now - _cameraRefreshTime < 1f) return;
             _cameraRefreshTime = now;
-            var cam = Camera.main;
-            if (cam != null) _cameraTransform = cam.transform;
+
+            // Камера игрока — риг SpringArmCamera (его спавнит NetworkPlayer уже после Bootstrap).
+            // Camera.main здесь не годится: в этот момент он отдаёт статичную MainCamera BootstrapScene,
+            // которая висит в сотнях километров от города, и LOD толпы гасит визуал/аниматор/нейм-плейт
+            // у всех NPC (visualRadius 400 / animatorRadius 120 / nameplateRadius 28).
+            // Та же конвенция, что в GazeAutofocus / FarFocusController / ShipShadowBudget.
+            if (_cameraRig == null) _cameraRig = FindAnyObjectByType<SpringArmCamera>();
+
+            var rigCamera = _cameraRig != null ? _cameraRig.CameraComponent : null;
+            if (rigCamera != null)
+            {
+                _cameraTransform = rigCamera.transform;
+                return;
+            }
+
+            // Рига ещё нет (или он выключен) — держим запас Camera.main до его появления.
+            var main = Camera.main;
+            if (main != null) _cameraTransform = main.transform;
         }
 
         private void LogStats()

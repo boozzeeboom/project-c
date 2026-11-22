@@ -104,6 +104,9 @@ namespace ProjectC.Diagnostics
                 NavMeshAgent agent = agents[i];
                 if (agent == null) continue;
 
+                // Считаем ВСЕ живые компоненты, включая выключенные: инкремент идёт до проверки enabled.
+                // Поэтому бакет ниже подписан `all agents by name`, а не `enabled` — иначе выключенные
+                // агенты (например капитаны после варианта B) читаются как включённые.
                 string bucket = BucketName(agent);
                 Increment(allByName, bucket);
 
@@ -154,7 +157,7 @@ namespace ProjectC.Diagnostics
               .Append(" maxDist=").Append(offMeshMaxNavDist.ToString("F1"));
 
             AppendTop(sb, "   off-mesh by name: ", offMeshByName);
-            AppendTop(sb, "   enabled by name: ", allByName);
+            AppendTop(sb, "   all agents by name: ", allByName);
 
             if (samples.Count > 0)
                 sb.Append('\n').Append("   off-mesh samples: ").Append(string.Join(", ", samples));

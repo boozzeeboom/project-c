@@ -906,3 +906,20 @@ compile + domain reload — завершены, ошибок C# нет; `git dif
 
 compile + domain reload — завершены, ошибок C# нет; `git diff --check` — чисто. Play Mode, тесты
 и Build агентом — **NOT RUN**. Величина выигрыша будет определена следующим захватом.
+
+## T-PERF10 — подтверждение позиций зон и broadphase зданий (`ProjectC_client_2026-11-23_00-29-06.data`)
+
+777 кадров; steady-state = 742 кадра. `MarketZone.Update` total/self: 1,974 / 1,898 →
+**0,346 / 0,337 мс/кадр**; `OuterCommZone.Update`: 1,524 / 1,463 → **0,337 / 0,329 мс/кадр**.
+Кэширование позиций подтверждено. Главный managed self — `NpcShipWorld.FixedUpdate`
+(1,656 / 1,076 мс/кадр); внутри свободных режимов каждый NPC на каждом FixedUpdate проверяет
+все building-зоны через `Collider.ClosestPoint`.
+
+`NpcProximityZoneBuilds` теперь при скане коллайдеров сохраняет их общий AABB относительно
+корня. `IsIntruding` сначала использует консервативный `Bounds.SqrDistance`; точные
+`ClosestPoint` выполняются только для близких зданий. AABB корректно переносится при
+Floating Origin через текущий `transform.position`; `RefreshColliders` обновляет охват.
+Точный порог и выбор конфликта не изменены.
+
+compile + domain reload — завершены, ошибок C# нет; `git diff --check` — чисто. Play Mode, тесты
+и Build агентом — **NOT RUN**. Величина выигрыша будет определена следующим захватом.

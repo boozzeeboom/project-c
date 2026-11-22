@@ -34,6 +34,10 @@ namespace ProjectC.PeacefulShip.Stations
 
         /// <summary>Коллайдеры, для которых ClosestPoint работает корректно.</summary>
         private readonly List<Collider> _validColliders = new List<Collider>();
+        // T-PERF10: локальный охват статичного здания отсекает дальние дома до Collider.ClosestPoint.
+        // При Floating Origin меняется только transform.position, смещение и размер остаются прежними.
+        private Vector3 _boundsCenterOffset;
+        private Vector3 _boundsSize;
 
         public float AvoidancePadding => avoidancePadding;
 
@@ -61,12 +65,22 @@ namespace ProjectC.PeacefulShip.Stations
                 ? GetComponentsInChildren<Collider>(true)
                 : GetComponents<Collider>();
 
+            Bounds bounds = new Bounds();
+            bool hasBounds = false;
             foreach (var c in all)
             {
                 if (c.isTrigger) continue;
-                if (IsClosestPointSupported(c))
-                    _validColliders.Add(c);
+                if (!IsClosestPointSupported(c)) continue;
+                _validColliders.Add(c);
+                if (!hasBounds)
+                {
+                    bounds = c.bounds;
+                    hasBounds = true;
+                }
+                else bounds.Encapsulate(c.bounds);
             }
+            _boundsCenterOffset = hasBounds ? bounds.center - transform.position : Vector3.zero;
+            _boundsSize = hasBounds ? bounds.size : Vector3.zero;
 
             Debug.Log($"[NpcProximityZoneBuilds:{gameObject.name}] scanned: {all.Length} total, " +
                       $"{_validColliders.Count} valid (Box/Sphere/Capsule/convex-Mesh)", this);
@@ -106,11 +120,13 @@ namespace ProjectC.PeacefulShip.Stations
         public bool IsIntruding(Vector3 shipPos, float shipAvoidRadius)
         {
             float threshold = shipAvoidRadius + avoidancePadding;
+            var bounds = new Bounds(transform.position + _boundsCenterOffset, _boundsSize);
+            if (bounds.SqrDistance(shipPos) >= threshold * threshold) return false;
             foreach (var c in _validColliders)
             {
                 if (c == null) continue;
                 Vector3 cp = c.ClosestPoint(shipPos);
-                if (Vector3.Distance(shipPos, cp) < threshold)
+                if ((shipPos - cp).sqrMagnitude < threshold * threshold)
                     return true;
             }
             return false;

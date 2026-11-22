@@ -88,9 +88,35 @@
 | > 0, в разбивке `<ship>_Captain` | подтверждение: гасим `NavMeshAgent` у префабов капитанов (вариант B) |
 | > 0, но в разбивке другие имена | правим то, что показал счётчик, а не капитанов |
 
-## Уточнение по варианту B (по факту разбора префабов)
+## Вариант B — применён (решение по результатам C)
 
-Разбор перед реализацией C дал две правки к предыдущей оценке:
+### Результат аудита C (два снимка, прогон пользователя)
+
+```
+t=8s  frame=4  agents=25  enabled=25  onMesh=9   OFF-MESH=16 (driving=16, updatePositionOff=0)
+      off-mesh: onShip=0 world=16 | navmeshWithin60m=8
+      off-mesh by name: Npc_peacfull_market_zone=8, Q001_NPC_Bram__Bram=1, Q001_NPC_Kael__Kael=1,
+                        Q001_NPC_Lyra__Lyra=1, Q001_NPC_Noll__Noll=1, Q001_NPC_Sela__Sela=1,
+                        Q001_NPC_Veska__Veska=1, [Mira]=1, [Onboarding alfa]=1
+t=20s frame=34 agents=113 enabled=113 onMesh=83 OFF-MESH=30 (driving=16, updatePositionOff=20)
+      off-mesh: onShip=14 world=16 | navmeshWithin60m=15
+      off-mesh by name: Npc_peacfull_market_zone=8, Q001_NPC_*=6, [Mira]=1, [Onboarding alfa]=1,
+                        bereg_Captain(Clone)=1, citadel_Captain(Clone)=1, gigant_Captain(Clone)=1, …(+11 имён)
+```
+
+1. **Гипотеза подтверждена:** 14 капитанов на палубах стоят вне навмеша (`onShip=14`) — ровно те,
+   кого `ShipCrewSpawner.SpawnMember` инстансит на палубу в море. Они появляются между 8-й и 20-й
+   секундой (на 8 с их ещё нет: `agents=25`), то есть совпадают с пиком логов f27/f28.
+2. **16 мировых NPC вне навмеша — не капитаны:** `Npc_peacfull_market_zone` ×8, квесторы
+   `Q001_NPC_*` ×6, `[Mira]`, `[Onboarding alfa]`. У 8 из 16 навмеш есть в радиусе 60 м — это
+   плейсмент до готовности меша, отдельная тема; вариант B их не касается.
+3. `updatePositionOff=20` при `driving=16`: у 14 капитанов `updatePosition=false`
+   (`NpcBrain.BeginRide`), но `enabled` остаётся `true` — агент жив и зарегистрирован в нав-системе.
+   Это и есть механизм 671 сообщения.
+4. `[Mira]` и `[Onboarding alfa]` в списке — инстансы базового префаба в сцене, поэтому базовому
+   префабу агент нужен (см. ниже).
+
+### Что разбор префабов дал к оценке B
 
 1. Префабов капитанов **20**, не 23: `Assets/_Project/Prefabs/NPC/Ships/Captains/*.prefab` — 20 файлов
    (`albatros`, `bereg`, `citadel`, `gigant`, `letuchiy`, `lorein`, `mastodont`, `npc_reference_ship`,
@@ -103,25 +129,38 @@
    позицию и текст. `NavMeshAgent` с `m_Enabled: 1` лежит в базовом префабе (fileID `6435950676967608688`
    на корневом GameObject `836964523381807351`).
 
-   **Следствие:** вариант B нельзя сделать одной строкой в базовом префабе. Тот же базовый префаб
-   используется сценовыми квесторами в `WorldScene_0_0.unity` (`[Onboarding alfa]`,
-   `Q001_NPC_Lyra__Lyra` и др.) и префабом `Gorgona_Pilot` — этим агент нужен: они стоят на мировом
-   навмеше. Значит B = **override `m_Enabled: 0` на компоненте `NavMeshAgent` в каждом из 20 файлов
-   вариантов** (правка только файлов капитанов, базовый префаб и квестовые NPC не затрагиваются).
+### Что сделано (этот коммит)
+
+В каждом из 20 файлов `Captains/*.prefab` добавлен override
+`m_Enabled: 0` на компонент `NavMeshAgent` базового префаба. Базовый префаб **не тронут** —
+у него `m_Enabled: 1`, поэтому сценовые квесторы (`Q001_NPC_*`, `[Mira]`, `[Onboarding alfa]`)
+и `Gorgona_Pilot` сохраняют ходьбу по мировому навмешу.
+
+Diff: ровно +4 строки на файл (80 вставок), без переупорядочивания, `.meta` в репозитории игнорируются.
+Проверка: `AssetDatabase.LoadAssetAtPath` → `NavMeshAgent.enabled == false` у 20 из 20, у базового — `true`.
+
+Почему это безопасно — проверено, а не предположено:
+- капитаны нигде не стоят в сцене: 0 ссылок на их guid в `*.unity`/`*.prefab` (скан 231 файла);
+  они появляются только через `ShipCrewSpawner`;
+- `GlobalMotionPoseAdapter` не добавляется в рантайме нигде (`AddComponent<GlobalMotionPoseAdapter>` —
+  0 совпадений), а в базовом префабе FO-компонентов нет ⇒ капитаны не попадают в `_participants`,
+  и `NpcBrain.CanApplyGlobalBaseline` для них никто не спрашивает. Инвариант FO не меняется
+  (опасение из варианта A сюда не переносится);
+- все навигационные вызовы `_agent` в `NpcBrain` (`SetDestination`, `ResetPath`, `isStopped`,
+  `velocity`, `Warp`) стоят под `_agent != null && _agent.isOnNavMesh`; у выключенного агента
+  `isOnNavMesh` = false ⇒ новых ошибок и спама не будет;
+- ходят капитаны через `_proxyAgent` (`EnsureProxy`, только при `_deckNav.IsReady`).
+
+Оговорка: `NpcBrain.Respawn` делает `_agent.enabled = true`. У капитанов `_respawnEnabled = 0`,
+поэтому путь неактивен; если респавн когда-нибудь включат — сообщение вернётся.
 
 ## Чего не делал и почему
 
-1. **671 нативное предупреждение.** Механизм: off-mesh агент, оставшийся живым, переоценивается
-   на каждом чужом `NavMesh.AddNavMeshData` (записано в `NpcBrain` у T-PERF02: «~24 шт./Add»)
-   и при каждом enable. Кандидат — крю: 23 префаба (`Assets/_Project/Prefabs/NPC/Ships/Captains/*`)
-   имеют `NavMeshAgent.enabled = true` и инстансятся на палубу в море
-   (`ShipCrewSpawner.SpawnMember`: `Instantiate(member.prefab, spawnAnchor.position, …)`).
-   - Вариант A (1 строка, но риск): в `NpcBrain.BeginRide` гасить `_agent.enabled`, в `EndRide`
-     включать после `Warp`. Меняет инвариант `CanApplyGlobalBaseline` (`_agent == null || !_agent.enabled`)
-     для крю на палубе — это FO-контракт, без прогона не беру.
-   - Вариант B (без риска для FO): снять `m_Enabled` у `NavMeshAgent` в 23 префабах капитанов —
-     но это правка ассетов и тоже требует прогона.
-   - Вариант C (диагностика): **сделан** — `NavMeshAgentAudit` (см. раздел «Вариант C — реализован»).
+1. **671 нативное предупреждение — закрыто вариантом B** (override `m_Enabled: 0` в 20 префабах
+   капитанов). Механизм, который подтвердил аудит: off-mesh агент, оставшийся живым, переоценивается
+   на каждом чужом `NavMesh.AddNavMeshData` (записано в `NpcBrain` у T-PERF02: «~24 шт./Add») и при
+   каждом enable. Варианты A и C больше не актуальны: A (гасить `_agent.enabled` в `BeginRide`)
+   менял бы FO-инвариант и не понадобился; C — выполнен и дал замеры выше.
 2. **Наши info-логи** (~400 записей, ~10 MB в Editor): это 5–6 строк на корабль при спавне.
    Гасить — правка ~8 файлов; предложен один флаг `ProjectLog.Verbose` (по умолчанию false)
    с переводом туда всех info-строк, чтобы не терять диагностику. Ждёт решения.

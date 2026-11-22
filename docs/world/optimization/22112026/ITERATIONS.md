@@ -341,3 +341,59 @@ compile — 0 errors. Play Mode **не запускался**, прогон за
 
 Протокол для пользователя (один прогон): Console → Clear → Play → подождать 25 с → прислать две
 строки `[PerfNavAudit]`. Подробности и таблица расшифровки — в `03_FO_NULL_COMPONENT_AND_CONSOLE.md`.
+
+## T-PERF05/B — гашение `NavMeshAgent` у префабов капитанов
+
+Решение принято по аудиту C: на 20-й секунде 14 капитанов стоят вне навмеша на палубах (`onShip=14`),
+у них `updatePosition=false` (`NpcBrain.BeginRide`), но `enabled=true` — живые зарегистрированные
+агенты и есть источник 671 нативного сообщения. На 8-й секунде капитанов ещё нет (`agents=25`,
+`onShip=0`) — они совпадают с пиком логов f27/f28.
+
+Правка: в 20 файлах `Assets/_Project/Prefabs/NPC/Ships/Captains/*.prefab` добавлен override
+`m_Enabled: 0` на `NavMeshAgent` базового префаба (fileID `6435950676967608688`). Базовый
+`[Mira] - DON`T DELETE DEFOULT.prefab` не тронут: его агент нужен сценовым квесторам
+(`Q001_NPC_*`, `[Mira]`, `[Onboarding alfa]`) и `Gorgona_Pilot`. Diff: +4 строки × 20 файлов (80 вставок),
+проверка `AssetDatabase` — `NavMeshAgent.enabled == false` у 20 из 20, у базового — `true`.
+
+Безопасность (проверено по коду и ассетам):
+- 0 ссылок на guid капитанов в `*.unity`/`*.prefab` (скан 231 файла) — в сцене их нет, только `ShipCrewSpawner`;
+- `AddComponent<GlobalMotionPoseAdapter>` в проекте отсутствует, в базовом префабе FO-компонентов
+  нет ⇒ капитаны не участники FO, `CanApplyGlobalBaseline` для них не вызывается (опасение варианта A
+  сюда не переносится);
+- все `_agent.SetDestination/ResetPath/isStopped/Warp/velocity` в `NpcBrain` стоят под `_agent.isOnNavMesh`;
+- палубная навигация — через `_proxyAgent` (`EnsureProxy` под `_deckNav.IsReady`).
+
+Проверка compile: 0 errors. Play Mode — NOT RUN, за пользователем: консоль без `Failed to create agent`,
+экипаж ходит по палубам, `[PerfNavAudit]` на 20 с без `*_Captain` в `off-mesh by name`.
+Оговорка: `NpcBrain.Respawn` включает `_agent.enabled = true`; у капитанов `_respawnEnabled = 0`.
+
+## Замер E — `ProjectC_client_2026-11-22_11-49-36.data` (после T-PERF05, до B)
+
+351 кадр (f0..351), геймплей 1..350. Код — с правкой адаптера T-PERF05, аудит C в проекте
+(он логирует дважды и на метрики не влияет).
+
+| Метрика | D (11-31-27, 486 к.) | E (11-49-36, 350 к.) |
+|---|---|---|
+| GC сессии (PlayerLoop) | 98 622 KB | **77 730 KB** |
+| GC в среднем / медиана | 202.9 / 99.3 KB | 222.1 / **67.9 KB** |
+| GC boot f1..40 | — | 35 909 KB (avg 898 KB) |
+| GC steady f41.. | — | 41 821 KB (avg 134.9 / med 60.7) |
+| `GetComponentNullErrorMessage` | 31.25 KB/кадр, 23 047 выз. | **10.7 KB/кадр (3 747 KB / 5 723)** |
+| `LogStringToConsole` | 61.3 KB/кадр | 80.6 KB/кадр (28 224 KB / 1 012) |
+| в нём `NavMeshManager.NotifyNavMeshAdded` | — | 17 818 KB / **20 вызовов** (≈878 KB/вызов) |
+| `CoroutinesDelayedCalls` | 47.0 KB/кадр | 65.0 KB/кадр (22 758 KB / 58 выз.) |
+| `Physics.SendTriggerEvents` GC | ~0 | 109 KB за сессию |
+| `PlayerLoop` CPU медиана | 68.3 ms | 64.8 ms |
+| `SendTriggerEvents` CPU мед/сред | 20.2 / 27.6 ms | 17.75 / 35.4 ms (p90 55.9) |
+
+1. **Правка адаптера подтверждена:** null-сообщения 31.25 → 10.7 KB/кадр (−66%), 23 047 → 5 723 вызова
+   (−75%). Прогноз был ~15 KB/кадр — реальность лучше.
+2. Сессионный GC 98.6 → 77.7 MB (−21%), медиана кадра 99.3 → 67.9 KB (−32%). Среднее выросло
+   (202.9 → 222.1) из-за доли boot-кадров: в E сессия на 136 кадров короче, а те же спавн-пики
+   делятся на меньший знаменатель (boot — 898 KB/кадр, установившийся режим — 134.9).
+3. `LogStringToConsole` остался главным источником мусора: 28.2 MB (36% сессии), из них 17.8 MB —
+   20 вызовов `NotifyNavMeshAdded` по ~878 KB (нативная цена `AddNavMeshData` в Editor) и 17.2 MB
+   под `ShipDeckNav.LateUpdate`. В билде этого лога нет; рычаг — дрейф палуб (T-PERF02).
+4. `CoroutinesDelayedCalls` 22.8 MB / 58 вызовов — спавн-корутины (`PrepareAndStartHost`), не ровная цена.
+5. CPU: `SendTriggerEvents` (17.75 медиана / 35.4 среднее) по-прежнему #1 — это объём триггеров
+   корабля и консоли, т.е. данные префаба, а не код.

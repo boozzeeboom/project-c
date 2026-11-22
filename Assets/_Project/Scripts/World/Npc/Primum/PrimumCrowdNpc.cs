@@ -25,6 +25,9 @@ namespace ProjectC.World.NpcPrimum
 
         private static readonly int SpeedParam = Animator.StringToHash("Speed");
 
+        // Буфер зонда земли под NPC (без аллокаций в Tick/спавне).
+        private static readonly RaycastHit[] GroundHits = new RaycastHit[8];
+
         private PrimumNpcCrowdDirector _director;
         private PrimumCrowdConfig _config;
         private NavMeshAgent _agent;
@@ -256,19 +259,42 @@ namespace ProjectC.World.NpcPrimum
         /// <summary>
         /// Пивот rigged-моделей лежит внутри голеней (замерено: ступни на 0.075–0.313 м ниже пивота),
         /// поэтому после спавна модель садилась бы в мостовую. Поднимаем Visual так, чтобы
-        /// низ меша совпал с уровнем точки на навмеше.
+        /// низ меша совпал с землёй под NPC.
         /// </summary>
         private void AlignVisualToGround()
         {
             if (_visual == null) return;
             if (!TryGetVisualVerticalBounds(out float bottom, out _)) return;
 
-            float lift = transform.position.y - bottom;
+            float lift = ResolveGroundY() - bottom;
             if (Mathf.Abs(lift) < 0.005f) return;
 
             float parentScaleY = Mathf.Max(0.0001f, transform.lossyScale.y);
             var lp = _visual.localPosition;
             _visual.localPosition = new Vector3(lp.x, lp.y + lift / parentScaleY, lp.z);
+        }
+
+        /// <summary>
+        /// Земля берётся по реальной геометрии под NPC, а не по y агента: навмеш Recast квантован
+        /// вокселями и висит над мостовой (замерено на 120 домах PRIMUM: медиана 0.24 м, до 0.3 м),
+        /// поэтому выровненные по нему ступни визуально парят в воздухе. Свои коллайдеры (триггеры)
+        /// пропускаем и берём самую верхнюю поверхность ниже пуза — то, на чём NPC реально стоит.
+        /// </summary>
+        private float ResolveGroundY()
+        {
+            Vector3 origin = transform.position + Vector3.up * 0.6f;
+            int count = Physics.RaycastNonAlloc(origin, Vector3.down, GroundHits, 1.8f, ~0, QueryTriggerInteraction.Ignore);
+            float best = float.MinValue;
+            for (int i = 0; i < count; i++)
+            {
+                var hit = GroundHits[i];
+                if (hit.collider == null) continue;
+                if (hit.collider.transform.IsChildOf(transform)) continue;
+                if (hit.collider is CharacterController) continue;   // игрок/живые актёры
+                if (hit.collider.attachedRigidbody != null) continue; // динамика: корабли, грузы, бочки
+                if (hit.point.y > best) best = hit.point.y;
+            }
+            return best == float.MinValue ? transform.position.y : best;
         }
 
         /// <summary>Нейм-плейт — над головой конкретной модели, а не на фиксированной высоте.</summary>

@@ -108,3 +108,30 @@ Broadphase дал измеренное снижение, но resolver оста�
 Compile и domain reload завершены, `is_compiling == false`; ошибок C# нет (Error-выдача содержит
 только transport-сообщения коротких MCP-подключений). `git diff --check` — чисто. Play Mode, тесты
 и Build агентом не запускались. Следующий захват должен подтвердить остаточную стоимость resolver.
+
+
+## Подтверждение реестра NPC захватом `ProjectC_client_2026-11-22_19-37-55.data`
+
+1 313 кадров; steady-state 30..1307 — 1 278 кадров. Сравнение с 19-16:
+
+| Маркер | 19-16 | 19-37 |
+|---|---:|---:|
+| `Player.NetworkPlayer.Update`, total/self мс/кадр | 4,270 / 2,784 | **3,922 / 2,851** |
+| `NetworkPlayer.InteractionHint`, total/self мс/кадр | 1,189 / 1,160 | **0,730 / 0,727** |
+| `NetworkPlayer.InteractionHint`, мс/вызов | 5,101 | **2,989 (−41,4 %)** |
+| `NetworkPlayer.Movement`, total/self мс/кадр | 0,147 / 0,0151 | 0,154 / 0,0147 |
+
+Реестр NPC дал второй измеренный результат. Основной остаток вне атрибутированных секций —
+ежекадровый `FindNearestInteractable`: он выполнял `FindObjectsByType<NetworkChestContainer>`
+с последующей фильтрацией и нужен UI-состоянию, поэтому сам вызов не удалён.
+
+## Реестр сетевых сундуков
+
+`NetworkChestContainer` регистрируется при network spawn и повторном `OnEnable`, удаляется при
+`OnDisable`/`OnNetworkDespawn`. `FindInRange` сохраняет прежние проверки `activeSelf`, `IsSpawned`
+и персонального `GetOpenRadius`, возвращая первый подходящий сундук. `FindNearestInteractable`
+использует этот реестр; обновление `_nearest*` для UI и приоритеты F/E не изменены.
+
+Compile и domain reload завершены, `is_compiling == false`; ошибок C# нет (Error-выдача содержит
+только transport-сообщения MCP). `git diff --check` — чисто. Play Mode, тесты и Build агентом
+не запускались. Следующий захват должен показать снижение self-time `Player.NetworkPlayer.Update`.

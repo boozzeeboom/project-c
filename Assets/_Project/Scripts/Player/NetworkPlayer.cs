@@ -1993,21 +1993,9 @@ namespace ProjectC.Player
             _nearestNetworkChest = null;
             _nearestNpcLoot = null;
 
-            // First check NEW NetworkChestContainer (higher priority)
-            var networkChests = FindObjectsByType<NetworkChestContainer>(FindObjectsInactive.Include);
-            foreach (var chest in networkChests)
-            {
-                if (chest == null || !chest.gameObject.activeSelf || !chest.IsSpawned) continue;
-                
-                float dist = Vector3.Distance(transform.position, chest.transform.position);
-                float openRadius = chest.GetOpenRadius();
-                
-                if (dist < openRadius)
-                {
-                    _nearestNetworkChest = chest;
-                    return;
-                }
-            }
+            // T-PERF09: реестр вместо FindObjectsByType<NetworkChestContainer> каждый кадр.
+            _nearestNetworkChest = NetworkChestContainer.FindInRange(transform.position);
+            if (_nearestNetworkChest != null) return;
 
             // Fallback: check old ChestContainer
             _nearestChest = InteractableManager.FindNearestChest(transform.position, float.MaxValue);

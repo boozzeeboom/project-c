@@ -59,9 +59,26 @@ namespace ProjectC.World.Chest
             _owningChunkId = chunkId;
         }
 
+        // T-PERF09: активные сундуки для поиска без FindObjectsByType на каждом кадре игрока.
+        private static readonly List<NetworkChestContainer> ActiveChests = new List<NetworkChestContainer>(32);
+
+        public static NetworkChestContainer FindInRange(Vector3 position)
+        {
+            for (int i = 0; i < ActiveChests.Count; i++)
+            {
+                var chest = ActiveChests[i];
+                if (chest == null) { ActiveChests.RemoveAt(i--); continue; }
+                if (!chest.gameObject.activeSelf || !chest.IsSpawned) continue;
+                if (Vector3.Distance(position, chest.transform.position) < chest.GetOpenRadius())
+                    return chest;
+            }
+            return null;
+        }
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+            if (!ActiveChests.Contains(this)) ActiveChests.Add(this);
             
             _startRotation = transform.eulerAngles;
             _startScale = transform.localScale;
@@ -90,6 +107,7 @@ namespace ProjectC.World.Chest
         public override void OnNetworkDespawn()
         {
             base.OnNetworkDespawn();
+            ActiveChests.Remove(this);
             
             _isOpen.OnValueChanged -= OnOpenStateChanged;
         }
@@ -121,9 +139,14 @@ namespace ProjectC.World.Chest
             }
         }
 
+        private void OnEnable()
+        {
+            if (IsSpawned && !ActiveChests.Contains(this)) ActiveChests.Add(this);
+        }
+
         private void OnDisable()
         {
-            // Cleanup handled by trigger exit
+            ActiveChests.Remove(this);
         }
 
         /// <summary>

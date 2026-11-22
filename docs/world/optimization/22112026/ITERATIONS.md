@@ -841,3 +841,18 @@ trigger-or-distance правилом. Подсказка и фактическо
 
 compile + domain reload — завершены, ошибок C# нет; `git diff --check` — чисто. Play Mode, тесты
 и Build агентом — **NOT RUN**. Величина дополнительного выигрыша будет определена следующим захватом.
+
+
+## T-PERF09 — подтверждение реестра NPC и реестр сундуков (`ProjectC_client_2026-11-22_19-37-55.data`)
+
+1 313 кадров; steady-state 30..1307 = 1 278 кадров. `NetworkPlayer.InteractionHint` total/self:
+1,189 / 1,160 → **0,730 / 0,727 мс/кадр**; на вызов 5,101 → **2,989 мс (−41,4 %)**.
+`Player.NetworkPlayer.Update` total 4,270 → **3,922 мс/кадр**, self 2,784 → 2,851. Реестр NPC
+подтверждён; основной остаток self — ежекадровый `FindNearestInteractable` со сканом NetworkChestContainer.
+
+`NetworkChestContainer` теперь ведёт реестр активных spawned-сундуков (spawn/OnEnable/OnDisable/despawn).
+`FindInRange` сохраняет прежние проверки и per-chest `GetOpenRadius`; `FindNearestInteractable`
+использует его вместо `FindObjectsByType`, сохраняя обновление `_nearest*` для UI и F/E-flow.
+
+compile + domain reload — завершены, ошибок C# нет; `git diff --check` — чисто. Play Mode, тесты
+и Build агентом — **NOT RUN**. Следующий захват должен подтвердить снижение self-time Update.

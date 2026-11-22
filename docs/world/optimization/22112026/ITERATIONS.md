@@ -643,3 +643,19 @@ GC в установившемся режиме: медиана **67.7 KB**/ка
 `Tick` будит `TryRestoreParkedAgent()` (тело садится на меш до `enabled = true`). compile — 0 errors;
 Play Mode — **NOT RUN, за пользователем**. Ожидание: 38 предупреждений `PrimumCrowdNpc.cs:410` → 0,
 `Failed to create agent` 56 → ~18. Проба остаётся до этого прогона.
+
+## T-PERF06/5 — null-`GetComponent` в кадре: 18 промахов → 0
+
+Замер H показал остаток, которого не было в плане: `GetComponentNullErrorMessage` — 18 вызовов и 11.7 KB
+на геймплейный кадр (20% мусора кадра). По узлам: `AI.NpcBrain.Update` 8 × 0.63 KB (lazy-init
+`_socialBrain = GetComponent<NpcSocialBrain>()` в `Update` у NPC без компонента — повтор **каждый** кадр),
+`GlobalMotionWorld.FixedUpdate → ApplyFixedPose` 6 × 0.67, `GlobalMotionPoseAdapter.LateUpdate` 3 × 0.67,
+`GlobalMotionWorld.Update` 1 × 0.67 — все три последних через `CurrentNetworkAncestor()`.
+
+Правки: в `NpcBrain` (`Update`, `ApplyRebaseTranslation`) — `TryGetComponent(out _socialBrain)` (lazy-init
+сохранён, промах больше не строит строку); в `GlobalMotionPoseAdapter` — `CurrentNetworkAncestor()` и проверка
+`Rigidbody` в `SupportedStructure()` ходят по родителям циклом `TryGetComponent` (`FindComponentInParent<T>`)
+вместо `GetComponentInParent`. Кеша нет намеренно: иерархия читается свежей, поведение 1:1.
+
+compile — 0 errors; Play Mode — **NOT RUN, за пользователем**. Ожидание: 18 → 0 вызовов,
+−11.7 KB/кадр (f120: 59.1 → ~47.4 KB).

@@ -1,5 +1,13 @@
 # Iterations
 
+## Итерация от 2026-11-22 (T-PERF06, этап 5 — null-GetComponent в кадре)
+
+**Задача:** По замеру H снять остаток мусора, который профайлер показал только сейчас: `GetComponentNullErrorMessage` — 18 вызовов и 11.7 KB на геймплейный кадр (20% кадра). Поведение не менять, Play Mode не запускать.
+
+**Результат:** Разложение по узлам: `AI.NpcBrain.Update` 8 × 0.63 KB — lazy-init `_socialBrain = GetComponent<NpcSocialBrain>()` внутри `Update`, у NPC без этого компонента повторяется каждый кадр; `GlobalMotionWorld.FixedUpdate → ApplyFixedPose` 6 × 0.67, `GlobalMotionPoseAdapter.LateUpdate` 3 × 0.67, `GlobalMotionWorld.Update` 1 × 0.67 — все три через `GlobalMotionPoseAdapter.CurrentNetworkAncestor()` (`GetComponentInParent<NetworkObject>`), куда ведёт и `ContextValid → HierarchyReady`. Правки: `NpcBrain` — `TryGetComponent(out _socialBrain)` в `Update` и в `ApplyRebaseTranslation` (семантика lazy-init сохранена, промах больше не строит строку); `GlobalMotionPoseAdapter` — `CurrentNetworkAncestor()` и проверка `Rigidbody` в `SupportedStructure()` идут по родителям циклом `TryGetComponent` (`FindComponentInParent<T>`) вместо `GetComponentInParent`. Кеша нет намеренно: иерархия читается свежей, поведение 1:1.
+
+**Проверка:** `check_compile_errors` — 0 errors. Play Mode — **NOT RUN, за пользователем**. Ожидание: `GetComponentNullErrorMessage` 18 → 0 вызовов, −11.7 KB/кадр (f120: 59.1 → ~47.4 KB).
+
 ## Итерация от 2026-11-22 (T-PERF06, этап 4 — парковка толпы при rebase; замер H)
 
 **Задача:** По замерам `console.txt` + `ProjectC_client_2026-11-22_12-52-39.data` объяснить оставшиеся нативные `Failed to create agent` и закрыть этап 4: 38 из 56 приходили из `PrimumCrowdNpc.cs:410` (`_agent.Warp(transform.position)` при rebase Floating Origin). Play Mode не запускать; сцену и `.gitignore` не трогать.

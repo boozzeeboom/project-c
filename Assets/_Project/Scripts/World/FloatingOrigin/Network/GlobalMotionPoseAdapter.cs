@@ -326,7 +326,17 @@ namespace ProjectC.World.FloatingOrigin.Network
         }
         private bool TryParent(MotionStreamBinding binding, out GlobalMotionPoseAdapter parent) =>
             TryResolveParent(binding, out parent) && transform.parent == parent.transform;
-        private NetworkObject CurrentNetworkAncestor() => transform.parent != null ? transform.parent.GetComponentInParent<NetworkObject>(true) : null;
+        // T-PERF06/5: GetComponentInParent на промахе строит null-сообщение (~0.67 КБ). Замер 12-52-39:
+        // 10 таких промахов на кадр (ApplyFixedPose / LateUpdate / Update у world-актора с корнем мира
+        // в предках). Обход родителей через TryGetComponent не аллоцирует и не кеширует результат —
+        // иерархия всегда читается свежей, поведение то же.
+        private NetworkObject CurrentNetworkAncestor() => FindComponentInParent<NetworkObject>(transform.parent);
+
+        private static T FindComponentInParent<T>(Transform start) where T : Component
+        {
+            for (var t = start; t != null; t = t.parent) if (t.TryGetComponent(out T found)) return found;
+            return null;
+        }
 
         private bool HierarchyReady()
         {
@@ -420,7 +430,7 @@ namespace ProjectC.World.FloatingOrigin.Network
             _bodies.Clear(); _joints.Clear();
             GetComponentsInChildren(true, _bodies); GetComponentsInChildren(true, _joints);
             if (_joints.Count != 0 || _bodies.Count > (_body != null ? 1 : 0) || (_body != null && _controller != null)) return false;
-            if (_body != null && transform.parent != null && transform.parent.GetComponentInParent<Rigidbody>() != null) return false;
+            if (_body != null && FindComponentInParent<Rigidbody>(transform.parent) != null) return false;
             return true;
         }
         private bool CustomHierarchyConfigured => _transport != null && _transport.NetworkObject != null &&

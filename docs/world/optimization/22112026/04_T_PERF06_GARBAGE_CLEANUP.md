@@ -198,6 +198,30 @@ NPC запаркуется на 1–2 с и вернётся сам (сэмпл 
 `Failed to create agent` 56 → ~18 (остаются 16 нативных без `Location`, 1 прокси `NpcBrain.cs:913`,
 1 `ShipCrewSpawner.cs:154`), предупреждения `PrimumCrowdNpc.cs:410` 38 → 0. Проба оставлена до этого прогона.
 
+## Этап 5 — сделано: 18 null-`GetComponent` в кадре
+
+Замер H дал адрес, которого не было в плане: `GetComponentNullErrorMessage` — **18 вызовов и 11.7 KB**
+на геймплейный кадр (20% всего мусора кадра). Механизм известен с T-PERF05: `GetComponent` /
+`GetComponentInParent` на **промахе** строит null-сообщение ≈0.63–0.67 KB, `TryGetComponent` — нет.
+
+| Где (узел в профайлере) | Промахов/кадр | KB/кадр | Источник |
+|---|---|---|---|
+| `AI.NpcBrain.Update` | 8 | 5.05 | `_socialBrain = GetComponent<NpcSocialBrain>()` — lazy-init в `Update`, у NPC без компонента повторяется **каждый** кадр |
+| `GlobalMotionWorld.FixedUpdate` → `ApplyFixedPose` | 6 | 4.02 | `GlobalMotionPoseAdapter.CurrentNetworkAncestor()` |
+| `GlobalMotionPoseAdapter.LateUpdate` | 3 | 2.01 | тот же путь (`PrepareBaseline` → `ContextValid` → `HierarchyReady`) |
+| `GlobalMotionWorld.Update` → `PrepareBaseline` | 1 | 0.67 | тот же путь |
+
+Правки:
+
+- `NpcBrain` (`Update`, `ApplyRebaseTranslation`): `TryGetComponent(out _socialBrain)` — семантика lazy-init
+  сохранена (компонент, добавленный позже, так же подхватится), но промах больше не аллоцирует.
+- `GlobalMotionPoseAdapter`: `CurrentNetworkAncestor()` и проверка `Rigidbody` в `SupportedStructure()`
+  идут по родителям через `FindComponentInParent<T>` (цикл `TryGetComponent`), а не через
+  `GetComponentInParent`. Кеша нет намеренно: иерархия читается свежей, поведение 1:1, промах — 0 байт.
+
+**Проверка:** `check_compile_errors` — 0 errors. Play Mode — **NOT RUN, за пользователем**. Ожидание:
+`GetComponentNullErrorMessage` 18 → 0 вызовов, −11.7 KB/кадр (f120: 59.1 → ~47.4 KB).
+
 ## Этап 2 — заблокирован контрактом FO (кода нет)
 
 **Поправка к первому прочтению замера G.** `ShipDeckNav.LateUpdate` даёт 42.0 KB/кадр в срезе f41..f282,

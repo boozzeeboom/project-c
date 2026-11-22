@@ -828,8 +828,10 @@ namespace ProjectC.AI
             }
             // T-FO08B: печёные вейпоинты спавнера иначе ведут в досдвиговые корды
             // (live-маркеры сцены двигаются сами и не затрагиваются).
+            // T-PERF06/5: TryGetComponent вместо GetComponent — промах строит null-сообщение
+            // (~0.63 КБ). Замер 12-52-39: 8 вызовов на кадр на агентах без NpcSocialBrain.
             if (_socialBrain == null)
-                _socialBrain = GetComponent<NpcSocialBrain>();
+                TryGetComponent(out _socialBrain);
             if (_socialBrain != null)
             {
                 try { _socialBrain.ApplyRebaseTranslation(translation); }
@@ -1109,8 +1111,10 @@ namespace ProjectC.AI
             if (_socialEnabled)
             {
                 // Lazy init: если компонент добавлен после OnNetworkSpawn (edge case).
+                // T-PERF06/5: TryGetComponent — иначе промах каждый кадр строил null-сообщение
+                // (~0.63 КБ × 8 агентов/кадр в замере 12-52-39).
                 if (_socialBrain == null)
-                    _socialBrain = GetComponent<NpcSocialBrain>();
+                    TryGetComponent(out _socialBrain);
                 if (_socialBrain != null)
                     _socialBrain.Tick(this);
             }

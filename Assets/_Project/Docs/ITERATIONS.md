@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-11-22 (T-PERF06, этап 7 — мусор на стороне Update; замер J)
+
+**Задача:** По замеру `ProjectC_client_2026-11-22_14-22-32.data` (309 кадров, call stacks ON) + `console.txt` подтвердить этап 6 и снять мусор, который после него остался в Update. Play Mode не запускать.
+
+**Результат:** Этап 6 подтверждён: `NpcShipWorld.FixedUpdate` 46.0 KB → **0 B**, весь `FixedUpdate` 4.8 KB (`ContractServer` 3.3 + `GlobalMotionWorld` 1.4). Устойчивый участок 41..304 (264 кадра): avg 31.6, медиана 19.2, p90 52.9 KB/кадр (в замере I медиана 77.6). Остаток: f150 (53.3 KB) — `AdditionalLightIntensityController.Update` **37.4 KB** (рескан `RefreshLights` каждые 2 с = `FindObjectsByType<Light>` 2 × 18.7 KB на ~2 230 источников); f200 (138.3 KB) — `ShipPositionServer.Update` **115.4 KB** (тик сейва раз в 5 с: `LogStringToConsole` 64.4 на три `Debug.Log`, `GC.Alloc` 48.5 на тело сейва + `JsonUtility.ToJson`, `GetComponentNullErrorMessage` 2.5) и `HouseDiscovery.Update` 8.4 (`FindObjectsByType<HouseMarker>` каждые 0.5 с). Пробы `[T-PERF06/4]` — 84 строки, все `primum_crowd_*`: один сдвиг мира паркует всю толпу, `enabled`/`onAfter` читаются после `ParkAgent`, поэтому у выключенного агента `isOnNavMesh` = false и ветка восстановления в `Tick` достижима.
+
+**Правки:** `JsonShipPositionRepository.LogSaveOnce` + `VerboseLog` (сейв раз в 5 с логируется один раз за сессию) и снятая дублирующая строка в `SaveCurrentState`; `TryGetComponent` для `Rigidbody`/`NpcShipController`; `GetCachedParoms` (300 кадров) и `SceneNameCached` по `SceneHandle`; ALIC — рескан по смене состава сцен (`sceneCount` + `OnSceneLoaded`) и страховочный таймер не чаще 30 с; `HouseDiscovery` — кэш маркеров 300 кадров и `HashSet<string>` открытых домов; проба `[T-PERF06/4]` удалена.
+
+**Методика:** суммы по узлам `HierarchyFrameDataView.GetItemColumnData(id, columnGcMemory)` верны, но привязка sample → callstack в загруженном профиле смешивает ветки кадра — в узле `ShipPositionServer.Update/GC.Alloc` первые samples приходят сразу из `GetByLocation`, `QueryNearby`, `ToUpperInvariant` и `SaveCurrentState:437`. Адрес принимается только при совпадении стека **и** арифметики по размеру узла.
+
+**Проверка:** `check_compile_errors` — 0 errors. Play Mode — **NOT RUN, за пользователем**. Ожидание: 31.6 → **~10 KB/кадр и ниже** (остаются URP 5.0, IMGUI 2.2 в редакторе, `ContractServer` 3.3, `GlobalMotionWorld` 1.4, `NpcBrain` 1.4, JSON сейва раз в 5 с).
+
 ## Итерация от 2026-11-22 (T-PERF06, этап 6 — аллокации в `NavTick` по call stacks)
 
 **Задача:** По замеру с Allocation Call Stacks (`ProjectC_client_2026-11-22_13-47-22.data`, 700 MB, 299 кадров) найти строки, которые дают 46.0 KB/кадр внутри `NpcShipWorld.FixedUpdate` → `NavTick`, и добить остаток null-`GetComponent`, который не закрыл этап 5. Play Mode не запускать.

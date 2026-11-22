@@ -708,3 +708,41 @@ f150 (78.9 KB): `NpcShipWorld.FixedUpdate` → `NavTick` — **46.0 KB / 639** �
 
 compile — 0 errors; Play Mode — **NOT RUN, за пользователем**. Ожидание: 78.9 KB/кадр → **~2–3 KB**
 (снято 26.4 + 16.9 + 2.7 + 6.86 + 2.06 + 0.70 KB).
+
+## T-PERF06 — замер J (`ProjectC_client_2026-11-22_14-22-32.data` + `console.txt`)
+
+309 кадров, файл 615 727 816 B, call stacks ON. Консоль: 596 записей (511 `Log`, 85 `Warning`, 0 `Error`),
+`Failed to create agent` 18 (как в замере I). GC сессии 43.7 MB; устойчивый участок 41..304 (264 кадра) —
+avg **31.6**, медиана 19.2, p90 52.9 KB/кадр (I: медиана 77.6). Пики вне него — f31 11 032 + f32 9 510 KB
+(загрузка хоста) и f308 4 681 KB (останов).
+
+Вердикт по этапу 6: `NpcShipWorld.FixedUpdate` — **0 B** (было 46.0 KB), `FixedUpdate` целиком 4.8 KB
+(`ContractServer` 3.3 + `GlobalMotionWorld` 1.4). Три правки сработали.
+
+Остаток мусора переехал на сторону Update. f150 (53.3 KB): `AdditionalLightIntensityController.Update`
+**37.4 KB** — рескан `RefreshLights` каждые 2 с, `FindObjectsByType<Light>` = 2 × 18.7 KB
+на ~2 230 источников (стек `RefreshLights:687` ← `Update:613` совпал с арифметикой). f200 (138.3 KB):
+`ShipPositionServer.Update` **115.4 KB** — тик сейва раз в 5 с: `LogStringToConsole` 64.4 (три `Debug.Log`
+на тик), `GC.Alloc` 48.5 (тело сейва + `JsonUtility.ToJson` + `WriteAllText`),
+`GetComponentNullErrorMessage` 2.5; `HouseDiscovery.Update` 8.4 (`FindObjectsByType<HouseMarker>` каждые 0.5 с).
+
+Поправка к методике: суммы по узлам ( `GetItemColumnData(id, columnGcMemory)` ) надёжны, а привязка
+sample → callstack в загруженном профиле смешивает ветки кадра — в узле `ShipPositionServer.Update/GC.Alloc`
+первые samples приходят сразу из `GetByLocation`, `QueryNearby`, `ToUpperInvariant` и `SaveCurrentState:437`.
+Адрес принимается только при совпадении стека **и** арифметики по размеру узла.
+
+Проба `[T-PERF06/4]`: 84 строки, все `primum_crowd_*`, `sample4m=False`, `enabled=False`, `onAfter=False` —
+один сдвиг мира запарковал всю толпу. `enabled`/`onAfter` читаются после `ParkAgent`, поэтому у выключенного
+агента `isOnNavMesh` = **false** и ветка восстановления в `Tick` достижима. Проба удалена.
+
+## T-PERF06/7 — мусор на стороне Update
+
+`JsonShipPositionRepository` — успешный сейв логируется один раз за сессию (`LogSaveOnce`, `VerboseLog`
+возвращает прежний шум); из `SaveCurrentState` убрана дублирующая строка `Saved: N ships`;
+`TryGetComponent` вместо `GetComponent` для `Rigidbody`/`NpcShipController`; список паромов и имена сцен
+кэшируются (`GetCachedParoms` 300 кадров, `SceneNameCached` по `SceneHandle`).
+`AdditionalLightIntensityController` — рескан по смене состава сцен (`sceneCount` + `OnSceneLoaded`),
+страховочный таймер не чаще 30 с. `HouseDiscovery` — кэш `HouseMarker[]` 300 кадров + `HashSet<string>`
+открытых домов. `PrimumCrowdNpc` — проба `[T-PERF06/4]` удалена.
+
+compile — 0 errors; Play Mode — **NOT RUN, за пользователем**. Ожидание: 31.6 → **~10 KB/кадр и ниже**.

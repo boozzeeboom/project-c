@@ -40,6 +40,14 @@ namespace ProjectC.World
         [SerializeField] private float _saveIntervalSeconds = 30f;
 
         private readonly List<HouseDiscoveryEntry> _discovered = new List<HouseDiscoveryEntry>();
+
+        // T-PERF06/7 (замер J): CheckDiscovery идёт каждые 0.5 с и каждый раз звал
+        // FindObjectsByType<HouseMarker> (362 маркера = 2.9 КБ массива) плюс O(n)-поиск
+        // по уже открытым. Кэш маркеров живёт 5 с, состав открытых — в HashSet.
+        private readonly HashSet<string> _discoveredIds = new HashSet<string>();
+        private HouseMarker[] _markerCache;
+        private int _markerCacheFrame = -1;
+        private const int MarkerCacheTtlFrames = 300;
         private bool _loaded;
         private ulong _clientId;
         private bool _dirty;
@@ -49,6 +57,18 @@ namespace ProjectC.World
 
         public IReadOnlyList<HouseDiscoveryEntry> Discovered => _discovered;
         public int Count => _discovered.Count;
+
+        /// <summary>Маркеры домов с кэшем на MarkerCacheTtlFrames: полный поиск на каждый CheckDiscovery — 2.9 КБ/вызов.</summary>
+        private HouseMarker[] GetMarkers()
+        {
+            if (_markerCache != null && _markerCacheFrame > 0 &&
+                Time.frameCount - _markerCacheFrame < MarkerCacheTtlFrames)
+                return _markerCache;
+
+            _markerCache = FindObjectsByType<HouseMarker>();
+            _markerCacheFrame = Time.frameCount;
+            return _markerCache;
+        }
 
         public static event Action<HouseDiscoveryEntry> OnHouseDiscovered;
 
@@ -101,11 +121,12 @@ namespace ProjectC.World
             if (HouseDiscoveryStore.TryLoad(_clientId, out var data))
             {
                 var markerMap = new Dictionary<string, HouseMarker>();
-                foreach (var mm in FindObjectsByType<HouseMarker>())
+                foreach (var mm in GetMarkers())
                     if (mm != null && !string.IsNullOrEmpty(mm.houseId) && !markerMap.ContainsKey(mm.houseId))
                         markerMap[mm.houseId] = mm;
 
                 _discovered.Clear();
+                _discoveredIds.Clear();
                 int skipped = 0;
                 foreach (var d in data.houses)
                 {
@@ -120,6 +141,7 @@ namespace ProjectC.World
                         worldPos = mk.MapPosition,
                         utcSeconds = d.utc,
                     });
+                    _discoveredIds.Add(d.houseId);
                 }
                 
             }
@@ -146,7 +168,7 @@ namespace ProjectC.World
 
             Vector3 pos = localPlayer.transform.position;
 
-            var markers = FindObjectsByType<HouseMarker>();
+            var markers = GetMarkers();
             
             
             
@@ -154,12 +176,7 @@ namespace ProjectC.World
             foreach (var m in markers)
             {
                 if (m == null) continue;
-                bool already = false;
-                foreach (var d in _discovered)
-                {
-                    if (d.houseId == m.houseId) { already = true; break; }
-                }
-                if (already) continue;
+                if (_discoveredIds.Contains(m.houseId)) continue;
 
                 float dist = Vector3.Distance(pos, m.MapPosition);
                 if (dist <= _discoveryRadius)
@@ -174,6 +191,7 @@ namespace ProjectC.World
                         utcSeconds = ChartTrackRecorder.NowUtcSeconds(),
                     };
                     _discovered.Add(entry);
+                    _discoveredIds.Add(entry.houseId);
                     _dirty = true;
                     OnHouseDiscovered?.Invoke(entry);
                     
@@ -217,9 +235,7 @@ namespace ProjectC.World
 
         public bool IsDiscovered(string houseId)
         {
-            foreach (var d in _discovered)
-                if (d.houseId == houseId) return true;
-            return false;
+            return !string.IsNullOrEmpty(houseId) && _discoveredIds.Contains(houseId);
         }
     }
 }

@@ -210,6 +210,7 @@ namespace ProjectC.Core
         }
 
         [Header("Discovery")]
+        [Tooltip("Страховочный период полного ресканa, с (не чаще 30 с). Смена сцен и новые источники пула подхватываются событиями, а не этим таймером: один рескан на 2 238 источников — 37 КБ мусора.")]
         [SerializeField, Min(0.1f)] private float rescanInterval = 2f;
         [SerializeField] private bool includeInactiveLights = true;
         [SerializeField] private bool controlOnlyAdditionalLights = true;
@@ -550,9 +551,15 @@ namespace ProjectC.Core
 
         private DayNightController _dayNightController;
         private float _currentTimeOfDay = 12f;
-        private float _nextRescanTime;
         private bool _hasAppliedTime;
         private bool _anyFlickerEnabled;
+
+        // T-PERF06/7 (замер J): полный рескан — это две аллокации массива ссылок
+        // (2 × 18.7 КБ на 2 238 источника). Смена состава сцен приходит событием
+        // OnSceneLoaded, поэтому таймер оставлен страховкой, а не основным путём.
+        private const float RescanSafetyInterval = 30f;
+        private int _sceneCountAtRescan = -1;
+        private float _nextSafetyRescanTime;
 
         // Живое применение правок из инспектора. Поля не сериализуются — они отражают
         // только текущую сессию и не попадают в сцену.
@@ -607,10 +614,12 @@ namespace ProjectC.Core
             IteratedThisFrame = 0;
             BaseSweepThisFrame = false;
 
-            if (Time.time >= _nextRescanTime)
+            // T-PERF06/7: рескан идёт по факту смены набора сцен (OnSceneLoaded + счётчик сцен),
+            // а страховочный таймер (не чаще RescanSafetyInterval) закрывает источники, созданные
+            // в рантайме без загрузки сцены. Прежние 2 с давали ~18 КБ/с мусора на ровном месте.
+            if (SceneManager.sceneCount != _sceneCountAtRescan || Time.time >= _nextSafetyRescanTime)
             {
                 RefreshLights();
-                _nextRescanTime = Time.time + rescanInterval;
             }
 
             // T-LIGHT17b: пул может появиться после загрузки WorldScene — привязка ленивая.
@@ -716,6 +725,10 @@ namespace ProjectC.Core
             // T-LIGHT17b: новый набор отслеживаемых источников — повод пересобрать активную копию.
             EnsurePoolBinding();
             SyncActiveSet();
+
+            // T-PERF06/7: отметка «на этом составе сцен скан сделан».
+            _sceneCountAtRescan = SceneManager.sceneCount;
+            _nextSafetyRescanTime = Time.time + Mathf.Max(rescanInterval, RescanSafetyInterval);
         }
 
         private void RefreshFlickerFlag()

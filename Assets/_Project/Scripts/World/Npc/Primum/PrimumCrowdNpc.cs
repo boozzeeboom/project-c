@@ -402,14 +402,14 @@ namespace ProjectC.World.NpcPrimum
         {
             if (!_initialized || _agent == null) return;
 
-#if UNITY_EDITOR
-            // T-PERF06/4 (ВРЕМЕННО, удалить после замера): 53 из 391 предупреждения замера G приходят
-            // из Warp ниже (Location PrimumCrowdNpc.cs:401). Фиксируем состояние ДО правки пути и
-            // логируем только аномалии: пришли вне меша или под позицией нет меша в 4 м.
-            bool probeWasOnMesh = _agent.isOnNavMesh;
-            bool probeSampled = NavMesh.SamplePosition(transform.position, out var probeHit, 4f, NavMesh.AllAreas);
-            float probeSampleDeltaY = probeSampled ? probeHit.position.y - transform.position.y : 0f;
-#endif
+            // T-PERF06/4 закрыт замером J. Проба писала строку на каждый аномальный ребейз (84 строки
+            // на один сдвиг — все на primum_crowd_*), и данные из неё уже ответили на вопрос:
+            //   • парковка штатная: на кадре сдвига меша в 4 м ещё нет (sample4m=False в 84/84),
+            //     навмеш переезжает вместе с WorldRoot_0_0 на кадр-два позже;
+            //   • восстановление достижимо: сразу после ParkAgent (enabled=False) агент отдаёт
+            //     isOnNavMesh = False (поле onAfter в тех же строках), значит Tick заходит в ветку
+            //     !isOnNavMesh и зовёт TryRestoreParkedAgent до появления меша.
+            // Поэтому проба удалена: строки больше не нужны, а в редакторе каждая стоит килобайты мусора.
 
             // Навмеш переезжает вместе с WorldRoot_0_0 НЕ в тот же кадр: сразу после сдвига под телом
             // агента меша может ещё не быть. Warp по «сырой» позиции в этом состоянии отцепляет агента
@@ -417,9 +417,6 @@ namespace ProjectC.World.NpcPrimum
             // Поэтому Warp идёт только на найденный меш, иначе агент паркуется до восстановления в Tick.
             if (!TryRefreshAgentOnNavMesh())
             {
-#if UNITY_EDITOR
-                LogRebaseProbe(probeWasOnMesh, probeSampled, probeSampleDeltaY);
-#endif
                 return;
             }
 
@@ -478,19 +475,6 @@ namespace ProjectC.World.NpcPrimum
             if (!NavMesh.SamplePosition(transform.position, out var land, RebaseSampleRadius, NavMesh.AllAreas)) return;
             _agent.Warp(land.position);
         }
-
-#if UNITY_EDITOR
-        /// <summary>
-        /// T-PERF06/4 (ВРЕМЕННО, удалить после замера): одна строка на аномальный rebase —
-        /// объясняет нативное "Failed to create agent" из Warp. Успешные случаи не логируются.
-        /// </summary>
-        private void LogRebaseProbe(bool wasOnMesh, bool sampled, float sampleDeltaY)
-        {
-            Debug.Log($"[T-PERF06/4] {name} onBefore={wasOnMesh} enabled={_agent.enabled} sample4m={sampled} " +
-                $"sampleDy={sampleDeltaY:F2} onAfter={_agent.isOnNavMesh} state={_state} " +
-                $"pos={transform.position} home={_homeLocal} target={_targetLocal}");
-        }
-#endif
 
         /// <summary>Проверка инварианта «≤4 на дом» для отчётности директора.</summary>
         public void SetNextTick(float nextTick) => _nextTick = nextTick;

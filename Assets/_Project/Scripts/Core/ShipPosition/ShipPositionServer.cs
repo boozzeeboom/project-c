@@ -25,6 +25,7 @@ using ProjectC.World.FloatingOrigin.Network;
 using ProjectC.World.Parom; // T-PAROM-20: персистенция веток
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace ProjectC.Core.ShipPosition
 {
@@ -57,6 +58,14 @@ namespace ProjectC.Core.ShipPosition
         private int _cachedShipsFrame;
         private const int SHIP_CACHE_TTL_FRAMES = 300; // 5s при 60fps — совпадает с saveIntervalSec
         private bool _shipCacheDirty = true;
+
+        // T-PERF06/7 (замер J): один save-тик стоил 115.4 КБ мусора, из них 64.4 КБ — Debug.Log
+        // репозитория и 2.5 КБ — GetComponentNullErrorMessage. Остаток — данные сейва; здесь
+        // кэшируется то, что между тиками не меняется: список паромов и имена сцен.
+        private readonly List<ParomRoute> _cachedParoms = new List<ParomRoute>();
+        private int _cachedParomsFrame;
+        private bool _paromCacheDirty = true;
+        private readonly Dictionary<ulong, string> _sceneNameByHandle = new Dictionary<ulong, string>();
 
         // === Lifecycle ===
 
@@ -92,7 +101,43 @@ namespace ProjectC.Core.ShipPosition
         /// <summary>
         /// PERF: инвалидировать кэш кораблей. Вызывается извне при спавне/деспавне корабля.
         /// </summary>
-        public void InvalidateShipCache() => _shipCacheDirty = true;
+        public void InvalidateShipCache()
+        {
+            _shipCacheDirty = true;
+            _paromCacheDirty = true;
+        }
+
+        /// <summary>
+        /// T-PERF06/7: список паромов с кэшем на SHIP_CACHE_TTL_FRAMES. FindObjectsByType
+        /// на каждом save-тике давал лишний массив и полный обход сцены.
+        /// </summary>
+        private List<ParomRoute> GetCachedParoms()
+        {
+            if (!_paromCacheDirty && _cachedParomsFrame > 0 && Time.frameCount - _cachedParomsFrame < SHIP_CACHE_TTL_FRAMES)
+                return _cachedParoms;
+
+            _cachedParoms.Clear();
+            var all = FindObjectsByType<ParomRoute>();
+            for (int i = 0; i < all.Length; i++)
+                if (all[i] != null) _cachedParoms.Add(all[i]);
+            _cachedParomsFrame = Time.frameCount;
+            _paromCacheDirty = false;
+            return _cachedParoms;
+        }
+
+        /// <summary>
+        /// T-PERF06/7: Scene.name — нативное свойство, отдающее новую строку на каждый вызов.
+        /// На save-тике это строка на каждый корабль и каждый паром; сцен в сессии единицы.
+        /// </summary>
+        private string SceneNameCached(Scene scene)
+        {
+            ulong handle = scene.handle.GetRawData();
+            if (_sceneNameByHandle.TryGetValue(handle, out string cached)) return cached;
+
+            cached = scene.name;
+            _sceneNameByHandle[handle] = cached;
+            return cached;
+        }
 
         /// <summary>T-ADM-03: сеттер для AdminLogBus (мастер-mute). Поле и if'ы не трогаем.</summary>
         public void SetDebugMode(bool v) => debugMode = v;
@@ -367,7 +412,7 @@ namespace ProjectC.Core.ShipPosition
                 if (debugMode) Debug.Log("[ShipPositionServer] No saved paroms. Skip parom restore.");
                 return;
             }
-            var routes = FindObjectsByType<ParomRoute>();
+            var routes = GetCachedParoms();
             int restored = 0;
             foreach (var route in routes)
             {
@@ -379,7 +424,7 @@ namespace ProjectC.Core.ShipPosition
                         Debug.Log($"[ShipPositionServer] No save for parom '{route.RouteId}' — keeping scene state");
                     continue;
                 }
-                if (match.sceneName != route.gameObject.scene.name)
+                if (match.sceneName != SceneNameCached(route.gameObject.scene))
                 {
                     Debug.LogWarning($"[ShipPositionServer] Parom '{route.RouteId}' scene mismatch (save={match.sceneName}, live={route.gameObject.scene.name}) — keeping scene state");
                     continue;
@@ -392,8 +437,9 @@ namespace ProjectC.Core.ShipPosition
 
         private void ApplyRestore(ShipController ship, ShipPositionSaveData data)
         {
-            var rb = ship.GetComponent<Rigidbody>();
-            if (rb != null)
+            // T-PERF06/7: TryGetComponent вместо GetComponent — на отсутствующем компоненте
+            // GetComponent строит строку GetComponentNullErrorMessage (~0.7 КБ) на каждый вызов.
+            if (ship.TryGetComponent(out Rigidbody rb))
             {
                 rb.position = new Vector3(data.px, data.py, data.pz);
                 rb.rotation = new Quaternion(data.rx, data.ry, data.rz, data.rw);
@@ -417,8 +463,9 @@ namespace ProjectC.Core.ShipPosition
 
             if (!data.isNpc) return;
 
-            var npc = ship.GetComponent<NpcShipController>();
-            if (npc != null)
+            // T-PERF06/7: GetComponent на отсутствующем компоненте строит строку
+            // GetComponentNullErrorMessage (~0.7 КБ) на каждый корабль каждый тик сейва.
+            if (ship.TryGetComponent(out NpcShipController npc))
                 npc.RestoreFromSave(data);
         }
 
@@ -443,7 +490,7 @@ namespace ProjectC.Core.ShipPosition
                 var data = new ShipPositionSaveData
                 {
                     shipId = ship.ShipPersistentId,
-                    sceneName = ship.gameObject.scene.name,
+                    sceneName = SceneNameCached(ship.gameObject.scene),
                     isNpc = false,
                     px = ship.transform.position.x,
                     py = ship.transform.position.y,
@@ -457,8 +504,7 @@ namespace ProjectC.Core.ShipPosition
                     savedAtUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
                 };
 
-                var npc = ship.GetComponent<NpcShipController>();
-                if (npc != null)
+                if (ship.TryGetComponent(out NpcShipController npc))
                 {
                     data.isNpc = true;
                     data.navMode = (int)npc.CurrentMode;
@@ -496,7 +542,7 @@ namespace ProjectC.Core.ShipPosition
 
             // T-PAROM-20: снапшот веток тем же тиком (s/dir/station/dwelling).
             var paromData = new List<ParomRouteSaveData>();
-            var routes = FindObjectsByType<ParomRoute>();
+            var routes = GetCachedParoms();
             foreach (var route in routes)
             {
                 if (route == null || !route.IsSpawned) continue;
@@ -504,7 +550,7 @@ namespace ProjectC.Core.ShipPosition
                 paromData.Add(new ParomRouteSaveData
                 {
                     routeId = route.RouteId,
-                    sceneName = route.gameObject.scene.name,
+                    sceneName = SceneNameCached(route.gameObject.scene),
                     s = s,
                     dir = dir,
                     station = station,
@@ -522,10 +568,9 @@ namespace ProjectC.Core.ShipPosition
             wrapper.rbFrame = GlobalMotionControlledRebaseSlice.CumulativeRebaseFrame;
             _repo.SaveAll(wrapper);
 
-#if UNITY_EDITOR
-            if (debugMode)
-                Debug.Log($"[ShipPositionServer] Saved: {allData.Count} ships + {playerData.Count} players");
-#endif
+            // T-PERF06/7: строка на каждый тик сейва дублировала отчёт репозитория и стоила
+            // ещё один Debug.Log раз в 5 с (в редакторе — стек + консоль). Сводка теперь одна:
+            // её пишет JsonShipPositionRepository.LogSaveOnce.
         }
 
 

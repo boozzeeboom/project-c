@@ -274,6 +274,10 @@ NPC запаркуется на 1–2 с и вернётся сам (сэмпл 
 | размер одной аллокации | метаданные `GC.Alloc` (`GetSampleMetadataAsInt(i, 0)`) — 160 / 40 / 686 / 54 B |
 | имена кадров стека | `RawFrameDataView.ResolveMethodInfo` в загруженном профиле не резолвит **ничего** (0/300); работает только `HierarchyFrameDataView.ResolveItemMergedSampleCallstack(itemId, s)`, и только у листьев `GC.Alloc` — callstacks пишутся только для аллокаций |
 
+**Поправка от замера J:** суммы по узлам верны всегда, а вот привязка sample → callstack в загруженном
+профиле смешивает ветки кадра (см. «Важная поправка к методике» ниже). Адрес принимается только когда
+совпали и стек, и арифметика по размеру узла.
+
 ### Куда уходят 46.0 KB/кадр внутри `NpcShipWorld.FixedUpdate` (f150, 639 аллокаций → 3 строки)
 
 | Строка | Аллокаций | Байт | Механизм |
@@ -311,3 +315,108 @@ NPC запаркуется на 1–2 с и вернётся сам (сэмпл 
 **Проверка:** `check_compile_errors` — 0 errors. Play Mode — **NOT RUN, за пользователем**.
 Осталось непроверенным прогоном: восстановление 52 запаркованных агентов толпы после F8 (проба пишет
 только факт парковки), поэтому сама проба `[T-PERF06/4]` пока остаётся.
+
+## Замер J — `ProjectC_client_2026-11-22_14-22-32.data` + `console.txt` (call stacks ON)
+
+309 кадров (0..308), файл **615 727 816 B**. Консоль: **596** записей — 511 `Log`, 85 `Warning`,
+**0** `Error`/`Exception`. `Failed to create agent` — **18** (как в замере I).
+
+| Метрика | Замер I | Замер J |
+|---|---|---|
+| GC за сессию | — | **43.7 MB** |
+| медиана/кадр | 77.6 KB (299 кадров) | **20.8 KB** |
+| минимум / p90 / максимум | — | 10.6 / 116.7 / **11 031.7** KB (f31) |
+| устойчивый участок 41..304 (264 кадра) | — | avg **31.6**, медиана 19.2, p90 52.9 KB |
+
+Пики вне устойчивого участка — не рабочий режим: f31 11 032 + f32 9 510 KB (загрузка хоста,
+тот же класс, что `CoroutinesDelayedCalls` в ранних замерах), f308 4 681 KB (останов).
+
+### Вердикт по этапу 6 — подтверждён
+
+| Узел | Замер I | Замер J (f150 / f200 / f250) |
+|---|---|---|
+| `NpcShipWorld.FixedUpdate` | 46.0 KB | **0 B** (не проходит даже порог 200 B) |
+| `FixedUpdate.ScriptRunBehaviourFixedUpdate` всего | 78.9 KB | **4.8 KB** |
+
+В FixedUpdate остались `ContractServer.FixedUpdate` 3.3 KB и `GlobalMotionWorld.FixedUpdate` 1.4 KB —
+это не адреса этапа 6. Три правки (`QueryNearby` с буфером, прямой lookup в `GetByLocation`,
+индексный обход в `FindClosestBuildConflict`) дали обещанное 78.9 → ~2–3 KB; остаток — чужие вызовы
+в той же ветке.
+
+### Важная поправка к методике: per-sample callstack в этом формате ненадёжен
+
+Суммы по узлам читаются однозначно (`GetItemColumnData(id, columnGcMemory)`, байты), а привязка
+«узел → sample → callstack» смешивает ветки кадра. Пример: у узла `ShipPositionServer.Update/GC.Alloc`
+(219 samples) первые samples приходят одновременно из `DockingZoneRegistry.GetByLocation`,
+`NpcShipZoneRegistry.QueryNearby`, `TextInfo.ToUpperInvariant` и `SaveCurrentState:437` — это разные
+ветки одного кадра. Тот же эффект в raw-режиме (`ViewModes.Default` + `ResolveItemCallstack`).
+
+Поэтому правило: **адрес аллокации принимается только если совпали и стек, и арифметика по размеру**.
+Иначе фиксируется только размер узла, а источник ищется по коду.
+
+Совпало и то и другое ровно там, где это важно:
+
+| Узел | KB | Стек | Арифметика |
+|---|---|---|---|
+| `AdditionalLightIntensityController.Update` (f150) | 37.4 | `RefreshLights:687` ← `Update:613` | 2 × 18.7 KB = внутренний `Object[]` поиска + результат `ConvertObjects<Light>` на ~2 230 источников |
+| `ShipPositionServer.Update` (f200) | 115.4 | тело `SaveCurrentState` (`JsonUtility.ToJson` + `File.WriteAllText`) | 23 корабля × ~300 B JSON + массивы/строки |
+
+### Куда уходит мусор в кадре после этапа 6
+
+f150 (всего 53.3 KB):
+
+| Узел | KB | Источник |
+|---|---|---|
+| `AdditionalLightIntensityController.Update` | 37.4 | `RefreshLights` звался каждые 2 с: `FindObjectsByType<Light>` = 2 × 18.7 KB |
+| URP `RenderPlayModeViewCameras` | 5.0 | `Inl_ScriptableRenderer.AddRenderPasses` 1.9 ×2 + stack |
+| `PreUpdate.IMGUISendQueuedEvents/BeginGUI` | 2.2 | редакторский Game View, в билде нет |
+| `NpcBrain.Update` | 1.4 | не в этом этапе |
+| `GlobalSceneNativeExecutor.Update` | 0.7 | |
+
+f200 (всего 138.3 KB):
+
+| Узел | KB | Источник |
+|---|---|---|
+| `ShipPositionServer.Update` | 115.4 | тик сейва раз в 5 с |
+| — `LogStringToConsole` | 64.4 | три `Debug.Log` на тик; в редакторе каждый тянет стек + консоль |
+| — `GC.Alloc` | 48.5 | тело сейва: `List` + `ShipPositionSaveData` на корабль, строка `ToJson`, `WriteAllText` |
+| — `GetComponentNullErrorMessage` | 2.5 | `ship.GetComponent<NpcShipController>()` на кораблях без NPC |
+| `HouseDiscovery.Update` | 8.4 | `CheckDiscovery` каждые 0.5 с: `FindObjectsByType<HouseMarker>` (362 = 2.9 KB) |
+
+Живая консоль подтвердила три `Debug.Log` на каждый тик сейва (`Collected 1 players for save`,
+`Saved 23 ships + 1 players + 2 paroms`, `Saved: 23 ships + 1 players`).
+
+### Проба `[T-PERF06/4]` — вердикт
+
+84 строки, 84 разных имени, **все** `primum_crowd_*`, у всех `sample4m=False`, `sampleDy=0,00`,
+`state=Moving`. Это **один** сдвиг мира, запарковавший всю толпу: строк ровно столько же, сколько
+агентов, и каждый агент попал в лог один раз.
+
+Что сняло подозрение «восстановление недостижимо»: поля `enabled` и `onAfter` читаются **после**
+`TryRefreshAgentOnNavMesh`, то есть после `ParkAgent`. Сразу после `_agent.enabled = false` агент
+отдаёт `isOnNavMesh = false`. Значит в `Tick` условие `!_agent.isOnNavMesh` истинно и
+`TryRestoreParkedAgent()` вызывается каждый тик до момента, когда меш окажется в 4 м. Парковка штатная
+(навмеш переезжает с `WorldRoot_0_0` на кадр-два позже), путь восстановления достижим — проба убрана.
+
+Не проверено прогоном: что толпа реально идёт после восстановления (проба писала только парковку).
+
+## Этап 7 — сделано: мусор на стороне Update (замер J)
+
+| # | Файл / правка | Что снято |
+|---|---|---|
+| 1 | `JsonShipPositionRepository.SaveAll` — успешное сохранение пишется один раз за сессию (`LogSaveOnce`), дальше только ошибки; `VerboseLog` возвращает прежний шум | до ~64 KB на тик сейва |
+| 2 | `ShipPositionServer.SaveCurrentState` — убрана дублирующая строка `Saved: N ships` (в редакторе это был второй `Debug.Log` на тик) | ещё один лог на тик |
+| 3 | `ShipPositionServer.SaveCurrentState` / `ApplyRestore` — `TryGetComponent` вместо `GetComponent` (Rigidbody, NpcShipController) | 2.5 KB `GetComponentNullErrorMessage` |
+| 4 | `ShipPositionServer.GetCachedParoms` с кэшем на 300 кадров + `SceneNameCached` по `SceneHandle` | массив полного поиска + строка на каждый корабль/паром каждый тик |
+| 5 | `AdditionalLightIntensityController` — рескан по смене состава сцен (`sceneCount` + `OnSceneLoaded`), страховочный таймер не чаще 30 с | 37.4 KB каждые 2 с → ~37 KB раз в 30 с |
+| 6 | `HouseDiscovery` — кэш `HouseMarker[]` на 300 кадров + `HashSet<string>` открытых домов вместо O(n)-поиска | 2.9 KB × 10/с → 2.9 KB / 5 с |
+| 7 | `PrimumCrowdNpc` — проба `[T-PERF06/4]` удалена (вердикт выше) | 84 строки лога на сдвиг мира |
+
+Ожидание: устойчивый участок 31.6 KB/кадр → **~10 KB и ниже** (остаются URP 5.0, IMGUI 2.2 в редакторе,
+`ContractServer` 3.3, `GlobalMotionWorld` 1.4, `NpcBrain` 1.4, JSON сейва раз в 5 с).
+
+Осознанно оставлено: строка `JsonUtility.ToJson` в сейве — сам JSON (23 корабля + 1 игрок + 2 парома)
+неизбежен в текущем формате; стриминговый писатель вместо строки — отдельная задача. Один короткий
+`Debug.Log` на тик сейва остаётся у `PlayerPositionServer.CollectPlayers` (там `debugMode` включён сценой).
+
+**Проверка:** `check_compile_errors` — 0 errors. Play Mode — **NOT RUN, за пользователем**.

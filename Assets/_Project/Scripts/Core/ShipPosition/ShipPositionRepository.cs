@@ -46,6 +46,22 @@ namespace ProjectC.Core.ShipPosition
     {
         private readonly object _ioLock = new object();
 
+        /// <summary>
+        /// T-PERF06/7 (замер J): SaveAll логировал каждое сохранение (раз в 5 с). В редакторе один
+        /// Debug.Log стоит ~64 КБ мусора (стек + консоль) — больше, чем сами данные сейва.
+        /// Успешное сохранение пишется один раз за сессию, дальше только ошибки; VerboseLog вернёт шум.
+        /// </summary>
+        public static bool VerboseLog { get; set; }
+
+        private static bool _saveLogged;
+
+        private static void LogSaveOnce(string message)
+        {
+            if (!VerboseLog && _saveLogged) return;
+            _saveLogged = true;
+            Debug.Log(message);
+        }
+
         private string FilePath
         {
             get
@@ -97,7 +113,7 @@ namespace ProjectC.Core.ShipPosition
                 {
                     var json = JsonUtility.ToJson(wrapper, prettyPrint: false);
                     File.WriteAllText(path, json);
-                    Debug.Log($"[JsonShipPositionRepository] Saved {ships.Count} ships to {path}");
+                    LogSaveOnce($"[JsonShipPositionRepository] Saved {ships.Count} ships to {path}");
                 }
                 catch (Exception ex)
                 {
@@ -143,7 +159,7 @@ namespace ProjectC.Core.ShipPosition
                 {
                     var json = JsonUtility.ToJson(wrapper, prettyPrint: false);
                     File.WriteAllText(path, json);
-                    Debug.Log($"[JsonShipPositionRepository] Saved {wrapper.ships?.Count ?? 0} ships + {wrapper.players?.Count ?? 0} players + {wrapper.paroms?.Count ?? 0} paroms to {path}");
+                    LogSaveOnce($"[JsonShipPositionRepository] Saved {wrapper.ships?.Count ?? 0} ships + {wrapper.players?.Count ?? 0} players + {wrapper.paroms?.Count ?? 0} paroms to {path}");
                 }
                 catch (Exception ex)
                 {

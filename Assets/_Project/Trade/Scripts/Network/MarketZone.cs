@@ -256,9 +256,20 @@ namespace ProjectC.Trade.Network
         }
 
         // T-PERF10: все зоны используют один снапшот актёров на кадр вместо
-        // повторного обхода SpawnedObjects в каждом таймере.
-        private static readonly List<NetworkPlayer> _polledPlayers = new List<NetworkPlayer>(16);
-        private static readonly List<ShipController> _polledShips = new List<ShipController>(32);
+        // повторного обхода SpawnedObjects в каждом таймере. Позиции и идентификаторы
+        // тоже читаются один раз: transform.position из каждой зоны давал лавину native-вызовов.
+        private struct PolledPlayer
+        {
+            public Vector3 Position;
+            public ulong OwnerClientId;
+        }
+        private struct PolledShip
+        {
+            public Vector3 Position;
+            public ulong NetworkObjectId;
+        }
+        private static readonly List<PolledPlayer> _polledPlayers = new List<PolledPlayer>(16);
+        private static readonly List<PolledShip> _polledShips = new List<PolledShip>(32);
         private static int _polledActorsFrame = -1;
 
         private static void RefreshPollActors()
@@ -274,8 +285,10 @@ namespace ProjectC.Trade.Network
             {
                 var obj = spawned.Value;
                 if (obj == null || !obj.IsSpawned) continue;
-                if (obj.TryGetComponent<NetworkPlayer>(out var np)) _polledPlayers.Add(np);
-                else if (obj.TryGetComponent<ShipController>(out var ship)) _polledShips.Add(ship);
+                if (obj.TryGetComponent<NetworkPlayer>(out var np))
+                    _polledPlayers.Add(new PolledPlayer { Position = np.transform.position, OwnerClientId = np.OwnerClientId });
+                else if (obj.TryGetComponent<ShipController>(out var ship))
+                    _polledShips.Add(new PolledShip { Position = ship.transform.position, NetworkObjectId = ship.NetworkObject.NetworkObjectId });
             }
         }
 
@@ -291,14 +304,14 @@ namespace ProjectC.Trade.Network
             for (int i = 0; i < _polledPlayers.Count; i++)
             {
                 var np = _polledPlayers[i];
-                if ((np.transform.position - center).sqrMagnitude <= sqrTradeRadius)
+                if ((np.Position - center).sqrMagnitude <= sqrTradeRadius)
                     _pollFound.Add(np.OwnerClientId);
             }
             for (int i = 0; i < _polledShips.Count; i++)
             {
                 var ship = _polledShips[i];
-                if ((ship.transform.position - center).sqrMagnitude <= sqrShipDockRadius)
-                    _pollShipsFound.Add(ship.NetworkObject.NetworkObjectId);
+                if ((ship.Position - center).sqrMagnitude <= sqrShipDockRadius)
+                    _pollShipsFound.Add(ship.NetworkObjectId);
             }
 
             foreach (var id in _pollFound)

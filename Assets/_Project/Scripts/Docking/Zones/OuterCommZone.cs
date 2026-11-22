@@ -252,9 +252,22 @@ namespace ProjectC.Docking.Zones
         // NonAlloc здесь не годится: буфер на 64-256 слотов при 5 000 попаданий и маске -1
         // молча обрезает результат и может потерять игрока.
         // T-PERF10: все зоны используют один снапшот актёров на кадр вместо
-        // повторного обхода SpawnedObjects в каждом таймере.
-        private static readonly List<NetworkPlayer> _polledPlayers = new List<NetworkPlayer>(16);
-        private static readonly List<ShipController> _polledShips = new List<ShipController>(32);
+        // повторного обхода SpawnedObjects в каждом таймере. Позиции, слои и идентификаторы
+        // читаются один раз: повторные обращения из каждой зоны шли в native-код Unity.
+        private struct PolledPlayer
+        {
+            public Vector3 Position;
+            public ulong OwnerClientId;
+            public int Layer;
+        }
+        private struct PolledShip
+        {
+            public Vector3 Position;
+            public ulong NetworkObjectId;
+            public int Layer;
+        }
+        private static readonly List<PolledPlayer> _polledPlayers = new List<PolledPlayer>(16);
+        private static readonly List<PolledShip> _polledShips = new List<PolledShip>(32);
         private static int _polledActorsFrame = -1;
 
         private static void RefreshPollActors()
@@ -270,8 +283,10 @@ namespace ProjectC.Docking.Zones
             {
                 var obj = spawned.Value;
                 if (obj == null || !obj.IsSpawned) continue;
-                if (obj.TryGetComponent<NetworkPlayer>(out var np)) _polledPlayers.Add(np);
-                else if (obj.TryGetComponent<ShipController>(out var ship)) _polledShips.Add(ship);
+                if (obj.TryGetComponent<NetworkPlayer>(out var np))
+                    _polledPlayers.Add(new PolledPlayer { Position = np.transform.position, OwnerClientId = np.OwnerClientId, Layer = np.gameObject.layer });
+                else if (obj.TryGetComponent<ShipController>(out var ship))
+                    _polledShips.Add(new PolledShip { Position = ship.transform.position, NetworkObjectId = ship.NetworkObject.NetworkObjectId, Layer = ship.gameObject.layer });
             }
         }
 
@@ -288,16 +303,16 @@ namespace ProjectC.Docking.Zones
             {
                 var np = _polledPlayers[i];
                 // Маска по-прежнему применяется к GameObject сетевого объекта.
-                if ((pollLayerMask & (1 << np.gameObject.layer)) == 0) continue;
-                if ((np.transform.position - center).sqrMagnitude <= sqrRange)
+                if ((pollLayerMask & (1 << np.Layer)) == 0) continue;
+                if ((np.Position - center).sqrMagnitude <= sqrRange)
                     _pollPlayersFound.Add(np.OwnerClientId);
             }
             for (int i = 0; i < _polledShips.Count; i++)
             {
                 var ship = _polledShips[i];
-                if ((pollLayerMask & (1 << ship.gameObject.layer)) == 0) continue;
-                if ((ship.transform.position - center).sqrMagnitude <= sqrRange)
-                    _pollShipsFound.Add(ship.NetworkObject.NetworkObjectId);
+                if ((pollLayerMask & (1 << ship.Layer)) == 0) continue;
+                if ((ship.Position - center).sqrMagnitude <= sqrRange)
+                    _pollShipsFound.Add(ship.NetworkObjectId);
             }
 
             ApplyPlayerDiff();

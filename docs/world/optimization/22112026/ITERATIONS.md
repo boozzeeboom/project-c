@@ -826,3 +826,18 @@ compile + domain reload — завершены, новых ошибок C# не�
 тесты и Build агентом — **NOT RUN**. `Profiler.FlushMemoryCounters` (8,536 мс/кадр) и
 `Profiler.Callstack` (2,159 мс/кадр) в захвате остались, поэтому снижение profiling overhead
 не заявляется. Величина выигрыша будет определена следующим steady-state захватом.
+
+
+## T-PERF09 — подтверждение broadphase и реестр NPC (`ProjectC_client_2026-11-22_19-16-00.data`)
+
+434 кадра; steady-state 30..428 = 399 кадров. `Player.NetworkPlayer.Update` total/self:
+5,105 / 3,023 → **4,270 / 2,784 мс/кадр**. `NetworkPlayer.InteractionHint`: 1,742 / 1,650 →
+**1,189 / 1,160 мс/кадр**; на вызов 5,893 → **5,101 мс (−13,4 %)**. Broadphase подтверждён,
+но resolver остаётся основным внутренним участком. Подробности — `07_T_PERF09_PLAYER_UPDATE_PROFILING.md`.
+
+`NpcController.FindNearest` теперь использует существующий OnEnable/OnDisable-реестр с прежним
+trigger-or-distance правилом. Подсказка и фактическое E-взаимодействие в `NetworkPlayer` переведены
+на общий поиск, `FindObjectsByType<NpcController>` из обоих путей убран. Порядок взаимодействий не изменён.
+
+compile + domain reload — завершены, ошибок C# нет; `git diff --check` — чисто. Play Mode, тесты
+и Build агентом — **NOT RUN**. Величина дополнительного выигрыша будет определена следующим захватом.

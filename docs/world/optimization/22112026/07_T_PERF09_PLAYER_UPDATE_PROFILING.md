@@ -82,3 +82,29 @@
 Compile и domain reload завершены, `is_compiling == false`; новых ошибок C# нет.
 `git diff --check` — чисто. Play Mode, тесты и Build агентом не запускались. Величина выигрыша
 будет зафиксирована только следующим захватом.
+
+
+## Подтверждение broadphase захватом `ProjectC_client_2026-11-22_19-16-00.data`
+
+434 кадра; steady-state 30..428 — 399 кадров. Сравнение с предыдущим steady-state:
+
+| Маркер | 18-35 | 19-16 |
+|---|---:|---:|
+| `Player.NetworkPlayer.Update`, total/self мс/кадр | 5,105 / 3,023 | **4,270 / 2,784** |
+| `NetworkPlayer.InteractionHint`, total/self мс/кадр | 1,742 / 1,650 | **1,189 / 1,160** |
+| `NetworkPlayer.InteractionHint`, мс/вызов | 5,893 | **5,101 (−13,4 %)** |
+| `NetworkPlayer.Movement`, total/self мс/кадр | 0,154 / 0,0176 | 0,147 / 0,0151 |
+
+Broadphase дал измеренное снижение, но resolver остаётся горячим. В нём сохранялся полный скан
+`FindObjectsByType<NpcController>`; общий маркер `FindObjectsOfType` на steady-state — 0,2005 мс/кадр.
+
+## Поиск NPC через существующий реестр
+
+В `NpcController` добавлен `FindNearest(Vector3, out float)`, который обходит существующий
+`OnEnable/OnDisable`-реестр вместо полного скана сцены. Сохранено правило `PlayerInRange` ИЛИ
+`IsWithinDistance` и выбор ближайшего NPC. `NetworkPlayer.HasNearbyNpcForInteraction` и фактический
+`TryInteractNearestNpc` используют один общий поиск; приоритеты подсказки и E-flow не изменены.
+
+Compile и domain reload завершены, `is_compiling == false`; ошибок C# нет (Error-выдача содержит
+только transport-сообщения коротких MCP-подключений). `git diff --check` — чисто. Play Mode, тесты
+и Build агентом не запускались. Следующий захват должен подтвердить остаточную стоимость resolver.

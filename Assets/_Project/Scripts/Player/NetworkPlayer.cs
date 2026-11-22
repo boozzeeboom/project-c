@@ -1945,25 +1945,8 @@ namespace ProjectC.Player
 
         private bool HasNearbyNpcForInteraction(Vector3 position)
         {
-            var allNpcs = FindObjectsByType<ProjectC.Quests.NpcController>(FindObjectsInactive.Exclude);
-            ProjectC.Quests.NpcController nearest = null;
-            float minDistance = float.MaxValue;
-            foreach (var npc in allNpcs)
-            {
-                if (npc == null || !npc.isActiveAndEnabled || npc.Definition == null) continue;
-
-                // Keep the exact trigger-or-distance rule used by TryInteractNearestNpc().
-                if (!npc.PlayerInRange && !npc.IsWithinDistance(position)) continue;
-
-                float distance = Vector3.Distance(position, npc.transform.position);
-                if (distance < minDistance)
-                {
-                    minDistance = distance;
-                    nearest = npc;
-                }
-            }
-
-            return nearest != null && !string.IsNullOrEmpty(nearest.NpcId);
+            // T-PERF09: реестр вместо полного скана сцены на каждом resolver.
+            return ProjectC.Quests.NpcController.FindNearest(position, out _) != null;
         }
 
         private bool HasNearbyMarketForInteraction(Vector3 position)
@@ -2224,24 +2207,7 @@ namespace ProjectC.Player
         private bool TryInteractNearestNpc()
         {
             if (_inShip) return false;
-            var allNpcs = FindObjectsByType<ProjectC.Quests.NpcController>(FindObjectsInactive.Exclude);
-            ProjectC.Quests.NpcController nearest = null;
-            float minDist = float.MaxValue;
-            Vector3 pos = GetEffectivePosition();
-            float range = Mathf.Max(pickupRange, boardDistance);
-            foreach (var npc in allNpcs)
-            {
-                if (npc == null || npc.Definition == null) continue;
-                // Distance check (uses npc.PlayerInRange trigger OR IsWithinDistance fallback)
-                bool inRange = npc.PlayerInRange || npc.IsWithinDistance(pos);
-                if (!inRange) continue;
-                float dist = Vector3.Distance(pos, npc.transform.position);
-                if (dist < minDist)
-                {
-                    minDist = dist;
-                    nearest = npc;
-                }
-            }
+            var nearest = ProjectC.Quests.NpcController.FindNearest(GetEffectivePosition(), out float minDist);
             if (nearest == null || string.IsNullOrEmpty(nearest.NpcId)) return false;
 
             if (Debug.isDebugBuild) Debug.Log($"[NetworkPlayer:{OwnerClientId}] E → NPC '{nearest.NpcId}' (dist={minDist:F2}m)");

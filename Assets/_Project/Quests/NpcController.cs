@@ -136,6 +136,29 @@ namespace ProjectC.Quests
             return Registry.TryGetValue(npcId, out var c) ? c : null;
         }
 
+        /// <summary>
+        /// T-PERF09: ближайший доступный NPC из OnEnable/OnDisable-реестра.
+        /// Сохраняет прежнее правило trigger-or-distance без FindObjectsByType на каждый запрос.
+        /// </summary>
+        public static NpcController FindNearest(Vector3 playerPosition, out float minDistance)
+        {
+            NpcController nearest = null;
+            minDistance = float.MaxValue;
+            foreach (var npc in Registry.Values)
+            {
+                if (npc == null || !npc.isActiveAndEnabled || npc.Definition == null) continue;
+                if (!npc.PlayerInRange && !npc.IsWithinDistance(playerPosition)) continue;
+
+                float distance = Vector3.Distance(playerPosition, npc.transform.position);
+                if (distance < minDistance)
+                {
+                    minDistance = distance;
+                    nearest = npc;
+                }
+            }
+            return nearest;
+        }
+
         // S11: реагировать только на local player (remote player'ы, особенно на host,
         // не должны двигать _playerInRange — иначе E-key выбирает чужого NPC).
         private static bool IsLocalPlayerCollider(Collider other)

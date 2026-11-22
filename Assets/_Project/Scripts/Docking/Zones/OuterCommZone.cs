@@ -65,7 +65,10 @@ namespace ProjectC.Docking.Zones
         // Debounce для PollPlayersInRange (как MarketZone)
         private readonly Dictionary<ulong, int> _missingTicks = new Dictionary<ulong, int>();
         // T-PERF02: переиспользуемые буферы полла — без new HashSet/List каждый тик.
-        private readonly HashSet<ulong> _pollFound = new HashSet<ulong>();
+        // T-PERF03: два набора вместо одного — игроки и корабли теперь набираются одним
+        // проходом по SpawnedObjects, а не двумя физическими запросами.
+        private readonly HashSet<ulong> _pollPlayersFound = new HashSet<ulong>();
+        private readonly HashSet<ulong> _pollShipsFound = new HashSet<ulong>();
         private readonly List<ulong> _pollToRemove = new List<ulong>();
 
         public IReadOnlyCollection<ulong> PlayersInRange => _playersInRange;
@@ -140,8 +143,7 @@ namespace ProjectC.Docking.Zones
 
             if (_isServer)
             {
-                PollPlayersInRange();
-                PollShipsInRange();
+                PollActorsInRange();
             }
             // Клиентская часть
             PollLocalPlayerZone();
@@ -233,28 +235,57 @@ namespace ProjectC.Docking.Zones
 
         // === Server-side: Polling (аналог MarketZone.PollPlayersInRadius) ===
 
-        private void PollPlayersInRange()
+        // T-PERF03: полл без физики.
+        // Было: два Physics.OverlapSphere с ОДИНАКОВЫМИ аргументами за тик, маска -1 (весь мир).
+        // Замер сцены в захвате 2026-11-22: зона STN-PRM-001 (422 м) возвращала 5 304
+        // коллайдера = 41.38 КБ массива на вызов (ровно столько же аллокаций в профайлере),
+        // а всего 9 зон x 2 вызова x 4 Гц.
+        // Стало: один проход по заспавненным сетевым объектам + сверка sqrMagnitude.
+        // Проход по словарю не аллоцирует; N = игроки + корабли (в сцене 20 кораблей).
+        // NonAlloc здесь не годится: буфер на 64-256 слотов при 5 000 попаданий и маске -1
+        // молча обрезает результат и может потерять игрока.
+        private void PollActorsInRange()
         {
-            var hits = Physics.OverlapSphere(transform.position, commRange, pollLayerMask, QueryTriggerInteraction.Ignore);
-            _pollFound.Clear();
-            for (int i = 0; i < hits.Length; i++)
+            var nm = NetworkManager.Singleton;
+            if (nm == null || nm.SpawnManager == null) return;
+
+            Vector3 center = transform.position;
+            float sqrRange = commRange * commRange;
+
+            _pollPlayersFound.Clear();
+            _pollShipsFound.Clear();
+
+            foreach (var spawned in nm.SpawnManager.SpawnedObjects)
             {
-                var np = hits[i].GetComponentInParent<NetworkPlayer>();
-                if (np == null || !np.IsSpawned) continue;
-                _pollFound.Add(np.OwnerClientId);
+                var obj = spawned.Value;
+                if (obj == null || !obj.IsSpawned) continue;
+                // Маска применяется к GameObject сетевого объекта (раньше — к коллайдерам).
+                if ((pollLayerMask & (1 << obj.gameObject.layer)) == 0) continue;
+                if ((obj.transform.position - center).sqrMagnitude > sqrRange) continue;
+
+                // NetworkPlayer и ShipController — NetworkBehaviour, значит лежат на корне
+                // NetworkObject; старый код искал их GetComponentInParent от коллайдера.
+                if (obj.TryGetComponent<NetworkPlayer>(out var np))
+                    _pollPlayersFound.Add(np.OwnerClientId);
+                else if (obj.TryGetComponent<ShipController>(out var ship))
+                    _pollShipsFound.Add(ship.NetworkObject.NetworkObjectId);
             }
-            foreach (var id in _pollFound)
+
+            ApplyPlayerDiff();
+            ApplyShipDiff();
+        }
+
+        private void ApplyPlayerDiff()
+        {
+            foreach (var id in _pollPlayersFound)
             {
                 if (_playersInRange.Add(id))
-                {
                     _missingTicks.Remove(id);
-
-                }
             }
             _pollToRemove.Clear();
             foreach (var id in _playersInRange)
             {
-                if (!_pollFound.Contains(id))
+                if (!_pollPlayersFound.Contains(id))
                 {
                     _missingTicks.TryGetValue(id, out var n);
                     n++;
@@ -273,24 +304,14 @@ namespace ProjectC.Docking.Zones
             }
         }
 
-        private void PollShipsInRange()
+        private void ApplyShipDiff()
         {
-            var hits = Physics.OverlapSphere(transform.position, commRange, pollLayerMask, QueryTriggerInteraction.Ignore);
-            _pollFound.Clear();
-            for (int i = 0; i < hits.Length; i++)
-            {
-                var ship = hits[i].GetComponentInParent<ShipController>();
-                if (ship == null || !ship.IsSpawned) continue;
-                _pollFound.Add(ship.NetworkObject.NetworkObjectId);
-            }
-            foreach (var id in _pollFound)
-            {
+            foreach (var id in _pollShipsFound)
                 _shipsInRange.Add(id);
 
-            }
             _pollToRemove.Clear();
             foreach (var id in _shipsInRange)
-                if (!_pollFound.Contains(id)) _pollToRemove.Add(id);
+                if (!_pollShipsFound.Contains(id)) _pollToRemove.Add(id);
             foreach (var id in _pollToRemove)
                 _shipsInRange.Remove(id);
         }

@@ -761,3 +761,25 @@ compile — 0 errors; Play Mode — **NOT RUN, за пользователем**
 compile + domain reload — завершены, ошибок C# нет; `git diff --check` — чисто. Play Mode — **NOT RUN,
 за пользователем**. Ожидание: исчезновение `OuterCommZone.OnTriggerEnter`, существенное снижение
 `Physics.SendTriggerEvents` и `MarketZone.Update`; фактические цифры — после нового захвата.
+
+
+## T-PERF07 — подтверждение замером `ProjectC_client_2026-11-22_15-10-49.data`
+
+267 кадров, 1 771 маркер, 580 MB. `OuterCommZone.OnTriggerEnter` исчез полностью (до: 5 541 вызов,
+18,38 / 17,18 мс total/self на кадр). `Physics.SendTriggerEvents`: 82,83 / 61,50 → **53,44 / 50,63** мс;
+`MarketZone.Update`: 4,56 / 3,97 → **3,89 / 3,69** мс. Отключение триггера связи подтверждено;
+native trigger-dispatch остаётся главным CPU-участком. `console.txt` не обновился (экспорт 14:39:42),
+поэтому не использовался как консоль нового прогона. Подробности — `05_T_PERF07_ZONE_CPU.md`.
+
+## T-PERF08 — interaction-триггеры кораблей
+
+На steady-state участке 30..250 нового захвата (221 кадр): `Physics.SendTriggerEvents` — 38,20 / 37,88 мс
+total/self на кадр; `ShipCargoConsole.OnTriggerEnter/Exit` — 2 082 + 10 786 вызовов;
+`ShipController.OnTriggerEnter/Exit` — 4 050 + 15 616. Managed self-time мал, поэтому сокращается само число событий.
+
+`ShipCargoConsole` регистрируется в `InteractableManager` через `OnEnable/OnDisable`, а его SphereCollider выключен:
+поиск и взаимодействие уже используют прежний `pickupRange = 3 м`. `DockingPadTriggerBox` отсекает коллайдеры без
+`attachedRigidbody` до поиска `ShipController`; `Rigidbody` у корабля обязателен, остальная логика не изменена.
+
+compile + domain reload — завершены, ошибок C# нет. Play Mode — **NOT RUN, за пользователем**. Критерии следующего
+замера и ручные проверки — `06_T_PERF08_INTERACTION_TRIGGERS.md`.

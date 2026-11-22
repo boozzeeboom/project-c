@@ -2,10 +2,10 @@
 // ShipCargoConsole.cs — interactable компонент на дочернем объекте корабля (T-CARGO-UI-02)
 // =====================================================================================
 // Назначение: вешается на 3D-объект внутри корабля (например ShipRoot/CargoConsole).
-// При входе игрока в триггер регистрируется в InteractableManager. По F открывает
+// Регистрируется в InteractableManager на всё время активности. По F открывает
 // ShipCargoConsoleWindow для обмена inventory ↔ ship cargo.
 //
-// Паттерн: CraftingStation (IInteractable + trigger registration), но без NetworkBehaviour
+// Паттерн: IInteractable + поиск по дистанции, без NetworkBehaviour
 // (корабль уже NetworkObject, дочерний объект не нуждается в отдельной сети).
 // =====================================================================================
 
@@ -60,19 +60,26 @@ namespace ProjectC.Ship.Cargo
 
         private void Awake()
         {
-            // Убедимся что есть триггер-коллайдер
+            // Сохраняем форму для редакторских данных, но не регистрируем её в PhysX.
             _trigger = GetComponent<SphereCollider>();
             if (_trigger == null)
             {
                 _trigger = gameObject.AddComponent<SphereCollider>();
-                _trigger.isTrigger = true;
                 _trigger.radius = _interactionRadius;
             }
-            else
+            else if (_trigger.radius < 0.1f)
             {
-                _trigger.isTrigger = true;
-                if (_trigger.radius < 0.1f) _trigger.radius = _interactionRadius;
+                _trigger.radius = _interactionRadius;
             }
+
+            _trigger.isTrigger = true;
+            // T-PERF08: ближайший терминал уже выбирается по дистанции в InteractableManager.
+            _trigger.enabled = false;
+        }
+
+        private void OnEnable()
+        {
+            InteractableManager.RegisterShipCargoConsole(this);
         }
 
         private void Start()
@@ -83,31 +90,6 @@ namespace ProjectC.Ship.Cargo
                                  "Компонент должен быть на дочернем объекте корабля.", this);
             }
         }
-
-        private void OnTriggerEnter(Collider other)
-        {
-            // T-PERF04: IsPlayerCollider вместо GetComponent — см. комментарий у хелпера.
-            if (IsPlayerCollider(other))
-            {
-                InteractableManager.RegisterShipCargoConsole(this);
-            }
-        }
-
-        private void OnTriggerExit(Collider other)
-        {
-            if (IsPlayerCollider(other))
-            {
-                InteractableManager.UnregisterShipCargoConsole(this);
-            }
-        }
-
-        /// <summary>
-        /// T-PERF04: коллайдер принадлежит игроку (тег Player или CharacterController).
-        /// TryGetComponent не строит null-сообщение, в отличие от GetComponent: в захвате
-        /// 2026-11-22 эти два колбэка давали 24.7 МБ мусора на 36 817 вызовов.
-        /// </summary>
-        private static bool IsPlayerCollider(Collider other)
-            => other.CompareTag("Player") || other.TryGetComponent(out CharacterController _);
 
         private void OnDisable()
         {

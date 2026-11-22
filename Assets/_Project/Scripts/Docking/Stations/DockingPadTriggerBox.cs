@@ -45,6 +45,8 @@ namespace ProjectC.Docking.Stations
 
         private void OnTriggerEnter(Collider other)
         {
+            // T-PERF08: статическая геометрия города не может быть кораблём.
+            if (other.attachedRigidbody == null) return;
             var ship = other.GetComponentInParent<ShipController>();
             if (ship == null) return;
 
@@ -76,6 +78,7 @@ namespace ProjectC.Docking.Stations
 
         private void OnTriggerExit(Collider other)
         {
+            if (other.attachedRigidbody == null) return;
             var ship = other.GetComponentInParent<ShipController>();
             if (ship != null)
             {

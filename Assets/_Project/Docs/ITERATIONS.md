@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-11-22 (T-PERF03 — зоны связи, подсказка игрока, кап регистрации палуб)
+
+**Задача:** Разобрать захват `ProjectC_client_2026-11-22_10-39-14.data` и снять найденные точки (план: `docs/world/optimization/22112026/01_FIX_PLAN.md`); Play Mode не запускать — runtime-замер за пользователем.
+
+**Результат:** Шесть отдельных правок. (1) `OuterCommZone.Awake` больше не ставит trigger-сфере радиус `commRange`: новый `triggerRadius = 60` (было 500–1000 м в мире с 21 842 коллайдерами) — триггер остался только для мгновенной реакции, дальний детект — за поллом. (2) Два одинаковых `Physics.OverlapSphere` за тик в `OuterCommZone` заменены одним проходом по `SpawnManager.SpawnedObjects` (`_pollPlayersFound`/`_pollShipsFound`), `NonAlloc` отвергнут: буфер 64–256 при 5 304 попаданиях и маске `-1` теряет игрока. (3) `MarketZone` — `OverlapSphereNonAlloc` с per-instance `Collider[128]` (12 зон × 2 × 4 Гц = 96 массивов/с). (4) `NetworkPlayer.UpdateInteractionHint` троттлится `INTERACTION_HINT_INTERVAL = 0.2f` вместо каждого кадра: `FindObjectsByType<DoorController>` (2 800 дверей = 21.94 КБ) + `NpcController` давали 11.87 ms и ~44 КБ на кадр; строка пробника строится только при `IsActive`. (5) `ShipDeckNav.ProcessPendingRegistrations` получил метку кадра (`s_registrationsFrame`): `s_registrationsThisFrame = 0` выполнялся на `LateUpdate` каждого корабля и кап «1 Add на кадр» держался только внутри экземпляра (кадр 75: 87.05 + 62.28 ms, внутри `GC.Collect` 22.09 ms). (6) `Assets/Resources/ShipCollisionDamage.asset`: `verboseLogging 1 → 0` (кадр 76: 55.03 ms / 32.01 КБ в `LogStringToConsole`) — применено локально; `Assets/Resources/` в `.gitignore` и файл в git никогда не лежал, поэтому коммита у него нет (на чистом клоне работают дефолты кода, `false`).
+
+**Проверка:** `check_compile_errors` — 0 errors после каждой кодовой фазы (Ф2 — после одного повтора из-за domain reload). Play Mode / новый захват / поведенческие проверки (T-клавиша и CommPanel, докинг, покупка на маркете, экипаж на палубах, урон от столкновения, `ShipDeckNav.DumpStats()` → `spawn ≈ 20, drift ≈ 0`) — NOT RUN, за пользователем; протокол замера — в `docs/world/optimization/22112026/ITERATIONS.md`.
+
+**Файлы:** `Assets/_Project/Scripts/Docking/Zones/OuterCommZone.cs`, `Assets/_Project/Trade/Scripts/Network/MarketZone.cs`, `Assets/_Project/Scripts/Player/NetworkPlayer.cs`, `Assets/_Project/Scripts/Ship/ShipDeckNav.cs`, `Assets/Resources/ShipCollisionDamage.asset` (локально, вне git), `docs/world/optimization/22112026/00_CAPTURE_2026-11-22_ANALYSIS.md`, `docs/world/optimization/22112026/01_FIX_PLAN.md`, `docs/world/optimization/22112026/ITERATIONS.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
+---
+
 ## Итерация от 2026-11-15 (T-FO06L follow-up — каталог пилота: репарент чинится окном bake)
 
 **Задача:** Пилот перестал стартовать с `scene_preparation:authored_parent_binding_mismatch` после правок `WorldScene_0_0`; bake-окно такой дрейф не чинило.

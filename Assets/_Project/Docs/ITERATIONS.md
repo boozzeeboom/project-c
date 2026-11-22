@@ -1,5 +1,17 @@
 # Iterations
 
+## Итерация от 2026-11-22 (T-PERF05 — null-GetComponent в FO-слое, разбор консоли)
+
+**Задача:** После T-PERF04 (GC сессии 131 → 98.6 MB) снять остаток null-сообщений и разобрать сохранённую консоль, чтобы убрать самые шумные логи.
+
+**Результат:** `GlobalMotionPoseAdapter`: `_transport`, `_body`/`_controller`/`_agent` (в `Bind` и `SupportedStructure`) и `HasCompetingWriter` переведены на `TryGetComponent` — это крупнейший остаток null-сообщений (~7.7 MB за сессию = 8% всего GC: `GlobalMotionWorld.FixedUpdate` 5 888 KB / 8 932 вызова, `GlobalMotionWorld.Update` 1 208 / 1 832, `NetworkTickSystem.Tick` 946 / 1 412). Консоль: 671 из 1 391 записи (48%) — нативное предупреждение `Failed to create agent because it is not close enough to the NavMesh`; стека нет, `Debug.unityLogger` на него не влияет, глушится только устранением причины. Шум стартовый: 815 из 1 076 log-вызовов приходятся на кадры 1..99 (пик f27 = 119, f28 = 325 — там `ShipCrewSpawner.SpawnWhenReady()` ×20), после кадра 100 — 0.68 вызова на кадр. Наши логи — 5–6 info-строк на корабль при спавне (23× `[MeziyModuleActivator]`, 23× `[KeyRodInstanceWorld] AutoSave`, 23× `[JsonKeyRodInstanceRepository]`, 14× `[PilotSeatController]`, ~20× `[EngineThrusterVisual]`, 7× автосейвы).
+
+**Проверка:** `check_compile_errors` — 0 errors. Play Mode / новый захват — NOT RUN, за пользователем.
+
+**Не сделано:** 671 нативное предупреждение — варианты (A) гасить `_agent.enabled` в `NpcBrain.BeginRide` (меняет инвариант `CanApplyGlobalBaseline`, FO-контракт), (B) снять `m_Enabled` у `NavMeshAgent` в 23 префабах капитанов, (C) разовая рантайм-диагностика off-mesh агентов. Наши info-логи — предложен флаг `ProjectLog.Verbose`. Разбор — `docs/world/optimization/22112026/03_FO_NULL_COMPONENT_AND_CONSOLE.md`.
+
+**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionPoseAdapter.cs`, `docs/world/optimization/22112026/03_FO_NULL_COMPONENT_AND_CONSOLE.md`, `docs/world/optimization/22112026/ITERATIONS.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+
 ## Итерация от 2026-11-22 (T-PERF04 — TryGetComponent в триггер-колбэках корабля и консоли)
 
 **Задача:** Снять P0 из двух независимых замеров (`...11-00-03.data` сессия B и `...11-18-18.data`): `other.GetComponent<CharacterController>() != null` выполнялся на каждом чужом коллайдере в `ShipController.OnTriggerEnter` (600) / `OnTriggerExit` (609) и `ShipCargoConsole.OnTriggerEnter` (89) / `OnTriggerExit` (97) и давал `GetComponentNullErrorMessage` — 70.6 MB из 131.0 MB GC сессии (54%, 111 853 вызова, из них 65.7 MB под этими четырьмя колбэками).

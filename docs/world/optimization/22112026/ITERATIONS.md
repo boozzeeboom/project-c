@@ -298,3 +298,21 @@ GC в среднем 376.5 → ~190 KB/кадр. `Physics.SendTriggerEvents` (27
 Не сделано сознательно: объём триггеров (см. п.1 «Остаток» в рабочем документе) — требует правки
 геометрии триггерных коллайдеров на префабе корабля и `_interactionRadius` консоли, т.е. данных
 префаба, а не кода.
+
+## T-PERF05 — null-`GetComponent` в FO-слое и разбор консоли (коммит `81b7ec8d`)
+
+Код: `GlobalMotionPoseAdapter` — `_transport`, `_body`/`_controller`/`_agent` (в `Bind` и
+`SupportedStructure`) и `HasCompetingWriter` переведены на `TryGetComponent`. Это ~7.7 MB
+null-сообщений за сессию D (`GlobalMotionWorld.FixedUpdate` 5 888 KB / 8 932,
+`GlobalMotionWorld.Update` 1 208 / 1 832, `NetworkTickSystem.Tick` 946 / 1 412) = 8% всего GC.
+Ожидание: `GetComponentNullErrorMessage` 31.25 → ~15 KB/кадр. compile 0 errors.
+
+Консоль (1 391 запись, сохранённый буфер): 671 строка (48%) — нативное предупреждение
+`Failed to create agent because it is not close enough to the NavMesh`, стека нет, из кода не
+глушится; пик шума — кадры f27 (119) и f28 (325), где `ShipCrewSpawner.SpawnWhenReady()` ×20.
+Наши логи — 5–6 info-строк на корабль при спавне (~400 записей); вариант гашения одним флагом
+`ProjectLog.Verbose` предложен, решение за пользователем. Разбор — `03_FO_NULL_COMPONENT_AND_CONSOLE.md`.
+
+Не сделано: 671 нативное предупреждение (варианты A/B/C в рабочем документе — все требуют
+прогона или меняют FO-контракт `CanApplyGlobalBaseline`); гашение наших info-логов (8 файлов);
+остаток null-сообщений `NetworkPlayer.FixedUpdate` 1 496 KB, `NpcBrain.Update` 1 499 KB, Skills ~0.9 MB.

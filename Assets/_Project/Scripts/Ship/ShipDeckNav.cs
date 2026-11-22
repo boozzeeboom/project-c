@@ -125,6 +125,10 @@ namespace ProjectC.Ship
             return srv == null || srv.RestoreCompleted;
         }
         private static int s_registrationsThisFrame;
+        // T-PERF03: номер кадра, которому принадлежит счётчик выше. Без него сброс выполнялся
+        // на каждый вызов ProcessPendingRegistrations (т.е. на каждый корабль), и лимит
+        // держался только внутри одного экземпляра.
+        private static int s_registrationsFrame = -1;
         private const int MAX_REGISTRATIONS_PER_FRAME = 1;
 
         // PERF: отключаем ExtractStackTrace для обычных логов в Editor.
@@ -300,7 +304,17 @@ namespace ProjectC.Ship
 
         private static void ProcessPendingRegistrations()
         {
-            s_registrationsThisFrame = 0;
+            // T-PERF03: сброс счётчика — один раз на кадр, а не на каждый LateUpdate корабля.
+            // В захвате 2026-11-22 (20 кораблей) это давало до 20 регистраций в одном кадре:
+            // два ShipDeckNav.LateUpdate по 87.05 и 62.28 ms, из них NotifyNavMeshAdded 85.73 ms
+            // (LogStringToConsole 34.68 ms + GC.Collect 22.09 ms). Теперь волна из 20 кораблей
+            // растягивается на 20 кадров — по одной native-регистрации на кадр.
+            int frame = Time.frameCount;
+            if (s_registrationsFrame != frame)
+            {
+                s_registrationsFrame = frame;
+                s_registrationsThisFrame = 0;
+            }
             while (s_pendingRegistrations.Count > 0 && s_registrationsThisFrame < MAX_REGISTRATIONS_PER_FRAME)
             {
                 var ship = s_pendingRegistrations.Dequeue();

@@ -8,9 +8,11 @@
 
 **Проверка:** `check_compile_errors` — 0 errors. Play Mode / новый захват — NOT RUN, за пользователем.
 
-**Не сделано:** 671 нативное предупреждение — варианты (A) гасить `_agent.enabled` в `NpcBrain.BeginRide` (меняет инвариант `CanApplyGlobalBaseline`, FO-контракт), (B) снять `m_Enabled` у `NavMeshAgent` в 23 префабах капитанов, (C) разовая рантайм-диагностика off-mesh агентов. Наши info-логи — предложен флаг `ProjectLog.Verbose`. Разбор — `docs/world/optimization/22112026/03_FO_NULL_COMPONENT_AND_CONSOLE.md`.
+**Не сделано:** 671 нативное предупреждение — варианты (A) гасить `_agent.enabled` в `NpcBrain.BeginRide` (меняет инвариант `CanApplyGlobalBaseline`, FO-контракт), (B) снять `m_Enabled` у `NavMeshAgent` в префабах капитанов; (C) разовая рантайм-диагностика — сделана отдельным коммитом, см. ниже. Наши info-логи — предложен флаг `ProjectLog.Verbose`. Разбор — `docs/world/optimization/22112026/03_FO_NULL_COMPONENT_AND_CONSOLE.md`.
 
-**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionPoseAdapter.cs`, `docs/world/optimization/22112026/03_FO_NULL_COMPONENT_AND_CONSOLE.md`, `docs/world/optimization/22112026/ITERATIONS.md`, `Assets/_Project/Docs/ITERATIONS.md`.
+**Диагностика C:** `Assets/_Project/Scripts/Debug/NavMeshAgentAudit.cs` — разовый счётчик живых `NavMeshAgent`: два снимка (8 с и 20 с после старта), на каждый одна запись `[PerfNavAudit]` с всего/включённых/на навмеше/**вне навмеша**, разбивкой вне-навмеша по именам (префабам), признаком «в иерархии корабля», результатом `NavMesh.SamplePosition` в радиусе 60 м и до 5 координат. Нужна потому, что 671 сообщение нативное и без стека — профайлер его не видит. Прогон за пользователем: Console → Clear → Play → 25 с → две строки в консоли; по ним решается вариант B. Попутно уточнено по разбору префабов: капитанов **20**, не 23 (23 — число кораблей в мире), и все они — варианты одного базового `[Mira] - DON`T DELETE DEFOULT.prefab`, который используется ещё сценовыми квесторами (`[Onboarding alfa]`, `Q001_NPC_Lyra__Lyra`) и `Gorgona_Pilot` — им агент нужен, поэтому B = override `m_Enabled: 0` в файлах вариантов, а не правка базового префаба. compile — 0 errors; Play Mode для C — NOT RUN.
+
+**Файлы:** `Assets/_Project/Scripts/World/FloatingOrigin/Network/GlobalMotionPoseAdapter.cs`, `Assets/_Project/Scripts/Debug/NavMeshAgentAudit.cs`, `docs/world/optimization/22112026/03_FO_NULL_COMPONENT_AND_CONSOLE.md`, `docs/world/optimization/22112026/ITERATIONS.md`, `Assets/_Project/Docs/ITERATIONS.md`.
 
 ## Итерация от 2026-11-22 (T-PERF04 — TryGetComponent в триггер-колбэках корабля и консоли)
 

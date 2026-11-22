@@ -287,6 +287,8 @@ namespace ProjectC.Ship
         // по 2 800 дверям (массив 21.94 KB) — 5 000 KB за сессию замера G.
         private bool _registeredInInteractableManager;
         private Collider _interactionCollider;
+        private float _interactionBoundingRadius;
+        private bool _interactionBoundingRadiusCached;
 
         private void OnEnable()
         {
@@ -309,6 +311,41 @@ namespace ProjectC.Ship
             {
                 if (_interactionCollider == null) _interactionCollider = GetComponent<Collider>();
                 return _interactionCollider;
+            }
+        }
+
+        /// <summary>
+        /// T-PERF09: радиус сферы вокруг transform.position, гарантированно содержащей
+        /// BoxCollider взаимодействия. Инвариантен к перемещению и вращению двери/корабля.
+        /// Для остальных типов коллайдеров отключает broadphase и сохраняет точный путь.
+        /// </summary>
+        public float InteractionBoundingRadius
+        {
+            get
+            {
+                if (_interactionBoundingRadiusCached) return _interactionBoundingRadius;
+
+                var col = InteractionCollider;
+                if (col == null)
+                {
+                    _interactionBoundingRadius = 0f;
+                }
+                else if (col is BoxCollider box)
+                {
+                    Vector3 scale = transform.lossyScale;
+                    Vector3 scaledCenter = Vector3.Scale(box.center, scale);
+                    Vector3 scaledHalfExtents = Vector3.Scale(box.size * 0.5f, scale);
+                    scaledCenter = new Vector3(Mathf.Abs(scaledCenter.x), Mathf.Abs(scaledCenter.y), Mathf.Abs(scaledCenter.z));
+                    scaledHalfExtents = new Vector3(Mathf.Abs(scaledHalfExtents.x), Mathf.Abs(scaledHalfExtents.y), Mathf.Abs(scaledHalfExtents.z));
+                    _interactionBoundingRadius = scaledCenter.magnitude + scaledHalfExtents.magnitude;
+                }
+                else
+                {
+                    _interactionBoundingRadius = float.PositiveInfinity;
+                }
+
+                _interactionBoundingRadiusCached = true;
+                return _interactionBoundingRadius;
             }
         }
 

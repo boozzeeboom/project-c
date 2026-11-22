@@ -808,3 +808,21 @@ PlatformCarry/Animator/Wind/ControllerMove. Игровая логика не и�
 compile + domain reload — завершены, ошибок C# нет; `git diff --check` — чисто. Play Mode — **NOT RUN**.
 Протокол: 30–60 с после загрузки, стояние/ходьба/бег + посадка и полёт, Deep Profile OFF,
 Allocation Call Stacks OFF. Подробности — `07_T_PERF09_PLAYER_UPDATE_PROFILING.md`.
+
+
+## T-PERF09 — результат атрибуции и broadphase дверей (`ProjectC_client_2026-11-22_18-35-43.data`)
+
+495 кадров; steady-state 30..489 = 460 кадров. `Player.NetworkPlayer.Update` — 5,105 / 3,023 мс
+total/self на кадр. `NetworkPlayer.InteractionHint` — 1,742 / 1,650 мс/кадр, 136 вызовов,
+5,893 мс/вызов. Движение целиком — 0,154 / 0,0176 мс/кадр; ввод и ChunkTracker — ещё меньше.
+Горячий участок локализован: `FindNearestDoor` читает `Collider.bounds` примерно у 2 800 дверей
+на каждый resolver. Подробности — `07_T_PERF09_PLAYER_UPDATE_PROFILING.md`.
+
+В `DoorController` добавлен ленивый консервативный радиус сферы для `BoxCollider`; для других типов
+коллайдеров broadphase отключён через `PositiveInfinity`. `FindNearestDoor` отсекает заведомо дальние
+двери до `DistanceToInteraction`, точный расчёт и выбор ближайшей двери не изменены.
+
+compile + domain reload — завершены, новых ошибок C# нет; `git diff --check` — чисто. Play Mode,
+тесты и Build агентом — **NOT RUN**. `Profiler.FlushMemoryCounters` (8,536 мс/кадр) и
+`Profiler.Callstack` (2,159 мс/кадр) в захвате остались, поэтому снижение profiling overhead
+не заявляется. Величина выигрыша будет определена следующим steady-state захватом.

@@ -338,6 +338,12 @@ namespace ProjectC.Core
                 if (door == null) { _doors.RemoveAt(i--); continue; }
                 if (!door.isActiveAndEnabled) continue;
 
+                // T-PERF09: сначала отсекаем двери консервативной сферой,
+                // чтобы не читать bounds у всех ~2 800 коллайдеров на каждый запрос.
+                float broadphaseRange = range + door.InteractionBoundingRadius;
+                if ((position - door.transform.position).sqrMagnitude > broadphaseRange * broadphaseRange)
+                    continue;
+
                 float dist = door.DistanceToInteraction(position);
                 if (dist < range && dist < minDist) { minDist = dist; nearest = door; }
             }

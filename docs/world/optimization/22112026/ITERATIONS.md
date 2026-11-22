@@ -195,3 +195,44 @@ drift ≈ 0`; экипаж ходит по палубам (первая реги
 
 Оговорка про GC-проценты: сумма 194.4 MB/301 кадр включает стартовые пики (f334 — 23.6 MB);
 медиана кадра — 102 KB, из них 30 KB в медиане — те же null-сообщения GetComponent.
+
+## Замер 3 — `ProjectC_client_2026-11-22_11-18-18.data` (тот же код, что в сессии B)
+
+350 кадров, одна сессия: f0 — старт Play (6 567 ms), f349 — стоп (22 539 ms);
+сравниваются кадры 1..348. Код тот же, что в сессии B предыдущего захвата (проверено деревом:
+`Physics.OverlapSphere` под `OuterCommZone.Update` — 0 кадров, `OverlapSphereNonAlloc` под
+`MarketZone.Update` — 84 кадра). Значит разница между B и C — это разброс сценария, а не правки.
+
+| Метрика на кадр | A (до) | B (11:00) | C (11:18) |
+|---|---|---|---|
+| `PlayerLoop` медиана | 99.0 ms | 78.0 ms | 67.5 ms |
+| GC медиана | 171.1 KB | 101.8 KB | 85.8 KB |
+| `Physics.SendTriggerEvents` | 27.6 / avg 36.1 | 24.2 / avg 35.0 | 19.2 / avg 27.8 |
+| `NetworkPlayer.Update` | 10.6 / avg 10.1 | 2.8 / avg 5.2 | — / avg 4.35 |
+| `OuterCommZone.Update` GC | 38.3 KB | 0.2 KB | 0.15 KB |
+| `MarketZone.Update` GC | 6.9 KB | 0.3 KB | 0.30 KB |
+| `ShipDeckNav.LateUpdate` GC | 53.6 KB | 53.5 KB | 25.7 KB |
+| `LogStringToConsole` GC | 92 KB | 96 KB | 44.3 KB |
+| всего GC за сессию | — | 194.4 MB | 128.0 MB |
+| `GetComponentNullErrorMessage` | 37.5 KB med | 30.2 KB med | 202.9 KB avg / 111 853 вызова |
+
+Вердикты по C:
+1. Зоны и рынки остаются чистыми: 0.15 и 0.30 KB/кадр. Регрессий нет.
+2. `Physics.SendTriggerEvents` — по-прежнему #1 в CPU: 9 680 ms за 348 кадров (27.8 ms/кадр),
+   медиана 19.2 ms, p90 41.4. Триггер-колбэков 111 853 — тот же класс, что в B.
+3. `GetComponentNullErrorMessage` — **70.6 MB из 131.0 MB всего GC (54%)**, из них
+   93% (65.7 MB) под теми же четырьмя колбэками: `ShipController.OnTriggerExit` 24 969 KB /
+   37 770, `OnTriggerEnter` 16 080 KB / 24 434, `ShipCargoConsole.OnTriggerExit` 15 542 KB /
+   23 188, `OnTriggerEnter` 9 112 KB / 13 629. Второй независимый замер с тем же выводом.
+4. Новое: `DockingPadTriggerBox.OnTriggerEnter` — 250 ms / 111 вызовов = **2.26 ms на вызов**
+   (в B было 277 ms / 111 — стабильно). Внутри метода только `FindObjectsOfType` (2.2–3.3 ms
+   на кадр) и `other.GetComponentInParent<ShipController>()`, т.е. цена сидит в нативном
+   `GetComponentInParent` на чужих коллайдерах (`DockingPadTriggerBox.cs:48`).
+5. В этом захвате включена запись callstack'ов профайлера (`Profiler.Callstack` 7.4 ms/кадр),
+   поэтому абсолютный CPU здесь завышен; на GC и счётчики вызовов это не влияет.
+6. `mscorlib.dll!System::Object.wbarrier_conc()` 549 ms (1.58 ms/кадр) — плата за аллокации,
+   отдельным пунктом не считается: уйдёт вместе с мусором.
+
+Итог по замерам 2 и 3: из семи фаз T-PERF03 невыжатыми остались две метрики
+(`Physics.SendTriggerEvents` и `GetComponentNullErrorMessage`), и обе ведут к одному месту —
+триггеры корабля и грузового консоли.

@@ -183,6 +183,15 @@ namespace ProjectC.World.NpcPrimum
                 PlaceNameplateAboveHead();
             }
 
+            if (!_agent.isOnNavMesh)
+            {
+                // Слетел с навмеша (сдвиг корня мира / пересборка навмеша): сам агент не вернётся,
+                // без этого он навсегда замирает на месте и копит ошибки в консоль.
+                ReLandOnNavMesh();
+                ApplyVisualLod(cameraPosition, true);
+                return;
+            }
+
             if (_agent.isOnNavMesh)
             {
                 if (_state == State.Idle)
@@ -224,6 +233,7 @@ namespace ProjectC.World.NpcPrimum
         private void ChooseTarget(float now)
         {
             if (_config == null || _director == null || _director.WorldRoot == null) return;
+            if (!_agent.isOnNavMesh) return;
 
             Vector3 homeWorld = _director.WorldRoot.TransformPoint(_homeLocal);
             float radius = Random.value < _config.farWanderChance ? _config.wanderRadiusFar : _config.wanderRadiusNear;
@@ -255,8 +265,11 @@ namespace ProjectC.World.NpcPrimum
         private void EnterIdle(float now)
         {
             _state = State.Idle;
-            _agent.ResetPath();
-            _idleUntil = now + Random.Range(_config.idleMinSeconds, _config.idleMaxSeconds);
+            // ResetPath на агенте вне навмеша — ошибка в консоль ("can only be called on an active agent
+            // that has been placed on a NavMesh"): сразу после сдвига WorldRoot_0_0 агент на кадр-два
+            // оказывается вне пере-запечённого навмеша. Сажаем его обратно отдельно (ReLandOnNavMesh).
+            if (_agent != null && _agent.isOnNavMesh) _agent.ResetPath();
+            if (_config != null) _idleUntil = now + Random.Range(_config.idleMinSeconds, _config.idleMaxSeconds);
         }
 
         /// <summary>
@@ -378,19 +391,36 @@ namespace ProjectC.World.NpcPrimum
         /// </summary>
         public void ApplyWorldRebase()
         {
-            if (!_initialized || _agent == null || !_agent.isOnNavMesh) return;
+            if (!_initialized || _agent == null) return;
 
-            _agent.ResetPath();
-            _agent.Warp(transform.position);
-
-            if (_state == State.Moving && _director != null && _director.WorldRoot != null)
+            // Навмеш едет вместе с WorldRoot_0_0: сразу после сдвига агент может оказаться вне него,
+            // и тогда и Warp, и ResetPath ругаются в консоль. Сначала сажаем обратно.
+            if (_agent.isOnNavMesh)
             {
-                Vector3 world = _director.WorldRoot.TransformPoint(_targetLocal);
-                if (NavMesh.SamplePosition(world, out var hit, 4f, NavMesh.AllAreas))
-                    _agent.SetDestination(hit.position);
-                else
-                    EnterIdle(Time.time);
+                _agent.ResetPath();
+                _agent.Warp(transform.position);
             }
+            else
+            {
+                ReLandOnNavMesh();
+                if (!_agent.isOnNavMesh) return;
+            }
+
+            if (_state != State.Moving || _director == null || _director.WorldRoot == null) return;
+
+            Vector3 world = _director.WorldRoot.TransformPoint(_targetLocal);
+            if (NavMesh.SamplePosition(world, out var hit, 4f, NavMesh.AllAreas))
+                _agent.SetDestination(hit.position);
+            else
+                EnterIdle(Time.time);
+        }
+
+        /// <summary>Возвращает агента на навмеш по текущей позиции (после сдвига Floating Origin).</summary>
+        private void ReLandOnNavMesh()
+        {
+            if (_agent == null) return;
+            if (!NavMesh.SamplePosition(transform.position, out var land, 4f, NavMesh.AllAreas)) return;
+            _agent.Warp(land.position);
         }
 
         /// <summary>Проверка инварианта «≤4 на дом» для отчётности директора.</summary>

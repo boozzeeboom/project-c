@@ -102,6 +102,7 @@ namespace ProjectC.World.NpcPrimum
 
         private float _statsTime;
         private int _statsTicks;
+        private int _statsFrames;
         private float _statsTickMs;
 
         public Transform WorldRoot => _worldRoot;
@@ -205,6 +206,7 @@ namespace ProjectC.World.NpcPrimum
             _tickCursor = 0;
             _statsTime = 0f;
             _statsTicks = 0;
+            _statsFrames = 0;
             _statsTickMs = 0f;
         }
 
@@ -335,10 +337,11 @@ namespace ProjectC.World.NpcPrimum
 
                 // Первый резидент встаёт у самого дома, следующие — в радиусе ResidentScatterRadius:
                 // без этого 2–4 жителя одного дома спавнятся в одну точку навмеша и стоят стопкой.
+                Vector3 centerWorld = HouseCenterWorld(aggregate.center);
                 bool sampled;
                 Vector3 pos;
-                if (aggregate.residents == 0) sampled = TrySampleHouse(aggregate.center, out pos);
-                else sampled = TrySampleNear(aggregate.center, ResidentScatterRadius, out pos);
+                if (aggregate.residents == 0) sampled = TrySampleHouse(centerWorld, out pos);
+                else sampled = TrySampleNear(centerWorld, ResidentScatterRadius, out pos);
 
                 if (!sampled)
                 {
@@ -355,7 +358,7 @@ namespace ProjectC.World.NpcPrimum
 
                 houseId = candidateId;
                 chunkId = aggregate.chunkId;
-                homeCenter = aggregate.center;
+                homeCenter = centerWorld;
                 spawnPos = pos;
                 return true;
             }
@@ -365,11 +368,12 @@ namespace ProjectC.World.NpcPrimum
             {
                 var key = houseOrder[Random.Range(0, count)];
                 var aggregate = _houses[key];
-                if (!TrySampleNear(aggregate.center, StreetScatterRadius, out var pos)) continue;
+                Vector3 centerWorld = HouseCenterWorld(aggregate.center);
+                if (!TrySampleNear(centerWorld, StreetScatterRadius, out var pos)) continue;
 
                 houseId = key;
                 chunkId = aggregate.chunkId;
-                homeCenter = aggregate.center;
+                homeCenter = centerWorld;
                 spawnPos = pos;
                 return true;
             }
@@ -420,6 +424,7 @@ namespace ProjectC.World.NpcPrimum
             return TrySampleHouse(worldCenter, out position);
         }
 
+        /// <summary>Центр дома хранится В ЛОКАЛЬНЫХ координатах WorldRoot_0_0, не в мировых.</summary>
         private void BuildHouseIndex()
         {
             _houses.Clear();
@@ -431,9 +436,10 @@ namespace ProjectC.World.NpcPrimum
             {
                 var m = markers[i];
                 if (m == null || string.IsNullOrEmpty(m.houseId)) continue;
+                Vector3 markerLocal = ToWorldRootLocal(m.MapPosition);
                 if (_houses.TryGetValue(m.houseId, out var aggregate))
                 {
-                    aggregate.center += m.MapPosition;
+                    aggregate.center += markerLocal;
                     aggregate.markers++;
                     _houses[m.houseId] = aggregate;
                 }
@@ -443,7 +449,7 @@ namespace ProjectC.World.NpcPrimum
                     {
                         houseId = m.houseId,
                         chunkId = m.chunkId,
-                        center = m.MapPosition,
+                        center = markerLocal,
                         markers = 1,
                         residents = 0
                     };
@@ -461,6 +467,18 @@ namespace ProjectC.World.NpcPrimum
             if (logStats)
                 Debug.Log($"[PrimumCrowd] house markers={markers.Length}, уникальных домов={_houses.Count}.");
         }
+
+        /// <summary>
+        /// Мировая точка центра дома на текущий момент. Кэшировать её нельзя: Floating Origin сдвигает
+        /// WorldRoot_0_0 (~40 км на первом кадре игры) вместе с запечённым навмешем, поэтому мировые
+        /// координаты, снятые на старте спавна, через кадр указывают в пустоту и NavMesh.SamplePosition
+        /// промахивается на каждом доме — спавн умирал на «500 промахов подряд».
+        /// </summary>
+        private Vector3 HouseCenterWorld(Vector3 localCenter)
+            => _worldRoot != null ? _worldRoot.TransformPoint(localCenter) : localCenter;
+
+        private Vector3 ToWorldRootLocal(Vector3 worldPosition)
+            => _worldRoot != null ? _worldRoot.InverseTransformPoint(worldPosition) : worldPosition;
 
         private List<string> BuildHouseOrder()
         {
@@ -486,7 +504,10 @@ namespace ProjectC.World.NpcPrimum
 
         private void LateUpdate()
         {
-            if (_tierDirty && !_spawning)
+            // Переключение тира применяем сразу, даже посреди спавна: ClearCrowd останавливает корутину.
+            // Раньше стоял гейт !_spawning, и переключение во время спавна 10000 откладывалось на минуты —
+            // в статах было видно n=1681 при target=1000.
+            if (_tierDirty)
             {
                 _tierDirty = false;
                 if (logStats) Debug.Log($"[PrimumCrowd] tier → {tier} (target={TargetCount}), пере-спавн.");
@@ -542,16 +563,20 @@ namespace ProjectC.World.NpcPrimum
             if (!logStats) return;
             _statsTime += Time.unscaledDeltaTime;
             _statsTicks += ticks;
+            _statsFrames++;
             _statsTickMs += (float)_tickClock.Elapsed.TotalMilliseconds;
             if (_statsTime >= StatsInterval)
             {
                 float fps = 1f / Mathf.Max(0.0001f, Time.smoothDeltaTime);
+                // tickLoop — именно мс на кадр: делим на число кадров окна, а не на его длительность
+                // (иначе значение было в разах fps меньше и врало в пользу бюджета).
                 Debug.Log($"[PrimumCrowd] n={count} target={TargetCount} tier={tier} " +
-                          $"ticks/s={_statsTicks / _statsTime:F0} tickLoop={_statsTickMs / Mathf.Max(0.0001f, _statsTime):F2} мс/кадр " +
+                          $"ticks/s={_statsTicks / _statsTime:F0} tickLoop={_statsTickMs / Mathf.Max(1, _statsFrames):F2} мс/кадр " +
                           $"fps={fps:F0}");
                 _statsTime = 0f;
                 _statsTicks = 0;
                 _statsTickMs = 0f;
+                _statsFrames = 0;
             }
         }
 

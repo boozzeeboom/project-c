@@ -224,6 +224,15 @@ namespace ProjectC.AI
         private IDamageTarget _aggroTarget;
         private float _nextTickTime;
         private float _lastAttackTime = -10f;
+
+        // T-PERF06/1: парковка мир-агента, оказавшегося вне навмеша (плейсмент до бейка).
+        // Парк — это `enabled = false`, как у варианта B (префабы капитанов) и у deck-прокси T-PERF02:
+        // висящий off-mesh NavMeshAgent реасессится каждым чужим AddNavMeshData и пишет нативное
+        // "Failed to create agent because it is not close enough to the NavMesh" (замер G: 304 из 391).
+        private const float OffMeshParkRetrySeconds = 1f;
+        private const float OffMeshReturnHorizontalTolerance = 0.5f;
+        private bool _agentParkedOffMesh;
+        private float _nextOffMeshParkCheckTime;
         // T-NPC-SKILL-03: per-skill selection
         private int _activeSkillIndex = -1; // RoundRobin cursor
         // Moving-platform carry (server-side)
@@ -694,9 +703,47 @@ namespace ProjectC.AI
         }
 
 
+        /// <summary>
+        /// T-PERF06/1: не держать мир-агента включённым вне навмеша и вернуть его в строй,
+        /// когда меш появился прямо под ним. Позицию и пути не трогаем — только `enabled`.
+        /// Мир-агента нет на палубе (там живёт `_proxyAgent`), мёртвого не трогаем.
+        /// </summary>
+        private void MaintainOffMeshAgentPark()
+        {
+            if (_agent == null || _deckNavActive || _state == BrainState.Dead) return;
+            if (Time.unscaledTime < _nextOffMeshParkCheckTime) return;
+            _nextOffMeshParkCheckTime = Time.unscaledTime + OffMeshParkRetrySeconds;
+
+            if (_agent.enabled)
+            {
+                if (_agent.isOnNavMesh) { _agentParkedOffMesh = false; return; }
+                _agent.enabled = false;
+                _agentParkedOffMesh = true;
+                return;
+            }
+
+            // Выключил кто-то другой (смерть, контракт, сцена) — это не наше состояние.
+            if (!_agentParkedOffMesh) return;
+
+            // Меш должен быть прямо под NPC по горизонтали: по вертикали агент цепляется
+            // с допуском на свою высоту, иначе включение снова даст то же предупреждение.
+            float sampleRadius = Mathf.Max(1f, _agent.height * 2f);
+            if (!NavMesh.SamplePosition(transform.position, out var hit, sampleRadius, NavMesh.AllAreas)) return;
+
+            Vector3 delta = hit.position - transform.position;
+            if (delta.x * delta.x + delta.z * delta.z >
+                OffMeshReturnHorizontalTolerance * OffMeshReturnHorizontalTolerance) return;
+
+            _agent.enabled = true;
+            if (!_agent.isOnNavMesh) { _agent.enabled = false; return; }
+            _agentParkedOffMesh = false;
+        }
+
         private void Update()
         {
             using var _ = ProjectCPerfCounters.NpcBrainUpdate.Auto();
+            // T-PERF06/1: до серверных гейтов — висящий off-mesh агент шумит на любом пире.
+            MaintainOffMeshAgentPark();
             if (!IsServer || _state == BrainState.Dead || _state == BrainState.Surrendered) return;
             if (!CanSimulateInCurrentCoordinates) return;
             if (Time.unscaledTime < _nextTickTime) return;

@@ -61,6 +61,19 @@ private static bool IsPlayerCollider(Collider other)
 | `PlayerLoop` медиана | почти без изменений: 67.5 ms — это CPU, а не мусор; возможен небольшой минус за счёт более редких GC |
 | `Physics.SendTriggerEvents` | 19–28 ms/кадр, практически без изменений |
 
+## Результат (замер 4, `...11-31-27.data`, 486 кадров)
+
+| Метрика | Ожидание | Факт |
+|---|---|---|
+| GC четырёх колбэков | ~0 | **0 KB** при 102 925 вызовах (было 65 703 KB / 99 021) |
+| `GetComponentNullErrorMessage` | −65.7 MB/сессию | 202.9 → 31.25 KB/кадр (−85%); остаток — FO-слой, не триггеры |
+| GC среднее на кадр | ~190 KB | 376.5 → 202.9 KB (−46%) |
+| `PlayerLoop` / `SendTriggerEvents` | без изменений | 67.5 → 68.3 ms / 27.8 → 27.57 ms |
+
+Правка закрыта. Дальше по весу мусора: `LogStringToConsole` 61.3 KB/кадр (30% GC, Editor-артефакт частично),
+`ShipDeckNav.LateUpdate` 34.2 KB/кадр (20 палуб × кадр, дрейф T-PERF02), null-сообщения FO-слоя 31.25 KB/кадр
+(`GlobalMotionPoseAdapter` / `NetworkPlayer` / `NpcBrain` — тот же `GetComponent` на отсутствующем компоненте).
+
 ## Протокол замера (профайлер)
 
 1. Console → Clear перед Play (иначе старые записи попадут в счётчики `LogStringToConsole`).

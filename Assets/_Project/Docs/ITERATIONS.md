@@ -10,6 +10,8 @@
 
 **Ожидание на следующем замере:** `GetComponentNullErrorMessage` пропадает из-под этих четырёх колбэков (было 65.7 MB/сессию = 50% всего GC), итоговый GC сессии ~131 MB → ~65 MB, GC в среднем 376.5 → ~190 KB/кадр. `Physics.SendTriggerEvents` (27.8 ms/кадр) и `PlayerLoop` (67.5 ms медиана) почти не изменятся — это объём событий и CPU, а не мусор.
 
+**Замер после правки** (`ProjectC_client_2026-11-22_11-31-27.data`, 486 геймплейных кадров, callstack'и выключены): правка подтверждена точно — четыре триггер-колбэка дают **0 KB GC** при 102 925 вызовах (было 65 703 KB на 99 021), `GetComponentNullErrorMessage` 202.9 → 31.25 KB/кадр (−85%), всего GC сессии 131 024 → 98 622 KB, в среднем **376.5 → 202.9 KB/кадр (−46%)**. CPU не сдвинулся, как и прогнозировалось: `PlayerLoop` 67.5 → 68.3 ms, `SendTriggerEvents` 27.8 → 27.57 ms. Новый расклад мусора: `LogStringToConsole` 61.3 KB/кадр (30%, частично Editor-артефакт), `CoroutinesDelayedCalls` 47.0 (спавн-корутины, `PrepareAndStartHost` — 4 вызова), `ShipDeckNav.LateUpdate` 34.2 (20 палуб × кадр), остаток null-сообщений FO-слоя 31.25 (`GlobalMotionWorld.FixedUpdate` 5 888 KB, `GlobalMotionPoseAdapter.LateUpdate` 1 825, `NpcBrain.Update` 1 499, `NetworkPlayer.FixedUpdate` 1 496). Медиана GC при этом выросла (85.8 → 99.3): раньше null-сообщения шли пачками под триггерами, теперь типовой кадр — не они; p90 не изменился (195.3 → 195.4).
+
 **Файлы:** `Assets/_Project/Scripts/Player/ShipController.cs`, `Assets/_Project/Scripts/Ship/Cargo/ShipCargoConsole.cs`, `docs/world/optimization/22112026/02_TRIGGER_CALLBACKS_FIX.md`, `docs/world/optimization/22112026/ITERATIONS.md`, `Assets/_Project/Docs/ITERATIONS.md`.
 
 ## Итерация от 2026-11-22 (T-PERF03 — зоны связи, подсказка игрока, кап регистрации палуб)

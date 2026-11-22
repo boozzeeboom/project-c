@@ -254,6 +254,47 @@ Play Mode / новый захват — NOT RUN, за пользователем
 GC в среднем 376.5 → ~190 KB/кадр. `Physics.SendTriggerEvents` (27.8 ms/кадр) и `PlayerLoop`
 почти не изменятся — это объём событий и CPU, а не мусор.
 
+## Замер 4 — `ProjectC_client_2026-11-22_11-31-27.data` (после T-PERF04)
+
+488 кадров: f0 — старт Play (6 115 ms), f487 — стоп (26 895 ms), сравниваются 1..486.
+Код — с правкой T-PERF04 (маркеры: `Physics.OverlapSphere` под `OuterCommZone.Update` — 0 кадров,
+`OverlapSphereNonAlloc` под `MarketZone.Update` — 148 кадров). Запись callstack'ов выключена
+(`Profiler.Callstack` — 0 сэмплов), т.е. CPU-числа сопоставимы с A/B из замера 2.
+
+| Метрика | C (до T-PERF04, 348 кадров) | D (после, 486 кадров) |
+|---|---|---|
+| всего GC за сессию | 131 024 KB | 98 622 KB |
+| GC в среднем на кадр | 376.5 KB | **202.9 KB (−46%)** |
+| GC медиана / p90 | 85.8 / 195.3 | 99.3 / 195.4 |
+| `GetComponentNullErrorMessage` | 202.9 KB/кадр, 111 853 вызова | **31.25 KB/кадр, 23 047 (−85%)** |
+| GC четырёх триггер-колбэков | 65 703 KB | **0 KB** |
+| вызовов в этих четырёх | 99 021 | 102 925 (+3.9%) |
+| `PlayerLoop` медиана | 67.5 ms | 68.3 ms |
+| `Physics.SendTriggerEvents` мед/сред | 19.2 / 27.8 ms | 20.2 / 27.57 ms |
+| `NetworkPlayer.Update` сред | 4.35 ms | 6.12 ms |
+| зоны / рынки GC | 0.15 / 0.30 KB | 0.14 / 0.24 KB |
+| `ShipDeckNav.LateUpdate` GC | 25.7 KB | 34.2 KB |
+| `LogStringToConsole` GC | 44.3 KB | 61.3 KB |
+
+Вердикты по D:
+1. Правка подтверждена точно: `ShipController.OnTriggerEnter/OnTriggerExit` и
+   `ShipCargoConsole.OnTriggerEnter/OnTriggerExit` — **0 KB GC** при 102 925 вызовах
+   (было 65 703 KB на 99 021). Работы стало на 3.9% больше, мусора не стало вовсе.
+2. Остаточные 15 187 KB null-сообщений (23 047) — другого происхождения: `GlobalMotionWorld.FixedUpdate`
+   5 888 KB / 8 932, `GlobalMotionPoseAdapter.LateUpdate` 1 825 / 2 754, `NpcBrain.Update` 1 499 / 2 376,
+   `NetworkPlayer.FixedUpdate` 1 496 / 2 233, `GlobalMotionWorld.Update` 1 208 / 1 832,
+   `NetworkTickSystem.Tick` 946 / 1 412 — тот же класс бага в FO-слое.
+3. CPU не сдвинулся (как и прогнозировалось): `PlayerLoop` 67.5 → 68.3 ms, `SendTriggerEvents`
+   27.8 → 27.57 ms. Правка была про мусор, а не про время кадра.
+4. Новый расклад GC по источникам — `LogStringToConsole` 61.3 KB/кадр (28 MB за сессию, 30% всего GC,
+   1 076 записей, ~26 KB на `Application.CallLogCallback`; 661 запись со `ExtractStackTrace`),
+   `CoroutinesDelayedCalls` 47.0 (из них `GlobalMotionPilotRuntime.PrepareAndStartHost` 29.27 KB/кадр
+   при **4 вызовах** — то есть спавн-пики, а не ровная цена), `ShipDeckNav.LateUpdate` 34.2
+   (9 720 вызовов = 20 палуб × кадр), `NpcShipWorld.FixedUpdate` 19.0, `GlobalMotionWorld.FixedUpdate` 14.1.
+5. Медиана GC выросла (85.8 → 99.3), хотя среднее упало вдвое: до правки null-сообщения шли пачками
+   под триггерами, теперь типовой кадр — это уже не они. p90 одинаковый (195.3 → 195.4).
+
+
 Не сделано сознательно: объём триггеров (см. п.1 «Остаток» в рабочем документе) — требует правки
 геометрии триггерных коллайдеров на префабе корабля и `_interactionRadius` консоли, т.е. данных
 префаба, а не кода.

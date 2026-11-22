@@ -961,7 +961,12 @@ namespace ProjectC.Player
         {
             using var _ = ProjectCPerfCounters.PlayerUpdate.Auto();
             if (!IsOwner) return;
-            GlobalMotionRuntimeEvidenceProbe.RecordEvent("player", "Update.begin", $"position={transform.position} controllerEnabled={_controller != null && _controller.enabled} inShip={_inShip} inputEnabled={_inputEnabled}");
+            // T-PERF03: payload-строка строится только при включённом пробнике — сам
+            // GlobalMotionRuntimeEvidenceProbe предупреждает об этом в своём файле (:49-53).
+            if (GlobalMotionRuntimeEvidenceProbe.IsActive)
+            {
+                GlobalMotionRuntimeEvidenceProbe.RecordEvent("player", "Update.begin", $"position={transform.position} controllerEnabled={_controller != null && _controller.enabled} inShip={_inShip} inputEnabled={_inputEnabled}");
+            }
             // T-FO07H: посаженный игрок едет координатами корабля (parent к ShipRoot),
             // его собственный адаптер при этом WaitingForParent и гейт ниже всегда закрыт.
             // Без исключения весь ввод в кресле мёртв, включая F-выход (софтлок).
@@ -982,7 +987,15 @@ namespace ProjectC.Player
             }
 
             // T-UI10: observation-only hint resolver. It does not participate in input handling.
-            UpdateInteractionHint();
+            // T-PERF03: 5 Гц вместо каждого кадра — резолвер тянет FindObjectsByType<DoorController>
+            // (2 800 дверей в BootstrapScene = 21.94 КБ массива) и FindObjectsByType<NpcController>;
+            // в захвате 2026-11-22 это 11.87 ms и 44 КБ мусора на кадр.
+            // PublishInteractionHint дедуплицирует состояние, поэтому частота не видна.
+            if (Time.unscaledTime >= _nextInteractionHintTime)
+            {
+                _nextInteractionHintTime = Time.unscaledTime + INTERACTION_HINT_INTERVAL;
+                UpdateInteractionHint();
+            }
 
             // Update PlayerChunkTracker for server-side chunk streaming
             if (_playerChunkTracker != null)
@@ -1808,6 +1821,10 @@ namespace ProjectC.Player
         }
 
         // ==================== T-UI10: CONTEXTUAL INTERACTION HINT ====================
+
+        // T-PERF03: троттлинг observation-резолвера (см. вызов в Update).
+        private const float INTERACTION_HINT_INTERVAL = 0.2f;
+        private float _nextInteractionHintTime;
 
         /// <summary>
         /// Вычисляет подсказку по тому же порядку F/E-flow, который уже используется в Update().

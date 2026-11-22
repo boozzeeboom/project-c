@@ -1266342,7 +1266342,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.NpcPrimum.PrimumNpcCrowdDirector
   config: {fileID: 11400000, guid: 2b2de4c328f28fb4cae8d89c07e9c5da, type: 2}
-  tier: 1000
+  tier: 10000
   overrideTargetCount: 0
   spawnBudgetMs: 4
   tickBudgetMs: 2

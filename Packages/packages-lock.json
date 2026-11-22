@@ -62,13 +62,13 @@
       "hash": "f7786a8ecbff7d7d427d84e36bb0235e1432d529"
     },
     "com.ramenvr.autopilot": {
-      "version": "https://github.com/ramenvr/autopilot.git?path=/plugin/unity/com.ramenvr.autopilot#9e0fbb0f2a5ae18d68d1f1f5d6ec17aceb15a1d5",
+      "version": "https://github.com/ramenvr/autopilot.git?path=/plugin/unity/com.ramenvr.autopilot#286ee8a758e89dd77921b8f55ba409306410c5c5",
       "depth": 0,
       "source": "git",
       "dependencies": {
         "com.unity.nuget.mono-cecil": "1.11.6"
       },
-      "hash": "9e0fbb0f2a5ae18d68d1f1f5d6ec17aceb15a1d5"
+      "hash": "286ee8a758e89dd77921b8f55ba409306410c5c5"
     },
     "com.unity.2d.sprite": {
       "version": "1.0.0",

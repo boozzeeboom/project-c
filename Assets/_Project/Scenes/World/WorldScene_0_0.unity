@@ -458330,6 +458330,14 @@ PrefabInstance:
       propertyPath: m_LocalRotation.z
       value: -0
       objectReference: {fileID: 0}
+    - target: {fileID: 2720440416855783662, guid: 65688424f24ada3429701ef06b353548, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.0306
+      objectReference: {fileID: 0}
+    - target: {fileID: 2720440416855783662, guid: 65688424f24ada3429701ef06b353548, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 23.434
+      objectReference: {fileID: 0}
     - target: {fileID: 4382519534036356639, guid: 65688424f24ada3429701ef06b353548, type: 3}
       propertyPath: m_Name
       value: primum_port_parts_1to1
@@ -1266334,7 +1266342,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.NpcPrimum.PrimumNpcCrowdDirector
   config: {fileID: 11400000, guid: 2b2de4c328f28fb4cae8d89c07e9c5da, type: 2}
+  tier: 1000
   overrideTargetCount: 0
+  spawnBudgetMs: 4
+  tickBudgetMs: 2
   spawnOnStart: 1
   logStats: 1
 --- !u!1 &1207536516

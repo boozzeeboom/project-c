@@ -128,7 +128,10 @@ namespace ProjectC.World.NpcPrimum
                 _agent.radius = 0.5f;
                 _agent.height = 2f;
                 _agent.speed = config.walkSpeedMin;
-                _agent.obstacleAvoidanceType = config.disableAvoidance
+                // Avoidance гасим на стресс-тирах (директор решает по размеру толпы):
+                // с 300+ агентов локальный steering стоит дороже, чем приносит пользы.
+                bool avoidanceOff = config.disableAvoidance || (director != null && director.AvoidanceDisabled);
+                _agent.obstacleAvoidanceType = avoidanceOff
                     ? ObstacleAvoidanceType.NoObstacleAvoidance
                     : ObstacleAvoidanceType.LowQualityObstacleAvoidance;
                 _agent.enabled = true;
@@ -349,7 +352,9 @@ namespace ProjectC.World.NpcPrimum
                     if (_renderers[i] != null) _renderers[i].enabled = showVisual;
             }
 
-            bool showAnimator = sqr <= _config.animatorRadius * _config.animatorRadius;
+            // На больших тирах директор сужает радиус аниматора (10000 → 60 м): анимация — самый дорогой LOD.
+            float animatorRadius = _director != null ? _director.AnimatorRadius : _config.animatorRadius;
+            bool showAnimator = sqr <= animatorRadius * animatorRadius;
             if (showAnimator != _animatorActive && _animator != null)
             {
                 _animatorActive = showAnimator;

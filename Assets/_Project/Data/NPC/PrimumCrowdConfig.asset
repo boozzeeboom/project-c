@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8e104837d01f2e24ea2e32ad6ad42452, type: 3}
   m_Name: PrimumCrowdConfig
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.World.NpcPrimum.PrimumCrowdConfig
-  targetCount: 100
+  targetCount: 10000
   maxResidentsPerHouse: 4
   houseSampleRadius: 30
   houseSampleFallbackRadius: 60

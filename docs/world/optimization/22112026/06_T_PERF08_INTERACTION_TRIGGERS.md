@@ -50,13 +50,40 @@
   о разрыве соединения), не ошибки проекта.
 - Play Mode агентом **не запускался**, тесты и Build через MCP не запускались.
 
-## Ручная проверка и следующий замер
+## Подтверждение — `ProjectC_client_2026-11-22_17-05-19.data`
+
+605 кадров, 1 740 маркеров, 764 MB. Для steady-state взяты кадры 30..599 — 570 кадров; старт и пять
+последних кадров, включая останов, исключены. Сравнение с предыдущим steady-state участком (221 кадр):
+
+| Маркер | До T-PERF08 | После T-PERF08 |
+|---|---:|---:|
+| `Physics.SendTriggerEvents`, total/self мс на кадр | 38,20 / 37,88 | **0,189 / 0,068** |
+| `ShipCargoConsole.OnTriggerEnter`, вызовы | 2 082 | **0** |
+| `ShipCargoConsole.OnTriggerExit`, вызовы | 10 786 | **0** |
+| `ShipController.OnTriggerEnter`, вызовы | 4 050 | **71** |
+| `ShipController.OnTriggerExit`, вызовы | 15 616 | **125** |
+| `MarketZone.Update`, total/self мс на кадр | 1,377 / 1,322 | 0,612 / 0,584 |
+
+Правка подтверждена: колбэки консоли исчезли, события `ShipController` сократились на 99%, native self-time
+trigger-dispatch — на 99,8%. По всем 605 кадрам, включая загрузку и останов, `Physics.SendTriggerEvents` —
+57,34 мс self суммарно, 0,0948 мс/кадр. Это уже не следующий кандидат оптимизации.
+
+Оставшиеся managed self-кандидаты steady-state: `Player.NetworkPlayer.Update` — **5,32 мс/кадр**,
+`NpcShipWorld.FixedUpdate` — 1,69, `WindManager.FixedUpdate` — 1,08, `MarketZone.Update` — 0,58,
+`OuterCommZone.Update` — 0,58. Построчной CPU-атрибуции внутри `NetworkPlayer.Update` в захвате нет:
+движение, ввод и троттлинг без отдельного инструментирования не меняются. Замер сам добавляет
+`Profiler.FlushMemoryCounters` 8,51 и `Profiler.Callstack` 2,28 мс/кадр.
+
+`ProfilerCaptures/console.txt` по-прежнему содержит экспорт 14:39:42 и не использовался для этого прогона.
+Новых правок кода при разборе подтверждения не было; Play Mode агентом не запускался.
+
+## Регрессионная проверка
 
 1. Пешком подойти к грузовому терминалу своего корабля: на прежней дистанции появляется подсказка `F`, окно груза
    открывается после серверной проверки доступа; при выходе за 3 м взаимодействие недоступно.
 2. Повторить подход/отход несколько раз и проверить другой корабль без ключа: ложного доступа быть не должно.
 3. Совершить посадку на docking pad: срабатывает `NotifyTouchedDownRpc`, визуальный маркер занятости и выход с площадки
    работают как раньше.
-4. Снять `.data` с теми же настройками. Критерии: `ShipCargoConsole.OnTriggerEnter/Exit` отсутствуют,
-   вызовы `ShipController.OnTriggerEnter/Exit` уменьшаются, native self-time `Physics.SendTriggerEvents` ниже
-   37,88 мс/кадр на сопоставимом steady-state участке.
+4. При следующих изменениях interaction-кода повторить `.data`: `ShipCargoConsole.OnTriggerEnter/Exit` должны
+   отсутствовать, а native self-time `Physics.SendTriggerEvents` — оставаться около 0,068 мс/кадр на
+   сопоставимом steady-state участке.

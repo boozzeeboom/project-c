@@ -783,3 +783,16 @@ total/self на кадр; `ShipCargoConsole.OnTriggerEnter/Exit` — 2 082 + 10 
 
 compile + domain reload — завершены, ошибок C# нет. Play Mode — **NOT RUN, за пользователем**. Критерии следующего
 замера и ручные проверки — `06_T_PERF08_INTERACTION_TRIGGERS.md`.
+
+
+## T-PERF08 — подтверждение замером `ProjectC_client_2026-11-22_17-05-19.data`
+
+605 кадров; steady-state 30..599 = 570 кадров. `Physics.SendTriggerEvents` total/self: 38,20 / 37,88 →
+**0,189 / 0,068 мс/кадр**. `ShipCargoConsole.OnTriggerEnter/Exit`: 2 082 + 10 786 → **0 + 0**.
+`ShipController.OnTriggerEnter/Exit`: 4 050 + 15 616 → **71 + 125**. Interaction trigger-лавина устранена,
+подробности — `06_T_PERF08_INTERACTION_TRIGGERS.md`.
+
+Следующий managed self-кандидат — `Player.NetworkPlayer.Update` (5,32 мс/кадр), затем
+`NpcShipWorld.FixedUpdate` (1,69) и `WindManager.FixedUpdate` (1,08). Построчной CPU-атрибуции внутри
+`NetworkPlayer.Update` нет; рискованных правок ввода, движения или троттлинга по этой агрегации не делалось.
+`console.txt` остался старым экспортом 14:39:42. Play Mode агентом — **NOT RUN**.

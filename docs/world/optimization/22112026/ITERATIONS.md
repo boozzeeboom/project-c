@@ -877,3 +877,17 @@ NetworkChestContainer подтверждено; `InteractionHint` — 0,681 / 0,
 
 compile + domain reload — завершены, ошибок C# нет; `git diff --check` — чисто. Play Mode, тесты
 и Build агентом — **NOT RUN**. Следующий захват должен подтвердить снижение обоих Update-маркеров.
+
+## T-PERF10 — подтверждение снапшота зон и кэш компонентов NPC (`ProjectC_client_2026-11-22_23-50-05.data`)
+
+1 550 кадров; steady-state 30..1544 = 1 515 кадров. `MarketZone.Update` total/self:
+1,443 / 1,382 → **0,258 / 0,251 мс/кадр**; `OuterCommZone.Update`: 1,183 / 1,134 →
+**0,235 / 0,228 мс/кадр**. Общий per-frame снапшот подтверждён. Следующий managed-кандидат —
+`NpcShipWorld.FixedUpdate` (0,975 / 0,793 мс/кадр).
+
+В `NpcShipController` добавлены ленивые кэши неизменных компонентов корня `ShipController`
+и `Rigidbody`; повторные `GetComponent` в `NavTick`, посадке, смене режима, spawn/despawn
+и restore используют их. Частота навигации и игровая логика не изменены.
+
+compile + domain reload — завершены, ошибок C# нет; `git diff --check` — чисто. Play Mode, тесты
+и Build агентом — **NOT RUN**. Величина выигрыша будет определена следующим захватом.

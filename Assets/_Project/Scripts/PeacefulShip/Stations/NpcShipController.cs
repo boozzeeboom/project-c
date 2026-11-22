@@ -122,7 +122,7 @@ namespace ProjectC.PeacefulShip.Stations
             }
             else
             {
-                var ship = GetComponent<ShipController>();
+                var ship = Ship;
                 var cls = ship != null ? ship.ShipFlightClass : ShipFlightClass.Medium;
                 var (baseLift, baseCruise, baseApproach, baseYaw) = GetClassBaseSpeeds(cls);
                 LiftSpeed     = baseLift     * liftSpeedMult;
@@ -145,7 +145,12 @@ namespace ProjectC.PeacefulShip.Stations
         // === Public API ===
         public NpcShipSchedule Schedule => schedule;
         public ulong NpcInstanceId => npcInstanceId;
-        public ShipController Ship => GetComponent<ShipController>();
+
+        // T-PERF10: компоненты корня неизменны, не ищем их заново в каждом NavTick.
+        private ShipController _ship;
+        private Rigidbody _rigidbody;
+        public ShipController Ship => _ship != null ? _ship : (_ship = GetComponent<ShipController>());
+        private Rigidbody Body => _rigidbody != null ? _rigidbody : (_rigidbody = GetComponent<Rigidbody>());
 
         // === Private ===
         private Coroutine _antiGravityRoutine;
@@ -180,7 +185,7 @@ namespace ProjectC.PeacefulShip.Stations
             }
 
             // Q2: enable NPC-pilot на ShipController — теперь FixedUpdate применяет вход
-            var ship = GetComponent<ShipController>();
+            var ship = Ship;
             if (ship != null)
             {
                 ship.EnableNpcPilot(true);
@@ -199,7 +204,7 @@ namespace ProjectC.PeacefulShip.Stations
             _altCeil = altCeilY + ProjectC.World.FloatingOrigin.Network.GlobalMotionControlledRebaseSlice.CumulativeRebaseOffset.y;
 
             // FIX: гарантируем что detectCollisions включён — иначе платформа не работает
-            var rb = GetComponent<Rigidbody>();
+            var rb = Body;
             if (rb != null)
             {
                 rb.detectCollisions = true;
@@ -238,7 +243,7 @@ namespace ProjectC.PeacefulShip.Stations
                 }
 
                 // Q2: disable NPC-pilot
-                var ship = GetComponent<ShipController>();
+                var ship = Ship;
                 if (ship != null)
                 {
                     ship.EnableNpcPilot(false);
@@ -271,7 +276,7 @@ namespace ProjectC.PeacefulShip.Stations
         public void ApplyMovementInput(float thrust, float yaw, float pitch, float vertical)
         {
             if (!IsServer) return;
-            var ship = GetComponent<ShipController>();
+            var ship = Ship;
             if (ship == null) return;
             ship.ApplyServerInput(
                 thrust * npcThrustMult,
@@ -288,7 +293,7 @@ namespace ProjectC.PeacefulShip.Stations
         public void ServerTeleport(Vector3 worldPos, Quaternion worldRot)
         {
             if (!IsServer) return;
-            var rb = GetComponent<Rigidbody>();
+            var rb = Body;
             if (rb != null)
             {
                 rb.position = worldPos;
@@ -313,7 +318,7 @@ namespace ProjectC.PeacefulShip.Stations
 
         private IEnumerator AntiGravityBoostRoutine()
         {
-            var ship = GetComponent<ShipController>();
+            var ship = Ship;
             if (ship == null) yield break;
 
             float originalAntiGrav = ship.AntiGravity;
@@ -738,7 +743,7 @@ namespace ProjectC.PeacefulShip.Stations
         /// <summary>Вызывается из NpcShipWorld.Update каждый FixedUpdate.</summary>
         public void NavTick(float dt) {
             if (!IsServer || !useNewNavTick) return;
-            var ship = GetComponent<ShipController>();
+            var ship = Ship;
             if (ship == null || !ship.CanSimulateInCurrentCoordinates) return;
             // M3.2.10: guard — если спавн тайминг или IsDocked до NavMode, синхронизируем.
             // НО НЕ делаем return — Docked handler должен дойти до dwell-check.
@@ -775,7 +780,7 @@ namespace ProjectC.PeacefulShip.Stations
                 SetMode(NavMode.Docked, "isDocked-sync");
                 return;
             }
-            var rb = GetComponent<Rigidbody>();
+            var rb = Body;
             if (rb == null) return;
 
             // M3.2.6: isKinematic guard — пропускаем только если НЕ в Docked.
@@ -937,11 +942,11 @@ namespace ProjectC.PeacefulShip.Stations
                 _scatterUntil = 0f;
                 // M3.2.14: освободить старый пад (если был) перед взлётом
                 if (Docking.Core.DockingWorld.Instance != null) {
-                    var ship = GetComponent<ShipController>();
+                    var ship = Ship;
                     if (ship != null) Docking.Core.DockingWorld.Instance.ReleaseNpcAssignment(npcInstanceId, ship.NetworkObjectId);
                 }
                 AssignedPadId = null; // новый лег — новый пад
-                var rb = GetComponent<Rigidbody>();
+                var rb = Body;
                 if (rb != null) {
                     rb.linearVelocity = Vector3.zero;
                     rb.angularVelocity = Vector3.zero;
@@ -1353,7 +1358,7 @@ namespace ProjectC.PeacefulShip.Stations
             // сметает !used по landingWindowSec) или пад отжал игрок (T-NS08 displacement).
             // Без проверки корабль вслепую летит на чужой пад и докится поверх (dist < 1.5).
             var dwInstance = Docking.Core.DockingWorld.Instance;
-            var shipForPad = GetComponent<ShipController>();
+            var shipForPad = Ship;
             if (dwInstance == null || shipForPad == null ||
                 !dwInstance.GetAssignment(npcInstanceId, shipForPad.NetworkObjectId).HasValue) {
                 if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Berthing pad stale (expired/displaced) — re-requesting");
@@ -1381,7 +1386,7 @@ namespace ProjectC.PeacefulShip.Stations
             if (canDock) {
                 rb.linearVelocity = Vector3.zero;
                 rb.angularVelocity = Vector3.zero;
-                var ship = GetComponent<ShipController>();
+                var ship = Ship;
                 // T-NS-PADS1: NPC-подтверждение касания — выставить used=true.
                 // ConfirmTouchdown раньше вызывался только из игрокового RPC-пути
                 // (DockingServer), поэтому окно NPC всегда истекало задним числом.
@@ -1471,7 +1476,7 @@ namespace ProjectC.PeacefulShip.Stations
                 "berth-abort", $"attempt={_berthAttempts + 1}");
             _berthAttempts++;
             var dw = Docking.Core.DockingWorld.Instance;
-            var ship = GetComponent<ShipController>();
+            var ship = Ship;
             if (dw != null && ship != null) dw.ReleaseAssignment(npcInstanceId, ship.NetworkObjectId);
             AssignedPadId = null;
             _lastBerthDist = float.MaxValue;
@@ -1631,7 +1636,7 @@ namespace ProjectC.PeacefulShip.Stations
             if (state == null || string.IsNullOrEmpty(state.CurrentRoute.toLocationId)) return null;
             var station = Docking.Network.DockingZoneRegistry.GetByLocation(state.CurrentRoute.toLocationId);
             if (station == null || Docking.Core.DockingWorld.Instance == null) return null;
-            var ship = GetComponent<ShipController>();
+            var ship = Ship;
             if (ship == null) return null;
             return Docking.Core.DockingWorld.Instance.AssignPadForNpc(
                 station, ship, ship.ShipFlightClass, npcInstanceId);
@@ -3002,8 +3007,8 @@ namespace ProjectC.PeacefulShip.Stations
             if (useEchelons) SetCruiseTarget(CruiseTargetPos); // пересчитать эшелон под текущий коридор
             LiftStartY = data.liftStartY;
 
-            var ship = GetComponent<ShipController>();
-            var rb = GetComponent<Rigidbody>();
+            var ship = Ship;
+            var rb = Body;
 
             // Восстанавливаем режим
             switch (savedMode)

@@ -76,7 +76,7 @@ namespace ProjectC.Combat
                 if (!_attackers.ContainsKey(id))
                 {
                     _attackers[id] = pa;
-                    if (_debugLog) Debug.Log($"[CombatServer] RecoverExistingEntities: registered PlayerAttacker id={id}");
+                    if (_debugLog && ProjectC.Core.ProjectLog.Verbose) Debug.Log($"[CombatServer] RecoverExistingEntities: registered PlayerAttacker id={id}");
                 }
             }
 
@@ -88,7 +88,7 @@ namespace ProjectC.Combat
                 if (!_targets.ContainsKey(id))
                 {
                     _targets[id] = pt;
-                    if (_debugLog) Debug.Log($"[CombatServer] RecoverExistingEntities: registered PlayerTarget id={id}");
+                    if (_debugLog && ProjectC.Core.ProjectLog.Verbose) Debug.Log($"[CombatServer] RecoverExistingEntities: registered PlayerTarget id={id}");
                 }
             }
 
@@ -101,7 +101,7 @@ namespace ProjectC.Combat
                 if (!_attackers.ContainsKey(id))
                 {
                     _attackers[id] = na;
-                    if (_debugLog) Debug.Log($"[CombatServer] RecoverExistingEntities: registered NpcAttacker id={id}");
+                    if (_debugLog && ProjectC.Core.ProjectLog.Verbose) Debug.Log($"[CombatServer] RecoverExistingEntities: registered NpcAttacker id={id}");
                 }
             }
 
@@ -114,11 +114,11 @@ namespace ProjectC.Combat
                 if (!_targets.ContainsKey(id))
                 {
                     _targets[id] = nt;
-                    if (_debugLog) Debug.Log($"[CombatServer] RecoverExistingEntities: registered NpcTarget id={id}");
+                    if (_debugLog && ProjectC.Core.ProjectLog.Verbose) Debug.Log($"[CombatServer] RecoverExistingEntities: registered NpcTarget id={id}");
                 }
             }
 
-            if (_debugLog)
+            if (_debugLog && ProjectC.Core.ProjectLog.Verbose)
             {
                 Debug.Log($"[CombatServer] RecoverExistingEntities done: attackers={_attackers.Count}, targets={_targets.Count}");
             }

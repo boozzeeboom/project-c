@@ -85,7 +85,8 @@ namespace ProjectC.Ship
             if (col != null && !col.isTrigger)
             {
                 col.isTrigger = true;
-                if (verboseLog)
+                // T-PERF05/F: 14 записей за сессию, состояние коллайдера и так видно в инспекторе — под флагом.
+                if (verboseLog && ProjectC.Core.ProjectLog.Verbose)
                 {
                     Debug.Log($"[PilotSeatController] '{gameObject.name}': принудительно IsTrigger=true");
                 }

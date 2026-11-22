@@ -243,6 +243,59 @@ void UpdateDataIfTransformChanged() { if (HasTransformChanged()) { RemoveData();
 (`#if UNITY_EDITOR`, раз на проход): `isOnNavMesh` до и после, результат `NavMesh.SamplePosition(transform.position, 4f)`,
 `agent.enabled`. По нему видно, отвязан агент в этот момент или ещё нет.
 
+## Вариант G — гашение своих info-логов: `ProjectLog.Verbose`
+
+Основание — замер F: `LogStringToConsole` 21 247 KB за сессию, из них 10 295 KB — нативная цена
+регистрации палуб; остаток **10 952 KB (17% всего GC сессии)** — наши info-строки, 557 из 1 063
+записей консоли. Класс шума один: 5–6 сообщений на корабль при спавне, повторённые 23 раза
+(23 — число кораблей в мире).
+
+Файл: `Assets/_Project/Scripts/Core/ProjectLog.cs` (новый, namespace `ProjectC.Core`).
+
+```csharp
+public static class ProjectLog
+{
+    public static bool Verbose;                      // по умолчанию false — и в Editor, и в билде
+    public static void Info(string message);         // helper: if (Verbose) Debug.Log(...)
+    public static void Info(string message, Object context);
+}
+```
+
+`Verbose` сбрасывается в `SubsystemRegistration` — при выключенном domain reload статика живёт
+между сессиями Play Mode. Включается из кода (`ProjectC.Core.ProjectLog.Verbose = true;`), без
+правки ассетов и сцены.
+
+Два способа применения — по температуре места:
+- **горячие** (строка строится из нескольких значений) — guard, чтобы интерполяция не выполнялась:
+  `if (ProjectLog.Verbose) Debug.Log($"…");` — так сделаны все правки этого этапа;
+- **холодные** — helper `ProjectLog.Info(...)`.
+
+Что осталось как было: `Debug.LogWarning` / `Debug.LogError` мастер-флаг **не глушит** — реальные
+недоработки данных (`[ShipCargoVisual] _boxPrefabs array is empty`, `[EngineThrusterVisual]` плечо
+pivot→visuals) остаются в консоли. Локальные флаги компонентов (`_debugLog`, `verboseLog`)
+сохранили смысл «детально по этой системе» и работают вместе с мастер-флагом.
+
+Переведено под флаг 7 мест (по частоте из консоли F):
+
+| Строка | Записей F | Файл | Было |
+|---|---|---|---|
+| `[ShipController] Some meziy modules NOT found!` | 23 | `Player/ShipController.cs:2241` | `if (Debug.isDebugBuild)` |
+| `[JsonKeyRodInstanceRepository] Saved N instances to …` | 23 | `Ship/Key/KeyRodInstanceRepository.cs:133` | без гейта |
+| `[MeziyModuleActivator] Initialized N meziy modules` + `Registered passive …` | 23 | `Ship/MeziyModuleActivator.cs:134,127` | `if (Debug.isDebugBuild)` / без гейта |
+| `[KeyRodInstanceWorld] AutoSave: saved N active instances.` | 23 | `Ship/Key/KeyRodInstanceWorld.cs:159` | без гейта |
+| `[CombatServer] RecoverExistingEntities: registered …` + `done` | 32 | `Combat/Network/CombatServer.cs:79,91,104,117,123` | `if (_debugLog)` |
+| `[ShipFuelSystem] Initialized. Class: …` | 21 | `Ship/ShipFuelSystem.cs:247` | `if (Debug.isDebugBuild)` |
+| `[PilotSeatController] '…': принудительно IsTrigger=true` | 14 | `Ship/PilotSeatController.cs:90` | `if (verboseLog)` |
+
+Итого гасится **159 из 557** info-записей (29%). Остальные 398 — разовые диагностики по одному разу
+(383 разных текста), они полезны и оставлены.
+
+Ожидание на следующем замере: консоль 1 063 → ~904 записи; `LogStringToConsole` 21 247 → ~19 000 KB
+(при средней цене ~13.8 KB на вызов), т.е. GC сессии 64 870 → ~62 700 KB. Точные цифры — за замером:
+оценка построена на средней цене вызова, а не на измеренной цене именно этих строк.
+
+Проверка compile: 0 errors. Play Mode — **NOT RUN, за пользователем**.
+
 ## Чего не делал и почему
 
 1. **671 → 438 нативных предупреждений: остаток разложен, но не устранён.** B снял капитанов — консоль
@@ -251,10 +304,10 @@ void UpdateDataIfTransformChanged() { if (HasTransformChanged()) { RemoveData();
    агенту запрещена), 100 (23%) — `PrimumCrowdNpc.ApplyWorldRebase → Warp` (нужен прогон с пробой, а не
    слепая правка поведения толпы), 18 (4%) — нативные кадры и `ShipCrewSpawner`. Варианты A и C закрыты:
    A менял FO-инвариант `CanApplyGlobalBaseline` и не понадобился, C выполнен и дал аудит выше.
-2. **Наши info-логи** (557 записей из 1 063, ~10.9 MB за сессию F = 17% всего GC): это 5–6 строк на корабль
-   при спавне. Мерка: `LogStringToConsole` 21 247 KB, из них `NotifyNavMeshAdded` 10 295 KB ⇒ на наши логи
-   остаётся 10 952 KB. Гасить — правка ~8 файлов; предложен один флаг `ProjectLog.Verbose` (по умолчанию false)
-   с переводом туда всех info-строк, чтобы не терять диагностику. Ждёт решения.
+2. **Наши info-логи — закрыто вариантом G** (`ProjectLog.Verbose`, по умолчанию false): под флаг ушли
+   7 мест с 159 записями из 557 (шесть самых частых строк — по одной на корабль). Остаток 398 записей —
+   разовые диагностики (383 разных текста), оставлены намеренно. До правки эта группа стоила ~10.9 MB
+   (17% GC сессии F). Ожидаемая экономия ~2.2 MB — оценка по средней цене вызова, подтверждение — следующим замером.
 3. **Остаток null-сообщений вне адаптера:** `NetworkPlayer.FixedUpdate` 1 496 KB / 2 233,
    `NpcBrain.Update` 1 499 KB / 2 376, `SkillInputService`/`SkillAnimationPlayer` ~0.9 MB —
    источник глубже прямого вызова, отдельный проход.

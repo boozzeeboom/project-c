@@ -124,13 +124,14 @@ namespace ProjectC.Ship
                                 activeDirection = 0f,
                                 overheatThreshold = overheatThreshold
                             };
-                            Debug.Log($"[MeziyModuleActivator] Registered passive meziy module: '{moduleId}' (force={slot.installedModule.meziyForce})");
+                            if (ProjectC.Core.ProjectLog.Verbose)
+                                Debug.Log($"[MeziyModuleActivator] Registered passive meziy module: '{moduleId}' (force={slot.installedModule.meziyForce})");
                         }
                     }
                 }
             }
 
-            if (Debug.isDebugBuild)
+            if (Debug.isDebugBuild && ProjectC.Core.ProjectLog.Verbose)
                 Debug.Log($"[MeziyModuleActivator] Initialized {meziyStates.Count} meziy modules (passive mode).");
         }
 

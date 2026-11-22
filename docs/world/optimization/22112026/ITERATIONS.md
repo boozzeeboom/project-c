@@ -428,3 +428,25 @@ compile — 0 errors. Play Mode **не запускался**, прогон за
 до проверки `enabled`), поэтому капитаны были видны в ней и после B — переименована в `all agents by name`,
 чтобы следующее чтение не путало выключенные агенты с включёнными. Сам аудит оставлен: он даёт
 повторяемый снимок off-mesh агентов и удаляется одной командой после финального вердикта.
+
+## T-PERF05/G — `ProjectLog.Verbose`: гашение своих info-логов
+
+Файл: `Assets/_Project/Scripts/Core/ProjectLog.cs` (новый, `namespace ProjectC.Core`). Один мастер-флаг
+`ProjectLog.Verbose` (по умолчанию `false` и в Editor, и в билде; сбрасывается в `SubsystemRegistration` —
+при выключенном domain reload статика живёт между сессиями) плюс два helper'а `Info(string)` /
+`Info(string, Object)`. В горячих местах — guard, чтобы интерполяция не выполнялась вовсе.
+
+Основание (замер F): `LogStringToConsole` 21 247 KB, из них 10 295 KB — нативная цена регистрации
+палуб; остаток **10 952 KB = 17% GC сессии** — наши info-строки, 557 из 1 063 записей консоли, и класс
+шума один: 5–6 сообщений на корабль при спавне × 23 корабля.
+
+Под флаг ушли 7 мест / 159 записей (29% всех info-строк): `[ShipController] Some meziy modules NOT found!` (23),
+`[JsonKeyRodInstanceRepository] Saved …` (23), `[MeziyModuleActivator] Initialized …` + `Registered passive …`
+(23), `[KeyRodInstanceWorld] AutoSave …` (23), `[CombatServer] RecoverExistingEntities …` (32),
+`[ShipFuelSystem] Initialized …` (21), `[PilotSeatController] … IsTrigger=true` (14).
+НЕ глушится: `Debug.LogWarning`/`LogError` — `[ShipCargoVisual] _boxPrefabs array is empty` и
+`[EngineThrusterVisual]` плечо pivot→visuals остаются (это реальные недоработки данных).
+
+Проверка compile: 0 errors. Play Mode / новый захват — **NOT RUN, за пользователем**.
+Ожидание: консоль 1 063 → ~904 записи, GC сессии 64 870 → ~62 700 KB (оценка по средней цене
+~13.8 KB на log-вызов, а не по измеренной цене именно этих строк — подтверждение замером).

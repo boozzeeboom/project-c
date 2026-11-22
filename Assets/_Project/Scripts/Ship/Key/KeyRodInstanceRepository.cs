@@ -130,7 +130,9 @@ namespace ProjectC.Ship.Key
                 {
                     var json = JsonUtility.ToJson(wrapper, prettyPrint: false);
                     File.WriteAllText(path, json);
-                    Debug.Log($"[JsonKeyRodInstanceRepository] Saved {instances.Count} instances to {path}");
+                    // T-PERF05/F: 23 записи за сессию; ошибка записи всё равно видна в catch ниже.
+                    if (ProjectC.Core.ProjectLog.Verbose)
+                        Debug.Log($"[JsonKeyRodInstanceRepository] Saved {instances.Count} instances to {path}");
                 }
                 catch (Exception ex)
                 {

@@ -243,7 +243,8 @@ namespace ProjectC.Ship
             // Полная заправка при старте
             currentFuel = maxFuel;
 
-            if (Debug.isDebugBuild)
+            // T-PERF05/F: 21 запись за сессию (по одной на корабль) — под общим мастер-флагом.
+            if (Debug.isDebugBuild && ProjectC.Core.ProjectLog.Verbose)
                 Debug.Log($"[ShipFuelSystem] Initialized. Class: {shipClass}, Capacity: {maxFuel}, Consumption: {fuelConsumptionRate}/s");
         }
     }

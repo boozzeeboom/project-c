@@ -2237,7 +2237,8 @@ namespace ProjectC.Player
 
                 if (rollFound == 0 || yawFound == 0)
                 {
-                    if (Debug.isDebugBuild)
+                    // T-PERF05/F: 23 записи за сессию (по одной на корабль) — под общим мастер-флагом.
+                    if (Debug.isDebugBuild && ProjectC.Core.ProjectLog.Verbose)
                         Debug.Log("[ShipController] Some meziy modules NOT found!");
                 }
             }

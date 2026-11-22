@@ -156,7 +156,9 @@ namespace ProjectC.Ship.Key
                     list.Add(kvp.Value);
             }
             _repository.SaveAll(list);
-            Debug.Log($"[KeyRodInstanceWorld] AutoSave: saved {list.Count} active instances.");
+            // T-PERF05/F: автосейв подтверждается записью в файл, лишняя info-строка (23 за сессию) — под флагом.
+            if (ProjectC.Core.ProjectLog.Verbose)
+                Debug.Log($"[KeyRodInstanceWorld] AutoSave: saved {list.Count} active instances.");
         }
 
         // ===========================================================

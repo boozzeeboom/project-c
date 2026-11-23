@@ -923,3 +923,23 @@ Floating Origin через текущий `transform.position`; `RefreshCollider
 
 compile + domain reload — завершены, ошибок C# нет; `git diff --check` — чисто. Play Mode, тесты
 и Build агентом — **NOT RUN**. Величина выигрыша будет определена следующим захватом.
+
+## T-PERF11 — периодический editor-статтер (`ProjectC_client_2026-11-23_17-44-47.data`)
+
+2 000 кадров; steady-state = 1 965 кадров. Во второй половине пики `Main Thread`
+повторяются с периодом 9–11 кадров (автокорреляция lag 10 = 0,213). Главный вклад —
+нативный `EditorLoop` self: 15,059 мс/кадр в среднем, на отдельных пиках 80–150 мс;
+`PlayerLoop` — 29,166 мс/кадр. Пики не совпадают с `GC.Collect` или регулярными логами.
+Отдельный разовый пик Floating Origin (frame 1387) не является причиной ритма.
+
+`NpcShipWorld.FixedUpdate` self: 1,076 → **1,043 мс/кадр**; одного AABB зданий
+недостаточно для существенного снижения NPC. Зоны остаются на уровне 0,333 + 0,318 мс/кадр.
+
+`NpcProximityZoneBuilds.OnDrawGizmos` переведён на `OnDrawGizmosSelected`: на каждом
+SceneView repaint больше не рисуются все коллайдеры и Handles.Label всех зданий.
+Отладка выбранного здания сохранена, runtime-логика и serialized `drawGizmos` не изменены.
+Это точечное устранение самого тяжёлого project-side кандидата внутри нативного EditorLoop;
+причинно подтвердить исчезновение ритма должен следующий захват с прежними Gizmos/SceneView.
+
+compile + domain reload — завершены, ошибок C# нет; `git diff --check` — чисто. Play Mode, тесты
+и Build агентом — **NOT RUN**. Повторить тот же маршрут второй половины прогона 30–60 с.

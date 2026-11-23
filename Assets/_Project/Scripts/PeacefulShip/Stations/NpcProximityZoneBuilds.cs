@@ -133,7 +133,9 @@ namespace ProjectC.PeacefulShip.Stations
         }
 
 #if UNITY_EDITOR
-        private void OnDrawGizmos()
+        // T-PERF11: сотни зданий × все их коллайдеры не рисуются на каждом SceneView repaint.
+        // Отладочная геометрия остаётся доступной при выборе здания.
+        private void OnDrawGizmosSelected()
         {
             if (!drawGizmos) return;
 

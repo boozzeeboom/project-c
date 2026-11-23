@@ -69,6 +69,7 @@ namespace ProjectC.Ship
 
         private readonly List<Entry> _entries = new List<Entry>();
         private readonly List<Camera> _cameras = new List<Camera>();
+        private readonly List<Vector3> _cameraPositions = new List<Vector3>();
         // T-PERF12: все корабли используют один снапшот камер вместо поиска по сцене на каждый корабль.
         private static readonly List<Camera> SharedCameras = new List<Camera>();
         private static float _sharedCameraRefreshAt = float.NegativeInfinity;
@@ -285,6 +286,17 @@ namespace ProjectC.Ship
         /// </summary>
         private void UpdateShadows()
         {
+            // T-PERF15: позиции камер читаются один раз за тик корабля, а не для каждого рендерера.
+            // Кэш живёт только внутри тика, поэтому Floating Origin и движение камер учитываются.
+            _cameraPositions.Clear();
+            for (int c = 0; c < _cameras.Count; c++)
+            {
+                var cam = _cameras[c];
+                if (cam != null) _cameraPositions.Add(cam.transform.position);
+            }
+
+            float shadowOnSqr = shadowOnDistance * shadowOnDistance;
+            float shadowOffSqr = shadowOffDistance * shadowOffDistance;
             for (int i = 0; i < _entries.Count; i++)
             {
                 var entry = _entries[i];
@@ -295,8 +307,8 @@ namespace ProjectC.Ship
                 if (nearestSqr < 0f) continue;
 
                 bool want = entry.shadowsOn
-                    ? nearestSqr <= shadowOffDistance * shadowOffDistance
-                    : nearestSqr < shadowOnDistance * shadowOnDistance;
+                    ? nearestSqr <= shadowOffSqr
+                    : nearestSqr < shadowOnSqr;
                 if (want == entry.shadowsOn) continue;
 
                 entry.shadowsOn = want;
@@ -308,11 +320,9 @@ namespace ProjectC.Ship
         private float NearestCameraDistanceSqr(Vector3 point)
         {
             float best = float.MaxValue;
-            for (int c = 0; c < _cameras.Count; c++)
+            for (int c = 0; c < _cameraPositions.Count; c++)
             {
-                var cam = _cameras[c];
-                if (cam == null) continue;
-                float d = (point - cam.transform.position).sqrMagnitude;
+                float d = (point - _cameraPositions[c]).sqrMagnitude;
                 if (d < best) best = d;
             }
             return best == float.MaxValue ? -1f : best;

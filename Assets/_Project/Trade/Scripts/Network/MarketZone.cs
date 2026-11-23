@@ -255,42 +255,11 @@ namespace ProjectC.Trade.Network
             return null;
         }
 
-        // T-PERF10: все зоны используют один снапшот актёров на кадр вместо
-        // повторного обхода SpawnedObjects в каждом таймере. Позиции и идентификаторы
-        // тоже читаются один раз: transform.position из каждой зоны давал лавину native-вызовов.
-        private struct PolledPlayer
-        {
-            public Vector3 Position;
-            public ulong OwnerClientId;
-        }
-        private struct PolledShip
-        {
-            public Vector3 Position;
-            public ulong NetworkObjectId;
-        }
-        private static readonly List<PolledPlayer> _polledPlayers = new List<PolledPlayer>(16);
-        private static readonly List<PolledShip> _polledShips = new List<PolledShip>(32);
-        private static int _polledActorsFrame = -1;
+        // T-PERF15: рынок и связь разделяют один снапшот актёров на кадр.
+        private static List<ZoneActorSnapshot.PolledPlayer> _polledPlayers => ZoneActorSnapshot.Players;
+        private static List<ZoneActorSnapshot.PolledShip> _polledShips => ZoneActorSnapshot.Ships;
 
-        private static void RefreshPollActors()
-        {
-            if (_polledActorsFrame == Time.frameCount) return;
-            _polledActorsFrame = Time.frameCount;
-            _polledPlayers.Clear();
-            _polledShips.Clear();
-
-            var nm = NetworkManager.Singleton;
-            if (nm == null || nm.SpawnManager == null) return;
-            foreach (var spawned in nm.SpawnManager.SpawnedObjects)
-            {
-                var obj = spawned.Value;
-                if (obj == null || !obj.IsSpawned) continue;
-                if (obj.TryGetComponent<NetworkPlayer>(out var np))
-                    _polledPlayers.Add(new PolledPlayer { Position = np.transform.position, OwnerClientId = np.OwnerClientId });
-                else if (obj.TryGetComponent<ShipController>(out var ship))
-                    _polledShips.Add(new PolledShip { Position = ship.transform.position, NetworkObjectId = ship.NetworkObject.NetworkObjectId });
-            }
-        }
+        private static void RefreshPollActors() => ZoneActorSnapshot.Refresh();
 
         private void PollActorsInRadius()
         {

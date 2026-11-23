@@ -242,53 +242,12 @@ namespace ProjectC.Docking.Zones
 
         // === Server-side: Polling (аналог MarketZone.PollPlayersInRadius) ===
 
-        // T-PERF03: полл без физики.
-        // Было: два Physics.OverlapSphere с ОДИНАКОВЫМИ аргументами за тик, маска -1 (весь мир).
-        // Замер сцены в захвате 2026-11-22: зона STN-PRM-001 (422 м) возвращала 5 304
-        // коллайдера = 41.38 КБ массива на вызов (ровно столько же аллокаций в профайлере),
-        // а всего 9 зон x 2 вызова x 4 Гц.
-        // Стало: один проход по заспавненным сетевым объектам + сверка sqrMagnitude.
-        // Проход по словарю не аллоцирует; N = игроки + корабли (в сцене 20 кораблей).
-        // NonAlloc здесь не годится: буфер на 64-256 слотов при 5 000 попаданий и маске -1
-        // молча обрезает результат и может потерять игрока.
-        // T-PERF10: все зоны используют один снапшот актёров на кадр вместо
-        // повторного обхода SpawnedObjects в каждом таймере. Позиции, слои и идентификаторы
-        // читаются один раз: повторные обращения из каждой зоны шли в native-код Unity.
-        private struct PolledPlayer
-        {
-            public Vector3 Position;
-            public ulong OwnerClientId;
-            public int Layer;
-        }
-        private struct PolledShip
-        {
-            public Vector3 Position;
-            public ulong NetworkObjectId;
-            public int Layer;
-        }
-        private static readonly List<PolledPlayer> _polledPlayers = new List<PolledPlayer>(16);
-        private static readonly List<PolledShip> _polledShips = new List<PolledShip>(32);
-        private static int _polledActorsFrame = -1;
+        // T-PERF03: полл без физики и без аллокаций по всему миру.
+        // T-PERF15: рынок и связь разделяют один снапшот актёров на кадр.
+        private static List<ZoneActorSnapshot.PolledPlayer> _polledPlayers => ZoneActorSnapshot.Players;
+        private static List<ZoneActorSnapshot.PolledShip> _polledShips => ZoneActorSnapshot.Ships;
 
-        private static void RefreshPollActors()
-        {
-            if (_polledActorsFrame == Time.frameCount) return;
-            _polledActorsFrame = Time.frameCount;
-            _polledPlayers.Clear();
-            _polledShips.Clear();
-
-            var nm = NetworkManager.Singleton;
-            if (nm == null || nm.SpawnManager == null) return;
-            foreach (var spawned in nm.SpawnManager.SpawnedObjects)
-            {
-                var obj = spawned.Value;
-                if (obj == null || !obj.IsSpawned) continue;
-                if (obj.TryGetComponent<NetworkPlayer>(out var np))
-                    _polledPlayers.Add(new PolledPlayer { Position = np.transform.position, OwnerClientId = np.OwnerClientId, Layer = np.gameObject.layer });
-                else if (obj.TryGetComponent<ShipController>(out var ship))
-                    _polledShips.Add(new PolledShip { Position = ship.transform.position, NetworkObjectId = ship.NetworkObject.NetworkObjectId, Layer = ship.gameObject.layer });
-            }
-        }
+        private static void RefreshPollActors() => ZoneActorSnapshot.Refresh();
 
         private void PollActorsInRange()
         {

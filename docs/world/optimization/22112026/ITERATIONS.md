@@ -1039,3 +1039,31 @@ compile + domain reload — завершены, ошибок C# нет; `git dif
 compile + domain reload — завершены, ошибок C# нет; `git diff --check` — чисто. Play Mode, тесты
 и Build агентом — **NOT RUN**. Следующий захват должен повторить пролёт/контакт с док-падами,
 чтобы сравнить OnTriggerEnter при сопоставимом числе событий.
+
+
+## T-PERF15 — подтверждение триггеров и общий снапшот зон (`ProjectC_client_2026-11-23_20-22-34.data`)
+
+1 965 steady-state кадров. `DockingPadTriggerBox.OnTriggerEnter` total/self:
+2,573 / 2,479 → **0,0005 / 0,0005 мс/кадр**; hotspot устранён. Средний self на вызов —
+примерно 2,33 → 0,013 мс (75 событий вместо 1 493, поэтому сравнение на кадр дополнительно
+зависит от маршрута). `Physics.SendTriggerEvents` total 2,705 → 0,084 мс/кадр.
+`Main Thread` 46,815 → **45,213**, `PlayerLoop` 31,133 → **27,502 мс/кадр**.
+`EngineThrusterVisual.Update` self 0,193 → 0,177; в движении визуалы продолжают обновляться,
+поэтому существенный дополнительный выигрыш этого компонента не заявляется.
+
+Следующие managed self: `NpcShipWorld.FixedUpdate` 0,723, `ShipShadowBudget.Update` 0,322,
+`MarketZone.Update` 0,275, `OuterCommZone.Update` 0,260 мс/кадр. Зоны уже имели раздельные
+per-frame снапшоты и всё равно могли повторно обходить SpawnedObjects в один кадр.
+
+Изменения:
+
+- Добавлен общий `ZoneActorSnapshot` для MarketZone и OuterCommZone: один обход
+  SpawnedObjects и одно чтение позиций/ID/слоёв на кадр для обоих типов зон.
+  Радиусы, маски, polling 0,25 с, debounce и наборы состояния не изменены.
+- `ShipShadowBudget`: позиции отфильтрованных камер кэшируются один раз за UpdateShadows
+  каждого корабля, вместо чтения Transform для каждого рендерера. Пороги on/off также
+  вычисляются один раз. Мировые позиции между тиками не хранятся — Floating Origin сохраняется.
+
+compile + domain reload — завершены, ошибок C# нет; `git diff --check` — чисто. Play Mode, тесты
+и Build агентом — **NOT RUN**. Параллельно появившаяся пользовательская правка NetworkPlayer.cs
+не изменялась и не входит в пакет. Следующий захват должен проверить оба Update зон и ShipShadowBudget.

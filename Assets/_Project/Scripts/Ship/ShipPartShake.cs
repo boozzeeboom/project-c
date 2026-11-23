@@ -54,6 +54,7 @@ namespace ProjectC.Ship
         // Сохранённая базовая позиция/вращение (до дрожи)
         private Vector3 _baseLocalPos;
         private Quaternion _baseLocalRot;
+        private bool _isAtBasePose = true;
 
         // Текущая фаза синусоиды (накапливается)
         private float _phase;
@@ -147,6 +148,7 @@ namespace ProjectC.Ship
             // Вращательное смещение (в градусах)
             Vector3 rotOffset = Vector3.Scale(_rotationAmplitude, new Vector3(intensity, intensity, intensity));
             transform.localRotation = _baseLocalRot * Quaternion.Euler(rotOffset);
+            _isAtBasePose = false;
         }
 
         private void OnDisable()
@@ -156,6 +158,7 @@ namespace ProjectC.Ship
             {
                 transform.localPosition = _baseLocalPos;
                 transform.localRotation = _baseLocalRot;
+                _isAtBasePose = true;
             }
         }
 
@@ -165,8 +168,13 @@ namespace ProjectC.Ship
         /// </summary>
         private void ResetToBasePose()
         {
-            transform.localPosition = _baseLocalPos;
-            transform.localRotation = _baseLocalRot;
+            // T-PERF13: не создаём TransformChange каждый кадр на неподвижных деталях.
+            if (!_isAtBasePose)
+            {
+                transform.localPosition = _baseLocalPos;
+                transform.localRotation = _baseLocalRot;
+                _isAtBasePose = true;
+            }
             _smoothThrust = 0f;
             _smoothVelocity = 0f;
         }

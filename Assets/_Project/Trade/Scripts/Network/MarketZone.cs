@@ -465,7 +465,7 @@ namespace ProjectC.Trade.Network
         }
 
 #if UNITY_EDITOR
-        private void OnDrawGizmos()
+        private void OnDrawGizmosSelected()
         {
             if (!drawGizmos) return;
             Gizmos.color = new Color(0.3f, 0.8f, 1f, 0.3f);

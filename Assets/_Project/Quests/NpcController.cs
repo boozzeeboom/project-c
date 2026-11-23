@@ -193,7 +193,7 @@ namespace ProjectC.Quests
         }
 
 #if UNITY_EDITOR
-        private void OnDrawGizmos()
+        private void OnDrawGizmosSelected()
         {
             Gizmos.color = _playerInRange ? Color.green : Color.yellow;
             Gizmos.DrawWireSphere(transform.position, interactionDistance);

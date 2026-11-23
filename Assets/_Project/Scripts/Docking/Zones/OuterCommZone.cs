@@ -417,7 +417,7 @@ namespace ProjectC.Docking.Zones
         public bool IsShipInRange(ulong shipNetworkObjectId) => _shipsInRange.Contains(shipNetworkObjectId);
 
 #if UNITY_EDITOR
-        private void OnDrawGizmos()
+        private void OnDrawGizmosSelected()
         {
             if (!drawGizmos) return;
             Gizmos.color = new Color(1f, 0.85f, 0.3f, 0.25f);

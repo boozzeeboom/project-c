@@ -191,7 +191,8 @@ namespace ProjectC.Ship
         // ============================================================
 
 #if UNITY_EDITOR
-        private void OnDrawGizmos()
+        // T-PERF13: тяжёлый сплайн и Handles рисуем только для выбранной зоны.
+        private void OnDrawGizmosSelected()
         {
             if (SplineContainer == null)
                 SplineContainer = GetComponent<SplineContainer>();

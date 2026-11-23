@@ -975,3 +975,37 @@ compile + domain reload — завершены, ошибок C# нет; `git dif
 compile + domain reload — завершены, ошибок C# нет; `git diff --check` — чисто. Play Mode, тесты
 и Build агентом — **NOT RUN**. Исключения `Client handler exited` от MCP — технический шум
 подключения, не ошибки C#. Величина выигрыша и влияние на ритм определяются следующим захватом.
+
+
+## T-PERF13 — подтверждение T-PERF12 и пакет editor/visual hot paths (`ProjectC_client_2026-11-23_18-54-08.data`)
+
+1 965 steady-state кадров (510–2509). Подтверждённый эффект T-PERF12 по self-time на кадр
+относительно замера 18-17: `NpcShipWorld.FixedUpdate` 1,099 → **0,749 мс (−31,8 %)**,
+`PRIMUM/LightPool.Check` 0,724 → **0,225 мс (−68,9 %)**. `PlayerRespawnTracker.Update`
+вышел из top-120 self — глобальный поиск паромов больше не является горячим путём.
+`ShipShadowBudget.Update` 0,469 → 0,388; `DoorVisibilityBudget.Update` 0,371 → 0,326;
+`CityShadowBudget.Update` 0,349 → 0,294 мс/кадр. `PlayerLoop` 37,532 → **33,368 мс/кадр**.
+
+Общий статтер не считается устранённым: `Main Thread` 55,821 → 64,707 мс/кадр, а
+`EditorLoop` self 12,841 → 25,562. Маршрут и состояние SceneView могли отличаться.
+Дополнительные managed-кандидаты: `ShipContrailVfx.Update` self 0,081 (27 524 вызова),
+`DockPadVisualMarker.LateUpdate` 0,162 (133 688 вызовов), `ShipPartShake.Update` 0,092
+(94 368 вызовов); `UpdateRendererBoundingVolumes` — 0,826 мс/кадр.
+
+Пакет изменений:
+
+- Все оставшиеся тяжёлые/массовые project-side debug-gizmos переведены на
+  `OnDrawGizmosSelected`: сплайновые и обычные ветровые зоны, NPC avoidance и NPC interaction,
+  здания/рынок/связь/док-пады, SitPoint/CoverPoint, ParomRoute, CompassRose и StormCellDirector.
+  В SceneView больше не выполняются постоянные Handles.Label, кольца сплайнов и сотни сфер
+  штормовых ячеек для всех объектов. Визуализация выбранного объекта и runtime не изменены.
+- `ShipContrailVfx`: scale и параметры графа применяются только при смене scale или OnValidate;
+  убраны повторные `HasFloat`/`SetFloat` и `Random.Range` каждый кадр. Движение и Play/Stop не изменены.
+- `ShipPartShake`: в базовой позе `localPosition`/`localRotation` записываются один раз при переходе,
+  а не каждый кадр. Амплитуды, частота и сглаживание не изменены.
+- `DockPadVisualMarker`: базовый цвет кэшируется при смене материала; убран ежекадровый
+  `GetPropertyBlock`/`GetColor`. Пульсация и состояния площадок не изменены.
+
+compile + domain reload — завершены, ошибок C# нет; `git diff --check` — чисто. Play Mode, тесты
+и Build агентом — **NOT RUN**. Исключения `Client handler exited` от MCP — технический шум
+подключения, не ошибки C#. Следующий захват должен проверить EditorLoop, визуальные Update и ритм.

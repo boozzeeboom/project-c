@@ -41,7 +41,7 @@ namespace ProjectC.World
 
         private void OnDisable() => WorldNorth.Unregister(this);
 
-        private void OnDrawGizmos()
+        private void OnDrawGizmosSelected()
         {
             Vector3 p = transform.position;
             Vector3 n = NorthDirection;

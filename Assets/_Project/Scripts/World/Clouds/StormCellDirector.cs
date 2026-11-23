@@ -520,7 +520,8 @@ namespace ProjectC.World.Clouds
         }
 
 #if UNITY_EDITOR
-        private void OnDrawGizmos()
+        // T-PERF13: сотни сфер, колец и Labels рисуем только для выбранного директора.
+        private void OnDrawGizmosSelected()
         {
             if (!ShowDebugGizmos || _cells == null) return;
             for (int i = 0; i < _cells.Count; i++)

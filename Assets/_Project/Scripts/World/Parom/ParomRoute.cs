@@ -891,7 +891,7 @@ namespace ProjectC.World.Parom
                     _stationDwellOverrides[i] = Mathf.Max(_stationDwellOverrides[i], -1f);
         }
 
-        private void OnDrawGizmos()
+        private void OnDrawGizmosSelected()
         {
             // Превью ветки в редакторе: жёлтая полилиния + сферы станций.
             var pts = new List<Transform>();

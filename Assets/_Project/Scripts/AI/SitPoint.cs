@@ -50,7 +50,7 @@ namespace ProjectC.AI
         public Quaternion SitRotation => transform.rotation * Quaternion.LookRotation(sitForward.normalized);
 
 #if UNITY_EDITOR
-        private void OnDrawGizmos()
+        private void OnDrawGizmosSelected()
         {
             Gizmos.color = new Color(0.8f, 0.5f, 0.2f, 0.7f);
             Gizmos.DrawWireSphere(transform.position, occupyRadius * 0.3f);

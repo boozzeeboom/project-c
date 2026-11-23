@@ -335,7 +335,7 @@ namespace ProjectC.PeacefulShip.Stations
         // ══════════════════════════════════════════════════════════
 
 #if UNITY_EDITOR
-        private void OnDrawGizmos()
+        private void OnDrawGizmosSelected()
         {
             if (!drawGizmos) return;
 

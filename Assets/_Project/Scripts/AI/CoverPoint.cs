@@ -65,7 +65,7 @@ namespace ProjectC.AI
         public Vector3 LookDirectionWorld => transform.TransformDirection(lookDirection.normalized);
 
 #if UNITY_EDITOR
-        private void OnDrawGizmos()
+        private void OnDrawGizmosSelected()
         {
             // Cover type color
             Color c = coverType switch

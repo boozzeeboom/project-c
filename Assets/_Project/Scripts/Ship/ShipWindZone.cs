@@ -126,7 +126,7 @@ namespace ProjectC.Ship
         public int ShipCount => _shipsInZone.Count;
 
 #if UNITY_EDITOR
-        private void OnDrawGizmos()
+        private void OnDrawGizmosSelected()
         {
             // Определяем центр и размер коллайдера для визуализации
             var col = GetComponent<Collider>();

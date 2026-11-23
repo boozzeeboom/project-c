@@ -30,6 +30,7 @@ namespace ProjectC.Docking.Stations
         private PadStateSync _stateSync;
         private MeshRenderer _surfaceRenderer;
         private Material _currentMaterial;
+        private Color _baseColor;
         private PadVisualState _currentState = PadVisualState.Neutral;
         private float _pulsePhase;
         private MaterialPropertyBlock _props;
@@ -196,7 +197,10 @@ namespace ProjectC.Docking.Stations
         private void ApplyMaterial()
         {
             if (_surfaceRenderer != null && _currentMaterial != null)
+            {
                 _surfaceRenderer.sharedMaterial = _currentMaterial;
+                _baseColor = _currentMaterial.GetColor("_BaseColor");
+            }
         }
 
         // ============================================================
@@ -220,9 +224,8 @@ namespace ProjectC.Docking.Stations
                 _                              => 0.4f + t * 0.15f
             };
 
-            _surfaceRenderer.GetPropertyBlock(_props);
-            Color c = _currentMaterial.GetColor("_BaseColor");
-            _props.SetColor("_BaseColor", new Color(c.r, c.g, c.b, c.a * mult));
+            // T-PERF13: блок содержит только этот цвет, читать renderer и материал не нужно.
+            _props.SetColor("_BaseColor", new Color(_baseColor.r, _baseColor.g, _baseColor.b, _baseColor.a * mult));
             _surfaceRenderer.SetPropertyBlock(_props);
         }
 
@@ -231,7 +234,7 @@ namespace ProjectC.Docking.Stations
         // ============================================================
 
 #if UNITY_EDITOR
-        private void OnDrawGizmos()
+        private void OnDrawGizmosSelected()
         {
             var box = GetComponent<BoxCollider>();
             if (box == null) return;

@@ -71,6 +71,7 @@ namespace ProjectC.Ship
         private VisualEffect[] _sideVfxs;
         private Vector3[] _spawnOffsets;
         private Vector3 _shipBoundsSize;
+        private float _lastVfxScale = -1f;
 
         private void Start()
         {
@@ -237,6 +238,10 @@ namespace ProjectC.Ship
         private void ApplyVfxScale(float scale)
         {
             if (Vfx == null) return;
+            // T-PERF13: параметры не меняются в полёте — не дёргаем VFX Graph каждый кадр.
+            if (Mathf.Abs(scale - _lastVfxScale) < 0.0001f) return;
+            _lastVfxScale = scale;
+
             float lifetime = BaseLifetime * scale;
             float baseSize = BaseSize * scale;
             float spawnRate = BaseSpawnRate * scale;
@@ -271,6 +276,7 @@ namespace ProjectC.Ship
 #if UNITY_EDITOR
         private void OnValidate()
         {
+            _lastVfxScale = -1f;
             if (_spawnOffsets == null) return;
             if (UseShipBounds && Ship != null)
                 _shipBoundsSize = GetShipVisualSize(Ship.gameObject);

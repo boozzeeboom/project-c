@@ -1098,3 +1098,34 @@ compile + domain reload — завершены, ошибок C# нет; `git dif
 и Build агентом — **NOT RUN**. Исключения `Client handler exited` от MCP — технический шум
 stdio-подключений, не ошибки C#. Следующий захват по тому же маршруту должен проверить оба Update
 зон и три бюджета теней; NPC навигацию разбирать отдельно по внутренним маркерам/режимам.
+
+
+## T-PERF17 — подтверждение зон/теней и навигационные зонды NPC (`ProjectC_client_2026-11-23_23-51-45.data`)
+
+1 881 steady-state кадров. `Main Thread` 57,400 → 50,284 мс/кадр, `PlayerLoop` 38,351 → 33,576;
+часть общей разницы связана с маршрутом и загрузочными вкладами. T-PERF16 подтверждён по self-time:
+`MarketZone.Update` 0,426 → **0,048 мс/кадр**, `OuterCommZone.Update` 0,346 → **0,009**,
+`DoorVisibilityBudget.Update` 0,382 → **0,190**, `CityShadowBudget.Update` 0,347 → **0,159**,
+`ShipShadowBudget.Update` 0,324 → **0,172**. Изменение маршрута влияет на вызовы, но масштаб
+снижения зон подтверждает удаление поиска игрока и лишней работы.
+
+`NpcShipWorld.FixedUpdate` total/self 1,596 / 1,086 → 0,633 / 0,488 мс/кадр — остаётся главным
+managed self-кандидатом. `AI.NpcBrain.FixedUpdate` self 0,146 (151 176 вызовов), `Physics.SphereCast`
+0,185 (63 881 вызов), `Physics.Raycast` 0,112 (23 541 вызов). Код показал два регулярных неоптимальных
+пути: `ResolveCommZone()` выполнял GetComponentInChildren каждый FixedUpdate, а RayClear для мягкого
+подлёта к промежуточной точке не имел троттлинга. Свободные пешие NPC также искали палубу через
+SphereCast на каждом physics-тике.
+
+Изменения:
+
+- `NpcShipController.TickCruise`: RayClear промежуточной точки выполняется с частотой основного
+  лидара (`wallProbeIntervalSec` + фаза NPC), между пробами используется последний результат.
+  Смена waypoint сбрасывает пробу; режимы, управление Rigidbody и пороги скорости не изменены.
+- `NpcShipController.ResolveCommZone`: ссылка на OuterCommZone кэшируется по locationId маршрута
+  и перечитывается при смене маршрута/уничтожении объекта. Мировые координаты не кэшируются.
+- `NpcBrain.FixedUpdate`: обнаружение новой платформы — 10 Гц вместо каждого physics-тика.
+  Для уже найденной платформы carry, потеря контакта и deck-nav остаются на каждом FixedUpdate.
+
+compile + domain reload — завершены, ошибок C# нет; `git diff --check` — чисто. Play Mode, тесты
+и Build агентом — **NOT RUN**. Следующий захват должен проверить NpcShipWorld, SphereCast/Raycast,
+AI.NpcBrain.FixedUpdate и сохранение штатного движения NPC по палубам/маршрутам.

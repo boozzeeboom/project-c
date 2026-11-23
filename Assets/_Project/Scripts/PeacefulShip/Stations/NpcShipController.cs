@@ -658,6 +658,11 @@ namespace ProjectC.PeacefulShip.Stations
         private Vector3 _wallLastPos;
         private float _wallLastProgressAt;
         private float _wallProbeNextAt;
+        // T-PERF17: медленный зонд промежуточной точки и кэш компонента зоны связи.
+        private float _wpApproachProbeNextAt;
+        private bool _wpApproachBlocked;
+        private string _commZoneLocationId;
+        private OuterCommZone _commZone;
         private float _wallCooldownUntil;
         // T-NS-WF18: мин. клиренс с прошлого скана (для скорости по просвету).
         private float _wallMinClear = float.MaxValue;
@@ -1051,6 +1056,8 @@ namespace ProjectC.PeacefulShip.Stations
             if (_navIdx < _navPlan.Count
                 && Vector3.Distance(rb.position, _navPlan[_navIdx]) < navWpTol) {
                 _navIdx++;
+                _wpApproachProbeNextAt = 0f;
+                _wpApproachBlocked = false;
                 // T-NS-LOG02: точку взяли — свежий замер и сброс медленных replan.
                 _goalProgAt = 0f;
                 _goalSlowReplans = 0;
@@ -1061,16 +1068,18 @@ namespace ProjectC.PeacefulShip.Stations
             // полный ход в лицо склона до срабатывания зонда выглядит тараном.
             // Точка в окне + прямая к ней забита → идём осторожно (Approach),
             // зонд входит раньше и мельче. Только промежуточные точки, финал не трогаем.
-            // (nav-wp-skip удалён: условие «шорткат чист» невыполнимо по построению —
-            // следующий хоп цепочки обхода забит дизайном, 0 срабатываний за сессию.)
-            bool wpBlockedAhead = false;
-            if (_navIdx < _navPlan.Count - 1) {
+            // T-PERF17: RayClear выполняется с той же частотой, что основной лидар,
+            // а не на каждом FixedUpdate; между пробами используется последний результат.
+            if (_navIdx < _navPlan.Count - 1 && Time.time >= _wpApproachProbeNextAt) {
+                _wpApproachProbeNextAt = Time.time + wallProbeIntervalSec + ProbePhaseOffset();
                 Vector3 wpSlow = _navPlan[_navIdx];
                 float dwSlow = Vector3.Distance(rb.position, wpSlow);
-                if (dwSlow > navWpTol && dwSlow < lidarSideTrigger * 2f
-                    && RayClear(rb.position, wpSlow) < dwSlow - wallProbeRadius)
-                    wpBlockedAhead = true;
+                _wpApproachBlocked = dwSlow > navWpTol && dwSlow < lidarSideTrigger * 2f
+                    && RayClear(rb.position, wpSlow) < dwSlow - wallProbeRadius;
+            } else if (_navIdx >= _navPlan.Count - 1) {
+                _wpApproachBlocked = false;
             }
+            bool wpBlockedAhead = _wpApproachBlocked;
             Vector3 goal = NavGoal();
             Vector3 toTarget = goal - rb.position;
             float dist = toTarget.magnitude;
@@ -1632,9 +1641,15 @@ namespace ProjectC.PeacefulShip.Stations
         OuterCommZone ResolveCommZone() {
             var state = NpcShipWorld.Instance?.GetNpc(npcInstanceId);
             if (state == null || string.IsNullOrEmpty(state.CurrentRoute.toLocationId)) return null;
-            var station = Docking.Network.DockingZoneRegistry.GetByLocation(state.CurrentRoute.toLocationId);
+            string locationId = state.CurrentRoute.toLocationId;
+            // T-PERF17: ссылка на компонент не зависит от Floating Origin; ищем заново
+            // только при смене маршрута или уничтожении зоны, а не на каждом FixedUpdate.
+            if (_commZone != null && _commZoneLocationId == locationId) return _commZone;
+            var station = Docking.Network.DockingZoneRegistry.GetByLocation(locationId);
             if (station == null) return null;
-            return station.GetComponentInChildren<OuterCommZone>(true);
+            _commZoneLocationId = locationId;
+            _commZone = station.GetComponentInChildren<OuterCommZone>(true);
+            return _commZone;
         }
 
         string TryAssignPadFromDispatcher() {

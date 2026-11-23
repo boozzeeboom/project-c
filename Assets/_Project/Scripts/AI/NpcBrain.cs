@@ -240,6 +240,9 @@ namespace ProjectC.AI
         private Vector3 _rideLastPos;
         private Quaternion _rideLastRot;
         private int _rideMissFrames;
+        // T-PERF17: свободным NPC не нужен SphereCast палубы на каждом physics-тике.
+        private float _nextPlatformDiscoveryTime;
+        private const float PlatformDiscoveryInterval = 0.1f;
         private bool _agentAutoDrivePaused;
         // Deck navigation (T-CREW-03): прокси-агент в нав-фрейме ShipDeckNav
         private ShipDeckNav _deckNav;
@@ -771,6 +774,13 @@ namespace ProjectC.AI
 
             if (!_platformCarryEnabled) return;
             if (_platformMask == 0) return;
+            // T-PERF17: обнаружение новой палубы — 10 Гц. Уже найденная платформа
+            // по-прежнему обновляет carry/потерю контакта на каждом physics-тике.
+            if (_ridePlatform == null)
+            {
+                if (Time.unscaledTime < _nextPlatformDiscoveryTime) return;
+                _nextPlatformDiscoveryTime = Time.unscaledTime + PlatformDiscoveryInterval;
+            }
 
             Vector3 origin = transform.position + Vector3.up * _platformProbeUp;
             float castDist = _platformProbeUp + _platformProbeDistance;

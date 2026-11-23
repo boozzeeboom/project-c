@@ -1009,3 +1009,33 @@ compile + domain reload — завершены, ошибок C# нет; `git dif
 compile + domain reload — завершены, ошибок C# нет; `git diff --check` — чисто. Play Mode, тесты
 и Build агентом — **NOT RUN**. Исключения `Client handler exited` от MCP — технический шум
 подключения, не ошибки C#. Следующий захват должен проверить EditorLoop, визуальные Update и ритм.
+
+
+## T-PERF14 — подтверждение T-PERF13 и триггеры док-падов (`ProjectC_client_2026-11-23_19-43-03.data`)
+
+1 405 steady-state кадров. `Main Thread` 64,707 → **46,815 мс/кадр**, `EditorLoop` self
+25,562 → **10,278 мс/кадр**, `PlayerLoop` 33,368 → **31,133 мс/кадр**. Выборочные Gizmos
+подтверждены существенным снижением EditorLoop. `UpdateRendererBoundingVolumes`
+0,826 → 0,426, `TransformChangeSystem` 0,424 → 0,297, `DockPadVisualMarker.LateUpdate`
+0,162 → 0,128 мс/кадр. `ShipContrailVfx` и `ShipPartShake` вышли из top-120 self.
+
+Новый главный project-side self-кандидат — `DockingPadTriggerBox.OnTriggerEnter`:
+2,573 / **2,479 мс total/self на кадр**, 1 493 вызова. На каждом дочернем коллайдере
+корабля выполнялся `GetComponentInParent<ShipController>`. `EngineThrusterVisual.Update`
+остался на 0,193 мс/кадр (56 200 вызовов) и продолжал записывать позы после затухания.
+
+Изменения:
+
+- `DockingPadTriggerBox`: Enter/Exit получают `ShipController` непосредственно с
+  `other.attachedRigidbody`; компонент гарантирован на этом корне через RequireComponent.
+  Поиск локального игрока использует `NetworkManager.Singleton.LocalClient.PlayerObject`
+  вместо `FindObjectsByType`. RPC, проверки владельца и флаг IsShipInside не изменены.
+- `ShipWindZone`: тот же прямой путь через attachedRigidbody в Enter/Exit вместо трёх
+  поисков по объекту, родителям и детям. Регистрация зон и силы ветра не изменены.
+- `EngineThrusterVisual`: когда RPM/скорость RPM и отклонение/скорость отклонения полностью
+  затухли, повторный ApplyUnitPose пропускается. Первый settled-кадр применяет финальную позу;
+  движение, плавное затухание и расчёт входов не изменены.
+
+compile + domain reload — завершены, ошибок C# нет; `git diff --check` — чисто. Play Mode, тесты
+и Build агентом — **NOT RUN**. Следующий захват должен повторить пролёт/контакт с док-падами,
+чтобы сравнить OnTriggerEnter при сопоставимом числе событий.

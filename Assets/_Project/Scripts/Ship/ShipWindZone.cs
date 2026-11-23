@@ -31,12 +31,9 @@ namespace ProjectC.Ship
 
         private void OnTriggerEnter(Collider other)
         {
-            // Ищем ShipController на самом объекте или выше (другой объект вошёл в триггер)
-            var ship = other.GetComponent<ShipController>();
-            if (ship == null)
-                ship = other.GetComponentInParent<ShipController>();
-            if (ship == null)
-                ship = other.GetComponentInChildren<ShipController>();
+            // T-PERF14: ShipController находится на корне attachedRigidbody.
+            var body = other.attachedRigidbody;
+            var ship = body != null ? body.GetComponent<ShipController>() : null;
 
             if (ship != null)
             {
@@ -53,11 +50,8 @@ namespace ProjectC.Ship
 
         private void OnTriggerExit(Collider other)
         {
-            var ship = other.GetComponent<ShipController>();
-            if (ship == null)
-                ship = other.GetComponentInParent<ShipController>();
-            if (ship == null)
-                ship = other.GetComponentInChildren<ShipController>();
+            var body = other.attachedRigidbody;
+            var ship = body != null ? body.GetComponent<ShipController>() : null;
 
             if (ship != null)
             {

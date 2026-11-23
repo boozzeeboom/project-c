@@ -114,6 +114,7 @@ namespace ProjectC.Ship.Engine
         private float _currentRpm;
         private float _rpmVelocity;
         private float _propellerSpinAngle;
+        private bool _posesSettled;
 
         private void Start()
         {
@@ -266,6 +267,15 @@ namespace ProjectC.Ship.Engine
                 _currentAngle = Mathf.SmoothDamp(_currentAngle, targetAngle, ref _angleVelocity, _deflectionSmoothTime);
                 deflectionRot = Quaternion.AngleAxis(_currentAngle, Vector3.up);
             }
+
+            // T-PERF14: после полного затухания базовая поза не зависит от pivot.
+            // Не пересчитываем мировые позы и не создаём TransformChange каждый кадр.
+            bool settled = Mathf.Abs(_currentRpm) < 0.0001f
+                && Mathf.Abs(_rpmVelocity) < 0.0001f
+                && (!canDeflect || (Mathf.Abs(_currentAngle) < 0.0001f
+                    && Mathf.Abs(_angleVelocity) < 0.0001f));
+            if (settled && _posesSettled) return;
+            _posesSettled = settled;
 
             foreach (var unit in _effectiveUnits)
                 ApplyUnitPose(unit, deflectionRot, canDeflect);

@@ -46,8 +46,10 @@ namespace ProjectC.Docking.Stations
         private void OnTriggerEnter(Collider other)
         {
             // T-PERF08: статическая геометрия города не может быть кораблём.
-            if (other.attachedRigidbody == null) return;
-            var ship = other.GetComponentInParent<ShipController>();
+            // T-PERF14: ShipController гарантирован на корне attachedRigidbody — не сканируем иерархию.
+            Rigidbody body = other.attachedRigidbody;
+            if (body == null) return;
+            var ship = body.GetComponent<ShipController>();
             if (ship == null) return;
 
             // T-DOCK-13 v2.2: флаг для DockPadVisualMarker
@@ -78,8 +80,9 @@ namespace ProjectC.Docking.Stations
 
         private void OnTriggerExit(Collider other)
         {
-            if (other.attachedRigidbody == null) return;
-            var ship = other.GetComponentInParent<ShipController>();
+            Rigidbody body = other.attachedRigidbody;
+            if (body == null) return;
+            var ship = body.GetComponent<ShipController>();
             if (ship != null)
             {
                 // T-DOCK-13 v2.2: снимаем флаг для DockPadVisualMarker
@@ -89,14 +92,11 @@ namespace ProjectC.Docking.Stations
 
         private static NetworkPlayer FindLocalPlayer()
         {
-            var players = FindObjectsByType<NetworkPlayer>(FindObjectsInactive.Exclude);
-            for (int i = 0; i < players.Length; i++)
-            {
-                if (players[i] == null || !players[i].IsOwner) continue;
-                if (players[i].GetComponent<NetworkPlayerSpawner>() != null) continue;
-                return players[i];
-            }
-            return null;
+            // T-PERF14: локальный PlayerObject уже доступен в NGO, полный поиск по сцене не нужен.
+            var manager = NetworkManager.Singleton;
+            if (manager == null || manager.LocalClient == null) return null;
+            var playerObject = manager.LocalClient.PlayerObject;
+            return playerObject != null ? playerObject.GetComponent<NetworkPlayer>() : null;
         }
     }
 }

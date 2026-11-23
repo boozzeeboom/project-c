@@ -66,6 +66,7 @@ namespace ProjectC.World
         {
             public Renderer renderer;
             public ShadowCastingMode baseMode;
+            public bool shadowsOn = true;
         }
 
         private readonly List<Entry> _entries = new List<Entry>();
@@ -265,11 +266,12 @@ namespace ProjectC.World
                 }
                 if (nearestSqr == float.MaxValue) continue;
 
-                float distance = Mathf.Sqrt(nearestSqr);
-                bool shadowsOn = r.shadowCastingMode != ShadowCastingMode.Off;
-                bool want = shadowsOn ? distance <= shadowOffDistance : distance < shadowOnDistance;
-                if (want == shadowsOn) continue;
+                bool want = e.shadowsOn
+                    ? nearestSqr <= shadowOffDistance * shadowOffDistance
+                    : nearestSqr < shadowOnDistance * shadowOnDistance;
+                if (want == e.shadowsOn) continue;
 
+                e.shadowsOn = want;
                 r.shadowCastingMode = want ? e.baseMode : ShadowCastingMode.Off;
             }
         }
@@ -281,6 +283,7 @@ namespace ProjectC.World
                 var e = _entries[i];
                 if (e.renderer == null) continue;
                 e.renderer.shadowCastingMode = e.baseMode;
+                e.shadowsOn = true;
             }
             _entries.Clear();
             _cameras.Clear();

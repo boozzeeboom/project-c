@@ -3,8 +3,9 @@
 // Источники города — префабы PM_LIGHT_* с ОТКЛЮЧЁННЫМ Light-компонентом; пул включает
 // не более maxActive ближайших к камере и гасит остальные, поэтому Forward-путь
 // (Forward, per-object limit 4, дополнительные тени выкл.) не зависит от 2 238 ламп.
-// Позиции читает живьём каждый чек (transform.position) — между кадрами мировой Vector3
-// не хранится, хук Floating Origin не нужен (как в DetailDistanceCuller).
+// T-PERF12: позиции неподвижных источников кэшируются локально к lightsRoot при Rebuild.
+// Камера переводится в тот же базис один раз за чек: сдвиг Floating Origin корректен,
+// а тысячи transform.position больше не читаются на каждом чеке.
 // Гистерезис по радиусу против мигания на границе; уже включённый свет имеет приоритет.
 //
 // T-LIGHT16 (L1 светового трека): добавлена ТОЛЬКО диагностика — счётчики, buckets и
@@ -207,6 +208,9 @@ namespace ProjectC.World
         private readonly System.Text.StringBuilder _focusReport = new System.Text.StringBuilder(192);
 
         private Light[] _lights = new Light[0];
+        // T-PERF12: неподвижные источники хранятся в координатах lightsRoot.
+        // При Floating Origin корень смещается вместе с лампами, поэтому мировой кэш не нужен.
+        private Vector3[] _localPositions = new Vector3[0];
         private float[] _sqr = new float[0];
         private bool[] _on = new bool[0];
         private byte[] _kind = new byte[0];
@@ -590,6 +594,7 @@ namespace ProjectC.World
         {
             Transform root = lightsRoot != null ? lightsRoot : transform;
             _lights = root != null ? root.GetComponentsInChildren<Light>(includeInactive: true) : new Light[0];
+            _localPositions = new Vector3[_lights.Length];
             _sqr = new float[_lights.Length];
             _on = new bool[_lights.Length];
             _kind = new byte[_lights.Length];
@@ -608,7 +613,11 @@ namespace ProjectC.World
             {
                 Light l = _lights[i];
                 _kind[i] = l != null ? ClassifyName(l.name) : KindOther;
-                if (l != null) lightMask |= 1 << l.gameObject.layer;
+                if (l != null)
+                {
+                    _localPositions[i] = root.InverseTransformPoint(l.transform.position);
+                    lightMask |= 1 << l.gameObject.layer;
+                }
             }
             if (lightMask != _lightLayerMask)
             {
@@ -671,6 +680,8 @@ namespace ProjectC.World
 
             Vector3 camPos;
             if (!TryGetFocusPosition(out camPos)) return;
+            Transform root = lightsRoot != null ? lightsRoot : transform;
+            camPos = root.InverseTransformPoint(camPos);
 
             float onDist = Mathf.Max(0f, ActiveRadius);
             float offDist = onDist * (1f + Mathf.Max(0f, hysteresis));
@@ -694,9 +705,9 @@ namespace ProjectC.World
                 }
                 else
                 {
-                    fwd = anchor.forward;
-                    right = anchor.right;
-                    up = anchor.up;
+                    fwd = root.InverseTransformDirection(anchor.forward).normalized;
+                    right = root.InverseTransformDirection(anchor.right).normalized;
+                    up = root.InverseTransformDirection(anchor.up).normalized;
 
                     float halfV, halfH;
                     string coneSrc;
@@ -736,9 +747,9 @@ namespace ProjectC.World
                 Transform anchorOff = CurrentAnchorTransform();
                 if (anchorOff != null)
                 {
-                    fwd = anchorOff.forward;
-                    right = anchorOff.right;
-                    up = anchorOff.up;
+                    fwd = root.InverseTransformDirection(anchorOff.forward).normalized;
+                    right = root.InverseTransformDirection(anchorOff.right).normalized;
+                    up = root.InverseTransformDirection(anchorOff.up).normalized;
                 }
             }
 
@@ -759,7 +770,7 @@ namespace ProjectC.World
             {
                 Light l = _lights[i];
                 if (l == null) { _sqr[i] = float.MaxValue; continue; }
-                Vector3 p = l.transform.position;
+                Vector3 p = _localPositions[i];
                 float dx = p.x - camPos.x, dy = p.y - camPos.y, dz = p.z - camPos.z;
                 float d = dx * dx + dy * dy + dz * dz;
                 _sqr[i] = d;
@@ -929,7 +940,7 @@ namespace ProjectC.World
                 active++;
 
                 // T-LIGHT19: «горит за спиной и вне тылового радиуса» — гейт «чёрного провала нет/нет утечки».
-                Vector3 bp = l.transform.position;
+                Vector3 bp = _localPositions[i];
                 float bz = (bp.x - camPos.x) * fwd.x + (bp.y - camPos.y) * fwd.y + (bp.z - camPos.z) * fwd.z;
                 if (bz <= 0f && _sqr[i] > rearOnSqr) behindOutsideRear++;
 
@@ -1151,13 +1162,14 @@ namespace ProjectC.World
                         continue;
                     }
 
-                    Vector3 camPos = cam.transform.position;
+                    Transform root = lightsRoot != null ? lightsRoot : transform;
+                    Vector3 camPos = root.InverseTransformPoint(cam.transform.position);
                     float nearestSqr = float.MaxValue;
                     for (int i = 0; i < _lights.Length; i++)
                     {
                         Light l = _lights[i];
                         if (l == null) continue;
-                        float d = (l.transform.position - camPos).sqrMagnitude;
+                        float d = (_localPositions[i] - camPos).sqrMagnitude;
                         if (d < nearestSqr) nearestSqr = d;
                     }
 

@@ -109,6 +109,10 @@ namespace ProjectC.World.Parom
             0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
         // === Runtime ===
+        // T-PERF12: активные ветки доступны без полного поиска по загруженным сценам.
+        private static readonly List<ParomRoute> ActiveRoutes = new List<ParomRoute>();
+        public static IReadOnlyList<ParomRoute> Active => ActiveRoutes;
+
         private readonly List<Transform> _stations = new List<Transform>();
         private readonly List<float> _cumLen = new List<float>(); // рубежи станций, метры от старта
         private float _totalLength;
@@ -210,8 +214,8 @@ namespace ProjectC.World.Parom
             if (hit.collider == null || hit.collider.attachedRigidbody == null)
                 return false;
             Transform t = hit.collider.attachedRigidbody.transform;
-            var routes = FindObjectsByType<ParomRoute>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
-            for (int i = 0; i < routes.Length; i++)
+            var routes = ActiveRoutes;
+            for (int i = 0; i < routes.Count; i++)
             {
                 if (routes[i] != null && routes[i]._trolley == t)
                 {
@@ -285,6 +289,16 @@ namespace ProjectC.World.Parom
         {
             EnsureCableObjects();
             EnsureTrolley();
+        }
+
+        private void OnEnable()
+        {
+            if (!ActiveRoutes.Contains(this)) ActiveRoutes.Add(this);
+        }
+
+        private void OnDisable()
+        {
+            ActiveRoutes.Remove(this);
         }
 
         private void Update()

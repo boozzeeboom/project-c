@@ -297,8 +297,9 @@ namespace ProjectC.World
                 }
                 if (nearestSqr == float.MaxValue) continue;
 
-                float distance = Mathf.Sqrt(nearestSqr);
-                bool want = group.shadowsOn ? distance <= shadowOffDistance : distance < shadowOnDistance;
+                bool want = group.shadowsOn
+                    ? nearestSqr <= shadowOffDistance * shadowOffDistance
+                    : nearestSqr < shadowOnDistance * shadowOnDistance;
                 if (want == group.shadowsOn) continue;
 
                 group.shadowsOn = want;

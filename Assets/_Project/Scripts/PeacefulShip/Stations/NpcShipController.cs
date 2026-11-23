@@ -408,7 +408,11 @@ namespace ProjectC.PeacefulShip.Stations
         [Tooltip("Окно (с): входы в avoidance чаще этого считаются одной серией затора.")]
         [Min(1f)] [SerializeField] private float avoidEscalationWindowSec = 10f;
 
+        [Tooltip("Интервал поиска конфликтов, с. Фазы NPC разнесены, чтобы не собирать все проверки в один FixedUpdate.")]
+        [Min(0.02f)] [SerializeField] private float avoidanceCheckInterval = 0.1f;
+
         private float _avoidCooldownUntil;
+        private float _nextAvoidanceCheckAt;
         private int _avoidCycles;
         private float _lastAvoidResumeAt = -1000f;
 
@@ -835,8 +839,10 @@ namespace ProjectC.PeacefulShip.Stations
             // Корабль важнее горы: EnterAvoid из WallFollow, _resumeMode помнит WallFollow.
             if ((CurrentMode == NavMode.Lifting || CurrentMode == NavMode.Yawing || CurrentMode == NavMode.Cruising
                     || CurrentMode == NavMode.WallFollow)
-                && Time.time >= _avoidCooldownUntil)
+                && Time.time >= _avoidCooldownUntil && Time.time >= _nextAvoidanceCheckAt)
             {
+                // T-PERF12: 10 Гц вместо 50 Гц на NPC, с небольшой детерминированной фазой.
+                _nextAvoidanceCheckAt = Time.time + avoidanceCheckInterval + (npcInstanceId % 10) * 0.002f;
                 var pz = ProximityZone;
                 if (pz != null)
                 {

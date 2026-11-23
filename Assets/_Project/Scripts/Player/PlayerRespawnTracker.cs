@@ -141,8 +141,8 @@ namespace ProjectC.Player
             if (fallSpeed < _rescueFallSpeed) return false;
             if (now - _lastRescueTime < _rescueCooldownSec) return false;
 
-            var routes = FindObjectsByType<ProjectC.World.Parom.ParomRoute>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
-            for (int i = 0; i < routes.Length; i++)
+            var routes = ProjectC.World.Parom.ParomRoute.Active;
+            for (int i = 0; i < routes.Count; i++)
             {
                 var route = routes[i];
                 if (route == null || !route.IsSpawned || route.TrolleyTransform == null) continue;

@@ -943,3 +943,35 @@ SceneView repaint больше не рисуются все коллайдеры
 
 compile + domain reload — завершены, ошибок C# нет; `git diff --check` — чисто. Play Mode, тесты
 и Build агентом — **NOT RUN**. Повторить тот же маршрут второй половины прогона 30–60 с.
+
+
+## T-PERF12 — пакетная оптимизация managed hot paths (`ProjectC_client_2026-11-23_18-17-47.data`)
+
+1 236 steady-state кадров. `Main Thread` — 55,821 мс/кадр, `PlayerLoop` — 37,532;
+`EditorLoop` self — 12,841. Исчезновение субъективного ритма после T-PERF11 не подтверждено.
+Основные managed-кандидаты этого прогона: `NpcShipWorld.FixedUpdate` total/self 1,542 / 1,099,
+`PRIMUM/LightPool.Check` self 0,724, `PlayerRespawnTracker.Update` self 0,727,
+`ShipShadowBudget.Update` self 0,469, `DoorVisibilityBudget.Update` self 0,371,
+`CityShadowBudget.Update` self 0,349 мс/кадр. Периодический анализ также показывает серии
+дорогих вызовов RespawnTracker (автокорреляция lag 2 = 0,602); во время падения каждый кадр
+выполнялся глобальный поиск ParomRoute.
+
+Пакет изменений без смены игровых порогов:
+
+- `NpcShipController`: ship/ship и ship/building avoidance-проверки выполняются с частотой
+  около 10 Гц вместо 50 Гц на каждый FixedUpdate; небольшая фаза от `npcInstanceId` разносит
+  корабли по времени. EnterAvoid, cooldown и режимы навигации не изменены.
+- `PrimumLightPool`: локальные позиции неподвижных ламп кэшируются относительно `lightsRoot`
+  при Rebuild. Позиция и базис камеры преобразуются один раз за Check, включая поиск фокусной
+  камеры. Мировые позиции между кадрами не хранятся — Floating Origin сохраняется через корень.
+- `ParomRoute`: добавлен OnEnable/OnDisable-реестр активных веток; спасение игрока и
+  определение ветки под ногами больше не вызывают `FindObjectsByType`.
+- `ShipShadowBudget`: общий периодический снапшот геймплейных камер для всех кораблей;
+  маска рендереров по-прежнему применяется отдельно. Пороги сравниваются в квадратах дистанций.
+- `CityShadowBudget` и `DoorVisibilityBudget`: убраны `Sqrt` из регулярных проверок;
+  городской Entry хранит текущее состояние теней вместо чтения `shadowCastingMode` каждый тик.
+  Restore возвращает авторский режим и сбрасывает это состояние.
+
+compile + domain reload — завершены, ошибок C# нет; `git diff --check` — чисто. Play Mode, тесты
+и Build агентом — **NOT RUN**. Исключения `Client handler exited` от MCP — технический шум
+подключения, не ошибки C#. Величина выигрыша и влияние на ритм определяются следующим захватом.

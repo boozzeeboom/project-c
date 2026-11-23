@@ -69,6 +69,9 @@ namespace ProjectC.Ship
 
         private readonly List<Entry> _entries = new List<Entry>();
         private readonly List<Camera> _cameras = new List<Camera>();
+        // T-PERF12: все корабли используют один снапшот камер вместо поиска по сцене на каждый корабль.
+        private static readonly List<Camera> SharedCameras = new List<Camera>();
+        private static float _sharedCameraRefreshAt = float.NegativeInfinity;
 
         private LODGroup _lodGroup;
         private int _rendererLayerMask;
@@ -250,16 +253,25 @@ namespace ProjectC.Ship
         private void RefreshCameras()
         {
             _cameras.Clear();
-            var all = FindObjectsByType<Camera>(FindObjectsInactive.Exclude);
-            for (int i = 0; i < all.Length; i++)
+            if (Time.unscaledTime >= _sharedCameraRefreshAt)
             {
-                var cam = all[i];
-                if (cam == null || !cam.isActiveAndEnabled) continue;
-                if (cam.cameraType != CameraType.Game) continue;
-                if (cam.targetTexture != null) continue;
-                if (cam.farClipPlane < 50f) continue;
-                if ((cam.cullingMask & _rendererLayerMask) == 0) continue;
-                _cameras.Add(cam);
+                SharedCameras.Clear();
+                var all = FindObjectsByType<Camera>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+                for (int i = 0; i < all.Length; i++)
+                {
+                    var cam = all[i];
+                    if (cam == null || !cam.isActiveAndEnabled) continue;
+                    if (cam.cameraType != CameraType.Game) continue;
+                    if (cam.targetTexture != null) continue;
+                    if (cam.farClipPlane < 50f) continue;
+                    SharedCameras.Add(cam);
+                }
+                _sharedCameraRefreshAt = Time.unscaledTime + cameraRescanInterval;
+            }
+            for (int i = 0; i < SharedCameras.Count; i++)
+            {
+                var cam = SharedCameras[i];
+                if (cam != null && (cam.cullingMask & _rendererLayerMask) != 0) _cameras.Add(cam);
             }
         }
 
@@ -279,10 +291,12 @@ namespace ProjectC.Ship
                 var renderer = entry.renderer;
                 if (renderer == null) continue;
 
-                float nearest = NearestCameraDistance(renderer.bounds.center);
-                if (nearest < 0f) continue;
+                float nearestSqr = NearestCameraDistanceSqr(renderer.bounds.center);
+                if (nearestSqr < 0f) continue;
 
-                bool want = entry.shadowsOn ? nearest <= shadowOffDistance : nearest < shadowOnDistance;
+                bool want = entry.shadowsOn
+                    ? nearestSqr <= shadowOffDistance * shadowOffDistance
+                    : nearestSqr < shadowOnDistance * shadowOnDistance;
                 if (want == entry.shadowsOn) continue;
 
                 entry.shadowsOn = want;
@@ -290,8 +304,8 @@ namespace ProjectC.Ship
             }
         }
 
-        /// <summary>Дистанция до ближайшей геймплейной камеры; -1, если камер нет.</summary>
-        private float NearestCameraDistance(Vector3 point)
+        /// <summary>Квадрат дистанции до ближайшей геймплейной камеры; -1, если камер нет.</summary>
+        private float NearestCameraDistanceSqr(Vector3 point)
         {
             float best = float.MaxValue;
             for (int c = 0; c < _cameras.Count; c++)
@@ -301,7 +315,7 @@ namespace ProjectC.Ship
                 float d = (point - cam.transform.position).sqrMagnitude;
                 if (d < best) best = d;
             }
-            return best == float.MaxValue ? -1f : Mathf.Sqrt(best);
+            return best == float.MaxValue ? -1f : best;
         }
 
         /// <summary>

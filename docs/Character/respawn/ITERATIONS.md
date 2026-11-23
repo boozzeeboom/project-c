@@ -1,5 +1,41 @@
 # Итерации разработки
 
+## Итерация от 2026-11-23 (T-SHIPDECK-01-fix — probe палубы не доставал до палубы)
+
+**Задача:** Перезаход всё ещё роняет игрока вместо высадки на корабль. Лог — `ProfilerCaptures/console.txt` (23.11 21:18).
+
+**Что в логе:** `[T-FO-PERSIST03] PilotSpawnRestored: client=0 pos=(40200.72, 2509.62, 40154.98)` — игрок поставлен ровно в точку палубы из сейва, но строки `[NetworkPlayer] T-FO09H: boarded restored ship` нет вовсе → `TryLoadPlayerShip` вернул false, т.е. в загруженном `ShipPositions.json` (сейв 20:21) `platformShipId=""`. Корабли ресторятся на ~6 с позже (`RestoreCoroutine: waiting 6s`, затем `loading save` → `Restored 23/23 ships`), за это время игрок ушёл вниз, сработал `_deathY` → `ForceDefaultRespawn` в index=0. То есть весь путь T-SHIPDECK-02 не при чём — не было самого `platformShipId`.
+
+**Причина (проверено по сцене, без Play Mode):** у `Ship_Light_root` верх палубы (`BARGE_MAIN_DECK`, BoxCollider, `rb=Ship_Light_root`) лежит на **+0.46** от корня, а игрок в том забеге висел на **+3.48** над корнем (центр капсулы) — последствие мёртвого ввода из T-SHIPDECK-02: ступни в 2.12 м над палубой. Прежний probe (от `pos+1` вниз 2.5 м) останавливался на +1.98 от корня — палубы не доставал. Плюс требование `attachedRigidbody` было ложным фильтром: Rigidbody есть только на корне корабля.
+
+**Правка `ShipController.TryResolveDeckShipId`:** старт `pos + up*0.5`, радиус 0.35, вниз **6 м**, `QueryTriggerInteraction.Ignore`, требование `attachedRigidbody` снято — решает `GetComponentInParent<ShipController>()` + `IsSpawned`.
+
+**Проверка (edit mode, `execute_code`, без Play Mode):**
+
+| центр капсулы | старый probe | новый probe |
+|---|---|---|
+| корень +1.36 (стоит на палубе) | hit `BARGE_MAIN_DECK` ✅ | hit `BARGE_MAIN_DECK`, dist 1.05 ✅ |
+| корень +3.48 (завис, как в сейве) | **miss** ❌ | hit `BARGE_MAIN_DECK`, dist 3.17 ✅ |
+| корень +5.00 | miss ❌ | hit `BARGE_MAIN_DECK`, dist 4.69 ✅ |
+
+`check_compile_errors` — 0 errors. Play Mode — **NOT RUN, за пользователем**.
+
+**Условие теста:** текущий сейв (21:17) снова без `platformShipId`, поэтому нужен один тик сейва (5 с) с игроком, стоящим на палубе, и только затем рестарт. Ожидание в логе второго запуска: `[NetworkPlayer] T-FO09H: boarded restored ship 'WorldScene_0_0/Ship_Light_root'`.
+
+## Итерация от 2026-11-23 (T-SHIPDECK-02 — после F-выхода мертвы WASD/F/E)
+
+**Задача:** После регрессии выхода: в полёте (двигатель ON) нажать F → игрок оказывается на палубе, но камера крутится мышью, а WASD/F/E не работают вообще.
+
+**Причина (не сейв/рестор):** гейт координат. Посадка в корабль делает `transform.SetParent(_currentShip.ShipRoot, true)` (`NetworkPlayer.cs:1818`); NGO на смену родителя зовёт `GlobalMotionReplicator.OnNetworkObjectParentChanged` → `StopServer()` (`GlobalMotionReplicator.cs:253-257`, «coordinator reactivates explicitly»). В кресле это терпимо — `Update` содержит исключение `&& !_inShip` (`NetworkPlayer.cs:974`). На выходе `_inShip=false`, а поток никто не поднимал: `TryResolveRole` требует `control.IsActive` (`GlobalMotionApplication.cs:15`) → `IsReadyForSimulation=false` → `CanSimulateInCurrentCoordinates=false` → `Update` выходит ДО движения и до обработки F; `ProcessMovement`/`FixedUpdate` тоже ранний return, поэтому **гравитация не считается** и игрок висит в точке выхода. Явное включение существовало в виде `GlobalMotionWorld.ReactivateFromCurrentPose` (`GlobalMotionWorld.cs:199-217`, комментарий «handoff completion after game logic changed parent/owner»), но **не вызывалось ниоткуда** (0 вызовов по репо).
+
+**Доказательство в сейве (23.11 20:21):** `Ship_Light_root` engine=true в `(8.7183, −53.8580, −37.0131)`; игрок в `(8.7190, −50.3766, −37.0152)` — XZ совпадает до миллиметра (точка `GetExitPosition`), Y выше на 3.48, `inShip=false`, `platformShipId=""`. То есть игрок стоял ровно в точке телепорта выхода, не падал и не дошел до палубы — probe T-SHIPDECK-01 палубу и не мог увидеть (его SphereCast от центра капсулы +1 вниз 2.5 м до палубы не достаёт); сам сейв-путь тут не при чём.
+
+**Правка:** `NetworkPlayer` — после `_inShip = false` в ветке выхода `ReactivateGlobalMotionAfterExit()` (только `IsServer && UsesGlobalCoordinates`): находит `GlobalMotionPoseAdapter` на игроке и `GlobalMotionWorld` на `NetworkManager`, вызывает `ReactivateFromCurrentPose(adapter, GlobalMotionAuthority.Owner, _ => true)`. Правило-пропуск нужен, потому что `null`-валидатор `ActivateServer` отвергает для remote-owner (`GlobalMotionReplicator.cs:145`), а `WrapRules` сам добавляет `actor.ValidateCandidate`.
+
+**Проверка:** `check_compile_errors` — 0 errors. Play Mode — **NOT RUN, за пользователем**. Ожидание в логе: `[NetworkPlayer] T-SHIPDECK-02: global stream reactivated after ship exit`, после чего WASD работает и персонаж встаёт на палубу; если вместо этого предупреждение `reactivate ... refused` — сигнал, что `CanStart` не прошёл (актор вне текущего фрейма/не зарегистрирован).
+
+**Остаток:** сценарий перезахода (T-SHIPDECK-01) теперь надо перепроверить после этой правки: игрок впервые реально дойдёт до палубы, и тогда станет видно, ловит ли probe `TryResolveDeckShipId` палубу в 2.5 м.
+
 ## Итерация от 2026-11-23 (T-SHIPDECK-01 — игрок на палубе корабля при перезаходе)
 
 **Задача:** Корабль в воздухе, двигатель ON, игрок вышел по F и стоит пешком на палубе →

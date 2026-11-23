@@ -2006,14 +2006,21 @@ namespace ProjectC.Player
         /// probe сам (зеркало ParomRoute.TryResolveRouteId). Только пеший режим:
         /// пилот в кресле идёт inShip-путём.
         /// </summary>
+        /// <param name="feetPos">Центр капсулы игрока (transform.position с CharacterController).</param>
         public static bool TryResolveDeckShipId(Vector3 feetPos, out string shipPersistentId)
         {
             shipPersistentId = "";
-            if (!Physics.SphereCast(feetPos + Vector3.up * 1f, 0.35f, Vector3.down,
-                    out RaycastHit hit, 2.5f, ~0, QueryTriggerInteraction.Ignore))
+            // T-SHIPDECK-01-fix: геометрия проверена по сцене — верх палубы
+            // Ship_Light_root (`BARGE_MAIN_DECK`) лежит на +0.46 от корня корабля,
+            // т.е. ~1 м ниже ступней; у других кораблей и надстроек зазор до 4–5 м.
+            // Прежние 2.5 м от pos+1 не дотягивались до палубы (сейв 23.11 20:21:
+            // игрок в 3.48 м над корнем → луч останавливался на +1.98).
+            if (!Physics.SphereCast(feetPos + Vector3.up * 0.5f, 0.35f, Vector3.down,
+                    out RaycastHit hit, 6f, ~0, QueryTriggerInteraction.Ignore))
                 return false;
-            if (hit.collider == null || hit.collider.attachedRigidbody == null)
-                return false;
+            if (hit.collider == null) return false;
+            // attachedRigidbody больше не требуется: у палубы Rigidbody есть только на
+            // корне корабля, а решает всё привязка коллайдера к ShipController.
             var ship = hit.collider.GetComponentInParent<ShipController>();
             if (ship == null || !ship.IsSpawned) return false;
             shipPersistentId = ship.ShipPersistentId;

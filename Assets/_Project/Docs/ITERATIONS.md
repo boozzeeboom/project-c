@@ -1,5 +1,19 @@
 # Iterations
 
+## Итерация от 2026-11-23 (T-SHIPDECK-02 + T-SHIPDECK-01-fix — управление после F-выхода и достижимость палубы пробой)
+
+**Задача:** 1) После F-выхода в полёте (двигатель ON) игрок на палубе, но WASD/F/E мертвы, камера мышью крутится. 2) Ретест персистенции: после рестарта игрок всё равно падает вместо посадки на палубу. Play Mode не запускать.
+
+**Причина 1 (мёртвый ввод):** `SetParent(null)` в ветке выхода → `NetworkObject.OnTransformParentChanged` (NGO) → `GlobalMotionReplicator.OnNetworkObjectParentChanged` → `if (IsServer && _serverControl.IsActive) StopServer()`. Никто не реактивирует: `GlobalMotionWorld.ReactivateFromCurrentPose` имел **0 вызовов** репо-wide (только initial spawn и rebind передают `StartWorldStream`). `TryResolveRole` требует `control.IsActive` → `IsReadyForSimulation=false` → `CanSimulateInCurrentCoordinates=false` → гейт в `Update` (при `!_inShip`) режет WASD/F, а `FixedUpdate`/`ProcessMovement` — гравитацию: поэтому игрок не падал и висел в точке `GetExitPosition`.
+
+**Правка 1:** `NetworkPlayer.ReactivateGlobalMotionAfterExit()` — вызов в ветке выхода после `_inShip = false`, когда `IsServer && UsesGlobalCoordinates`; `world.ReactivateFromCurrentPose(adapter, GlobalMotionAuthority.Owner, _ => true)`. Лямбда обязательна: `GlobalMotionReplicator.ActivateServer` отказывает при `publisher != ServerClientId && validator == null`, при этом `WrapRules` уже добавляет `actor.ValidateCandidate`. Логи `[NetworkPlayer] T-SHIPDECK-02: ...`.
+
+**Причина 2 (падение после рестарта):** лог `ProfilerCaptures/console.txt` (23.11 21:18): `[T-FO-PERSIST03] PilotSpawnRestored` ставит игрока ровно в точку палубы из сейва (40200.72, 2509.62, 40154.98), но строки `[NetworkPlayer] T-FO09H: boarded restored ship` нет вовсе → в загруженном сейве `platformShipId=""`; корабли приезжают через 6 с (`RestoreCoroutine: waiting 6s` → `Restored 23/23 ships`), игрок уходит вниз → `_deathY` → `ForceDefaultRespawn` index=0. Проба не записала палубу: верх `BARGE_MAIN_DECK` = **+0.46** от корня `Ship_Light_root`, а игрок висел на **+3.48** (следствие причины 1: ступни в 2.12 м над палубой), старый луч от `pos+1` вниз 2.5 м останавливался на +1.98; плюс ложный фильтр `attachedRigidbody` (Rigidbody только на корне корабля).
+
+**Правка 2:** `ShipController.TryResolveDeckShipId` — старт `pos + up*0.5`, радиус 0.35, вниз **6 м**, `QueryTriggerInteraction.Ignore`, требование `attachedRigidbody` снято (решает `GetComponentInParent<ShipController>()` + `IsSpawned`).
+
+**Проверка:** `check_compile_errors` — 0 errors. Замер в edit mode (те же лучи, без Play Mode): центр капсулы корень+1.36 — оба варианта hit `BARGE_MAIN_DECK` (dist 1.05); корень+3.48 — старый **промах**, новый hit dist 3.17; корень+5.00 — старый промах, новый hit dist 4.69. Play Mode — **NOT RUN, за пользователем**. Ловушка прогона: текущий сейв (21:17) снова без `platformShipId` — нужен один тик сейва (5 с) с игроком, стоящим на палубе, затем рестарт. Ожидание: `[NetworkPlayer] T-FO09H: boarded restored ship 'WorldScene_0_0/Ship_Light_root'`.
+
 ## Итерация от 2026-11-23 (T-SHIPDECK-01 — игрок пешком на палубе корабля после рестарта)
 
 **Задача:** Корабль висит в воздухе с двигателем ON, игрок вышел по F и стоит пешком на палубе → выход/рестарт игры → игрок загружается и падает в пустоту, вернуться на корабль нельзя. Ожидание: система возвращает игрока на палубу его корабля (как паром — T-PAROM-21, с учётом FO и порядка загрузки). Play Mode не запускать.

@@ -1784,6 +1784,17 @@ namespace ProjectC.Player
                 _currentShip = null;
 
                 _inShip = false;
+
+                // T-SHIPDECK-02: посадка парентит игрока к ShipRoot, и NGO зовёт
+                // GlobalMotionReplicator.OnNetworkObjectParentChanged → StopServer():
+                // global-поток игрока гаснет. В кресле это терпимо (гейт координат
+                // обойдён через _inShip), но после выхода поток никто не включал:
+                // CanSimulate=false → Update выходит ДО движения и F, ProcessMovement
+                // тоже не считает даже гравитацию — игрок висит в точке выхода без
+                // ввода до следующего ребейса. Явно поднимаем поток с текущей позы.
+                if (IsServer && UsesGlobalCoordinates)
+                    ReactivateGlobalMotionAfterExit();
+
                 ApplyWalkingState();
             }
             else
@@ -1963,6 +1974,33 @@ namespace ProjectC.Player
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// T-SHIPDECK-02: восстановить global-поток игрока после выхода из корабля.
+        /// Boarding глушит поток через NGO parent-change (StopServer), симметричного
+        /// включения в FO не было — метод ReactivateFromCurrentPose существовал, но не
+        /// вызывался ниоткуда. Снимает новый world-baseline с текущей позы (уже после
+        /// SetParent(null)), затем роль снова Authority и CanSimulate открывает ввод.
+        /// Только сервер: активация потока — server-side API.
+        /// </summary>
+        private void ReactivateGlobalMotionAfterExit()
+        {
+            var adapter = GetComponent<GlobalMotionPoseAdapter>();
+            var nm = NetworkManager.Singleton;
+            var world = nm != null ? nm.GetComponent<GlobalMotionWorld>() : null;
+            if (adapter == null || world == null)
+            {
+                Debug.LogWarning("[NetworkPlayer] T-SHIPDECK-02: global motion world/adapter missing — поток после выхода не поднят", this);
+                return;
+            }
+
+            // Правило-пропуск: WrapRules сам добавляет actor.ValidateCandidate, а null
+            // валидатор ActivateServer отвергает для remote-owner (publisher != server).
+            if (!world.ReactivateFromCurrentPose(adapter, GlobalMotionAuthority.Owner, _ => true))
+                Debug.LogWarning("[NetworkPlayer] T-SHIPDECK-02: reactivate after exit refused — ввод останется мёртвым до следующего ребейса", this);
+            else
+                Debug.Log("[NetworkPlayer] T-SHIPDECK-02: global stream reactivated after ship exit", this);
         }
 
         private void ApplyWalkingState()

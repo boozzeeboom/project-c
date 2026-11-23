@@ -198,18 +198,18 @@ namespace ProjectC.Trade.Network
                 }
                 return;
             }
-            float dist = Vector3.Distance(transform.position, localPlayer.GetEffectivePosition());
+            float distSqr = (transform.position - localPlayer.GetEffectivePosition()).sqrMagnitude;
             // FIX: раньше guard `if (LocalPlayerZone == this) return;` отключал
             // любую проверку после установки — игрок мог уйти за tradeRadius
             // (например, в 100м от зоны), а LocalPlayerZone оставался this.
             // Теперь poll ВСЕГДА пересчитывает дистанцию: ставит/сбрасывает
             // LocalPlayerZone строго по факту попадания в tradeRadius.
-            if (dist <= tradeRadius)
+            if (distSqr <= tradeRadius * tradeRadius)
             {
                 if (MarketZoneRegistry.LocalPlayerZone != this)
                 {
                     MarketZoneRegistry.LocalPlayerZone = this;
-                    if (_debugLog) Debug.Log($"[MarketZone:{LocationId}] client: local player entered zone (dist={dist:F1})");
+                    if (_debugLog) Debug.Log($"[MarketZone:{LocationId}] client: local player entered zone (dist={Mathf.Sqrt(distSqr):F1})");
                 }
             }
             else
@@ -217,42 +217,22 @@ namespace ProjectC.Trade.Network
                 if (MarketZoneRegistry.LocalPlayerZone == this)
                 {
                     MarketZoneRegistry.LocalPlayerZone = null;
-                    if (_debugLog) Debug.Log($"[MarketZone:{LocationId}] client: local player left zone (dist={dist:F1})");
+                    if (_debugLog) Debug.Log($"[MarketZone:{LocationId}] client: local player left zone (dist={Mathf.Sqrt(distSqr):F1})");
                 }
                 // DIAG: раз в ~5 сек, когда игрок ВНЕ зоны, логируем дистанцию
                 if (_diagTickCounter % 20 == 0)
                 {
-                    if (_debugLog) Debug.Log($"[MarketZone:{LocationId}] DIAG PollLocalPlayerZone: outside zone, dist={dist:F1}, tradeRadius={tradeRadius:F1}, localPlayerPos={localPlayer.transform.position}, zonePos={transform.position}");
+                    if (_debugLog) Debug.Log($"[MarketZone:{LocationId}] DIAG PollLocalPlayerZone: outside zone, dist={Mathf.Sqrt(distSqr):F1}, tradeRadius={tradeRadius:F1}, localPlayerPos={localPlayer.transform.position}, zonePos={transform.position}");
                 }
             }
         }
 
-        // PERF: cached local player reference — избегаем FindObjectsByType каждые 0.25s на каждой MarketZone.
-        private static NetworkPlayer _cachedLocalPlayer;
-        private static float _cachedLocalPlayerTime;
-        private const float LOCAL_PLAYER_CACHE_TTL = 0.5f;
-
+        // T-PERF16: NGO уже хранит авторитетную ссылку на локального игрока.
         private static NetworkPlayer FindLocalPlayer()
         {
-            if (_cachedLocalPlayer != null && Time.unscaledTime - _cachedLocalPlayerTime < LOCAL_PLAYER_CACHE_TTL)
-            {
-                // Проверяем что cached player всё ещё IsOwner (не despawn'нулся)
-                if (_cachedLocalPlayer.IsOwner)
-                    return _cachedLocalPlayer;
-                _cachedLocalPlayer = null;
-            }
-
-            var players = FindObjectsByType<NetworkPlayer>(FindObjectsInactive.Exclude);
-            for (int i = 0; i < players.Length; i++)
-            {
-                if (players[i] == null || !players[i].IsOwner) continue;
-                if (players[i].GetComponent<NetworkPlayerSpawner>() != null) continue;
-                _cachedLocalPlayer = players[i];
-                _cachedLocalPlayerTime = Time.unscaledTime;
-                return players[i];
-            }
-            _cachedLocalPlayer = null;
-            return null;
+            var nm = NetworkManager.Singleton;
+            var playerObject = nm != null && nm.LocalClient != null ? nm.LocalClient.PlayerObject : null;
+            return playerObject != null ? playerObject.GetComponent<NetworkPlayer>() : null;
         }
 
         // T-PERF15: рынок и связь разделяют один снапшот актёров на кадр.

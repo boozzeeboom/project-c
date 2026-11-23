@@ -58,6 +58,8 @@ namespace ProjectC.World
 
         private readonly List<DoorGroup> _groups = new List<DoorGroup>();
         private readonly List<Camera> _cameras = new List<Camera>();
+        // T-PERF16: позиции живут только внутри тика — Floating Origin безопасен.
+        private readonly List<Vector3> _cameraPositions = new List<Vector3>();
 
         private int _doorMask;
         private float _cameraTimer;
@@ -274,6 +276,16 @@ namespace ProjectC.World
 
         private void UpdateShadows()
         {
+            _cameraPositions.Clear();
+            for (int c = 0; c < _cameras.Count; c++)
+            {
+                var cam = _cameras[c];
+                if (cam != null) _cameraPositions.Add(cam.transform.position);
+            }
+            if (_cameraPositions.Count == 0) return;
+
+            float shadowOnDistanceSqr = shadowOnDistance * shadowOnDistance;
+            float shadowOffDistanceSqr = shadowOffDistance * shadowOffDistance;
             for (int g = _groups.Count - 1; g >= 0; g--)
             {
                 DoorGroup group = _groups[g];
@@ -288,18 +300,15 @@ namespace ProjectC.World
                 // тени нужны, пока дверь близка хотя бы к одной геймплейной камере.
                 float nearestSqr = float.MaxValue;
                 Vector3 doorPos = group.root.position;
-                for (int c = 0; c < _cameras.Count; c++)
+                for (int c = 0; c < _cameraPositions.Count; c++)
                 {
-                    var cam = _cameras[c];
-                    if (cam == null) continue;
-                    float d = (doorPos - cam.transform.position).sqrMagnitude;
+                    float d = (doorPos - _cameraPositions[c]).sqrMagnitude;
                     if (d < nearestSqr) nearestSqr = d;
                 }
-                if (nearestSqr == float.MaxValue) continue;
 
                 bool want = group.shadowsOn
-                    ? nearestSqr <= shadowOffDistance * shadowOffDistance
-                    : nearestSqr < shadowOnDistance * shadowOnDistance;
+                    ? nearestSqr <= shadowOffDistanceSqr
+                    : nearestSqr < shadowOnDistanceSqr;
                 if (want == group.shadowsOn) continue;
 
                 group.shadowsOn = want;

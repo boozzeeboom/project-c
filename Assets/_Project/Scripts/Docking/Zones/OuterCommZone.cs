@@ -51,11 +51,6 @@ namespace ProjectC.Docking.Zones
                  "Детект на всей дистанции связи делают поллы, а не триггер.")]
         [SerializeField, Min(1f)] private float triggerRadius = 60f;
 
-        // PERF: кешируем FindLocalPlayer чтобы не делать FindObjectsByType каждый кадр
-        private static NetworkPlayer _cachedLocalPlayer;
-        private static float _cachedLocalPlayerTime;
-        private const float LOCAL_PLAYER_CACHE_TTL = 0.5f;
-
         public string StationId => stationId;
         public float CommRange => commRange;
 
@@ -177,9 +172,10 @@ namespace ProjectC.Docking.Zones
             }
             _loggedPlayerNull = false;
 
-            float playerDist = Vector3.Distance(transform.position, localPlayer.GetEffectivePosition());
+            float sqrRange = commRange * commRange;
+            float playerDistSqr = (transform.position - localPlayer.GetEffectivePosition()).sqrMagnitude;
             // Q5: проверяем дистанцию
-            if (playerDist <= commRange)
+            if (playerDistSqr <= sqrRange)
             {
                 if (DockingZoneRegistry.LocalPlayerStation != _stationController)
                 {
@@ -199,8 +195,8 @@ namespace ProjectC.Docking.Zones
             var localShip = FindLocalShip(localPlayer);
             if (localShip != null)
             {
-                float shipDist = Vector3.Distance(transform.position, localShip.transform.position);
-                if (shipDist <= commRange)
+                float shipDistSqr = (transform.position - localShip.transform.position).sqrMagnitude;
+                if (shipDistSqr <= sqrRange)
                 {
                     DockingZoneRegistry.LocalPlayerShipStation = _stationController;
                 }
@@ -211,26 +207,12 @@ namespace ProjectC.Docking.Zones
             }
         }
 
+        // T-PERF16: NGO уже хранит авторитетную ссылку на локального игрока.
         private static NetworkPlayer FindLocalPlayer()
         {
-            // PERF: cache — FindObjectsByType дорогой, а вызывается каждые 0.25s из каждой зоны
-            if (_cachedLocalPlayer != null && Time.time - _cachedLocalPlayerTime < LOCAL_PLAYER_CACHE_TTL)
-                return _cachedLocalPlayer;
-
-            var players = FindObjectsByType<NetworkPlayer>(FindObjectsInactive.Exclude);
-            for (int i = 0; i < players.Length; i++)
-            {
-                if (players[i] == null || !players[i].IsOwner) continue;
-                // T-PERF06/6: TryGetComponent вместо GetComponent — промах строил null-сообщение
-                // (~702 Б/кадр в замере 13-47-22 внутри OuterCommZone.Update).
-                if (players[i].TryGetComponent<NetworkPlayerSpawner>(out _)) continue;
-                _cachedLocalPlayer = players[i];
-                _cachedLocalPlayerTime = Time.time;
-                return players[i];
-            }
-            _cachedLocalPlayer = null;
-            _cachedLocalPlayerTime = Time.time;
-            return null;
+            var nm = NetworkManager.Singleton;
+            var playerObject = nm != null && nm.LocalClient != null ? nm.LocalClient.PlayerObject : null;
+            return playerObject != null ? playerObject.GetComponent<NetworkPlayer>() : null;
         }
 
         private static ShipController FindLocalShip(NetworkPlayer localPlayer)

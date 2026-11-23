@@ -1067,3 +1067,34 @@ per-frame снапшоты и всё равно могли повторно об
 compile + domain reload — завершены, ошибок C# нет; `git diff --check` — чисто. Play Mode, тесты
 и Build агентом — **NOT RUN**. Параллельно появившаяся пользовательская правка NetworkPlayer.cs
 не изменялась и не входит в пакет. Следующий захват должен проверить оба Update зон и ShipShadowBudget.
+
+
+## T-PERF16 — остаточные Update зон и кэш камер бюджетов (`ProjectC_client_2026-11-23_21-18-49.data`)
+
+1 325 steady-state кадров. `Main Thread` 45,213 → 57,400 мс/кадр, `PlayerLoop` 27,502 → 38,351,
+`EditorLoop` self 13,019. В выборке есть загрузочные и разовые вклады (`Mono.JIT`, запуск Host,
+File.Read и GC), поэтому общий FPS нельзя сравнивать как чистый регресс T-PERF15.
+`DockingPadTriggerBox.OnTriggerEnter` остаётся на 0,0001 мс/кадр — исправление T-PERF14 стабильно.
+Главный managed hotspot: `NpcShipWorld.FixedUpdate` total/self 1,596 / 1,086 мс/кадр
+(3 636 вызовов). Для него нужна отдельная атрибуция режимов навигации: снижать частоту всего
+FixedUpdate нельзя, поскольку это изменит управление Rigidbody.
+
+Снижение от T-PERF15 в этом маршруте не подтверждено: `MarketZone.Update` total/self
+0,282 / 0,275 → 0,439 / 0,426, `OuterCommZone.Update` 0,267 / 0,260 → 0,358 / 0,346;
+`ShipShadowBudget.Update` self 0,324 практически без изменений. Остальные регулярные self:
+`DoorVisibilityBudget.Update` 0,382, `CityShadowBudget.Update` 0,347 мс/кадр.
+
+Изменения:
+
+- `DoorVisibilityBudget` и `CityShadowBudget`: позиции отфильтрованных камер читаются один раз
+  за UpdateShadows и переиспользуются для всех групп/рендереров; квадраты on/off порогов
+  вычисляются один раз за тик. Мировые позиции между тиками не хранятся — Floating Origin сохраняется.
+- `MarketZone` и `OuterCommZone`: локальный игрок берётся напрямую из
+  `NetworkManager.Singleton.LocalClient.PlayerObject`, без TTL-кэша и периодического FindObjectsByType.
+  Клиентские проверки игрока и корабля используют sqrMagnitude; квадратный корень остаётся только
+  в отладочных сообщениях MarketZone. Polling 0,25 с, debounce, серверные снапшоты и registry не изменены.
+
+compile + domain reload — завершены, ошибок C# нет; `git diff --check` — чисто. Play Mode, тесты
+и Build агентом — **NOT RUN**. Исключения `Client handler exited` от MCP — технический шум
+stdio-подключений, не ошибки C#. Следующий захват по тому же маршруту должен проверить оба Update
+зон и три бюджета теней; NPC навигацию разбирать отдельно по внутренним маркерам/режимам.

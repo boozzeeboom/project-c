@@ -72,6 +72,8 @@ namespace ProjectC.World
         private readonly List<Entry> _entries = new List<Entry>();
         private readonly List<Camera> _cameras = new List<Camera>();
         private readonly List<Camera> _allGameCameras = new List<Camera>();
+        // T-PERF16: позиции живут только внутри тика — Floating Origin безопасен.
+        private readonly List<Vector3> _cameraPositions = new List<Vector3>();
         private readonly HashSet<Renderer> _shipRenderers = new HashSet<Renderer>();
 
         private float _cameraTimer;
@@ -243,6 +245,16 @@ namespace ProjectC.World
 
         private void UpdateShadows()
         {
+            _cameraPositions.Clear();
+            for (int c = 0; c < _cameras.Count; c++)
+            {
+                var cam = _cameras[c];
+                if (cam != null) _cameraPositions.Add(cam.transform.position);
+            }
+            if (_cameraPositions.Count == 0) return;
+
+            float shadowOnDistanceSqr = shadowOnDistance * shadowOnDistance;
+            float shadowOffDistanceSqr = shadowOffDistance * shadowOffDistance;
             for (int i = 0; i < _entries.Count; i++)
             {
                 var e = _entries[i];
@@ -257,18 +269,15 @@ namespace ProjectC.World
                 // геометрия близка хотя бы к одной геймплейной камере.
                 float nearestSqr = float.MaxValue;
                 Vector3 p = r.bounds.center;
-                for (int c = 0; c < _cameras.Count; c++)
+                for (int c = 0; c < _cameraPositions.Count; c++)
                 {
-                    var cam = _cameras[c];
-                    if (cam == null) continue;
-                    float d = (p - cam.transform.position).sqrMagnitude;
+                    float d = (p - _cameraPositions[c]).sqrMagnitude;
                     if (d < nearestSqr) nearestSqr = d;
                 }
-                if (nearestSqr == float.MaxValue) continue;
 
                 bool want = e.shadowsOn
-                    ? nearestSqr <= shadowOffDistance * shadowOffDistance
-                    : nearestSqr < shadowOnDistance * shadowOnDistance;
+                    ? nearestSqr <= shadowOffDistanceSqr
+                    : nearestSqr < shadowOnDistanceSqr;
                 if (want == e.shadowsOn) continue;
 
                 e.shadowsOn = want;

@@ -1,5 +1,42 @@
 # Итерации разработки
 
+## Итерация от 2026-11-23 (T-SHIPDECK-01 — игрок на палубе корабля при перезаходе)
+
+**Задача:** Корабль в воздухе, двигатель ON, игрок вышел по F и стоит пешком на палубе →
+выход из игры / рестарт → игрок загружается и падает, вернуться на корабль невозможно.
+Ожидание: система возвращает игрока на палубу его корабля (как паром — T-PAROM-21).
+
+**Причина (три звена):**
+1. **Сейв не различал палубу корабля.** `CollectPlayers` писал `inShip` (только пилот)
+   и `platformRouteId` (только кабинка парома). Пеший игрок на палубе корабля — это
+   `inShip=false`, `shipPersistentId=""`; проба `ParomRoute.TryResolveRouteId` палубы
+   кораблей не трогает по контракту («у них inShip-путь» — верно только в кресле).
+   Факт из `ShipPositions.json` (репро): `players:[{clientId:0, inShip:false,
+   shipPersistentId:"", platformRouteId:""}]` при летающем `Ship_Light_root` (engine=true).
+2. **Порядок загрузки.** `GlobalMotionPilotSpawnSource` (T-FO-PERSIST03) ставит игрока на
+   скорректированную точку сейва СРАЗУ при спавне, а `ShipPositionServer.RestoreCoroutine`
+   ресторит корабли позже (`restoreDelaySec = 6` в BootstrapScene). Мост
+   `WaitForShipAndBoard` (T-FO09H) ждёт `RestoreCompleted` и сажает на exit живого корабля —
+   но он вызывался только для `inShip=true`. Для пешего на палубе не было ничего →
+   падение в пустоту точки палубы → смерть по `_deathY` → дефолтный респавн.
+3. **Нет спасения после падения.** `TryResolveShipRescuePosition`: `LastShip` после
+   свежего старта процесса `null`, а «ближайший owned» считается в 3D с радиусом 200 м —
+   зависший в воздухе корабль в момент смерти далеко по Y → цепочка не срабатывает.
+
+**Изменения:**
+- `ShipPositionSaveData.cs` — `PlayerPositionSaveData.platformShipId` (T-SHIPDECK-01).
+- `ShipController.cs` — `static TryResolveDeckShipId(feetPos, out shipId)`: server-side
+  SphereCast вниз (зеркало `ParomRoute.TryResolveRouteId`), `GetComponentInParent<ShipController>`
+  на хите с Rigidbody → `ShipPersistentId`. Только пеший режим.
+- `PlayerPositionServer.cs` — `CollectPlayers` пишет `platformShipId` при `!inShip`;
+  `RestorePlayer` (legacy-путь) — ветка «на палубу живого корабля» до fallback на позицию
+  (`GetExitPosition` + `BindRiddenPlatform(ship.transform)`).
+- `ShipPositionServer.cs` — `TryLoadPlayerShip` возвращает корабль и для
+  `inShip=false + platformShipId` → global-путь FO переиспользует `WaitForShipAndBoard`
+  (ждёт `RestoreCompleted`, телепорт на exit, rebase reconnect_board).
+
+**Проверка:** compile — clean. Play-проверку делает пользователь (Play Mode не запускался).
+
 ## Итерация от 2026-07-21 (T-PLAYER-PERSIST)
 
 **Задача:** Player-ship position persistence — привязка респавна и сохранения позиции игрока к кораблю. Игрок, вышедший в полёте, при возвращении появляется у своего корабля (зависшего в воздухе). При падении с корабля — респавн на нём же. Корабль без пилота замирает, не тратит топливо, не сдувается ветром.

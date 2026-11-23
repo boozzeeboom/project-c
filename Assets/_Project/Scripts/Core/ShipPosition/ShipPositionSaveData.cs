@@ -91,6 +91,11 @@ namespace ProjectC.Core.ShipPosition
         // Ресторр — на ЖИВУЮ позицию кабинки (s уже восстановлен T-PAROM-20),
         // мировая позиция игнорируется. Пусто = обычное поведение.
         public string platformRouteId;
+        // T-SHIPDECK-01: игрок стоял на ПАЛУБЕ корабля пешком (после выхода F).
+        // inShip=false (не пилотирует), поэтому без этой записи рестарт кладёт
+        // игрока в пустоту точки палубы — корабль ресторится позже (6с) и уже
+        // не под ним. Ресторр — на exit живого корабля после RestoreCompleted.
+        public string platformShipId;
         public long savedAtUnix;
     }
 

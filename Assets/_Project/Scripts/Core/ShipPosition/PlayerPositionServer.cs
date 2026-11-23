@@ -85,6 +85,13 @@ namespace ProjectC.Core.ShipPosition
                 if (!inShip)
                     ProjectC.World.Parom.ParomRoute.TryResolveRouteId(pos, out routeId);
 
+                // T-SHIPDECK-01: стоял пешком на палубе корабля (вышел по F в полёте).
+                // inShip=false — без этой записи рестарт ставит игрока в пустоту точки
+                // палубы, а корабль ресторится позже (6с) и уже не под ним.
+                string deckShipId = "";
+                if (!inShip)
+                    ShipController.TryResolveDeckShipId(pos, out deckShipId);
+
                 // T-FO-SAVE-GUARD: пеший игрок в активном падении — пишем последнюю
                 // хорошую точку вместо точки в пустоте, хорошую обновляем только
                 // валидными сэмплами. Приземлился/телепортировался на твёрдое —
@@ -120,6 +127,7 @@ namespace ProjectC.Core.ShipPosition
                     inShip = inShip,
                     shipPersistentId = shipId,
                     platformRouteId = routeId,
+                    platformShipId = deckShipId,
                     savedAtUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
                 });
             }
@@ -266,6 +274,26 @@ namespace ProjectC.Core.ShipPosition
 
                 if (_debugMode)
                     Debug.Log($"[PlayerPositionServer] Player {clientId} was on parom '{match.platformRouteId}' but route not found — fallback to saved pos");
+            }
+
+            // T-SHIPDECK-01: стоял пешком на палубе корабля — на ЖИВУЮ палубу.
+            // Этот путь ждёт DataLoaded/RestoreCompleted, т.е. корабль уже в точке сейва.
+            if (!match.inShip && !string.IsNullOrEmpty(match.platformShipId))
+            {
+                var deckShips = FindObjectsByType<ShipController>();
+                var deckShip = Array.Find(deckShips, s => s.IsSpawned && s.ShipPersistentId == match.platformShipId);
+                if (deckShip != null)
+                {
+                    Vector3 deckPos = deckShip.GetExitPosition();
+                    TeleportPlayer(np, deckPos);
+                    np.BindRiddenPlatform(deckShip.transform);
+                    if (_debugMode)
+                        Debug.Log($"[PlayerPositionServer] Player {clientId} restored to deck of ship '{match.platformShipId}' at {deckPos}");
+                    return true;
+                }
+
+                if (_debugMode)
+                    Debug.Log($"[PlayerPositionServer] Player {clientId} was on deck of '{match.platformShipId}' but ship not found — fallback to saved pos");
             }
 
             // Fallback: сохранённая позиция

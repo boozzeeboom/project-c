@@ -1,5 +1,15 @@
 # Iterations
 
+## Итерация от 2026-11-23 (T-SHIPDECK-01 — игрок пешком на палубе корабля после рестарта)
+
+**Задача:** Корабль висит в воздухе с двигателем ON, игрок вышел по F и стоит пешком на палубе → выход/рестарт игры → игрок загружается и падает в пустоту, вернуться на корабль нельзя. Ожидание: система возвращает игрока на палубу его корабля (как паром — T-PAROM-21, с учётом FO и порядка загрузки). Play Mode не запускать.
+
+**Результат (аудит):** три звена. 1) `PlayerPositionServer.CollectPlayers` различал только `inShip` (пилот в кресле) и `platformRouteId` (кабинка парома); пеший на палубе — это `inShip=false`, `shipPersistentId=""`, `platformRouteId=""` (проба `ParomRoute.TryResolveRouteId` палубы кораблей не трогает по контракту). Факт из `ShipPositions.json` репро: `players:[{clientId:0, inShip:false, shipPersistentId:"", platformRouteId:""}]` при живом `Ship_Light_root` с `engine=true`. 2) Порядок загрузки: `GlobalMotionPilotSpawnSource` (T-FO-PERSIST03) ставит игрока на скорректированную точку сейва сразу при спавне, а `ShipPositionServer.RestoreCoroutine` ресторит корабли позже (`restoreDelaySec = 6` в BootstrapScene); мост `NetworkPlayer.WaitForShipAndBoard` (T-FO09H) ждёт `RestoreCompleted` и сажает на exit живого корабля, но вызывался только для `inShip=true` → за 6 с палубы нет, игрок падает, ловит `_deathY` и уходит на дефолтный респавн. 3) Спасения нет: `PlayerRespawnTracker.TryResolveShipRescuePosition` — `LastShip` после свежего процесса `null`, «ближайший owned» считается в 3D с радиусом 200 м, а корабль в воздухе далеко по Y.
+
+**Правки:** `PlayerPositionSaveData.platformShipId` (T-SHIPDECK-01); `ShipController.TryResolveDeckShipId(feetPos, out id)` — server-side SphereCast вниз (зеркало паромной пробы, требует Rigidbody на хите) → `ShipPersistentId`; `PlayerPositionServer.CollectPlayers` пишет `platformShipId` при `!inShip`, `RestorePlayer` (legacy-путь) — ветка на палубу живого корабля (`GetExitPosition` + `BindRiddenPlatform`) перед fallback'ом на позицию; `ShipPositionServer.TryLoadPlayerShip` отдаёт корабль и для `inShip=false + platformShipId` → FO-путь переиспользует `WaitForShipAndBoard` (ждёт restore, телепорт на палубу, `rebase reconnect_board`).
+
+**Проверка:** `check_compile_errors` — 0 errors. Play Mode — **NOT RUN, за пользователем**. Ловушка прогона: старый `ShipPositions.json` без `platformShipId` восстановит по-старому — нужен один тик сейва (5 с) в новой сборке, стоя на палубе, затем рестарт. Ожидание в логе: `[PlayerPositionServer] … restored to deck of ship …` / `[NetworkPlayer] T-FO09H: boarded restored ship …`.
+
 ## Итерация от 2026-11-22 (DayNight — тонирование окружения: `colorFilter` и изоляция Volume-профилей)
 
 **Задача:** Убрать пересыщение цветовым тоном, из-за которого объекты теряют цвет материала, и объяснить, почему картинка со временем деградирует («сначала легкая вариативность, потом всё розовее»). Play Mode не запускать — визуальную оценку делает пользователь.

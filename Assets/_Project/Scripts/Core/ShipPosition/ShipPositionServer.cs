@@ -381,6 +381,8 @@ namespace ProjectC.Core.ShipPosition
         /// но сам корабль ресторится позже (~3.5с) — игрок падает рядом с пустым
         /// местом. Вызывающий ждёт RestoreCompleted и телепортирует на exit
         /// живого корабля. Сдвиг не нужен — нужен только ID.
+        /// T-SHIPDECK-01: если игрок был не пилотом, а пешком на палубе
+        /// (inShip=false, platformShipId задан), корабль тот же — возвращаем его.
         /// </summary>
         public static bool TryLoadPlayerShip(ulong clientId, out string shipPersistentId)
         {
@@ -392,9 +394,17 @@ namespace ProjectC.Core.ShipPosition
             foreach (var p in wrapper.players)
             {
                 if (p == null || p.clientId != clientId) continue;
-                if (!p.inShip || string.IsNullOrEmpty(p.shipPersistentId)) return false;
-                shipPersistentId = p.shipPersistentId;
-                return true;
+                if (p.inShip && !string.IsNullOrEmpty(p.shipPersistentId))
+                {
+                    shipPersistentId = p.shipPersistentId;
+                    return true;
+                }
+                if (!p.inShip && !string.IsNullOrEmpty(p.platformShipId))
+                {
+                    shipPersistentId = p.platformShipId;
+                    return true;
+                }
+                return false;
             }
             return false;
         }

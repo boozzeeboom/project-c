@@ -1999,6 +1999,27 @@ namespace ProjectC.Player
         public float CurrentSpeed => _rb != null ? _rb.linearVelocity.magnitude : 0f;
         public bool IsGrounded => Physics.Raycast(transform.position, Vector3.down, out _, 1.5f);
         public Vector3 GetExitPosition() => transform.position + Vector3.up * 1.5f;
+
+        /// <summary>
+        /// T-SHIPDECK-01: server-side определение корабля, на палубе которого стоит
+        /// игрок. Carry считается на owner-стороне, сервер про чужую опору не знает —
+        /// probe сам (зеркало ParomRoute.TryResolveRouteId). Только пеший режим:
+        /// пилот в кресле идёт inShip-путём.
+        /// </summary>
+        public static bool TryResolveDeckShipId(Vector3 feetPos, out string shipPersistentId)
+        {
+            shipPersistentId = "";
+            if (!Physics.SphereCast(feetPos + Vector3.up * 1f, 0.35f, Vector3.down,
+                    out RaycastHit hit, 2.5f, ~0, QueryTriggerInteraction.Ignore))
+                return false;
+            if (hit.collider == null || hit.collider.attachedRigidbody == null)
+                return false;
+            var ship = hit.collider.GetComponentInParent<ShipController>();
+            if (ship == null || !ship.IsSpawned) return false;
+            shipPersistentId = ship.ShipPersistentId;
+            return !string.IsNullOrEmpty(shipPersistentId);
+        }
+
         public int PilotCount => _pilots.Count;
 
         // S-HUD-01: Expose данные для ShipHudController (additive, no logic).

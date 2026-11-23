@@ -1129,3 +1129,33 @@ SphereCast на каждом physics-тике.
 compile + domain reload — завершены, ошибок C# нет; `git diff --check` — чисто. Play Mode, тесты
 и Build агентом — **NOT RUN**. Следующий захват должен проверить NpcShipWorld, SphereCast/Raycast,
 AI.NpcBrain.FixedUpdate и сохранение штатного движения NPC по палубам/маршрутам.
+
+
+## T-PERF18 — атрибуция NPC.Nav, скрытая атмосфера и покой паромов (`ProjectC_client_2026-11-24_00-10-22.data`)
+
+1 604 steady-state кадра. `Main Thread` 50,284 → **37,959 мс/кадр**, `PlayerLoop` 33,576 → **25,111**,
+`EditorLoop` self 12,944 → 8,766. Маршрут/загрузочные вклады различаются, поэтому общее снижение
+не приписывается только T-PERF17. Подтверждённые эффекты по managed/physics self: `AI.NpcBrain.FixedUpdate`
+0,146 → **0,095 мс/кадр**, `Physics.SphereCast` 0,185 → **0,106** (63 881 → 30 168 вызовов).
+При этом `NpcShipWorld.FixedUpdate` total/self 0,633 / 0,488 → 0,636 / 0,507: снижения нет,
+троттлинг waypoint-RayClear и кэш зоны связи не устранили основной расход. `Physics.Raycast`
+0,112 → 0,115 (23 541 → 28 902 вызова), поэтому выигрыш этого участка не заявляется.
+
+Остальные регулярные кандидаты: `ProjectCMainMenuAtmosphere.Update` self 0,132 — скрытая игровая
+камера продолжала обновлять материалы/тросы/пыль; `ParomRoute.Update` total 0,430, включая
+`Physics.SyncTransforms`, вызывавшийся на каждом кадре даже для стоящей кабинки.
+
+Изменения:
+
+- `NpcShipController.NavTick`: постоянные ProfilerMarker `NPC.Nav.Docked/Lifting/Yawing/Cruising/
+  Berthing/Avoiding/AvoidYield/WallFollow/GateApproach/CorridorLeg`. Маркер выбирается по режиму
+  на входе и охватывает весь тик; Deep Profile не требуется. Это атрибуция, не заявленная оптимизация.
+- `ProjectCMainMenuAtmosphere.Update`: при выключенной atmosphereCamera обновление пропускается.
+  При повторном показе камеры обновление продолжается; Build и SetVisible не изменены.
+- `ParomRoute.ApplyTrolley`: позиция/поворот записываются только при фактическом изменении,
+  глобальный Physics.SyncTransforms вызывается только после такого изменения. Во время движения,
+  доворота и Floating Origin (worldPos меняется) синхронизация сохраняется.
+
+compile + domain reload — завершены, ошибок C# нет; `git diff --check` — чисто. Play Mode, тесты
+и Build агентом — **NOT RUN**. Следующий захват должен содержать маркеры NPC.Nav.*, а также проверить
+ParomRoute, Physics.SyncTransforms и ProjectCMainMenuAtmosphere; стоянка и движение парома желательны.

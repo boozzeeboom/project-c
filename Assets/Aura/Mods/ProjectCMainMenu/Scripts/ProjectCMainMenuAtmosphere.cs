@@ -386,6 +386,8 @@ namespace ProjectCMainMenu
         private void Update()
         {
             if (!_built) Build();
+            // T-PERF18: скрытая атмосфера не должна обновлять материалы, тросы и пыль в игровом мире.
+            if (atmosphereCamera != null && !atmosphereCamera.enabled) return;
 
             var dt = Mathf.Clamp(Time.unscaledDeltaTime, 0f, 0.05f);
             if (dt <= 0f) return;

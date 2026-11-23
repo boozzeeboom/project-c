@@ -26,6 +26,7 @@ using ProjectC.Trade.Config; // MARKET-ID-REFACTOR: MarketConfigCollector.Normal
 using ProjectC.Trade.Core; // T-CARGO-NPC-01 fix #5: TradeWorld.Instance post-check
 using Unity.Netcode;
 using UnityEngine;
+using Unity.Profiling;
 
 namespace ProjectC.PeacefulShip.Stations
 {
@@ -749,11 +750,20 @@ namespace ProjectC.PeacefulShip.Stations
         // Transient для сейвов — RestoreFromSave маппит их в Cruising.
         public enum NavMode : byte { Docked, Lifting, Yawing, Cruising, Berthing, Avoiding, AvoidYield, WallFollow, GateApproach, CorridorLeg }
 
+        // T-PERF18: стабильная атрибуция стоимости NavTick по режимам без включения Deep Profile.
+        private static readonly ProfilerMarker[] NavModeMarkers = {
+            new("NPC.Nav.Docked"), new("NPC.Nav.Lifting"), new("NPC.Nav.Yawing"),
+            new("NPC.Nav.Cruising"), new("NPC.Nav.Berthing"), new("NPC.Nav.Avoiding"),
+            new("NPC.Nav.AvoidYield"), new("NPC.Nav.WallFollow"), new("NPC.Nav.GateApproach"),
+            new("NPC.Nav.CorridorLeg")
+        };
+
         /// <summary>Вызывается из NpcShipWorld.Update каждый FixedUpdate.</summary>
         public void NavTick(float dt) {
             if (!IsServer || !useNewNavTick) return;
             var ship = Ship;
             if (ship == null || !ship.CanSimulateInCurrentCoordinates) return;
+            using var navModeScope = NavModeMarkers[(int)CurrentMode].Auto();
             // M3.2.10: guard — если спавн тайминг или IsDocked до NavMode, синхронизируем.
             // НО НЕ делаем return — Docked handler должен дойти до dwell-check.
             // Control authority: живой пилот на борту → NPC уступает управление силовому конвейеру игрока.

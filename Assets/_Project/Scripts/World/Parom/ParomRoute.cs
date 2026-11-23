@@ -695,7 +695,7 @@ namespace ProjectC.World.Parom
             Vector3 moveDir = segDir * dir;
             if (moveDir.sqrMagnitude > 0.0001f) _lastMoveDir = moveDir.normalized;
             Vector3 worldPos = pathPoint + Vector3.down * _cabinHangDepth;
-            _trolley.position = worldPos;
+            Quaternion worldRot = _trolley.rotation;
             if (_lastMoveDir.sqrMagnitude > 0.0001f)
             {
                 // T-PAROM-13 (replay T-PAROM-07): только yaw, БЕЗ тангажа.
@@ -709,7 +709,7 @@ namespace ProjectC.World.Parom
                 if (flatDir.sqrMagnitude > 0.0001f)
                 {
                     Quaternion target = Quaternion.LookRotation(flatDir.normalized, Vector3.up);
-                    _trolley.rotation = Quaternion.RotateTowards(_trolley.rotation, target, 360f * Time.deltaTime);
+                    worldRot = Quaternion.RotateTowards(worldRot, target, 360f * Time.deltaTime);
                 }
             }
 
@@ -719,7 +719,13 @@ namespace ProjectC.World.Parom
             // Персонаж при этом прижат carry к «свежему» трансформу, а CharacterController
             // резолвит столкновения по «старому» коллайдеру → прижим/выталкивание каждый
             // кадр = микродрожь персонажа (и камеры за ним). Синк здесь убирает расхождение.
-            if (_syncPhysicsOnMove)
+            // T-PERF18: стоящая кабинка не грязнит transform и не запускает глобальный SyncTransforms.
+            // При Floating Origin worldPos меняется, поэтому ребейз проходит обычным moved-путём.
+            bool moved = (_trolley.position - worldPos).sqrMagnitude > 0.00000001f;
+            bool rotated = Quaternion.Angle(_trolley.rotation, worldRot) > 0.0001f;
+            if (moved) _trolley.position = worldPos;
+            if (rotated) _trolley.rotation = worldRot;
+            if (_syncPhysicsOnMove && (moved || rotated))
                 Physics.SyncTransforms();
         }
 

@@ -62,9 +62,17 @@ namespace ProjectC.Core
         // Round-robin индекс
         private int _nextZoneIndex;
 
+        private struct CachedShipEntry
+        {
+            public ShipController ship;
+            public SplineWindZone.ShipSplineEntry spline;
+        }
+
         private class ZoneRuntimeState
         {
-            public Dictionary<ShipController, SplineWindZone.ShipSplineEntry> entries;
+            // T-PERF19: записи только пересоздаются и последовательно обходятся,
+            // поэтому список дешевле Dictionary и не тратит время на хеширование.
+            public List<CachedShipEntry> entries;
             public int frameCounter;
             public Bounds worldBounds;       // AABB сплайна + corridorRadius (мировой), для предфильтра
             public bool boundsValid;
@@ -224,7 +232,7 @@ namespace ProjectC.Core
                 {
                     state = new ZoneRuntimeState
                     {
-                        entries = new Dictionary<ShipController, SplineWindZone.ShipSplineEntry>(),
+                        entries = new List<CachedShipEntry>(shipCount),
                         frameCounter = 0,
                         boundsValid = false
                     };
@@ -312,13 +320,17 @@ namespace ProjectC.Core
                 if (reverse)
                     direction = -direction;
 
-                state.entries[ship] = new SplineWindZone.ShipSplineEntry
+                state.entries.Add(new CachedShipEntry
                 {
-                    splineT = t,
-                    distance = distance,
-                    direction = direction,
-                    nearestPoint = nearestWorld
-                };
+                    ship = ship,
+                    spline = new SplineWindZone.ShipSplineEntry
+                    {
+                        splineT = t,
+                        distance = distance,
+                        direction = direction,
+                        nearestPoint = nearestWorld
+                    }
+                });
 
                 // HUD: имя зоны
                 SplineWindZone.SetZoneDisplayName(ship, windData.displayName);
@@ -340,19 +352,23 @@ namespace ProjectC.Core
                 float radius = zone.corridorRadius;
                 float centering = zone.centeringStrength;
 
-                foreach (var kv in state.entries)
+                for (int i = 0; i < state.entries.Count; i++)
                 {
-                    var ship = kv.Key;
+                    var cached = state.entries[i];
+                    var ship = cached.ship;
                     if (ship == null)
                         continue;
 
-                    var entry = kv.Value;
+                    var entry = cached.spline;
+                    bool needsPosition = windData.profile == WindProfile.Shear
+                        || (centering > 0f && entry.distance > 0.01f);
+                    Vector3 shipPosition = needsPosition ? ship.transform.position : Vector3.zero;
 
                     // Shear: пересчёт с высотой
                     float magnitude = forceMagnitude;
                     if (windData.profile == WindProfile.Shear)
                     {
-                        magnitude = windData.windForce + ship.transform.position.y * windData.shearGradient;
+                        magnitude = windData.windForce + shipPosition.y * windData.shearGradient;
                     }
 
                     Vector3 force = entry.direction * magnitude;
@@ -362,7 +378,7 @@ namespace ProjectC.Core
                     {
                         float edgeT = entry.distance / radius;
                         float strength = centering * edgeT * edgeT;
-                        Vector3 toCenter = (entry.nearestPoint - ship.transform.position).normalized;
+                        Vector3 toCenter = (entry.nearestPoint - shipPosition).normalized;
                         force += toCenter * (strength * windData.windForce);
                     }
 

@@ -1159,3 +1159,36 @@ AI.NpcBrain.FixedUpdate и сохранение штатного движени�
 compile + domain reload — завершены, ошибок C# нет; `git diff --check` — чисто. Play Mode, тесты
 и Build агентом — **NOT RUN**. Следующий захват должен содержать маркеры NPC.Nav.*, а также проверить
 ParomRoute, Physics.SyncTransforms и ProjectCMainMenuAtmosphere; стоянка и движение парома желательны.
+
+
+
+## T-PERF19 — сплайновый ветер, снапшот NPC.Cruising и общий SyncTransforms (`ProjectC_client_2026-11-24_00-43-27.data`)
+
+1 828 steady-state кадров. `Main Thread` 37,959 → 55,429 мс/кадр, `PlayerLoop` 25,111 → 33,420,
+`EditorLoop` self 8,766 → 16,206. Маршрут, активность физики и загрузка редактора различаются,
+поэтому общий прирост не относится к регрессу T-PERF18 без контрольного A/B. Скрытая
+`ProjectCMainMenuAtmosphere.Update` исчезла из top self — отключение обновления скрытой атмосферы
+подтверждено. Паромы в этом захвате двигались: `ParomRoute.Update` total 0,701,
+`Physics.SyncTransforms` total 0,751 (10 173 вызова); это не сравнение со стоящими кабинками.
+
+Атрибуция NPC сработала: `NpcShipWorld.FixedUpdate` total 1,154 / self 0,043 мс/кадр;
+`NPC.Nav.Cruising` total 0,797 / self 0,589 (65 300 вызовов), `NPC.Nav.WallFollow` total 0,252 /
+self 0,222 (11 915 вызовов). `Physics.Raycast` self 0,271 (59 861 вызов). Новый главный managed
+self-кандидат — `WindManager.FixedUpdate`: 1,616 мс/кадр, 5 080 вызовов. Следующие регулярные
+участки после этого пакета: `NetworkPlayer.InteractionHint` self 0,737 и `NPC.Nav.WallFollow`.
+
+Изменения:
+
+- `WindManager`: кэш кораблей каждой сплайновой зоны переведён с Dictionary на предварительно
+  ёмкий List — записи только очищаются, добавляются и последовательно обходятся, хеширование не нужно.
+  При применении силы позиция корабля читается максимум один раз и только для Shear/центрирования.
+  Round-robin, частота детекции, ближайшие точки сплайнов, направления и величины сил не изменены.
+- `NpcShipController.TickCruise`: Time.time и Rigidbody.position кэшируются один раз на тик
+  (30 и 23 повторных чтения соответственно убраны). MoveRotation не меняет position синхронно;
+  частота управления, зонды, watchdog, скорости и переходы режимов не изменены.
+- `ParomRoute`: несколько кабинок делят максимум один глобальный Physics.SyncTransforms за кадр.
+  Запись изменившихся позиций/поворотов и синхронизация после движения/ребейза сохранены.
+
+compile + domain reload — завершены, ошибок C# нет; `git diff --check` — чисто. Play Mode, тесты
+и Build агентом — **NOT RUN**. Следующий захват 30–60 секунд по тому же маршруту должен проверить
+WindManager.FixedUpdate, NPC.Nav.Cruising, число Physics.SyncTransforms и отсутствие рассинхрона паромов.

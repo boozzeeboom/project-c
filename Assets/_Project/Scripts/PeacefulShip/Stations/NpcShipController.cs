@@ -1042,29 +1042,33 @@ namespace ProjectC.PeacefulShip.Stations
         }
 
         void TickCruise(Rigidbody rb) {
+            // T-PERF19: один managed→native переход вместо повторных чтений свойств.
+            // MoveRotation не меняет position синхронно, поэтому снапшот остаётся валидным.
+            float now = Time.time;
+            Vector3 position = rb.position;
             if (CruiseTargetPos == Vector3.zero) {
                 rb.linearVelocity = Vector3.zero;
                 return;
             }
             // T-NS-NAV12a: scatter-разлёт (jailbreak): летим прямо по курсу разлёта,
             // носом по курсу; зонд и watchdog молчат (база прогресса обновляется).
-            if (Time.time < _scatterUntil) {
+            if (now < _scatterUntil) {
                 float sYaw = Mathf.Atan2(_scatterDir.x, _scatterDir.z) * Mathf.Rad2Deg;
                 float sCur = rb.rotation.eulerAngles.y;
                 float sDelta = Mathf.DeltaAngle(sCur, sYaw);
                 float sStep = Mathf.Sign(sDelta) * Mathf.Min(Mathf.Abs(sDelta), MaxYawRate * Time.fixedDeltaTime);
                 rb.MoveRotation(Quaternion.AngleAxis(sCur + sStep, Vector3.up));
                 // T-NS-ALT01: разлёт — тоже с возвратом в границы.
-                float vyScat = ClampVyToLimits(0f, rb.position.y);
+                float vyScat = ClampVyToLimits(0f, position.y);
                 rb.linearVelocity = new Vector3(_scatterDir.x * scatterSpeed, vyScat, _scatterDir.z * scatterSpeed);
                 rb.angularVelocity = Vector3.zero;
-                _cruiseLastPos = rb.position;
-                _cruiseLastProgressAt = Time.time;
+                _cruiseLastPos = position;
+                _cruiseLastProgressAt = now;
                 return;
             }
             // T-NS-NAV11: advance по точкам плана (комм-зона/пад/watchdog — по станции).
             if (_navIdx < _navPlan.Count
-                && Vector3.Distance(rb.position, _navPlan[_navIdx]) < navWpTol) {
+                && Vector3.Distance(position, _navPlan[_navIdx]) < navWpTol) {
                 _navIdx++;
                 _wpApproachProbeNextAt = 0f;
                 _wpApproachBlocked = false;
@@ -1080,38 +1084,38 @@ namespace ProjectC.PeacefulShip.Stations
             // зонд входит раньше и мельче. Только промежуточные точки, финал не трогаем.
             // T-PERF17: RayClear выполняется с той же частотой, что основной лидар,
             // а не на каждом FixedUpdate; между пробами используется последний результат.
-            if (_navIdx < _navPlan.Count - 1 && Time.time >= _wpApproachProbeNextAt) {
-                _wpApproachProbeNextAt = Time.time + wallProbeIntervalSec + ProbePhaseOffset();
+            if (_navIdx < _navPlan.Count - 1 && now >= _wpApproachProbeNextAt) {
+                _wpApproachProbeNextAt = now + wallProbeIntervalSec + ProbePhaseOffset();
                 Vector3 wpSlow = _navPlan[_navIdx];
-                float dwSlow = Vector3.Distance(rb.position, wpSlow);
+                float dwSlow = Vector3.Distance(position, wpSlow);
                 _wpApproachBlocked = dwSlow > navWpTol && dwSlow < lidarSideTrigger * 2f
-                    && RayClear(rb.position, wpSlow) < dwSlow - wallProbeRadius;
+                    && RayClear(position, wpSlow) < dwSlow - wallProbeRadius;
             } else if (_navIdx >= _navPlan.Count - 1) {
                 _wpApproachBlocked = false;
             }
             bool wpBlockedAhead = _wpApproachBlocked;
             Vector3 goal = NavGoal();
-            Vector3 toTarget = goal - rb.position;
+            Vector3 toTarget = goal - position;
             float dist = toTarget.magnitude;
-            Vector3 stToTarget = CruiseTargetPos - rb.position;
+            Vector3 stToTarget = CruiseTargetPos - position;
             float stDist = stToTarget.magnitude;
 
             // T-NS-WF05: recovery-откат (без нового NavMode — остаёмся в Cruising,
             // в лог пишем событие вручную).
-            if (Time.time < _cruiseRecoverUntil) {
+            if (now < _cruiseRecoverUntil) {
                 // T-NS-ALT01: откат — тоже с возвратом в границы.
-                float vyRec = ClampVyToLimits(0f, rb.position.y);
+                float vyRec = ClampVyToLimits(0f, position.y);
                 rb.linearVelocity = new Vector3(
                     _cruiseRecoverDir.x * cruiseRecoverSpeed, vyRec, _cruiseRecoverDir.z * cruiseRecoverSpeed);
                 rb.angularVelocity = Vector3.zero;
-                _cruiseLastPos = rb.position;
-                _cruiseLastProgressAt = Time.time;
+                _cruiseLastPos = position;
+                _cruiseLastProgressAt = now;
                 return;
             }
 
             // T-NS-WF11: recovery кончился без смещения (вклинён намертво, Вавилон
             // 46 с на точке) — засчитываем провал сразу, не ждём новый watchdog.
-            if (_recoverArmed && Time.time >= _cruiseRecoverUntil) {
+            if (_recoverArmed && now >= _cruiseRecoverUntil) {
                 _recoverArmed = false;
                 if ((_cruiseLastPos - _recoverStartPos).magnitude < cruiseStuckDist) {
                     _cruiseRecoveries++;
@@ -1129,16 +1133,16 @@ namespace ProjectC.PeacefulShip.Stations
             // резолвится, watchdog слеп. Вблизи — не recovery, а форсированный
             // Berthing (там holding/пад/watchdog доведут или уведут в divert).
             if (_cruiseLastProgressAt <= 0f) {
-                _cruiseLastPos = rb.position;
-                _cruiseLastProgressAt = Time.time;
-            } else if ((rb.position - _cruiseLastPos).magnitude >= cruiseStuckDist) {
-                _cruiseLastPos = rb.position;
-                _cruiseLastProgressAt = Time.time;
-            } else if (Time.time - _cruiseLastProgressAt > cruiseStuckSec) {
+                _cruiseLastPos = position;
+                _cruiseLastProgressAt = now;
+            } else if ((position - _cruiseLastPos).magnitude >= cruiseStuckDist) {
+                _cruiseLastPos = position;
+                _cruiseLastProgressAt = now;
+            } else if (now - _cruiseLastProgressAt > cruiseStuckSec) {
                 // Ждём слот теснины — не срываем (у ожидания свой таймаут 60 с).
                 if (stDist <= 150f && _wallWaitStartedAt <= 0f) {
-                    _cruiseLastPos = rb.position;
-                    _cruiseLastProgressAt = Time.time;
+                    _cruiseLastPos = position;
+                    _cruiseLastProgressAt = now;
                     NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Cruising", "Berthing",
                         "cruise-near-stuck", $"dist={stDist:F0}m");
                     if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Cruise near-station stuck (dist {stDist:F0}m) — forcing Berthing");
@@ -1156,11 +1160,11 @@ namespace ProjectC.PeacefulShip.Stations
                     // T-NS-WF06a: откат веером — первое чистое (сначала строго назад),
                     // иначе max клиренс. Слепой откат упирался в тот же склон (Сильфида).
                     _cruiseRecoverDir = ComputeRecoverDir(rb, stToTarget);
-                    _cruiseRecoverUntil = Time.time + cruiseRecoverSec;
-                    _recoverStartPos = rb.position;
+                    _cruiseRecoverUntil = now + cruiseRecoverSec;
+                    _recoverStartPos = position;
                     _recoverArmed = true;
-                    _cruiseLastPos = rb.position;
-                    _cruiseLastProgressAt = Time.time;
+                    _cruiseLastPos = position;
+                    _cruiseLastProgressAt = now;
                     // T-NS-LOG02: часы goal-watchdog НЕ сбрасываем (3 с отката назад
                     // тонут в 45-с окне; сброс голодал slow-триггер — лог 234308, 000A).
                     NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Cruising", "Cruising",
@@ -1174,20 +1178,20 @@ namespace ProjectC.PeacefulShip.Stations
             // по горизонтали к слепой точке, displacement-watchdog их не видит).
             // Не работает: в ожидании слота (свой таймаут), в окнах recovery/
             // scatter/retreat (часы сброшены их стартом), у самой цели (добирает advance).
-            if (_wallWaitStartedAt <= 0f && Time.time >= _cruiseRecoverUntil
-                && Time.time >= _scatterUntil && (_retreatUntil <= 0f || Time.time >= _retreatUntil)) {
+            if (_wallWaitStartedAt <= 0f && now >= _cruiseRecoverUntil
+                && now >= _scatterUntil && (_retreatUntil <= 0f || now >= _retreatUntil)) {
                 if (_goalProgAt <= 0f || _navIdx != _goalProgIdx) {
                     _goalProgDist = dist;
-                    _goalProgAt = Time.time;
+                    _goalProgAt = now;
                     _goalProgIdx = _navIdx;
                 } else if (dist > navWpTol) {
-                    float closing = (_goalProgDist - dist) / Mathf.Max(1f, Time.time - _goalProgAt);
+                    float closing = (_goalProgDist - dist) / Mathf.Max(1f, now - _goalProgAt);
                     if (closing >= cruiseGoalCloseMin) {
                         _goalProgDist = dist;
-                        _goalProgAt = Time.time;
-                    } else if (Time.time - _goalProgAt > cruiseGoalStuckSec) {
+                        _goalProgAt = now;
+                    } else if (now - _goalProgAt > cruiseGoalStuckSec) {
                         _goalProgDist = dist;
-                        _goalProgAt = Time.time;
+                        _goalProgAt = now;
                         if (_goalSlowReplans >= cruiseGoalMaxReplans) {
                             if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Cruise goal grind (close {closing:F1} m/s) — scatter/divert");
                             StuckDivert(rb, "cruise-goal");
@@ -1203,13 +1207,13 @@ namespace ProjectC.PeacefulShip.Stations
                         _graphParityFlip = !_graphParityFlip;
                         var tmSlow = NpcShipTrafficManager.Instance;
                         if (_navIdx < _navPlan.Count) tmSlow?.RecordHotspot(_navPlan[_navIdx]);
-                        else if (tmSlow != null) tmSlow.RecordHotspot(rb.position);
+                        else if (tmSlow != null) tmSlow.RecordHotspot(position);
                         PlanRoute(CruiseTargetPos); // replan с ближней позиции
                         // T-NS-LOG02e: свежий замер к НОВОЙ цели (базовая линия от старой
                         // цели давала фантомный отрицательный closing — лог 235552, 0031).
                         // Счётчик медленных replan НЕ сбрасываем (петля всё равно закончится).
-                        _goalProgDist = Vector3.Distance(rb.position, NavGoal());
-                        _goalProgAt = Time.time;
+                        _goalProgDist = Vector3.Distance(position, NavGoal());
+                        _goalProgAt = now;
                         _goalProgIdx = _navIdx;
                         return;
                     }
@@ -1218,7 +1222,7 @@ namespace ProjectC.PeacefulShip.Stations
 
             // Проверить: вошли ли в OuterCommZone целевой станции?
             var zone = ResolveCommZone();
-            if (zone != null && Vector3.Distance(rb.position, zone.transform.position) < zone.CommRange) {
+            if (zone != null && Vector3.Distance(position, zone.transform.position) < zone.CommRange) {
                 rb.linearVelocity = Vector3.zero;
                 rb.angularVelocity = Vector3.zero;
                 SetMode(NavMode.Berthing, "comm-zone");
@@ -1241,19 +1245,19 @@ namespace ProjectC.PeacefulShip.Stations
             // T-NS-WF08 + WF10: вход одним веером лидара (stagger — задел на 200+).
             // Вблизи цели не зондируем — там разбирается Berthing.
             // Слот занят → защёлка hover-wait (висим до слота/таймаута, не ползём).
-            if (dist > 100f && Time.time >= _wallCooldownUntil) {
+            if (dist > 100f && now >= _wallCooldownUntil) {
                 if (_wallWaitStartedAt > 0f) {
-                    if (Time.time - _wallWaitStartedAt > wallWaitTimeoutSec) {
+                    if (now - _wallWaitStartedAt > wallWaitTimeoutSec) {
                         _wallWaitStartedAt = 0f;
-                        NpcShipTrafficManager.Instance?.RecordHotspot(rb.position);
+                        NpcShipTrafficManager.Instance?.RecordHotspot(position);
                         NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Cruising", "Cruising",
                             "wall-slot-divert", "");
                         if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Wall slot wait timeout — diverting");
                         DivertToNextStation(rb);
                         return;
                     }
-                    if (Time.time >= _wallProbeNextAt) {
-                        _wallProbeNextAt = Time.time + wallProbeIntervalSec;
+                    if (now >= _wallProbeNextAt) {
+                        _wallProbeNextAt = now + wallProbeIntervalSec;
                         int retry = CheckWallEntry(rb, toTarget, dist);
                         if (retry == 1) { _wallWaitStartedAt = 0f; _wallWaitClearStrikes = 0; return; }
                         // T-NS-WF10b: «чисто» только серией ×3 (фликер границы слота),
@@ -1269,12 +1273,12 @@ namespace ProjectC.PeacefulShip.Stations
                     rb.angularVelocity = Vector3.zero;
                     return;
                 }
-                if (Time.time >= _wallProbeNextAt) {
-                    _wallProbeNextAt = Time.time + wallProbeIntervalSec + ProbePhaseOffset();
+                if (now >= _wallProbeNextAt) {
+                    _wallProbeNextAt = now + wallProbeIntervalSec + ProbePhaseOffset();
                     int entry = CheckWallEntry(rb, toTarget, dist);
                     if (entry == 1) return;
                     if (entry == 2) {
-                        _wallWaitStartedAt = Time.time;
+                        _wallWaitStartedAt = now;
                         NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Cruising", "Cruising",
                             "wall-slot-wait", "");
                         if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Wall slot busy — hovering");
@@ -1297,11 +1301,11 @@ namespace ProjectC.PeacefulShip.Stations
             rb.MoveRotation(Quaternion.AngleAxis(currentYaw + yawStep, Vector3.up));
 
             float speed = (dist > 200f && !wpBlockedAhead) ? CruiseSpeed : ApproachSpeed;
-            float altHold = (ProfileY() + 5f - rb.position.y) * 0.5f;
+            float altHold = (ProfileY() + 5f - position.y) * 0.5f;
             // T-NS-WF01 (D3): возврат к профилю — тем же капом, что после LOS-выхода.
             // T-NS-ALT01: поверх — возврат в глобальные границы.
             float vyCruise = ClampVyToLimits(
-                Mathf.Clamp(altHold, -returnVerticalCap, returnVerticalCap), rb.position.y);
+                Mathf.Clamp(altHold, -returnVerticalCap, returnVerticalCap), position.y);
             rb.linearVelocity = new Vector3(dir.x * speed, vyCruise, dir.z * speed);
         }
 

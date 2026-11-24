@@ -47,6 +47,28 @@ namespace ProjectC.Core
         private static float _hintDoorRange;
         private static DoorController _hintDoor;
 
+        // T-PERF24: пространственный индекс дверей ТОЛЬКО для observation-подсказки.
+        // Замер 24.11 19-11-11: NetworkPlayer.InteractionHint = 0.448 мс/кадр — самый
+        // дорогой project-side участок. Запрос идёт на 5 Гц, а игрок за 0.2 с успевает
+        // сдвинуться больше 0.25 м, поэтому кэш промахивался и каждый запрос заново
+        // обходил все ~2 800 дверей (transform.position + InteractionBoundingRadius).
+        // Сетка XZ по 24 м сводит запрос к клеткам вокруг игрока (единицы дверей).
+        // Фактический FindNearestDoor при нажатии по-прежнему полный и точный.
+        private const float DoorGridCellSize = 24f;
+        // Пересборка сетки: смена состава реестра (version) или мировой сдвиг (rebase).
+        // Мировой сдвиг детектируется по одной «пробирной» двери — O(1) на запрос.
+        private const float DoorGridResyncRadius = 0.5f;
+        private static readonly Dictionary<long, List<DoorController>> _doorGrid =
+            new Dictionary<long, List<DoorController>>(256);
+        // Двери, которые нельзя держать в статической сетке: на движущихся кораблях
+        // и с не-боксовым коллайдером (InteractionBoundingRadius = +inf). Их немного.
+        private static readonly List<DoorController> _doorGridDynamic = new List<DoorController>(64);
+        private static int _doorGridVersion = -1;
+        private static bool _doorGridBuilt;
+        private static float _doorGridMaxRadius;
+        private static DoorController _doorGridProbe;
+        private static Vector3 _doorGridProbePosition;
+
         // T-PERF06: кэш коллайдера посадки на корабль. GetComponentInChildren<T>(true) аллоцирует
         // массив на каждый вызов, а FindNearestShip зовётся из подсказки взаимодействия каждый кадр
         // и обходит все живые корабли (20 штук).
@@ -406,11 +428,122 @@ namespace ProjectC.Core
                     return false;
             }
 
-            _hintDoor = FindNearestDoor(position, range, out _);
+            // T-PERF24: вместо полного обхода реестра — клетки сетки вокруг игрока.
+            // Условие «дверь в радиусе» то же (broadphase по transform + DistanceToInteraction),
+            // поэтому bool-ответ не меняется; пары отрицательный/положительный кэш выше сохранены.
+            _hintDoor = FindDoorInGrid(position, range);
             _hintDoorVersion = _doorsVersion;
             _hintDoorPosition = position;
             _hintDoorRange = range;
             return _hintDoor != null;
+        }
+
+        private static long DoorCellKey(int x, int z) => ((long)x << 32) ^ (uint)z;
+
+        /// <summary>
+        /// T-PERF24: индекс по клеткам XZ для observation-подсказки. Пересобирается только
+        /// при смене состава реестра или при мировом сдвиге (Floating Origin rebase),
+        /// который ловится по смещению одной «пробирной» двери.
+        /// </summary>
+        private static void EnsureDoorGrid()
+        {
+            if (_doorGridBuilt && _doorGridVersion == _doorsVersion)
+            {
+                if (_doorGridProbe == null) return;
+                if ((_doorGridProbe.transform.position - _doorGridProbePosition).sqrMagnitude
+                    <= DoorGridResyncRadius * DoorGridResyncRadius) return;
+            }
+
+            BuildDoorGrid();
+        }
+
+        private static void BuildDoorGrid()
+        {
+            _doorGrid.Clear();
+            _doorGridDynamic.Clear();
+            _doorGridMaxRadius = 0f;
+            _doorGridProbe = null;
+
+            for (int i = 0; i < _doors.Count; i++)
+            {
+                var door = _doors[i];
+                if (door == null) continue;
+
+                float radius = door.InteractionBoundingRadius;
+                // Корабельные двери уезжают вместе с кораблём, а не-боксовый коллайдер
+                // отключает broadphase (радиус = +inf): и те, и другие — линейно.
+                if (door.ShipController != null || float.IsInfinity(radius))
+                {
+                    _doorGridDynamic.Add(door);
+                    continue;
+                }
+
+                Vector3 p = door.transform.position;
+                long key = DoorCellKey(Mathf.FloorToInt(p.x / DoorGridCellSize), Mathf.FloorToInt(p.z / DoorGridCellSize));
+                if (!_doorGrid.TryGetValue(key, out var bucket))
+                {
+                    bucket = new List<DoorController>(8);
+                    _doorGrid.Add(key, bucket);
+                }
+                bucket.Add(door);
+
+                if (radius > _doorGridMaxRadius) _doorGridMaxRadius = radius;
+                if (_doorGridProbe == null) { _doorGridProbe = door; _doorGridProbePosition = p; }
+            }
+
+            _doorGridVersion = _doorsVersion;
+            _doorGridBuilt = true;
+        }
+
+        /// <summary>
+        /// Ближайшая дверь в радиусе по сетке. Правило отбора дословно совпадает с
+        /// FindNearestDoor: broadphase по transform.position + InteractionBoundingRadius,
+        /// затем точное DistanceToInteraction. Позиция двери читается живьём (FO-safe).
+        /// </summary>
+        private static DoorController FindDoorInGrid(Vector3 position, float range)
+        {
+            EnsureDoorGrid();
+
+            DoorController nearest = null;
+            float minDist = float.MaxValue;
+
+            for (int i = 0; i < _doorGridDynamic.Count; i++)
+            {
+                var door = _doorGridDynamic[i];
+                if (door == null || !door.isActiveAndEnabled) continue;
+                float broad = range + door.InteractionBoundingRadius;
+                if ((position - door.transform.position).sqrMagnitude > broad * broad) continue;
+                float dist = door.DistanceToInteraction(position);
+                if (dist < range && dist < minDist) { minDist = dist; nearest = door; }
+            }
+
+            // Клетки, которые может задеть радиус: расширены на максимальный
+            // InteractionBoundingRadius, иначе дверь с далёким transform и большим
+            // коллайдером потерялась бы между клетками.
+            float reach = Mathf.Max(0f, range) + _doorGridMaxRadius;
+            int minX = Mathf.FloorToInt((position.x - reach) / DoorGridCellSize);
+            int maxX = Mathf.FloorToInt((position.x + reach) / DoorGridCellSize);
+            int minZ = Mathf.FloorToInt((position.z - reach) / DoorGridCellSize);
+            int maxZ = Mathf.FloorToInt((position.z + reach) / DoorGridCellSize);
+
+            for (int cx = minX; cx <= maxX; cx++)
+            {
+                for (int cz = minZ; cz <= maxZ; cz++)
+                {
+                    if (!_doorGrid.TryGetValue(DoorCellKey(cx, cz), out var bucket)) continue;
+                    for (int k = 0; k < bucket.Count; k++)
+                    {
+                        var door = bucket[k];
+                        if (door == null || !door.isActiveAndEnabled) continue;
+                        float broad = range + door.InteractionBoundingRadius;
+                        if ((position - door.transform.position).sqrMagnitude > broad * broad) continue;
+                        float dist = door.DistanceToInteraction(position);
+                        if (dist < range && dist < minDist) { minDist = dist; nearest = door; }
+                    }
+                }
+            }
+
+            return nearest;
         }
 
         /// <summary>
@@ -454,6 +587,10 @@ namespace ProjectC.Core
             _shipCargoConsoles.Clear();
             _repairManagers.Clear();
             _doors.Clear();
+            _doorGrid.Clear();
+            _doorGridDynamic.Clear();
+            _doorGridBuilt = false;
+            _doorGridVersion = -1;
             _shipBoardingTargets.Clear();
         }
 

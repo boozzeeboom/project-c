@@ -673,6 +673,28 @@ namespace ProjectC.World
             CheckCount++;
         }
 
+        /// <summary>
+        /// T-PERF24: гейт суток + грейс после включения (T-LIGHT21). Вынесено из тела цикла, чтобы
+        /// Light.intensity (её владелец — ALIC) читалась только у источников, которые реально могут
+        /// попасть в _keep/_cand: это 2238 источников против ≤ cap. gateEps &lt; 0 — гейт суток
+        /// выключен, чтения нет вовсе (как и раньше). GateGraceHeld с этого момента считает только
+        /// реально оценённые источники — диагностический счётчик, поведение набора не меняется.
+        /// </summary>
+        private bool IsEmitting(int i, Light l, float gateEps, ref int graceHeld)
+        {
+            if (gateEps < 0f) return true;
+            if (l.intensity > gateEps) return true;
+            // T-LIGHT21: грейс-период после включения. В первых кадрах fade-in интенсивность ≈ 0
+            // (её ещё ведёт ALIC), и без грейса гейт счёл бы источник погашенным и выключил его —
+            // лампа замигала бы ровно там, где fade её убирает. Грейс только для уже включённых.
+            if (gateGraceSeconds > 0f && l.enabled && Time.time - _enabledAt[i] < gateGraceSeconds)
+            {
+                graceHeld++;
+                return true;
+            }
+            return false;
+        }
+
         private void CheckCore()
         {
             if (_lights.Length == 0) return;
@@ -775,29 +797,18 @@ namespace ProjectC.World
                 float d = dx * dx + dy * dy + dz * dz;
                 _sqr[i] = d;
 
-                bool emitting = gateEps < 0f || l.intensity > gateEps;
-
-                // T-LIGHT21: грейс-период после включения. В первых кадрах fade-in интенсивность ≈ 0
-                // (её ещё ведёт ALIC), и без грейса гейт счёл бы источник погашенным и выключил его —
-                // лампа замигала бы ровно там, где fade её убирает. Грейс только для уже включённых.
-                if (!emitting && gateGraceSeconds > 0f && l.enabled &&
-                    Time.time - _enabledAt[i] < gateGraceSeconds)
-                {
-                    emitting = true;
-                    graceHeld++;
-                }
-
                 if (!coneMode)
                 {
                     // Контроль A/B — поведение L2/L3: критерий только дистанция.
                     if (_on[i])
                     {
+                        bool emitting = IsEmitting(i, l, gateEps, ref graceHeld);
                         // уже горит: держим до внешнего радиуса, но погашенный источник не держим —
                         // иначе днём половина бюджета занята невидимым светом.
                         if (d <= offSqr && emitting) _keep.Add(i);
                         else if (!emitting) gateDropped++;
                     }
-                    else if (d <= onSqr && emitting)
+                    else if (d <= onSqr && IsEmitting(i, l, gateEps, ref graceHeld))
                     {
                         _cand.Add(i);
                     }
@@ -817,6 +828,7 @@ namespace ProjectC.World
                         float ay = dx * up.x + dy * up.y + dz * up.z;
                         hold = z > 0f && Mathf.Abs(ax) <= tanOffH * z && Mathf.Abs(ay) <= tanOffV * z;
                     }
+                    bool emitting = IsEmitting(i, l, gateEps, ref graceHeld);
                     if (hold && emitting)
                     {
                         _keep.Add(i);
@@ -833,22 +845,24 @@ namespace ProjectC.World
                         float ay = dx * up.x + dy * up.y + dz * up.z;
                         front = z > 0f && Mathf.Abs(ax) <= tanOnH * z && Mathf.Abs(ay) <= tanOnV * z;
                     }
-                    if (!emitting)
+                    if (front)
                     {
-                        // погашено по кривой суток — ни в каком случае не включаем
-                    }
-                    else if (front)
-                    {
-                        _cand.Add(i);
-                        coneCand++;
-                        NoteCandidateScore(i, d, z);
+                        if (IsEmitting(i, l, gateEps, ref graceHeld))
+                        {
+                            _cand.Add(i);
+                            coneCand++;
+                            NoteCandidateScore(i, d, z);
+                        }
                     }
                     else if (d <= rearOnSqr)
                     {
                         // За спиной, но вплотную — держим свет, чтобы не было чёрной дыры вокруг камеры.
-                        _cand.Add(i);
-                        rearCand++;
-                        NoteCandidateScore(i, d, z);
+                        if (IsEmitting(i, l, gateEps, ref graceHeld))
+                        {
+                            _cand.Add(i);
+                            rearCand++;
+                            NoteCandidateScore(i, d, z);
+                        }
                     }
                 }
             }

@@ -1341,3 +1341,86 @@ compile + domain reload — завершены, ошибок C# нет; `git dif
 и Build агентом — **NOT RUN**. Следующий захват должен проверить ShipShadowBudget.Update,
 CloudyNavigatorHost.Update и связанную UI-инвалидацию, EngineThrusterVisual.Update, NPC.Nav.Cruising,
 корректность ближних/дальних теней кораблей, открытие/закрытие Cloudy Navigator и визуалы двигателей.
+
+
+
+
+## T-PERF24 — сетка дверей, троттлинг FO-исполнителя, Δ-граница бюджетов теней и ленивый intensity LightPool (`ProjectC_client_2026-11-24_19-11-11.data`)
+
+1 343 кадра, boot до ~43, steady-state 44…1 342 — **1 299 кадров**. `PlayerLoop` медиана
+**24,79 мс/кадр** (mean 25,64, p90 32,13, max 172,78, min 12,38). Внутри `UpdateScene` 18,99,
+из него `Physics.Simulate` 6,37, `ScriptRunBehaviourUpdate` 3,16, `FixedScriptRun` 1,39,
+`PostLateUpdate.UpdateAllRenderers` ~1,5, `PreLateUpdate` 0,54, Canvases 0,48, UIElements ~0,5,
+GPUResidentDrawer 0,40, NavMeshManager 0,21. Отдельно `RenderPlayModeViewCameras` 6,64 и
+`EditorLoop` self **27,70** — фон редактора, не project-side. GC-аллокации: 265 сэмплов `GC.Alloc`,
+**18,36 КБ/кадр** (было 62); проектный лидер `ContractServer.FixedUpdate` 1,63 КБ/кадр —
+шесть коллекций и closure rollback-скоупа в `TickCore` на каждый FixedUpdate.
+
+Главные project-side managed участки по self-time: `NetworkPlayer.InteractionHint` **0,4484** мс/кадр
+(0,2 вызова/кадр, то есть ~2,2 мс на вызов — самый дорогой project-side участок),
+`NPC.Nav.Cruising` 0,3795 (30,8 вызова, из них `Physics.Raycast` 0,1167 / 22,8 — лидар),
+`GlobalSceneNativeExecutor.Update` 0,1874 (1,0), `GlobalMotionWorld.FixedUpdate` 0,1823 (2,0),
+`PRIMUM/LightPool.Check` 0,1722 (0,2), `EngineThrusterVisual.Update` 0,1542 (40,0, ~3,9 мкс/вызов),
+`CityShadowBudget.Update` 0,1550 (1,0), `DoorVisibilityBudget.Update` 0,1480 (1,0),
+`VisibilityDirector.Tick` 0,1260 (0,1), `Wind.Spline.Detect` 0,1273 (0,7),
+`Ship.Controller.FixedUpdate` 0,1112 (46,2), `AI.NpcBrain.FixedUpdate` 0,1015 (72,1),
+`GlobalMotionWorld.Update` 0,0900, `GlobalMotionPoseAdapter.LateUpdate` 0,0821. Эффект T-PERF23
+подтверждён: `EngineThrusterVisual.Update` держится на fast-path, `CloudyNavigatorHost.Update`
+в этом захвате уже не входит в верхнюю полосу self.
+
+Причины по каждому участку: подсказка двери переиспользует пустой результат только в радиусе
+0,25 м, а игрок за 0,2 с проходит больше — каждый observation-запрос заново обходил ~2 800 дверей;
+FO-исполнитель делает два полных прохода по `_prepared.Nodes` каждый кадр уже после того, как всё
+записано и `CanAcceptScenePeer == true`; оба бюджета теней пересчитывают все записи каждый тик,
+включая давно выключенные и далёкие; `PRIMUM/LightPool.Check` читает `Light.intensity` у всех
+2 238 источников, хотя значение нужно только тем, кто может попасть в `_keep`/`_cand`.
+
+Изменения:
+
+- `InteractableManager.HasDoorInRange`: XZ-сетка дверей `DoorGridCellSize = 24 м`, построенная
+  только для observation-подсказки. Запрос перебирает клетки вокруг игрока (единицы дверей) вместо
+  всех ~2 800, правило отбора дословно прежнее (broadphase по `transform.position` +
+  `InteractionBoundingRadius`, затем точный `DistanceToInteraction`), поэтому bool-ответ не меняется.
+  Сетка пересобирается при смене состава реестра (`_doorsVersion`) и при мировом сдвиге, который
+  ловится O(1)-пробой по одной двери (`DoorGridResyncRadius = 0,5 м`). Двери кораблей
+  (`ShipController != null`) и двери с `InteractionBoundingRadius = +inf` в сетку не кладутся и
+  перебираются линейно. Фактический `FindNearestDoor` при нажатии остаётся полным и точным — выбор
+  ближайшей цели действия не изменён. Ожидаемое снятие — большая часть 0,4484 мс/кадр.
+- `GlobalSceneNativeExecutor.Update`: в устойчивом ready-состоянии полный `Advance()` выполняется
+  не реже 4 Гц (`SteadyAdvanceInterval = 0,25 с`) только после `SteadyConfirmSeconds = 1 с`
+  непрерывной готовности. Проверки ядра fail-closed не ослаблены: каждый кадр идёт дешёвая проба
+  тех же условий, что `Advance` проверяет первыми — менеджер и `NetworkManager.Singleton`, состояние
+  listening/shutdown, `GlobalMotionNetworkStartup.IsInstalled`, `_world.IsRunning` и
+  `InitialPreparedSceneSetIsIntact`. Отклонение от ready, `_faulted` и `_retiring` мгновенно снимают
+  троттлинг (`_steadyReadySince = -1`). Максимальная задержка обнаружения дрейфа —
+  0,25 с. Ожидаемое снятие — около трёх четвертей от 0,1874 мс/кадр.
+- `CityShadowBudget` и `DoorVisibilityBudget`: Δ-граница записи. Для каждой записи хранится дистанция
+  на момент последнего перемера, а по камерам считается пройденный сдвиг (максимум по камерам,
+  накопленный с последнего ПОЛНОГО перемера). Сдвиг камеры на `m` меняет дистанцию не больше чем на
+  `m`, поэтому запись пропускается, если `dist − moved` остаётся выше порога её текущего вердикта
+  (`shadowOffDistance` для включённых теней, `shadowOnDistance` для выключенных) — перевернуть вердикт
+  она не может. Раз в `FullSweepTicks = 4` тика (~1,3 с при 3 Гц), при смене состава камер и после
+  `Restore` идёт полный перемер — он же ловит подвижные рендереры с изменившимися габаритами.
+  Сдвиг мира Floating Origin двигает камеры и геометрию одинаково, поэтому дистанции не меняются;
+  при rebase оценка сдвига выходит большой и перемер происходит сразу. Пороги 180/200 м и 50/60 м,
+  гистерезис, состав групп, `Restore` и хостинг не изменены. Ожидаемое суммарное снятие — около
+  половины от 0,1550 + 0,1480 мс/кадр.
+- `PrimumLightPool.CheckCore`: `Light.intensity` (её владелец — ALIC) читается лениво — только у
+  источников, которые реально могут попасть в `_keep`/`_cand` (≤ `maxActive` плюс близкие
+  кандидаты вместо всех 2 238). Для уже горящих источников чтение оставлено безусловным, чтобы
+  `DayGateDropped` остался прежним. Гейт суток, грейс-период T-LIGHT21, тыловой радиус, веер,
+  score, резерв под улицу и fade-удержание не изменены. `GateGraceHeld` теперь считает только
+  реально оценённые источники — это диагностический счётчик, набор источников не зависит.
+  Ожидаемое снятие — часть 0,1722 мс/кадр.
+
+Не изменялось намеренно: `GlobalMotionWorld` / `GlobalMotionPoseAdapter` и identity/fail-closed
+проверки FO (допустим только троттлинг с документированной границей задержки),
+`ContractWorld.TickCore` (−1,63 КБ/кадр, но rollback-скоуп со множеством аллокаций — отдельная
+задача), `NpcShipController.TickCruise` (маршрутные пороги и watchdog уже разрежены T-PERF21/22/23).
+
+compile + domain reload — завершены, ошибок C# нет; `git diff --check` — чисто. Play Mode, тесты
+и Build агентом — **NOT RUN**. Следующий захват должен проверить `NetworkPlayer.InteractionHint`,
+`GlobalSceneNativeExecutor.Update`, `CityShadowBudget.Update`, `DoorVisibilityBudget.Update`,
+`PRIMUM/LightPool.Check`, а также поведение: подсказка и открытие ближайшей двери (в том числе
+двери корабля и двери с не-боксовым коллайдером), ближние/дальние тени города и дверей после
+долгого стояния на месте и после перехода через границу 180/200 м и 50/60 м, ночные лампы и их fade.

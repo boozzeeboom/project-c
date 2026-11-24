@@ -54,12 +54,24 @@ namespace ProjectC.World
             public readonly List<Renderer> renderers = new List<Renderer>();
             public readonly List<ShadowCastingMode> baseModes = new List<ShadowCastingMode>();
             public bool shadowsOn = true;
+            // T-PERF24: дистанция до камер на момент последнего перемера.
+            public float nearestDistance;
+            public bool measured;
         }
+
+        // T-PERF24: Δ-граница. Каждый тик перемеряются только группы, у которых вердикт может
+        // перевернуться от сдвига камер; раз в FullSweepTicks тиков (~1.3 с при 3 Гц) — полный перемер.
+        private const int FullSweepTicks = 4;
 
         private readonly List<DoorGroup> _groups = new List<DoorGroup>();
         private readonly List<Camera> _cameras = new List<Camera>();
         // T-PERF16: позиции живут только внутри тика — Floating Origin безопасен.
         private readonly List<Vector3> _cameraPositions = new List<Vector3>();
+        // T-PERF24: позиции прошлого тика — только для оценки сдвига камер внутри тика.
+        private readonly List<Vector3> _lastCameraPositions = new List<Vector3>();
+        private bool _cameraSnapshotValid;
+        private float _cameraTravelSinceSweep;
+        private int _ticksSinceFullSweep;
 
         private int _doorMask;
         private float _cameraTimer;
@@ -239,6 +251,9 @@ namespace ProjectC.World
                 _cameras.Add(cam);
                 if (applyDistance) ApplyLayerDistance(cam);
             }
+
+            // T-PERF24: состав камер мог смениться — прошлые позиции больше не сопоставимы.
+            _cameraSnapshotValid = false;
         }
 
         private void ApplyLayerDistance(Camera cam)
@@ -270,6 +285,8 @@ namespace ProjectC.World
                 cam.layerCullDistances = current;
             }
             _cameras.Clear();
+            _cameraSnapshotValid = false;
+            _lastCameraPositions.Clear();
         }
 
         // ---------------------------------------------------------------- тени
@@ -284,6 +301,31 @@ namespace ProjectC.World
             }
             if (_cameraPositions.Count == 0) return;
 
+            // T-PERF24: сколько камеры прошли с последнего полного перемера. Вердикт группы может
+            // перевернуться только если дистанция перешла свой порог; поэтому дальние и
+            // давно выключенные группы не перемеряются каждый тик.
+            _ticksSinceFullSweep++;
+            bool fullSweep = _ticksSinceFullSweep >= FullSweepTicks || !_cameraSnapshotValid ||
+                             _lastCameraPositions.Count != _cameraPositions.Count;
+            float moved;
+            if (fullSweep)
+            {
+                _ticksSinceFullSweep = 0;
+                _cameraTravelSinceSweep = 0f;
+                moved = float.PositiveInfinity;
+            }
+            else
+            {
+                float maxDelta = 0f;
+                for (int c = 0; c < _cameraPositions.Count; c++)
+                {
+                    float delta = (_cameraPositions[c] - _lastCameraPositions[c]).magnitude;
+                    if (delta > maxDelta) maxDelta = delta;
+                }
+                _cameraTravelSinceSweep += maxDelta;
+                moved = _cameraTravelSinceSweep;
+            }
+
             float shadowOnDistanceSqr = shadowOnDistance * shadowOnDistance;
             float shadowOffDistanceSqr = shadowOffDistance * shadowOffDistance;
             for (int g = _groups.Count - 1; g >= 0; g--)
@@ -295,6 +337,11 @@ namespace ProjectC.World
                     _needRebuild = true;
                     continue;
                 }
+
+                // Δ-граница: тени снимаются только при дистанции ≤ off, включаются только при < on.
+                if (!float.IsPositiveInfinity(moved) && group.measured &&
+                    group.nearestDistance - moved > (group.shadowsOn ? shadowOffDistance : shadowOnDistance))
+                    continue;
 
                 // Union по камерам: Renderer.enabled/shadowCastingMode глобальны, поэтому
                 // тени нужны, пока дверь близка хотя бы к одной геймплейной камере.
@@ -309,6 +356,8 @@ namespace ProjectC.World
                 bool want = group.shadowsOn
                     ? nearestSqr <= shadowOffDistanceSqr
                     : nearestSqr < shadowOnDistanceSqr;
+                group.measured = true;
+                group.nearestDistance = Mathf.Sqrt(nearestSqr);
                 if (want == group.shadowsOn) continue;
 
                 group.shadowsOn = want;
@@ -319,6 +368,10 @@ namespace ProjectC.World
                     renderer.shadowCastingMode = want ? group.baseModes[r] : ShadowCastingMode.Off;
                 }
             }
+
+            _lastCameraPositions.Clear();
+            for (int c = 0; c < _cameraPositions.Count; c++) _lastCameraPositions.Add(_cameraPositions[c]);
+            _cameraSnapshotValid = true;
         }
 
         // ------------------------------------------------------------ хостинг

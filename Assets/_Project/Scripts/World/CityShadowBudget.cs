@@ -62,11 +62,19 @@ namespace ProjectC.World
         // достаточно поставить здесь false, и авто-запуск прекратится без правки остального кода.
         private const bool AutoBootstrap = true;
 
+        // T-PERF24: Δ-граница. Каждый тик перемеряются только те записи, у которых вердикт может
+        // перевернуться от сдвига камер (см. UpdateShadows). Раз в FullSweepTicks тиков (~1.3 с при 3 Гц)
+        // идёт полный перемер — он же ловит подвижные рендереры, у которых поменялись габариты.
+        private const int FullSweepTicks = 4;
+
         private class Entry
         {
             public Renderer renderer;
             public ShadowCastingMode baseMode;
             public bool shadowsOn = true;
+            // Дистанция на момент последнего перемера и признак, что она есть.
+            public float nearestDistance;
+            public bool measured;
         }
 
         private readonly List<Entry> _entries = new List<Entry>();
@@ -75,6 +83,11 @@ namespace ProjectC.World
         // T-PERF16: позиции живут только внутри тика — Floating Origin безопасен.
         private readonly List<Vector3> _cameraPositions = new List<Vector3>();
         private readonly HashSet<Renderer> _shipRenderers = new HashSet<Renderer>();
+        // T-PERF24: позиции прошлого тика — только для оценки сдвига камер внутри тика.
+        private readonly List<Vector3> _lastCameraPositions = new List<Vector3>();
+        private bool _cameraSnapshotValid;
+        private float _cameraTravelSinceSweep;
+        private int _ticksSinceFullSweep;
 
         private float _cameraTimer;
         private float _updateTimer;
@@ -224,6 +237,9 @@ namespace ProjectC.World
             // Страховка: если мир не попал в маску ни одной камеры, остаёмся на прежнем
             // поведении (union по всем геймплейным камерам), а не выключаем бюджет целиком.
             if (_cameras.Count == 0) _cameras.AddRange(_allGameCameras);
+
+            // T-PERF24: состав камер мог смениться — прошлые позиции больше не сопоставимы.
+            _cameraSnapshotValid = false;
         }
 
         /// <summary>Есть ли хоть один городской кандидат ближе far-плоскости камеры.</summary>
@@ -253,6 +269,33 @@ namespace ProjectC.World
             }
             if (_cameraPositions.Count == 0) return;
 
+            // T-PERF24: сколько камеры прошли с последнего ПОЛНОГО перемера. Сдвиг камеры на величину m
+            // меняет дистанцию до записи не больше чем на m, поэтому запись можно не перемерять,
+            // пока её дистанция гарантированно не перешла свой порог гистерезиса.
+            _ticksSinceFullSweep++;
+            bool fullSweep = _ticksSinceFullSweep >= FullSweepTicks || !_cameraSnapshotValid ||
+                             _lastCameraPositions.Count != _cameraPositions.Count;
+            float moved;
+            if (fullSweep)
+            {
+                _ticksSinceFullSweep = 0;
+                _cameraTravelSinceSweep = 0f;
+                moved = float.PositiveInfinity;
+            }
+            else
+            {
+                float maxDelta = 0f;
+                for (int c = 0; c < _cameraPositions.Count; c++)
+                {
+                    float delta = (_cameraPositions[c] - _lastCameraPositions[c]).magnitude;
+                    if (delta > maxDelta) maxDelta = delta;
+                }
+                // Сдвиг мира Floating Origin двигает и камеры, и геометрию — дистанции не меняются,
+                // но перемер при этом всё равно безопасен (moved просто окажется большим).
+                _cameraTravelSinceSweep += maxDelta;
+                moved = _cameraTravelSinceSweep;
+            }
+
             float shadowOnDistanceSqr = shadowOnDistance * shadowOnDistance;
             float shadowOffDistanceSqr = shadowOffDistance * shadowOffDistance;
             for (int i = 0; i < _entries.Count; i++)
@@ -264,6 +307,13 @@ namespace ProjectC.World
                     _needRebuild = true;
                     continue;
                 }
+
+                // Δ-граница: включённые тени снимаются только при дистанции ≤ off, выключенные
+                // включаются только при дистанции < on. Если даже максимальное приближение
+                // (dist − moved) остаётся выше нужного порога — вердикт не изменится.
+                if (!float.IsPositiveInfinity(moved) && e.measured &&
+                    e.nearestDistance - moved > (e.shadowsOn ? shadowOffDistance : shadowOnDistance))
+                    continue;
 
                 // Union по камерам: shadowCastingMode глобален, поэтому тени нужны, пока
                 // геометрия близка хотя бы к одной геймплейной камере.
@@ -278,11 +328,17 @@ namespace ProjectC.World
                 bool want = e.shadowsOn
                     ? nearestSqr <= shadowOffDistanceSqr
                     : nearestSqr < shadowOnDistanceSqr;
+                e.measured = true;
+                e.nearestDistance = Mathf.Sqrt(nearestSqr);
                 if (want == e.shadowsOn) continue;
 
                 e.shadowsOn = want;
                 r.shadowCastingMode = want ? e.baseMode : ShadowCastingMode.Off;
             }
+
+            _lastCameraPositions.Clear();
+            for (int c = 0; c < _cameraPositions.Count; c++) _lastCameraPositions.Add(_cameraPositions[c]);
+            _cameraSnapshotValid = true;
         }
 
         private void Restore()
@@ -298,6 +354,10 @@ namespace ProjectC.World
             _cameras.Clear();
             _allGameCameras.Clear();
             _shipRenderers.Clear();
+            _lastCameraPositions.Clear();
+            _cameraSnapshotValid = false;
+            _cameraTravelSinceSweep = 0f;
+            _ticksSinceFullSweep = 0;
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]

@@ -54,6 +54,15 @@ namespace ProjectC.World.FloatingOrigin.Network
         [SerializeField] private bool _debugLog = false;
 
         private double _startedAt;
+        // T-PERF24: в устойчивом ready-состоянии полный Advance() (два обхода _prepared.Nodes +
+        // InitialPreparedSceneSetIsIntact) нужен только как страховка от дрейфа. Проверки ядра
+        // fail-closed НЕ ослаблены: дешёвая проба (менеджер/лизинг/мир/набор сцен) идёт каждый кадр,
+        // полный проход — не реже 4 Гц, поэтому дрейф и потеря готовности детектируются с задержкой
+        // не более SteadyAdvanceInterval. Отклонение от ready мгновенно снимает троттлинг.
+        private const double SteadyAdvanceInterval = 0.25d;
+        private const double SteadyConfirmSeconds = 1d;
+        private double _steadyReadySince = -1d;
+        private double _nextSteadyAdvanceAt;
         /// <summary>
         /// T-FO06CZ: a steady-state fault after the network ran must not retract completed
         /// placement — otherwise the bootstrap Update fails with native_scene_preparation_lost
@@ -265,6 +274,7 @@ namespace ProjectC.World.FloatingOrigin.Network
             _prepared = BuildPreparation(manager, profile, frames); _manager = manager; _world = manager.GetComponent<GlobalMotionWorld>();
             if (_world == null) throw new InvalidOperationException("Motion world missing.");
             _installed = true; _faulted = false; _networkRan = false; _retiring = false; CanAcceptScenePeer = false;
+            _steadyReadySince = -1d; _nextSteadyAdvanceAt = 0d;
             try
             {
                 foreach (var node in _prepared.Nodes)
@@ -320,7 +330,35 @@ namespace ProjectC.World.FloatingOrigin.Network
             finally { _busy = false; }
             Advance();
         }
-        private void Update() { if (_installed && _networkRan && !_retiring) Advance(); }
+        private void Update()
+        {
+            if (!_installed || !_networkRan || _retiring) return;
+            if (SteadyThrottled()) return;
+            Advance();
+        }
+        /// <summary>
+        /// T-PERF24: true — кадр можно пропустить. Пропуск разрешён только после SteadyConfirmSeconds
+        /// непрерывной готовности и только если проба не увидела изменений; полный Advance при этом
+        /// выполняется не реже раза в SteadyAdvanceInterval.
+        /// </summary>
+        private bool SteadyThrottled()
+        {
+            if (_busy || _faulted || !CanAcceptScenePeer || _steadyReadySince < 0d) return false;
+            double now = Time.realtimeSinceStartupAsDouble;
+            if (now - _steadyReadySince < SteadyConfirmSeconds) return false;
+            if (!SteadyProbeIntact()) return false;
+            if (now < _nextSteadyAdvanceAt) return true;
+            _nextSteadyAdvanceAt = now + SteadyAdvanceInterval;
+            return false;
+        }
+        /// <summary>Дешёвая O(1)-проба тех же условий, которые Advance() проверяет первыми.</summary>
+        private bool SteadyProbeIntact()
+        {
+            if (_manager == null || _manager != NetworkManager.Singleton || !_manager.IsListening || _manager.ShutdownInProgress) return false;
+            if (_world == null || !_world.IsRunning) return false;
+            if (!GlobalMotionNetworkStartup.IsInstalled(_manager)) return false;
+            return InitialPreparedSceneSetIsIntact(out _);
+        }
         private bool InitialPreparedSceneSetIsIntact(out string error)
         {
             error = null;
@@ -460,6 +498,9 @@ namespace ProjectC.World.FloatingOrigin.Network
                     if (!node.Recorded || node.Retired || (node.Network != null && !node.Network.IsSpawned)) ready = false;
                 }
                 CanAcceptScenePeer = ready;
+                // T-PERF24: точка отсчёта устойчивой готовности для троттлинга Update().
+                if (ready) { if (_steadyReadySince < 0d) _steadyReadySince = Time.realtimeSinceStartupAsDouble; }
+                else _steadyReadySince = -1d;
                 LogReadiness(ready, recordedCount, pendingCount, unspawnedCount, retiredCount);
                 if (!ready && Time.realtimeSinceStartupAsDouble - _startedAt > 60d) throw new InvalidOperationException("Initial scene receipts timed out.");
             }
@@ -491,7 +532,7 @@ namespace ProjectC.World.FloatingOrigin.Network
                     (node.Entry.RequiresNetworkLifecycle && node.Network != null && node.Network.IsSpawned) ||
                     (!node.Unmanaged && (!node.Activate || (node.Network != null && !_manager.IsServer && node.Network.IsSpawned)))))
                 { error = "persistent_unaccounted_or_still_spawned_client_source"; return false; }
-            _busy = true; _retiring = true; CanAcceptScenePeer = false;
+            _busy = true; _retiring = true; CanAcceptScenePeer = false; _steadyReadySince = -1d; _nextSteadyAdvanceAt = 0d;
             try
             {
                 foreach (string id in _ledger.GetRetireOrder(ticket))

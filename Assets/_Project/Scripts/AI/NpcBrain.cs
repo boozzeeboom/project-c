@@ -921,7 +921,19 @@ namespace ProjectC.AI
             // в origin (км от палубного меша) и Unity спамит "Failed to create agent"
             // (692 шт. в захвате 19-19). Та же математика, что в WarpProxyToNpc.
             Vector3 deckLocal = _parentedToShip ? transform.localPosition : _deckNav.WorldToDeckLocal(transform.position);
-            _proxyGo.transform.position = _deckNav.DeckLocalToNav(deckLocal);
+            Vector3 navPos = _deckNav.DeckLocalToNav(deckLocal);
+
+            // T-PERF25: AddComponent по точке вне меша всё равно даёт нативное "Failed to create agent"
+            // (18 таких в захвате 19-38-45). Проверяем меш ДО создания агента и ставим прокси ровно
+            // на него: точную посадку всё равно делает WarpProxyToNpc своими радиусами.
+            if (!NavMesh.SamplePosition(navPos, out NavMeshHit proxyLand, 2f, NavMesh.AllAreas))
+            {
+                Destroy(_proxyGo);
+                _proxyGo = null;
+                return;
+            }
+
+            _proxyGo.transform.position = proxyLand.position;
             _proxyAgent = _proxyGo.AddComponent<NavMeshAgent>();
             if (_agent != null)
             {

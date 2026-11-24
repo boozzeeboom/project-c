@@ -15,6 +15,7 @@
 
 using System.Collections.Generic;
 using UnityEngine;
+using ProjectC.Core;
 
 namespace ProjectC.Ship.Cargo
 {
@@ -208,7 +209,10 @@ namespace ProjectC.Ship.Cargo
 
             if (_boxPrefabs == null || _boxPrefabs.Length == 0)
             {
-                Debug.LogWarning(
+                // T-PERF25: 23 сценовых инстанса CargoVisual/ShipCargoVisual приходят с пустым массивом —
+                // это авторское состояние трюмов, а не регресс (ящики просто не спавнятся).
+                // Раньше это был Warning на каждый инстанс; подробности — под флагом ProjectLog.Verbose.
+                ProjectLog.Info(
                     $"[ShipCargoVisual] '{gameObject.name}': _boxPrefabs array is empty. " +
                     "Assign at least 1 prefab.", this);
             }

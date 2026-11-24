@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using ProjectC.Core;
 using ProjectC.Player;
 
 namespace ProjectC.Ship.Engine
@@ -180,6 +181,9 @@ namespace ProjectC.Ship.Engine
         /// <summary>
         /// T-ENG02 multi-pivot: плечо pivot→visuals в метрах. Большое плечо =
         /// мотор описывает дугу вместо поворота на месте (см. Ship_medium_base до фикса).
+        /// T-PERF25: у существующего флота плечо 24–117 м — это авторское состояние, а не регресс;
+        /// строка стоит в консоли 34 раза за сессию. Гизмо продолжает подсвечивать такие юниты,
+        /// а полный текст уходит в info-лог под мастер-флагом ProjectLog.Verbose.
         /// </summary>
         private void ValidateLevers()
         {
@@ -190,7 +194,7 @@ namespace ProjectC.Ship.Engine
                 float lever = Vector3.Distance(unit.pivot.position, unit.visuals.position);
                 if (lever > _leverWarnDistance)
                 {
-                    Debug.LogWarning(
+                    ProjectLog.Info(
                         $"[EngineThrusterVisual] '{name}': юнит visuals='{unit.visuals.name}' — " +
                         $"плечо pivot→visuals {lever:F1} м (> {_leverWarnDistance:F0} м). " +
                         $"Двигатель будет описывать дугу вместо поворота на месте. " +

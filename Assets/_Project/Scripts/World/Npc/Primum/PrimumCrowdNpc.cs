@@ -364,7 +364,12 @@ namespace ProjectC.World.NpcPrimum
 
         private void ApplyVisualLod(Vector3 cameraPosition, bool animate)
         {
-            float sqr = (cameraPosition - transform.position).sqrMagnitude;
+            // T-PERF25: камера LOD может быть неизвестна — риг SpringArmCamera ещё не заспавнен,
+            // а Camera.main отдаёт статичную MainCamera BootstrapScene в сотнях километров от
+            // города. По такой позиции LOD гасит ВСЕХ NPC сразу («толпа пропала»), поэтому в этом
+            // состоянии считаем всех видимыми: лучше лишний визуал, чем пустая улица.
+            bool cameraKnown = _director == null || _director.CameraLodValid;
+            float sqr = cameraKnown ? (cameraPosition - transform.position).sqrMagnitude : 0f;
 
             bool showVisual = sqr <= _config.visualRadius * _config.visualRadius;
             if (showVisual != _visualActive && _renderers != null)

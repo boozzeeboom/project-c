@@ -270,7 +270,10 @@ namespace ProjectC.World
             }
             arr[DoorLayer] = want;
             cam.layerCullDistances = arr;
-            cam.layerCullSpherical = false;
+            // T-PERF25: в SRP (URP) layerCullSpherical не поддерживается — установка даёт варнинг рунтайма
+            // «You can use Camera.layerCullSpherical only with the built-in renderer» на каждую камеру,
+            // а сами layerCullDistances в URP игнорируются. Флаг чиним только на встроенном рендере.
+            if (UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline == null) cam.layerCullSpherical = false;
         }
 
         private void RestoreCameras()

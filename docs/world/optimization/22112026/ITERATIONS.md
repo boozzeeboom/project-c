@@ -1424,3 +1424,95 @@ compile + domain reload — завершены, ошибок C# нет; `git dif
 `PRIMUM/LightPool.Check`, а также поведение: подсказка и открытие ближайшей двери (в том числе
 двери корабля и двери с не-боксовым коллайдером), ближние/дальние тени города и дверей после
 долгого стояния на месте и после перехода через границу 180/200 м и 50/60 м, ночные лампы и их fade.
+
+
+
+## T-PERF25 — толпа PRIMUM: fail-open LOD-камеры и разбор варнингов (`ProjectC_client_2026-11-24_19-38-45.data`)
+
+2 000 кадров, boot до ~59, steady 60…1 999 — **1 940 кадров**. `PlayerLoop` медиана
+**21,33 мс/кадр** (mean 23,20, p90 29,54) против 24,79 в предыдущем захвате. Все четыре правки
+T-PERF24 подтверждены замером: `CityShadowBudget.Update` 0,1550 → **0,0898** (−42 %),
+`DoorVisibilityBudget.Update` 0,1480 → **0,0810** (−45 %), `GlobalSceneNativeExecutor.Update`
+0,1874 → **0,0426** (−77 %), `PRIMUM/LightPool.Check` 0,1722 → **0,0959** (−44 %), а
+`NetworkPlayer.InteractionHint` (0,4484) из верхней полосы self пропал совсем — сетка дверей работает.
+Верхнюю полосу теперь держат фон и корабли: `EngineThrusterVisual.Update` 0,1774 (40,0),
+`GlobalMotionWorld.FixedUpdate` 0,1770 (2,0), `DockPadVisualMarker.LateUpdate` 0,0827 (68,0),
+`GlobalMotionPoseAdapter.LateUpdate` 0,0766, `NPC.Nav.Cruising` 0,4490 (34,4).
+
+Консоль того же прогона (`ProfilerCaptures/console.txt`, 615 записей): **88 Warning, 0 Error**.
+Разбор по источникам: `EngineThrusterVisual` плечо pivot→visuals — 34 (три объекта: `Slot_Engine 2` ×17,
+`Slot_Engine` ×11, `Slot_Engine (1)` ×6), `ShipCargoVisual._boxPrefabs` пуст — 23 (`CargoVisual` ×14,
+`ShipCargoVisual` ×9), нативное `Failed to create agent because it is not close enough to the NavMesh` —
+18 (со стеками только два: `ShipCrewSpawner.SpawnMember` на Instantiate и `NpcBrain.EnsureProxy`
+на `AddComponent<NavMeshAgent>`), `[T-FO06CY] Controlled rebase rejected: no_rebase_plan` — 4,
+`Camera.layerCullSpherical` в URP — 2, остальное по одному разу.
+
+Толпа PRIMUM. Замер и код говорят, что она **спавнится и тикает**:
+`PrimumNpcCrowdDirector.LateUpdate` 0,0531 мс/кадр (1,0 вызов), в захвате живут движковые маркеры
+навмеша (`Crowd.Pathfinding` 0,047, `Crowd.Proximity.Collect` 0,0335, `Crowd.Movement`,
+`Components.NavMeshAgent.Transform` 0,0067), ошибок спавна в консоли нет, а ссылки сцены резолвятся:
+`config` → `PrimumCrowdConfig` (`targetCount` 10 000, в сцене `tier: 100`, `spawnOnStart: 1`),
+`npcTemplate` → `PrimumCrowdNpc_Template` (NavMeshAgent в префабе выключен, как и требует контракт),
+`modelCatalog` — 106/106, `residentDefinitions` — 100/100 без пустых ссылок, `model0` с одним
+SkinnedMeshRenderer и Animator. Значит причина «пропажи» — видимость, а не спавн.
+
+Прямой улики, какая ветка погасила визуал, в захвате нет: Deep Profile выключен, `Renderer.enabled`
+не сэмплируется, а `PrimumCrowdNpc.Tick` без Deep Profile в дерево не попадает вообще. Но в коде есть
+ровно одно место, способное спрятать толпу целиком, — LOD. `RefreshCamera` раз в секунду брала
+`SpringArmCamera.CameraComponent`, а при его отсутствии **безусловно** `Camera.main`. В этом проекте
+на тег MainCamera висят две камеры, и `Camera.main` отдаёт статичную MainCamera BootstrapScene в
+сотнях километров от города: `visualRadius = 400`, `animatorRadius = 120`, `nameplateRadius = 28`
+гасят визуал, аниматор и нейм-плейты у всех NPC сразу (тот же провал виден в консоли у соседних
+систем: `[PRIMUM/Lights] FocusCamera=none … MainCamera-out_of_reach` в записях 178 и 614,
+`[VisibilityDirector] … камер в union: 0`).
+
+Изменения:
+
+- `PrimumNpcCrowdDirector.RefreshCamera`: риг по-прежнему первый, но запасной `Camera.main`
+  принимается только если реально достаёт до толпы (`IsCameraReachableForLod`: дистанция до ближайшего
+  живого NPC или до контейнера жителей против `farClipPlane` — та же проверка достижимости, что в
+  `PrimumLightPool`). Последняя заведомо рабочая позиция больше не затирается мусорной, а валидность
+  камеры вынесена в `CameraLodValid`. Смена источника и валидности пишется одной строкой
+  `[PrimumCrowd] LOD-камера: …` (без повторов) — по ней в следующем прогоне видно, чем жил LOD.
+- `PrimumCrowdNpc.ApplyVisualLod`: при `CameraLodValid == false` LOD переходит в fail-open —
+  `sqr = 0`, то есть все видимы. Гасить визуал по недостижимой камере нельзя: это и есть
+  «толпа пропала». Дистанции, радиусы и порядок включения renderer/animator/нейм-плейта не изменены;
+  при валидной камере поведение прежнее байт в байт.
+- `PrimumNpcCrowdDirector.SpawnRoutine`: по завершении спавна пишется одна строка
+  `[PrimumCrowd] спавн завершён: n=…/target housesUsed=… failed=… lodCamera=…` независимо от
+  `logStats`. Без неё (в сцене `logStats: 0`) проверить наличие толпы в рантайме было нечем.
+- `DoorVisibilityBudget.ApplyLayerDistance`: `cam.layerCullSpherical` ставится только на встроенном
+  рендере, в SRP — нет. В URP этот флаг не поддерживается (отсюда два варнинга рунтайма на камеру),
+  а `layerCullDistances` там всё равно игнорируются. Порог `doorCullDistance`, состав камер и
+  `Restore` не изменены.
+- `EngineThrusterVisual.ValidateLevers`: строка о плече pivot→visuals переведена с `Debug.LogWarning`
+  на `ProjectLog.Info` (мастер-флаг `ProjectLog.Verbose`). У существующего флота плечо 24–117 м —
+  авторское состояние, а не регресс: 34 строки за сессию. Гизмо продолжает подсвечивать такие юниты.
+- `ShipCargoVisual.ValidateConfig`: пустой `_boxPrefabs` — то же самое: 23 сценовых инстанса
+  `CargoVisual`/`ShipCargoVisual` приходят без массива, ящики просто не спавнятся. Тоже
+  `ProjectLog.Info`; варнинг про отсутствующий `_spawnZone` оставлен как есть.
+- `NpcBrain.EnsureProxy`: перед `AddComponent<NavMeshAgent>` палубный прокси проверяется
+  `NavMesh.SamplePosition` (2 м) и ставится ровно на найденный меш. Раньше агент создавался по точке
+  вне меша и Unity писал нативное `Failed to create agent`; если меша под палубой нет, прокси не
+  создаётся вовсе (следующий вызов `EnsureProxy` попробует снова). Точную посадку по-прежнему делает
+  `WarpProxyToNpc` своими радиусами — логика навигации не изменена.
+- `GlobalMotionControlledRebaseSlice.ExecuteTransaction`: отказ «фокус внутри фрейма»
+  (`no_rebase_plan`) — штатный случай после T-FO09H-fix2, сдвигать нечего. В evidence он пишется
+  каждый раз, а Warning — один раз за сессию (было 4 строки на один и тот же случай). Проверки
+  и поведение FO не ослаблены: вне фрейма по-прежнему `TryCreateRecover`, а реальные отказы
+  (`local_player_unavailable`, `participant_scope_refused`, `prepare_refused`) остаются варнингами.
+
+Не изменялось намеренно: `NavMeshAgent` в crew-префабах (`Gorgona_Pilot`, `Npc_Goblin*`,
+`Npc_peacfull_market_zone*`, `[Mira]`) остаются включёнными, поэтому нативные `Failed to create agent`
+на `ShipCrewSpawner.SpawnMember` (Instantiate экипажа на палубе вне городского навмеша) сохраняются —
+это требует префабной правки и прогона на поведение экипажа. Единичные записи (`[PlayerTarget] HP init
+FAILED`, `[T-FO06L] bootstraps menus`, `[SkillInputService] Replacing existing Instance`, `[NMC]
+non-root MarketClientState`, `[ShipDamageConfig] Resources/ShipDamage`) — отдельные задачи, к толпе и
+к бюджету кадра не относятся.
+
+compile + domain reload — завершены, ошибок C# нет; `git diff --check` — чисто. Play Mode, тесты
+и Build агентом — **NOT RUN**. Следующий захват должен проверить: строку `[PrimumCrowd] LOD-камера:`
+и `[PrimumCrowd] спавн завершён:` (источник камеры и фактическое n при `logStats: 0`), видимость толпы
+в городе (в том числе после входа/выхода из корабля, когда риг камеры пересоздаётся), число варнингов
+(ожидаемо ~25 вместо 88: 18 нативных агентов и единичные записи), а также что палубные NPC не потеряли
+навигацию после проверки меша в `EnsureProxy`.

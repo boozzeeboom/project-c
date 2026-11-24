@@ -89,6 +89,7 @@ namespace ProjectC.World.NpcPrimum
         private Transform _worldRoot;
         private Transform _cameraTransform;
         private SpringArmCamera _cameraRig;
+        private string _cameraLodSource = string.Empty;
         private Transform _container;
         private Vector3 _lastWorldRootPosition;
         private float _cameraRefreshTime;
@@ -107,6 +108,13 @@ namespace ProjectC.World.NpcPrimum
 
         public Transform WorldRoot => _worldRoot;
         public Transform CameraTransform => _cameraTransform;
+
+        /// <summary>
+        /// T-PERF25: годится ли найденная камера как источник LOD. false — валидной камеры нет
+        /// (риг SpringArmCamera ещё не заспавнен, Camera.main недостижима); в этом состоянии LOD обязан
+        /// пропустить всех NPC: гасить визуал по мусорной позиции значит стереть толпу целиком.
+        /// </summary>
+        public bool CameraLodValid { get; private set; }
         public int AliveCount => _npcs.Count;
         public int SpawnFailed => _spawnFailed;
         public int HousesUsed => _housesUsed;
@@ -312,6 +320,9 @@ namespace ProjectC.World.NpcPrimum
             _lastWorldRootPosition = _worldRoot.position;
             _spawning = false;
             if (logStats) LogStats();
+            else
+                Debug.Log($"[PrimumCrowd] спавн завершён: n={_npcs.Count}/{target} housesUsed={_housesUsed} " +
+                          $"failed={_spawnFailed} lodCamera={(CameraLodValid ? _cameraLodSource : "нет")}");
         }
 
         /// <summary>
@@ -594,15 +605,60 @@ namespace ProjectC.World.NpcPrimum
             if (_cameraRig == null) _cameraRig = FindAnyObjectByType<SpringArmCamera>();
 
             var rigCamera = _cameraRig != null ? _cameraRig.CameraComponent : null;
-            if (rigCamera != null)
+            if (rigCamera != null && rigCamera.isActiveAndEnabled)
             {
                 _cameraTransform = rigCamera.transform;
+                SetCameraLodState(true, "rig:" + rigCamera.name);
                 return;
             }
 
-            // Рига ещё нет (или он выключен) — держим запас Camera.main до его появления.
+            // T-PERF25: запасной Camera.main принимаем ТОЛЬКО если он реально достаёт до толпы —
+            // та же проверка достижимости, что в PrimumLightPool. Иначе позиция «камеры» врёт на
+            // сотни километров, и LOD гасит визуал/аниматор/нейм-плейт у всех NPC сразу.
             var main = Camera.main;
-            if (main != null) _cameraTransform = main.transform;
+            if (main != null && IsCameraReachableForLod(main))
+            {
+                _cameraTransform = main.transform;
+                SetCameraLodState(true, "main:" + main.name);
+                return;
+            }
+
+            // Валидной камеры нет: последнюю заведомо рабочую позицию не затираем мусором,
+            // а LOD переводим в fail-open (см. PrimumCrowdNpc.ApplyVisualLod).
+            SetCameraLodState(false, main != null ? "unreachable:" + main.name : "none");
+        }
+
+        /// <summary>
+        /// Достаёт ли камера до толпы. Проверка по ближайшему живому NPC, а пока спавна не было —
+        /// по контейнеру жителей: этого достаточно, чтобы отличить городскую камеру от статичной
+        /// MainCamera BootstrapScene (она висит в сотнях километров от города).
+        /// </summary>
+        private bool IsCameraReachableForLod(Camera cam)
+        {
+            Vector3 cameraPosition = cam.transform.position;
+            float reach = cam.farClipPlane > 0f ? cam.farClipPlane : 1000f;
+            float reachSqr = reach * reach;
+
+            for (int i = 0; i < _npcs.Count; i++)
+            {
+                var npc = _npcs[i];
+                if (npc == null) continue;
+                return (cameraPosition - npc.transform.position).sqrMagnitude <= reachSqr;
+            }
+
+            Vector3 anchor = _container != null ? _container.position : transform.position;
+            return (cameraPosition - anchor).sqrMagnitude <= reachSqr;
+        }
+
+        /// <summary>Одна строка на смену источника LOD-камеры: по ней в логе видно, почему толпа видима.</summary>
+        private void SetCameraLodState(bool valid, string source)
+        {
+            if (CameraLodValid == valid && string.Equals(_cameraLodSource, source, System.StringComparison.Ordinal)) return;
+            CameraLodValid = valid;
+            _cameraLodSource = source;
+            Debug.Log($"[PrimumCrowd] LOD-камера: {source} " +
+                      (valid ? "(валидна)" : "(недостижима — LOD не гасит толпу по неверной позиции)") +
+                      $", NPC={_npcs.Count}");
         }
 
         private void LogStats()

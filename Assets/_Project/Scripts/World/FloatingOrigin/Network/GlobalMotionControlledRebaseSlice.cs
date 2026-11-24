@@ -262,6 +262,12 @@ namespace ProjectC.World.FloatingOrigin.Network
             }
         }
 
+        /// <summary>
+        /// T-PERF25: повторный «фокус внутри фрейма» больше не пишет Warning каждый раз
+        /// (в захвате 19-38-45 таких было 4 из 4 — один и тот же штатный случай).
+        /// </summary>
+        private bool _inFrameRejectLogged;
+
         private void ExecuteTransaction(string reason)
         {
             if (!TryResolveLocalPlayer(out Transform playerRoot, out string playerError))
@@ -286,7 +292,18 @@ namespace ProjectC.World.FloatingOrigin.Network
                 // вне ContainsLocal; внутри фрейма в пределах порога — честный отказ.
                 if (_frame.ContainsLocal(localFocus))
                 {
-                    Reject("no_rebase_plan:localFocus=" + localFocus);
+                    // T-PERF25: фокус внутри фрейма — штатный отказ «сдвигать нечего» (T-FO09H-fix),
+                    // план не нужен и мир остаётся как есть. В evidence пишем всегда, в консоль — один раз
+                    // за сессию: после T-FO09H-fix2 это больше не признак сломанного FO.
+                    GlobalMotionRuntimeEvidenceProbe.RecordEvent(
+                        "runtimeRebase", "Rejected", "no_rebase_plan:localFocus=" + localFocus);
+                    if (!_inFrameRejectLogged)
+                    {
+                        _inFrameRejectLogged = true;
+                        Debug.LogWarning(
+                            "[T-FO06CY] Controlled rebase rejected: no_rebase_plan:localFocus=" + localFocus +
+                            " (фокус внутри фрейма — сдвигать нечего; повторы только в evidence)", this);
+                    }
                     return;
                 }
                 if (!ProjectC.World.FloatingOrigin.OriginRebasePlan.TryCreateRecover(_frame, localFocus, _threshold, _quantum, out plan))

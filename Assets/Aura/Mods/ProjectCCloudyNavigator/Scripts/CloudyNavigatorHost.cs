@@ -42,6 +42,9 @@ namespace ProjectCCloudyNavigator
 
         private CloudyNavigatorWindow _window;
         private bool _open;
+        // T-PERF23: закрытое окно не переписывает style/pickingMode каждый кадр.
+        private VisualElement _visibilityRoot;
+        private bool _visibilityVisible;
 
         public bool IsOpen => _open;
         public CloudyNavigatorWindow Window => _window;
@@ -152,7 +155,10 @@ namespace ProjectCCloudyNavigator
             if (document == null) return;
             var root = document.rootVisualElement;
             if (root == null) return;
+            if (ReferenceEquals(_visibilityRoot, root) && _visibilityVisible == visible) return;
 
+            _visibilityRoot = root;
+            _visibilityVisible = visible;
             root.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
             root.pickingMode = visible ? PickingMode.Position : PickingMode.Ignore;
         }

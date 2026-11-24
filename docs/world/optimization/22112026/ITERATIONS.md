@@ -1301,3 +1301,43 @@ compile + domain reload — завершены, ошибок C# нет; `git dif
 технический шум stdio. Следующий захват должен проверить InteractionHint, DockPadVisualMarker.LateUpdate,
 NPC.Nav.Cruising, появление подсказки/открытие ближайшей двери, переход NPC к стыковке и пульсацию
 видимых док-падов.
+
+
+
+
+## T-PERF23 — fast-path теней кораблей, закрытый Cloudy Navigator и микро-вычисления (`ProjectC_client_2026-11-24_12-40-10.data`)
+
+1 965 steady-state кадров. `Main Thread` 56,598 → **46,965 мс/кадр**, `PlayerLoop` 32,982 → **27,535**,
+`EditorLoop` self 17,847 → 14,142; маршруты по-прежнему не считаются строгим A/B. Эффект T-PERF22
+подтверждён по self-time: `NPC.Nav.Cruising` 0,675 → **0,383 мс/кадр** (−43,3 %),
+`NetworkPlayer.InteractionHint` 0,381 → **0,275** (−27,8 %), `DockPadVisualMarker.LateUpdate`
+0,151 → **0,080 мс/кадр** (−46,9 %). Вызовы InteractionHint снизились 458 → 397, DockPad остаются
+133 620, но невидимые маркеры завершаются раньше.
+
+Следующие managed-кандидаты: `ShipShadowBudget.Update` self 0,2408 (21 615 вызовов),
+`GlobalSceneNativeExecutor.Update` 0,2018, `GlobalMotionWorld.FixedUpdate` 0,1974,
+`CloudyNavigatorHost.Update` 0,1964, `DoorVisibilityBudget.Update` 0,1852,
+`EngineThrusterVisual.Update` 0,1852 (78 600 вызовов), `PRIMUM/LightPool.Check` 0,1851,
+`CityShadowBudget.Update` 0,1657. `Physics.Simulate` total 6,960 и EditorLoop остаются фоном.
+
+Изменения:
+
+- `ShipShadowBudget`: при Build все углы renderer bounds переводятся в локальный базис LODGroup
+  и образуют консервативную сферу. Если она целиком дальше shadowOffDistance от всех камер, каждая
+  часть гарантированно вне порога: тени выключаются без сотен bounds/distance, а последующие тики
+  полностью дальнего корабля завершаются сразу. При частичном пересечении сохраняется прежнее
+  поштучное правило и гистерезис. RestoreShadows инвалидирует fast-path.
+- `CloudyNavigatorHost.ApplyVisibility`: style.display и pickingMode записываются только при смене
+  видимости или пересоздании rootVisualElement. Закрытое окно больше не инвалидирует UI каждый кадр;
+  ожидание появления UIDocument root и анимация закрытия сохранены.
+- `EngineThrusterVisual`: наличие pivot и нормализованная ось винта кэшируются в Start после построения
+  effective units. AnyPivotAssigned и Vector3.normalized больше не повторяются каждый кадр/на каждый
+  propeller; плавность, тяга, отклонение и вращение не изменены.
+- `NpcShipController.TickCruise`: дистанция до станции хранится как sqrMagnitude; sqrt выполняется только
+  для включённых city-gates или редкой near-stuck записи. Направление к цели использует уже вычисленный
+  dist вместо повторной нормализации. Пороги, маршруты и управление не изменены.
+
+compile + domain reload — завершены, ошибок C# нет; `git diff --check` — чисто. Play Mode, тесты
+и Build агентом — **NOT RUN**. Следующий захват должен проверить ShipShadowBudget.Update,
+CloudyNavigatorHost.Update и связанную UI-инвалидацию, EngineThrusterVisual.Update, NPC.Nav.Cruising,
+корректность ближних/дальних теней кораблей, открытие/закрытие Cloudy Navigator и визуалы двигателей.

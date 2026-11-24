@@ -79,6 +79,10 @@ namespace ProjectC.Ship
         private float _updateTimer;
         private float _cameraTimer;
         private bool _warnedNoLod;
+        // T-PERF23: консервативная сфера всего LODGroup для fast-path дальних кораблей.
+        private Bounds _localBounds;
+        private float _localBoundsRadius;
+        private bool _allShadowsOff;
 
         /// <summary>Сколько частей реально участвует в бюджете (диагностика/тул).</summary>
         public int TrackedRendererCount { get { return _entries.Count; } }
@@ -172,11 +176,34 @@ namespace ProjectC.Ship
             }
 
             _rendererLayerMask = 0;
+            Transform boundsRoot = _lodGroup.transform;
+            bool hasBounds = false;
             for (int i = 0; i < _entries.Count; i++)
             {
                 var r = _entries[i].renderer;
-                if (r != null) _rendererLayerMask |= 1 << r.gameObject.layer;
+                if (r == null) continue;
+                _rendererLayerMask |= 1 << r.gameObject.layer;
+
+                // Все углы мирового AABB переводятся в локальный базис корня. Сфера
+                // консервативна и при повороте/масштабе, поэтому fast-path не меняет решения.
+                Bounds b = r.bounds;
+                for (int corner = 0; corner < 8; corner++)
+                {
+                    Vector3 worldCorner = b.center + Vector3.Scale(b.extents, new Vector3(
+                        (corner & 1) == 0 ? -1f : 1f,
+                        (corner & 2) == 0 ? -1f : 1f,
+                        (corner & 4) == 0 ? -1f : 1f));
+                    Vector3 localCorner = boundsRoot.InverseTransformPoint(worldCorner);
+                    if (!hasBounds)
+                    {
+                        _localBounds = new Bounds(localCorner, Vector3.zero);
+                        hasBounds = true;
+                    }
+                    else _localBounds.Encapsulate(localCorner);
+                }
             }
+            _localBoundsRadius = _localBounds.extents.magnitude;
+            _allShadowsOff = false;
 
             RefreshCameras();
 
@@ -297,6 +324,30 @@ namespace ProjectC.Ship
 
             float shadowOnSqr = shadowOnDistance * shadowOnDistance;
             float shadowOffSqr = shadowOffDistance * shadowOffDistance;
+
+            // T-PERF23: если вся консервативная сфера дальше off-порога, каждая часть
+            // гарантированно дальше него. Дальним кораблям не нужны сотни bounds/distance.
+            Vector3 lossyScale = _lodGroup.transform.lossyScale;
+            float maxScale = Mathf.Max(Mathf.Abs(lossyScale.x),
+                Mathf.Max(Mathf.Abs(lossyScale.y), Mathf.Abs(lossyScale.z)));
+            float outsideDistance = shadowOffDistance + _localBoundsRadius * maxScale;
+            Vector3 boundsCenter = _lodGroup.transform.TransformPoint(_localBounds.center);
+            float shipNearestSqr = NearestCameraDistanceSqr(boundsCenter);
+            if (shipNearestSqr >= 0f && shipNearestSqr > outsideDistance * outsideDistance)
+            {
+                if (_allShadowsOff) return;
+                for (int i = 0; i < _entries.Count; i++)
+                {
+                    var entry = _entries[i];
+                    if (entry.renderer == null || !entry.shadowsOn) continue;
+                    entry.shadowsOn = false;
+                    entry.renderer.shadowCastingMode = ShadowCastingMode.Off;
+                }
+                _allShadowsOff = true;
+                return;
+            }
+            _allShadowsOff = false;
+
             for (int i = 0; i < _entries.Count; i++)
             {
                 var entry = _entries[i];
@@ -342,6 +393,7 @@ namespace ProjectC.Ship
                 entry.renderer.shadowCastingMode = entry.baseMode;
                 entry.shadowsOn = true;
             }
+            _allShadowsOff = false;
         }
 
         private void OnValidate()

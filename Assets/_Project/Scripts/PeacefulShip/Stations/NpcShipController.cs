@@ -1102,7 +1102,8 @@ namespace ProjectC.PeacefulShip.Stations
             Vector3 toTarget = goal - position;
             float dist = toTarget.magnitude;
             Vector3 stToTarget = CruiseTargetPos - position;
-            float stDist = stToTarget.magnitude;
+            // T-PERF23: station distance нужна только city-gates и редкой near-stuck ветке.
+            float stDistSqr = stToTarget.sqrMagnitude;
 
             // T-NS-WF05: recovery-откат (без нового NavMode — остаёмся в Cruising,
             // в лог пишем событие вручную).
@@ -1149,7 +1150,8 @@ namespace ProjectC.PeacefulShip.Stations
                     _cruiseLastProgressAt = now;
                 } else if (now - _cruiseLastProgressAt > cruiseStuckSec) {
                     // Ждём слот теснины — не срываем (у ожидания свой таймаут 60 с).
-                    if (stDist <= 150f && _wallWaitStartedAt <= 0f) {
+                    if (stDistSqr <= 150f * 150f && _wallWaitStartedAt <= 0f) {
+                        float stDist = Mathf.Sqrt(stDistSqr);
                         _cruiseLastPos = position;
                         _cruiseLastProgressAt = now;
                         NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Cruising", "Berthing",
@@ -1257,7 +1259,7 @@ namespace ProjectC.PeacefulShip.Stations
             }
 
             // T-NS-GATE04: ворота городов (триггер — дистанция до СТАНЦИИ, не точки).
-            if (useCityGates && TryEnterGateApproach(rb, stDist)) return;
+            if (useCityGates && TryEnterGateApproach(rb, Mathf.Sqrt(stDistSqr))) return;
 
             // T-NS-WF08 + WF10: вход одним веером лидара (stagger — задел на 200+).
             // Вблизи цели не зондируем — там разбирается Berthing.
@@ -1309,7 +1311,7 @@ namespace ProjectC.PeacefulShip.Stations
                 _wallWaitStartedAt = 0f;
             }
 
-            Vector3 dir = toTarget.normalized;
+            Vector3 dir = toTarget / dist; // dist уже вычислен выше: без второго sqrt.
             float targetYaw = Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg;
             float currentYaw = rb.rotation.eulerAngles.y;
             float deltaYaw = Mathf.DeltaAngle(currentYaw, targetYaw);

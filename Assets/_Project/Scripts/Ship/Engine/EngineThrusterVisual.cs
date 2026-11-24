@@ -115,6 +115,9 @@ namespace ProjectC.Ship.Engine
         private float _rpmVelocity;
         private float _propellerSpinAngle;
         private bool _posesSettled;
+        // T-PERF23: инварианты effective units вычисляются один раз в Start.
+        private bool _canDeflect;
+        private Vector3 _normalizedRotationAxis;
 
         private void Start()
         {
@@ -122,6 +125,10 @@ namespace ProjectC.Ship.Engine
             BuildEffectiveUnits(_effectiveUnits);
             foreach (var unit in _effectiveUnits)
                 CacheUnitPoseInSlotSpace(unit);
+            _canDeflect = _maxDeflectionAngle != 0f && AnyPivotAssigned();
+            _normalizedRotationAxis = _rotationAxis.sqrMagnitude > 0.0001f
+                ? _rotationAxis.normalized
+                : Vector3.forward;
             ValidateLevers();
         }
 
@@ -260,7 +267,7 @@ namespace ProjectC.Ship.Engine
 
             // --- Deflection (общий угол; применяется вокруг СВОЕГО pivot каждого юнита) ---
             Quaternion deflectionRot = Quaternion.identity;
-            bool canDeflect = _maxDeflectionAngle != 0f && AnyPivotAssigned();
+            bool canDeflect = _canDeflect;
             if (canDeflect)
             {
                 float targetAngle = yawNorm * _maxDeflectionAngle;
@@ -322,7 +329,7 @@ namespace ProjectC.Ship.Engine
                 return;
 
             Quaternion spinRot = _rotationAxis.sqrMagnitude > 0.0001f
-                ? Quaternion.AngleAxis(_propellerSpinAngle, _rotationAxis.normalized)
+                ? Quaternion.AngleAxis(_propellerSpinAngle, _normalizedRotationAxis)
                 : Quaternion.identity;
 
             Vector3 offset = unit.propellerBasePos - pivotLocal;

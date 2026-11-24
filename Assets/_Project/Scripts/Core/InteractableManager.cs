@@ -40,6 +40,13 @@ namespace ProjectC.Core
         private static float _emptyDoorQueryRange;
         private const float EmptyDoorQueryReuseRadius = 0.25f;
 
+        // T-PERF21: отдельный bool-кэш только для observation-подсказки.
+        // Фактический FindNearestDoor при нажатии продолжает выбирать ближайшую дверь.
+        private static int _hintDoorVersion = -1;
+        private static Vector3 _hintDoorPosition;
+        private static float _hintDoorRange;
+        private static DoorController _hintDoor;
+
         // T-PERF06: кэш коллайдера посадки на корабль. GetComponentInChildren<T>(true) аллоцирует
         // массив на каждый вызов, а FindNearestShip зовётся из подсказки взаимодействия каждый кадр
         // и обходит все живые корабли (20 штук).
@@ -381,6 +388,27 @@ namespace ProjectC.Core
 
             distance = nearest != null ? minDist : 0f;
             return nearest;
+        }
+
+        /// <summary>Быстрый observation-запрос для contextual hint, без изменения выбора цели действия.</summary>
+        public static bool HasDoorInRange(Vector3 position, float range)
+        {
+            if (_hintDoorVersion == _doorsVersion
+                && Mathf.Approximately(_hintDoorRange, range)
+                && (position - _hintDoorPosition).sqrMagnitude
+                    <= EmptyDoorQueryReuseRadius * EmptyDoorQueryReuseRadius)
+            {
+                if (_hintDoor == null)
+                    return false;
+                if (_hintDoor.isActiveAndEnabled && _hintDoor.DistanceToInteraction(position) < range)
+                    return true;
+            }
+
+            _hintDoor = FindNearestDoor(position, range, out _);
+            _hintDoorVersion = _doorsVersion;
+            _hintDoorPosition = position;
+            _hintDoorRange = range;
+            return _hintDoor != null;
         }
 
         /// <summary>

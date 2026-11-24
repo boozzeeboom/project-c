@@ -664,6 +664,8 @@ namespace ProjectC.PeacefulShip.Stations
         private bool _wpApproachBlocked;
         private string _commZoneLocationId;
         private OuterCommZone _commZone;
+        // T-PERF21: proximity к станции не требует lookup на каждом physics-тике.
+        private float _nextCommZoneCheckAt;
         private float _wallCooldownUntil;
         // T-NS-WF18: мин. клиренс с прошлого скана (для скорости по просвету).
         private float _wallMinClear = float.MaxValue;
@@ -1221,12 +1223,19 @@ namespace ProjectC.PeacefulShip.Stations
             }
 
             // Проверить: вошли ли в OuterCommZone целевой станции?
-            var zone = ResolveCommZone();
-            if (zone != null && Vector3.Distance(position, zone.transform.position) < zone.CommRange) {
-                rb.linearVelocity = Vector3.zero;
-                rb.angularVelocity = Vector3.zero;
-                SetMode(NavMode.Berthing, "comm-zone");
-                return;
+            // T-PERF21: 5 Гц с фазовым разносом NPC; Rigidbody продолжает управляться каждый тик.
+            if (now >= _nextCommZoneCheckAt) {
+                _nextCommZoneCheckAt = now + 0.2f + ProbePhaseOffset() * 0.05f;
+                var zone = ResolveCommZone();
+                if (zone != null) {
+                    float commRange = zone.CommRange;
+                    if ((position - zone.transform.position).sqrMagnitude < commRange * commRange) {
+                        rb.linearVelocity = Vector3.zero;
+                        rb.angularVelocity = Vector3.zero;
+                        SetMode(NavMode.Berthing, "comm-zone");
+                        return;
+                    }
+                }
             }
 
             // Если уже очень близко к станции — Berthing (fallback без зоны).

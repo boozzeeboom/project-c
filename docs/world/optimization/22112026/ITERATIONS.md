@@ -1227,3 +1227,41 @@ T-PERF19. Подтверждённые эффекты по self-time: `WindManag
 Play Mode, тесты и Build агентом — **NOT RUN**. Оставшиеся `Client handler exited` и ObjectDisposedException
 от MCP — технический шум stdio. Следующий захват должен проверить InteractionHint, число SyncTransforms,
 Wind.Spline.Detect/Apply и сохранение посадки/переноса игрока паромами.
+
+
+
+## T-PERF21 — bool-кэш двери и throttling comm-zone NPC (`ProjectC_client_2026-11-24_09-56-28.data`)
+
+1 965 steady-state кадров. `Main Thread` 37,418 → 54,318 мс/кадр, `PlayerLoop` 27,127 → 31,380,
+`EditorLoop` self 7,269 → 17,791; одновременно `Physics.Simulate` total вырос 3,907 → 10,692.
+Маршрут и физическая активность различаются, общий прирост не относится к T-PERF20 без A/B.
+`NPC.Nav.Cruising` self 0,304 → 0,769 при 30 727 → 73 876 вызовах; это новый основной managed
+self-кандидат, снижение T-PERF19 на данном маршруте не подтверждается.
+
+Ветер перестал быть hotspot: `Wind.Spline.Detect` total/self 0,048 мс/кадр (1 775 вызовов),
+`Wind.Spline.Apply` не входит в top-120 self, а `WindManager.FixedUpdate` также отсутствует в top self.
+Прежние 0,907 мс/кадр на этом маршруте не воспроизвелись. `NetworkPlayer.InteractionHint`
+0,352 → 0,438 мс/кадр: маршрут проходил возле дверей, поэтому negative-only кэш T-PERF20 не мог
+сократить повторные положительные поиски.
+
+Дополнительная атрибуция родителей `Physics.SyncTransforms` на тех же кадрах:
+ParomRoute.Update — **0,419 мс/кадр, 1 149 вызовов**; Physics.PrepareSimulationStage —
+0,350, 5 325 вызовов; Physics.Interpolation — 0,003, 1 965 вызовов. Следовательно,
+PhysicsSyncCoordinator ограничивает project-side запросы, а остальные вызовы — штатные этапы
+симуляции/интерполяции движка. Транзакционные адаптеры не изменялись.
+
+Изменения:
+
+- `InteractableManager.HasDoorInRange`: отдельный bool-кэш только для observation-подсказки.
+  В пределах 0,25 м повторно проверяется активность и дистанция одной ранее найденной двери;
+  отсутствие двери использует negative-кэш T-PERF20. Изменение реестра инвалидирует оба кэша.
+  `NetworkPlayer.HasNearbyDoorForInteraction` переведён на этот API. Фактический FindNearestDoor
+  при взаимодействии по-прежнему выполняет полный поиск ближайшей цели.
+- `NpcShipController.TickCruise`: ResolveCommZone и proximity к станции выполняются на 5 Гц
+  с фазовым разносом через ProbePhaseOffset, а не на каждом FixedUpdate. Сравнение переведено
+  на sqrMagnitude. Управление Rigidbody, движение, зонды и остальные watchdog остаются на каждом тике;
+  максимальная дополнительная задержка обнаружения входа в comm-zone — около 0,2 с.
+
+compile + domain reload — завершены, ошибок C# нет; `git diff --check` — чисто. Play Mode, тесты
+и Build агентом — **NOT RUN**. Следующий захват должен повторить маршрут возле дверей и проверить
+InteractionHint, NPC.Nav.Cruising, своевременный вход NPC в Berthing и подсказку/открытие ближайшей двери.

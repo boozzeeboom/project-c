@@ -1951,7 +1951,7 @@ namespace ProjectC.Player
             // T-PERF06: реестр вместо FindObjectsByType<DoorController> — 2 800 дверей давали
             // массив 21.94 KB на каждый кадр (5 000 KB за сессию замера G).
             float range = Mathf.Max(pickupRange, boardDistance);
-            return InteractableManager.FindNearestDoor(position, range, out _) != null;
+            return InteractableManager.HasDoorInRange(position, range);
         }
 
         private bool HasNearbyNpcForInteraction(Vector3 position)

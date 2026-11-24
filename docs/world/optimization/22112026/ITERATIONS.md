@@ -1192,3 +1192,38 @@ self-кандидат — `WindManager.FixedUpdate`: 1,616 мс/кадр, 5 080 
 compile + domain reload — завершены, ошибок C# нет; `git diff --check` — чисто. Play Mode, тесты
 и Build агентом — **NOT RUN**. Следующий захват 30–60 секунд по тому же маршруту должен проверить
 WindManager.FixedUpdate, NPC.Nav.Cruising, число Physics.SyncTransforms и отсутствие рассинхрона паромов.
+
+
+
+## T-PERF20 — отрицательный поиск дверей и общий Physics Sync (`ProjectC_client_2026-11-24_09-20-38.data`)
+
+1 381 steady-state кадр. `Main Thread` 55,429 → **37,418 мс/кадр**, `PlayerLoop` 33,420 → **27,127**,
+`EditorLoop` self 16,206 → 7,269. В выборке есть крупные загрузочные вклады (`OpenWin32Handle` self 4,737,
+`GlobalMotionPilotRuntime.PrepareAndStartHost` total 5,487), поэтому общий FPS не приписывается только
+T-PERF19. Подтверждённые эффекты по self-time: `WindManager.FixedUpdate` 1,616 → **0,907 мс/кадр (−43,9 %)**,
+`NPC.Nav.Cruising` 0,589 → **0,304 (−48,4 %)**. `NpcShipWorld.FixedUpdate` total 1,154 → **0,451**,
+`Physics.Raycast` self 0,271 → **0,087**, `ParomRoute.Update` total 0,701 → **0,407 мс/кадр**.
+
+`Physics.SyncTransforms` остаётся на total 0,494 мс/кадр (4 745 вызовов): паромы больше не единственный
+источник; регулярный вызов также выполняется каждым `GlobalMotionPoseAdapter` без Rigidbody.
+`NetworkPlayer.InteractionHint` self 0,352 мс/кадр (197 вызовов): отрицательная ветка резолвера
+обходит реестр примерно 2 800 дверей на 5 Гц. Ветер после T-PERF19 остаётся главным managed self
+(0,907), но FixedUpdate без Deep Profile не разделяет детекцию сплайнов и применение кэшированных сил.
+
+Изменения:
+
+- `InteractableManager`: реестр дверей получил version-counter. Повторный отрицательный FindNearestDoor
+  в пределах 0,25 м и с тем же радиусом использует прошлый результат вместо полного обхода. Register/
+  Unregister немедленно инвалидируют кэш; положительный результат всегда пересчитывается заново.
+  Приоритеты подсказки и дальности взаимодействия не изменены.
+- Добавлен `PhysicsSyncCoordinator`: регулярные запросы GlobalMotionPoseAdapter и ParomRoute объединяются
+  максимум в один Physics.SyncTransforms за кадр. Запись позиций/поворотов сохраняется у каждого актёра.
+  Немедленные SyncTransforms телепортов, respawn и транзакций rebase/rollback не изменены.
+- `WindManager`: постоянные маркеры `Wind.Spline.Detect` и `Wind.Spline.Apply` разделяют две части
+  FixedUpdate без Deep Profile. Это атрибуция следующего пакета, не заявленная дополнительная оптимизация.
+
+Новый файл сначала не был импортирован script-only refresh; после assets import compile + domain reload
+завершены. Повторная компиляция с очищенной консолью — ошибок C# нет; `git diff --check` — чисто.
+Play Mode, тесты и Build агентом — **NOT RUN**. Оставшиеся `Client handler exited` и ObjectDisposedException
+от MCP — технический шум stdio. Следующий захват должен проверить InteractionHint, число SyncTransforms,
+Wind.Spline.Detect/Apply и сохранение посадки/переноса игрока паромами.

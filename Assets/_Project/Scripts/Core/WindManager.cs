@@ -4,6 +4,7 @@ using Unity.Mathematics;
 using System.Collections.Generic;
 using ProjectC.Player;
 using ProjectC.Ship;
+using Unity.Profiling;
 
 namespace ProjectC.Core
 {
@@ -61,6 +62,10 @@ namespace ProjectC.Core
 
         // Round-robin индекс
         private int _nextZoneIndex;
+
+        // T-PERF20: раздельная атрибуция двух частей FixedUpdate без Deep Profile.
+        private static readonly ProfilerMarker s_PerfDetect = new("Wind.Spline.Detect");
+        private static readonly ProfilerMarker s_PerfApply = new("Wind.Spline.Apply");
 
         private struct CachedShipEntry
         {
@@ -214,7 +219,8 @@ namespace ProjectC.Core
             }
 
             // Всегда применяем силы из кэша — дёшево
-            ApplyAllCachedForces(zones);
+            using (s_PerfApply.Auto())
+                ApplyAllCachedForces(zones);
 
             // Round-robin + per-zone throttling: детекция раз в _splineDetectionStep
             int processed = 0;
@@ -254,7 +260,8 @@ namespace ProjectC.Core
                     ships.CopyTo(_shipSnapshot);
                 }
 
-                DetectShipsInZone(zone, shipCount, ref state);
+                using (s_PerfDetect.Auto())
+                    DetectShipsInZone(zone, shipCount, ref state);
                 processed++;
             }
         }

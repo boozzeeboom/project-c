@@ -111,8 +111,6 @@ namespace ProjectC.World.Parom
         // === Runtime ===
         // T-PERF12: активные ветки доступны без полного поиска по загруженным сценам.
         private static readonly List<ParomRoute> ActiveRoutes = new List<ParomRoute>();
-        // T-PERF19: несколько кабинок делят один глобальный SyncTransforms за кадр.
-        private static int _lastPhysicsSyncFrame = -1;
         public static IReadOnlyList<ParomRoute> Active => ActiveRoutes;
 
         private readonly List<Transform> _stations = new List<Transform>();
@@ -727,11 +725,8 @@ namespace ProjectC.World.Parom
             bool rotated = Quaternion.Angle(_trolley.rotation, worldRot) > 0.0001f;
             if (moved) _trolley.position = worldPos;
             if (rotated) _trolley.rotation = worldRot;
-            if (_syncPhysicsOnMove && (moved || rotated) && _lastPhysicsSyncFrame != Time.frameCount)
-            {
-                Physics.SyncTransforms();
-                _lastPhysicsSyncFrame = Time.frameCount;
-            }
+            if (_syncPhysicsOnMove && (moved || rotated))
+                ProjectC.Core.PhysicsSyncCoordinator.Request();
         }
 
         private void SetVisualsActive(bool active)

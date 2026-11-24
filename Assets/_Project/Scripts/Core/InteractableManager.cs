@@ -32,6 +32,14 @@ namespace ProjectC.Core
         // Регистрация — из DoorController.OnEnable/OnDisable, т.е. ровно "active and enabled".
         private static readonly List<DoorController> _doors = new List<DoorController>(4096);
 
+        // T-PERF20: повторный отрицательный запрос в почти той же позиции не обходит
+        // тысячи дверей. Регистрация/снятие двери немедленно инвалидирует кэш.
+        private static int _doorsVersion;
+        private static int _emptyDoorQueryVersion = -1;
+        private static Vector3 _emptyDoorQueryPosition;
+        private static float _emptyDoorQueryRange;
+        private const float EmptyDoorQueryReuseRadius = 0.25f;
+
         // T-PERF06: кэш коллайдера посадки на корабль. GetComponentInChildren<T>(true) аллоцирует
         // массив на каждый вызов, а FindNearestShip зовётся из подсказки взаимодействия каждый кадр
         // и обходит все живые корабли (20 штук).
@@ -314,13 +322,16 @@ namespace ProjectC.Core
         /// <summary>Register a door while it is active and enabled.</summary>
         public static void RegisterDoor(DoorController door)
         {
-            if (door != null) _doors.Add(door);
+            if (door == null) return;
+            _doors.Add(door);
+            _doorsVersion++;
         }
 
         /// <summary>Unregister a door when it is disabled or destroyed.</summary>
         public static void UnregisterDoor(DoorController door)
         {
-            if (door != null) _doors.Remove(door);
+            if (door != null && _doors.Remove(door))
+                _doorsVersion++;
         }
 
         /// <summary>
@@ -330,6 +341,15 @@ namespace ProjectC.Core
         /// </summary>
         public static DoorController FindNearestDoor(Vector3 position, float range, out float distance)
         {
+            if (_emptyDoorQueryVersion == _doorsVersion
+                && Mathf.Approximately(_emptyDoorQueryRange, range)
+                && (position - _emptyDoorQueryPosition).sqrMagnitude
+                    <= EmptyDoorQueryReuseRadius * EmptyDoorQueryReuseRadius)
+            {
+                distance = 0f;
+                return null;
+            }
+
             DoorController nearest = null;
             float minDist = float.MaxValue;
             for (int i = 0; i < _doors.Count; i++)
@@ -346,6 +366,17 @@ namespace ProjectC.Core
 
                 float dist = door.DistanceToInteraction(position);
                 if (dist < range && dist < minDist) { minDist = dist; nearest = door; }
+            }
+
+            if (nearest == null)
+            {
+                _emptyDoorQueryVersion = _doorsVersion;
+                _emptyDoorQueryPosition = position;
+                _emptyDoorQueryRange = range;
+            }
+            else
+            {
+                _emptyDoorQueryVersion = -1;
             }
 
             distance = nearest != null ? minDist : 0f;

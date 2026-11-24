@@ -404,7 +404,8 @@ namespace ProjectC.World.FloatingOrigin.Network
                     bool probe = GlobalMotionRuntimeEvidenceProbe.IsActive;
                     if (probe)
                         GlobalMotionRuntimeEvidenceProbe.RecordEvent("physics", "SyncTransforms.begin", $"baseline={baseline} role={role} binding={plan.Binding.SessionId}/{plan.Binding.NetworkObjectId}/{plan.Binding.SpawnGeneration}/{plan.Binding.AuthorityGeneration}/{plan.Binding.DiscontinuityGeneration}");
-                    Physics.SyncTransforms();
+                    // T-PERF20: делим регулярный SyncTransforms с остальными адаптерами и паромами.
+                    ProjectC.Core.PhysicsSyncCoordinator.Request();
                     if (probe)
                         GlobalMotionRuntimeEvidenceProbe.RecordEvent("physics", "SyncTransforms.end", $"baseline={baseline} role={role}");
                 }

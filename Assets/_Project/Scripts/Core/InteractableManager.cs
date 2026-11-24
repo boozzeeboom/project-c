@@ -393,15 +393,17 @@ namespace ProjectC.Core
         /// <summary>Быстрый observation-запрос для contextual hint, без изменения выбора цели действия.</summary>
         public static bool HasDoorInRange(Vector3 position, float range)
         {
-            if (_hintDoorVersion == _doorsVersion
-                && Mathf.Approximately(_hintDoorRange, range)
-                && (position - _hintDoorPosition).sqrMagnitude
-                    <= EmptyDoorQueryReuseRadius * EmptyDoorQueryReuseRadius)
+            if (_hintDoorVersion == _doorsVersion && Mathf.Approximately(_hintDoorRange, range))
             {
-                if (_hintDoor == null)
-                    return false;
-                if (_hintDoor.isActiveAndEnabled && _hintDoor.DistanceToInteraction(position) < range)
+                // T-PERF22: одной активной двери в радиусе достаточно для bool-подсказки
+                // на любом расстоянии между запросами. Ближайшую цель действие выбирает отдельно.
+                if (_hintDoor != null && _hintDoor.isActiveAndEnabled
+                    && _hintDoor.DistanceToInteraction(position) < range)
                     return true;
+                if (_hintDoor == null
+                    && (position - _hintDoorPosition).sqrMagnitude
+                        <= EmptyDoorQueryReuseRadius * EmptyDoorQueryReuseRadius)
+                    return false;
             }
 
             _hintDoor = FindNearestDoor(position, range, out _);

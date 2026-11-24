@@ -77,6 +77,13 @@ namespace ProjectC.Docking.Stations
         private void LateUpdate()
         {
             if (_stateSync == null || _padBox == null) return;
+            // T-PERF22: невидимые пады не опрашивают состояние и не пишут PropertyBlock.
+            // Фаза продолжает идти, поэтому при появлении в кадре пульсация не перезапускается.
+            if (_surfaceRenderer != null && !_surfaceRenderer.isVisible)
+            {
+                _pulsePhase += Time.deltaTime * pulseSpeed;
+                return;
+            }
 
             var newState = DetermineState();
             if (newState != _currentState)

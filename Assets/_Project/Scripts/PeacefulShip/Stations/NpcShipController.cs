@@ -666,6 +666,8 @@ namespace ProjectC.PeacefulShip.Stations
         private OuterCommZone _commZone;
         // T-PERF21: proximity к станции не требует lookup на каждом physics-тике.
         private float _nextCommZoneCheckAt;
+        // T-PERF22: медленные cruise-watchdog также работают на 5 Гц с фазовым разносом.
+        private float _nextCruiseWatchdogCheckAt;
         private float _wallCooldownUntil;
         // T-NS-WF18: мин. клиренс с прошлого скана (для скорости по просвету).
         private float _wallMinClear = float.MaxValue;
@@ -1119,41 +1121,46 @@ namespace ProjectC.PeacefulShip.Stations
             // 46 с на точке) — засчитываем провал сразу, не ждём новый watchdog.
             if (_recoverArmed && now >= _cruiseRecoverUntil) {
                 _recoverArmed = false;
-                if ((_cruiseLastPos - _recoverStartPos).magnitude < cruiseStuckDist) {
+                if ((_cruiseLastPos - _recoverStartPos).sqrMagnitude < cruiseStuckDist * cruiseStuckDist) {
                     _cruiseRecoveries++;
                     NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Cruising", "Cruising",
                         "recovery-failed", $"#{_cruiseRecoveries}");
                 }
             }
 
-            // T-NS-WF05 + WF14: watchdog прогресса вдали от СТАНЦИИ (там медленно — законно).
-            // Схватывает втирание в склон, когда зонд слеп (старт внутри коллайдера).
-            // T-NS-WF14: БЕЗ врат _wallCooldownUntil (Странник 40 с на точке с одним
-            // stuck: пост-обходный кулдаун душил watchdog вместе с зондом).
-            // T-NS-LOG02: дыра stDist<=150 — корабль в 140 м от станции давил в скалу
-            // 112 с без единого перехода (лог 205734, NPC ...001F): comm-зона не
-            // резолвится, watchdog слеп. Вблизи — не recovery, а форсированный
-            // Berthing (там holding/пад/watchdog доведут или уведут в divert).
-            if (_cruiseLastProgressAt <= 0f) {
-                _cruiseLastPos = position;
-                _cruiseLastProgressAt = now;
-            } else if ((position - _cruiseLastPos).magnitude >= cruiseStuckDist) {
-                _cruiseLastPos = position;
-                _cruiseLastProgressAt = now;
-            } else if (now - _cruiseLastProgressAt > cruiseStuckSec) {
-                // Ждём слот теснины — не срываем (у ожидания свой таймаут 60 с).
-                if (stDist <= 150f && _wallWaitStartedAt <= 0f) {
+            // T-PERF22: медленные watchdog не требуют physics-частоты. Recovery, comm-zone,
+            // зонды, waypoint и управление Rigidbody по-прежнему выполняются каждый тик.
+            if (now >= _nextCruiseWatchdogCheckAt) {
+                _nextCruiseWatchdogCheckAt = now + 0.2f + ProbePhaseOffset() * 0.05f;
+
+                // T-NS-WF05 + WF14: watchdog прогресса вдали от СТАНЦИИ (там медленно — законно).
+                // Схватывает втирание в склон, когда зонд слеп (старт внутри коллайдера).
+                // T-NS-WF14: БЕЗ врат _wallCooldownUntil (Странник 40 с на точке с одним
+                // stuck: пост-обходный кулдаун душил watchdog вместе с зондом).
+                // T-NS-LOG02: дыра stDist<=150 — корабль в 140 м от станции давил в скалу
+                // 112 с без единого перехода (лог 205734, NPC ...001F): comm-зона не
+                // резолвится, watchdog слеп. Вблизи — не recovery, а форсированный
+                // Berthing (там holding/пад/watchdog доведут или уведут в divert).
+                if (_cruiseLastProgressAt <= 0f) {
                     _cruiseLastPos = position;
                     _cruiseLastProgressAt = now;
-                    NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Cruising", "Berthing",
-                        "cruise-near-stuck", $"dist={stDist:F0}m");
-                    if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Cruise near-station stuck (dist {stDist:F0}m) — forcing Berthing");
-                    rb.linearVelocity = Vector3.zero;
-                    rb.angularVelocity = Vector3.zero;
-                    SetMode(NavMode.Berthing, "near-stuck");
-                    return;
-                }
-                _cruiseRecoveries++;
+                } else if ((position - _cruiseLastPos).sqrMagnitude >= cruiseStuckDist * cruiseStuckDist) {
+                    _cruiseLastPos = position;
+                    _cruiseLastProgressAt = now;
+                } else if (now - _cruiseLastProgressAt > cruiseStuckSec) {
+                    // Ждём слот теснины — не срываем (у ожидания свой таймаут 60 с).
+                    if (stDist <= 150f && _wallWaitStartedAt <= 0f) {
+                        _cruiseLastPos = position;
+                        _cruiseLastProgressAt = now;
+                        NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Cruising", "Berthing",
+                            "cruise-near-stuck", $"dist={stDist:F0}m");
+                        if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Cruise near-station stuck (dist {stDist:F0}m) — forcing Berthing");
+                        rb.linearVelocity = Vector3.zero;
+                        rb.angularVelocity = Vector3.zero;
+                        SetMode(NavMode.Berthing, "near-stuck");
+                        return;
+                    }
+                    _cruiseRecoveries++;
                     if (_cruiseRecoveries > cruiseMaxRecoveries) {
                         if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Cruise stuck ×{_cruiseRecoveries} — scatter/divert");
                         StuckDivert(rb, "cruise");
@@ -1175,49 +1182,50 @@ namespace ProjectC.PeacefulShip.Stations
                     return;
                 }
 
-            // T-NS-LOG02: contour-grind — движемся, но к цели не приближаемся
-            // (лог 233351: 0010 +182 м за 130 с, 002B +51 м — огибают склон
-            // по горизонтали к слепой точке, displacement-watchdog их не видит).
-            // Не работает: в ожидании слота (свой таймаут), в окнах recovery/
-            // scatter/retreat (часы сброшены их стартом), у самой цели (добирает advance).
-            if (_wallWaitStartedAt <= 0f && now >= _cruiseRecoverUntil
-                && now >= _scatterUntil && (_retreatUntil <= 0f || now >= _retreatUntil)) {
-                if (_goalProgAt <= 0f || _navIdx != _goalProgIdx) {
-                    _goalProgDist = dist;
-                    _goalProgAt = now;
-                    _goalProgIdx = _navIdx;
-                } else if (dist > navWpTol) {
-                    float closing = (_goalProgDist - dist) / Mathf.Max(1f, now - _goalProgAt);
-                    if (closing >= cruiseGoalCloseMin) {
+                // T-NS-LOG02: contour-grind — движемся, но к цели не приближаемся
+                // (лог 233351: 0010 +182 м за 130 с, 002B +51 м — огибают склон
+                // по горизонтали к слепой точке, displacement-watchdog их не видит).
+                // Не работает: в ожидании слота (свой таймаут), в окнах recovery/
+                // scatter/retreat (часы сброшены их стартом), у самой цели (добирает advance).
+                if (_wallWaitStartedAt <= 0f && now >= _cruiseRecoverUntil
+                    && now >= _scatterUntil && (_retreatUntil <= 0f || now >= _retreatUntil)) {
+                    if (_goalProgAt <= 0f || _navIdx != _goalProgIdx) {
                         _goalProgDist = dist;
-                        _goalProgAt = now;
-                    } else if (now - _goalProgAt > cruiseGoalStuckSec) {
-                        _goalProgDist = dist;
-                        _goalProgAt = now;
-                        if (_goalSlowReplans >= cruiseGoalMaxReplans) {
-                            if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Cruise goal grind (close {closing:F1} m/s) — scatter/divert");
-                            StuckDivert(rb, "cruise-goal");
-                            return;
-                        }
-                        _goalSlowReplans++;
-                        NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Cruising", "Cruising",
-                            "nav-replan-slow", $"close={closing:F1}m/s#{_goalSlowReplans}");
-                        if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Cruise goal grind (close {closing:F1} m/s) — replanning route");
-                        // T-NS-LOG02d: петля на той же точке (лог 234308, 0031: дважды
-                        // один W1) — зеркалим чёт/нечет развод графа + штрафуем
-                        // провалившуюся цель в hotspot-память (legacy-скоринг тоже видит).
-                        _graphParityFlip = !_graphParityFlip;
-                        var tmSlow = NpcShipTrafficManager.Instance;
-                        if (_navIdx < _navPlan.Count) tmSlow?.RecordHotspot(_navPlan[_navIdx]);
-                        else if (tmSlow != null) tmSlow.RecordHotspot(position);
-                        PlanRoute(CruiseTargetPos); // replan с ближней позиции
-                        // T-NS-LOG02e: свежий замер к НОВОЙ цели (базовая линия от старой
-                        // цели давала фантомный отрицательный closing — лог 235552, 0031).
-                        // Счётчик медленных replan НЕ сбрасываем (петля всё равно закончится).
-                        _goalProgDist = Vector3.Distance(position, NavGoal());
                         _goalProgAt = now;
                         _goalProgIdx = _navIdx;
-                        return;
+                    } else if (dist > navWpTol) {
+                        float closing = (_goalProgDist - dist) / Mathf.Max(1f, now - _goalProgAt);
+                        if (closing >= cruiseGoalCloseMin) {
+                            _goalProgDist = dist;
+                            _goalProgAt = now;
+                        } else if (now - _goalProgAt > cruiseGoalStuckSec) {
+                            _goalProgDist = dist;
+                            _goalProgAt = now;
+                            if (_goalSlowReplans >= cruiseGoalMaxReplans) {
+                                if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Cruise goal grind (close {closing:F1} m/s) — scatter/divert");
+                                StuckDivert(rb, "cruise-goal");
+                                return;
+                            }
+                            _goalSlowReplans++;
+                            NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Cruising", "Cruising",
+                                "nav-replan-slow", $"close={closing:F1}m/s#{_goalSlowReplans}");
+                            if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] Cruise goal grind (close {closing:F1} m/s) — replanning route");
+                            // T-NS-LOG02d: петля на той же точке (лог 234308, 0031: дважды
+                            // один W1) — зеркалим чёт/нечет развод графа + штрафуем
+                            // провалившуюся цель в hotspot-память (legacy-скоринг тоже видит).
+                            _graphParityFlip = !_graphParityFlip;
+                            var tmSlow = NpcShipTrafficManager.Instance;
+                            if (_navIdx < _navPlan.Count) tmSlow?.RecordHotspot(_navPlan[_navIdx]);
+                            else if (tmSlow != null) tmSlow.RecordHotspot(position);
+                            PlanRoute(CruiseTargetPos); // replan с ближней позиции
+                            // T-NS-LOG02e: свежий замер к НОВОЙ цели (базовая линия от старой
+                            // цели давала фантомный отрицательный closing — лог 235552, 0031).
+                            // Счётчик медленных replan НЕ сбрасываем (петля всё равно закончится).
+                            _goalProgDist = Vector3.Distance(position, NavGoal());
+                            _goalProgAt = now;
+                            _goalProgIdx = _navIdx;
+                            return;
+                        }
                     }
                 }
             }

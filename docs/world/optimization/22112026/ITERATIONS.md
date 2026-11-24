@@ -1265,3 +1265,39 @@ PhysicsSyncCoordinator ограничивает project-side запросы, а 
 compile + domain reload — завершены, ошибок C# нет; `git diff --check` — чисто. Play Mode, тесты
 и Build агентом — **NOT RUN**. Следующий захват должен повторить маршрут возле дверей и проверить
 InteractionHint, NPC.Nav.Cruising, своевременный вход NPC в Berthing и подсказку/открытие ближайшей двери.
+
+
+
+
+## T-PERF22 — положительный кэш двери, невидимые док-пады и watchdog NPC (`ProjectC_client_2026-11-24_10-28-23.data`)
+
+1 965 steady-state кадров. `Main Thread` 54,318 → 56,598 мс/кадр, `PlayerLoop` 31,380 → 32,982;
+маршруты и физическая активность различаются, поэтому общий FPS не используется как оценка T-PERF21.
+`NPC.Nav.Cruising` self 0,769 → **0,675 мс/кадр** (65 420 вызовов) — главный managed self hotspot.
+`NetworkPlayer.InteractionHint` 0,438 → **0,381** (458 вызовов): bool-кэш T-PERF21 дал лишь небольшое
+снижение, потому что положительная дверь переиспользовалась только при смещении игрока не более 0,25 м.
+Остальные заметные project-side участки: `ShipShadowBudget.Update` 0,3135; `DoorVisibilityBudget.Update`
+0,2450; `CityShadowBudget.Update` 0,2128; `EngineThrusterVisual.Update` 0,2056 (78 600 вызовов);
+`Physics.Raycast` 0,1914 (49 677 вызовов); `DockPadVisualMarker.LateUpdate` 0,1509 (133 620 вызовов,
+около 68 маркеров каждый кадр, включая невидимые). `Physics.Simulate` total около 9,499 мс/кадр,
+`EditorLoop` self 17,847 — фон редактора, не подмена project-side оптимизации.
+
+Изменения:
+
+- `InteractableManager.HasDoorInRange`: ранее найденная активная дверь в радиусе сразу даёт `true`
+  независимо от смещения между observation-запросами. Negative-кэш по-прежнему ограничен радиусом
+  0,25 м; выход двери из радиуса или изменение реестра запускает полный поиск. Фактический выбор
+  ближайшей двери при взаимодействии не изменён.
+- `DockPadVisualMarker.LateUpdate`: невидимый Renderer пропускает DetermineState и SetPropertyBlock.
+  Фаза пульсации продолжает накапливаться; при появлении в кадре состояние и материал обновляются
+  в том же LateUpdate, видимая анимация не перезапускается.
+- `NpcShipController.TickCruise`: displacement-watchdog и contour-grind/goal watchdog выполняются
+  на 5 Гц с фазовым разносом через ProbePhaseOffset. Два сравнения дистанций переведены на sqrMagnitude.
+  Recovery-откат и его проверка, comm-zone, waypoint, wall probes, движение и поворот остаются на каждом
+  physics-тике. Максимальная дополнительная задержка срабатывания этих двух watchdog — около 0,2 с.
+
+compile + domain reload — завершены, ошибок C# нет; `git diff --check` — чисто. Play Mode, тесты
+и Build агентом — **NOT RUN**. Оставшиеся `Client handler exited` и ObjectDisposedException от MCP —
+технический шум stdio. Следующий захват должен проверить InteractionHint, DockPadVisualMarker.LateUpdate,
+NPC.Nav.Cruising, появление подсказки/открытие ближайшей двери, переход NPC к стыковке и пульсацию
+видимых док-падов.

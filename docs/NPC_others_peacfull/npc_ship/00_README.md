@@ -30,6 +30,7 @@
 | **04** | `04_LIVING_BEHAVIOR.md` | «Живость»: FSM, dwell times, traffic shaping, pad contention, anti-grav | ~1300 |
 | **05** | `05_ROADMAP.md` | M1-M3 + тикеты T-NS00..10, dependency graph | ~1100 |
 | **06** | `06_OPEN_QUESTIONS.md` | Финальные решения (13 ответов пользователя) | ~1000 |
+| **20** | `20_DEPARTURE_COORDINATION.md` | Очередь вылетов из дока, ровный взлёт, адаптивный chimney (T-NS-DEPART4) | ~900 |
 | **99** | `99_RETROSPECTIVE.md` | Полный ретроспективный анализ: 10 кругов ошибок, корневые причины, уроки | ~1500 |
 | **—** | `CHANGELOG.md` | Лог изменений каталога | — |
 

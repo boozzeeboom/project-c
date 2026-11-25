@@ -1,5 +1,16 @@
 # ITERATIONS — Peaceful NPC Ships (runtime fixes)
 
+## Итерация от 2026-11-25 — T-NS-DEPART4 (этап 3): попутная оптимизация расхождения
+
+`NpcProximityZone.FindClosestConflict` (10 Гц × каждый корабль × кандидаты 3×3
+ячеек): быстрый путь для пары сфер, квадрат дистанции для awareness. Логика не
+менялась. Прочие кандидаты аудита (`NpcShipWorld.FixedUpdate` — lookup реестра
+на корабль, замыкание в `RecordHotspot`) — редкие/дешёвые, оставлены.
+
+**Проверка:** `check_compile_errors` → 0.
+
+---
+
 ## Итерация от 2026-11-25 — T-NS-DEPART4 (этап 2): ровный взлёт и chimney над соседями
 
 **Корень «хвост вверх»:** `TickLift` обнулял `angularVelocity`, но поворот не

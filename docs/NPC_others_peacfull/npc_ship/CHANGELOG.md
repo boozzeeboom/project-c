@@ -4,6 +4,15 @@
 
 ---
 
+## 2026-11-25 — T-NS-DEPART4: быстрый путь sphere-vs-sphere в `FindClosestConflict` (этап 3) ✅ COMPILE-CLEAN
+
+Awareness — по квадрату дистанции, позиция кандидата читается один раз;
+для пары сфер пересечение и метрика считаются из той же дистанции (раньше —
+ещё 2 вызова с 4 чтениями `transform.position` и 2 sqrt на кандидата).
+Поведение бит-в-бит: та же формула `d < extA + extB`, та же метрика `d`.
+
+---
+
 ## 2026-11-25 — T-NS-DEPART4: ровный взлёт + адаптивный chimney (этап 2) ✅ COMPILE-CLEAN
 
 `TickLift` держит тангаж/крен ≈ 0 (`HoldLiftAttitude`, `liftLevelRateDeg=60`)

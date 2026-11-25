@@ -240,6 +240,8 @@ namespace ProjectC.PeacefulShip.Stations
 
             NpcShipZoneRegistry.QueryNearby(myPos, awarenessRadius, _candidates);
             var candidates = _candidates;
+            float awareSqr = awarenessRadius * awarenessRadius;
+            bool mySphere = zoneShape == ZoneShape.Sphere;
             for (int i = 0; i < candidates.Count; i++)
             {
                 var other = candidates[i];
@@ -249,9 +251,25 @@ namespace ProjectC.PeacefulShip.Stations
                 var oz = other.ProximityZone;
                 if (oz == null) continue;
 
-                // Awareness: always sphere (center distance)
-                float centerDist = Vector3.Distance(myPos, other.transform.position);
-                if (centerDist > awarenessRadius) continue;
+                // Awareness: always sphere (center distance).
+                // T-NS-DEPART4/perf: квадрат дистанции, одна позиция на кандидата.
+                Vector3 otherPos = other.transform.position;
+                float centerSqr = (otherPos - myPos).sqrMagnitude;
+                if (centerSqr > awareSqr) continue;
+
+                // Sphere-vs-sphere (основной случай): та же метрика, что IntersectsWith/
+                // DistanceToConflict, без повторных чтений transform и второго sqrt.
+                if (mySphere && oz.zoneShape == ZoneShape.Sphere)
+                {
+                    float centerDist = Mathf.Sqrt(centerSqr);
+                    if (centerDist >= AvoidanceExtent + oz.AvoidanceExtent) continue;
+                    if (centerDist < dist)
+                    {
+                        dist = centerDist;
+                        closest = other;
+                    }
+                    continue;
+                }
 
                 // Avoidance: shape-aware intersection
                 if (!oz.AvoidanceIntersects(this)) continue;

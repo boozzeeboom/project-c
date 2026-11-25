@@ -340,14 +340,21 @@ namespace ProjectC.PeacefulShip.EditorTools
 
             EditorGUILayout.Space(4);
 
-            // ── Departure spacing (T-NS-WF06c + COORD01) ──
+            // ── Departure spacing (T-NS-WF06c + COORD01 + DEPART4) ──
             _foldDepart = EditorGUILayout.Foldout(_foldDepart,
-                "🛫 Departure Spacing (T-NS-WF06c/COORD01, ON=разнос вылетов)", true, EditorStyles.foldoutHeader);
+                "🛫 Departure (T-NS-WF06c/DEPART4, очередь вылетов + chimney)", true, EditorStyles.foldoutHeader);
             if (_foldDepart)
             {
                 EditorGUI.indentLevel++;
                 DrawProp("useDepartureSpacing");
                 DrawProp("departureMutexRadius");
+                DrawProp("departurePollSec");
+                DrawProp("departureMinGapSec");
+                DrawProp("departureClearDistance");
+                DrawProp("departureHoldMaxSec");
+                DrawProp("departClimbMeters");
+                DrawProp("liftStuckSec");
+                DrawProp("liftStuckMin");
                 EditorGUI.indentLevel--;
             }
 

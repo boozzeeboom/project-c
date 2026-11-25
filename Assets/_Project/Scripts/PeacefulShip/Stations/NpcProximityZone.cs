@@ -115,6 +115,12 @@ namespace ProjectC.PeacefulShip.Stations
             return b;
         }
 
+        /// <summary>T-NS-DEPART4: мировые bounds корпуса (крупнейший коллайдер) без отступов.</summary>
+        public Bounds GetShipBounds()
+        {
+            return _shipCollider != null ? _shipCollider.bounds : new Bounds(transform.position, Vector3.zero);
+        }
+
         /// <summary>Padded bounds for clear check (box mode, with hysteresis).</summary>
         private Bounds GetClearBounds()
         {

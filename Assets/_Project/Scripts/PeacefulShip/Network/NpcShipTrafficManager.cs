@@ -106,6 +106,7 @@ namespace ProjectC.PeacefulShip.Network
         {
             _lastArrivalAtStation.Clear();
             _wallSlots.Clear();
+            _departQueue.Clear();
             if (debugMode) Debug.Log("[NpcShipTrafficManager] Clear — all arrival tracking reset");
         }
 
@@ -216,25 +217,79 @@ namespace ProjectC.PeacefulShip.Network
         // T-PERF06/6: буфер broadphase (QueryNearby больше не аллоцирует).
         private readonly List<Stations.NpcShipController> _nearbyScratch = new List<Stations.NpcShipController>(16);
 
+        // === T-NS-DEPART4: очередь вылетов (дока 20_DEPARTURE_COORDINATION.md) ===
+        // Заявка: npcId → (since, refreshedAt). Мировых позиций не храним — позиции
+        // соседей берутся вживую (FO-безопасно). Заявка без освежения 5 с протухает.
+        private readonly Dictionary<ulong, (float since, float refreshed)> _departQueue
+            = new Dictionary<ulong, (float since, float refreshed)>();
+        private readonly List<ulong> _departStaleScratch = new List<ulong>(8);
+        private const float DepartRequestStaleSec = 5f;
+        private float _departPurgeAt;
+
         /// <summary>
-        /// T-NS-WF06c: свободен ли взлёт у станции (departure mutex): никто чужой
-        /// не в Lifting/Yawing в радиусе. Разносит вылеты пачкой — стая не стартует
-        /// одновременно через одну скалу. Server-only, запрос через spatial index.
+        /// T-NS-WF06c → T-NS-DEPART4: попытка получить разрешение на вылет. Server-only.
+        /// Отказ, если в радиусе (XZ) от позиции запросившего: сосед держит слот вылета,
+        /// соседний слот освобождён меньше minGapSec назад, или в очереди есть сосед раньше
+        /// (FIFO, при равенстве — меньший NpcInstanceId; полный порядок — без дедлоков).
         /// </summary>
-        public bool IsDepartureClear(Vector3 stationPos, float radius, ulong requesterId)
+        public bool TryAcquireDeparture(Stations.NpcShipController requester, float radius,
+            float minGapSec, out string reason)
         {
-            NpcShipZoneRegistry.QueryNearby(stationPos, radius, _nearbyScratch);
+            reason = null;
+            if (requester == null) return true;
+            float now = Time.time;
+            ulong id = requester.NpcInstanceId;
+            float since = _departQueue.TryGetValue(id, out var own) && now - own.refreshed <= DepartRequestStaleSec
+                ? own.since : now;
+            _departQueue[id] = (since, now);
+            PurgeStaleDepartRequests(now);
+
+            Vector3 pos = requester.transform.position;
+            float r2 = radius * radius;
+            NpcShipZoneRegistry.QueryNearby(pos, radius, _nearbyScratch);
             var nearby = _nearbyScratch;
             for (int i = 0; i < nearby.Count; i++)
             {
                 var npc = nearby[i];
-                if (npc == null || npc.NpcInstanceId == requesterId) continue;
-                var m = npc.CurrentMode;
-                if (m == Stations.NpcShipController.NavMode.Lifting
-                    || m == Stations.NpcShipController.NavMode.Yawing)
+                if (npc == null || npc == requester) continue;
+                bool startNear = HorizontalSqr(npc.DepartureStartPos, pos) <= r2;
+                if (npc.IsDepartureActive && startNear)
+                {
+                    reason = "slot:" + npc.name;
                     return false;
+                }
+                if (startNear && now - npc.DepartureReleasedAt < minGapSec)
+                {
+                    reason = "gap:" + npc.name;
+                    return false;
+                }
+                if (_departQueue.TryGetValue(npc.NpcInstanceId, out var other)
+                    && now - other.refreshed <= DepartRequestStaleSec
+                    && (other.since < since || (other.since == since && npc.NpcInstanceId < id))
+                    && HorizontalSqr(npc.transform.position, pos) <= r2)
+                {
+                    reason = "queue:" + npc.name;
+                    return false;
+                }
             }
+            _departQueue.Remove(id);
             return true;
+        }
+
+        private void PurgeStaleDepartRequests(float now)
+        {
+            if (now < _departPurgeAt) return;
+            _departPurgeAt = now + 1f;
+            _departStaleScratch.Clear();
+            foreach (var kv in _departQueue)
+                if (now - kv.Value.refreshed > DepartRequestStaleSec) _departStaleScratch.Add(kv.Key);
+            for (int i = 0; i < _departStaleScratch.Count; i++) _departQueue.Remove(_departStaleScratch[i]);
+        }
+
+        private static float HorizontalSqr(Vector3 a, Vector3 b)
+        {
+            float dx = a.x - b.x, dz = a.z - b.z;
+            return dx * dx + dz * dz;
         }
 
         // === Internal ===

@@ -707,9 +707,32 @@ namespace ProjectC.PeacefulShip.Stations
         [Header("Departure spacing (server-only)")]
         [Tooltip("ВКЛ: ждать свободного взлёта у своей станции (не более одного Lifting рядом).")]
         [SerializeField] private bool useDepartureSpacing = true;
-        [Tooltip("Радиус мьютекса взлёта от станции (м).")]
+        [Tooltip("Радиус мьютекса взлёта от позиции корабля в доке (м).")]
         [Min(50f)] [SerializeField] private float departureMutexRadius = 300f;
         private float _departWaitNextAt;
+        // T-NS-DEPART4: очередь вылетов + удержание слота до выхода из дока
+        // (дока 20_DEPARTURE_COORDINATION.md). Мьютекс WF06c ждал ровно один тик.
+        [Tooltip("T-NS-DEPART4: период опроса очереди вылета (с). Между опросами корабль ждёт.")]
+        [Min(0.2f)] [SerializeField] private float departurePollSec = 1f;
+        [Tooltip("T-NS-DEPART4: пауза (с) после освобождения соседнего слота перед следующим вылетом.")]
+        [Min(0f)] [SerializeField] private float departureMinGapSec = 4f;
+        [Tooltip("T-NS-DEPART4: слот держится, пока корабль не отошёл по горизонтали от точки старта " +
+                 "на эту дистанцию (м) + собственный габарит.")]
+        [Min(20f)] [SerializeField] private float departureClearDistance = 120f;
+        [Tooltip("T-NS-DEPART4: страховка — слот не держится дольше (с).")]
+        [Min(10f)] [SerializeField] private float departureHoldMaxSec = 150f;
+        private bool _departureActive;
+        private Vector3 _departStartPos; // мировой: сдвигается в ApplyRebaseTranslation
+        private float _departStartAt;
+        private float _departReleasedAt = -1000f;
+        private string _departWaitReason;
+
+        /// <summary>T-NS-DEPART4: держит ли корабль слот вылета (с учётом страховочного таймаута).</summary>
+        public bool IsDepartureActive => _departureActive && Time.time - _departStartAt <= departureHoldMaxSec;
+        /// <summary>T-NS-DEPART4: точка старта текущего/последнего вылета (мировая, FO-сдвигаемая).</summary>
+        public Vector3 DepartureStartPos => _departStartPos;
+        /// <summary>T-NS-DEPART4: Time.time освобождения последнего слота.</summary>
+        public float DepartureReleasedAt => _departReleasedAt;
 
         [Header("City gates (procedural, server-only)")]
         [Tooltip("ВКЛ: заход через ворота на границе cityRadius. ВЫКЛ: старый прямой заход.")]
@@ -826,29 +849,30 @@ namespace ProjectC.PeacefulShip.Stations
                     _cargoTradeDone = true;
                 }
                 if (Time.time - DockedSinceTime > DwellTime) {
-                    // T-NS-WF06c: departure mutex — не взлетать пачкой (проверка раз в 3 с,
-                    // dwell молча продлевается, событие depart-wait видно в Nav-логе).
-                    if (useDepartureSpacing && Time.time >= _departWaitNextAt) {
-                        _departWaitNextAt = Time.time + 3f;
-                        var home = ResolveCurrentStation();
+                    // T-NS-WF06c → T-NS-DEPART4: очередь вылетов. Между опросами — ЖДЁМ
+                    // (раньше блок пропускался и корабль взлетал на следующем тике).
+                    if (useDepartureSpacing) {
+                        if (Time.time < _departWaitNextAt) return;
+                        _departWaitNextAt = Time.time + departurePollSec;
                         var tm = NpcShipTrafficManager.Instance;
-                        if (home.HasValue && tm != null
-                            && !tm.IsDepartureClear(home.Value, departureMutexRadius, npcInstanceId)) {
-                            NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Docked", "Docked",
-                                "depart-wait", "");
+                        if (tm != null && !tm.TryAcquireDeparture(this, departureMutexRadius,
+                                departureMinGapSec, out string waitReason)) {
+                            if (waitReason != _departWaitReason) {
+                                _departWaitReason = waitReason;
+                                NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Docked", "Docked",
+                                    "depart-wait", waitReason);
+                            }
                             return;
                         }
                     }
-                    LiftStartY = ship.transform.position.y;
-                    rb.isKinematic = false;
-                    ship.ExitDocked();
-                    _scheduleAdvancedAfterDock = false;
-                    // _cargoTradeDone сбрасывается в SetMode(Docked) — здесь не нужно.
-                    SetMode(NavMode.Lifting, "dwell-done");
+                    BeginDeparture(rb, ship);
                     return;
                 }
                 return;
             }
+
+            // T-NS-DEPART4: слот вылета держим, пока не вышли из воздушного пространства дока.
+            if (_departureActive) UpdateDepartureHold(rb.position);
 
             // T-NS-AV02: расхождение NPC-кораблей (только в круизе) и зданий (во всех свободных режимах).
             // Berthing/Docked исключены: корабль на финальном заходе игнорирует билд-коллайдеры
@@ -932,6 +956,10 @@ namespace ProjectC.PeacefulShip.Stations
                 _abortClimbRemaining = 0f;
                 // T-CARGO-NPC-01: сбрасываем _cargoTradeDone в false при КАЖДОМ входе в Docked.
                 _cargoTradeDone = false;
+                // T-NS-DEPART4: сели — слот вылета (если вдруг держали) отпускаем, новая очередь.
+                ReleaseDeparture();
+                _departWaitReason = null;
+                _departWaitNextAt = 0f;
                 if (old == NavMode.Berthing) {
                     _scheduleAdvancedAfterDock = false; // после полёта — advance на след тике
                     AdvanceScheduleForCurrentNpc();
@@ -984,6 +1012,59 @@ namespace ProjectC.PeacefulShip.Stations
             // T-NS-LOG02: вход в Cruising — свежий замер сближения (манёвр кончился).
             if (m == NavMode.Cruising) _goalProgAt = 0f;
             if (debugMode) Debug.Log($"[NpcShipController:NPC:{npcInstanceId:X}] NavMode {old} → {m}");
+        }
+
+        // === T-NS-DEPART4: вылет из дока ===
+
+        /// <summary>Разрешение получено: снять с дока, занять слот, начать chimney.</summary>
+        void BeginDeparture(Rigidbody rb, ShipController ship) {
+            LiftStartY = ship.transform.position.y;
+            _departureActive = true;
+            _departStartPos = rb.position;
+            _departStartAt = Time.time;
+            _departWaitReason = null;
+            rb.isKinematic = false;
+            ship.ExitDocked();
+            _scheduleAdvancedAfterDock = false;
+            // _cargoTradeDone сбрасывается в SetMode(Docked) — здесь не нужно.
+            SetMode(NavMode.Lifting, "dwell-done");
+        }
+
+        /// <summary>
+        /// Слот держится в Lifting/Yawing всегда, дальше — пока не отошли по XZ от старта
+        /// на departureClearDistance + свой габарит. Docked/Berthing/таймаут — отпуск.
+        /// </summary>
+        void UpdateDepartureHold(Vector3 position) {
+            var m = CurrentMode;
+            if (m == NavMode.Docked || m == NavMode.Berthing
+                || Time.time - _departStartAt > departureHoldMaxSec) {
+                ReleaseDeparture();
+                return;
+            }
+            if (m == NavMode.Lifting || m == NavMode.Yawing) return;
+            float clear = departureClearDistance + HorizontalFootprint();
+            float dx = position.x - _departStartPos.x;
+            float dz = position.z - _departStartPos.z;
+            if (dx * dx + dz * dz >= clear * clear) ReleaseDeparture();
+        }
+
+        void ReleaseDeparture() {
+            if (!_departureActive) return;
+            _departureActive = false;
+            _departReleasedAt = Time.time;
+            NpcShipNavLog.Transition(gameObject.name, npcInstanceId, CurrentMode.ToString(),
+                CurrentMode.ToString(), "depart-clear", $"t={Time.time - _departStartAt:F0}s");
+        }
+
+        /// <summary>Полудиагональ XZ коллайдера корпуса (м). Без зоны — 0.</summary>
+        float HorizontalFootprint() {
+            var pz = ProximityZone;
+            return pz != null ? HorizontalFootprint(pz.GetShipBounds()) : 0f;
+        }
+
+        static float HorizontalFootprint(Bounds b) {
+            var e = b.extents;
+            return Mathf.Sqrt(e.x * e.x + e.z * e.z);
         }
 
         void TickLift(Rigidbody rb) {
@@ -1655,18 +1736,6 @@ namespace ProjectC.PeacefulShip.Stations
             var state = NpcShipWorld.Instance?.GetNpc(npcInstanceId);
             if (state == null || string.IsNullOrEmpty(state.CurrentRoute.toLocationId)) return null;
             var station = Docking.Network.DockingZoneRegistry.GetByLocation(state.CurrentRoute.toLocationId);
-            if (station == null) return null;
-            return station.transform.position;
-        }
-
-        /// <summary>
-        /// T-NS-WF06c: станция, где стоим (fromLocationId после advance = текущий leg).
-        /// Позиция резолвится вживую из реестра — мировых кэшей нет (F8-безопасно).
-        /// </summary>
-        Vector3? ResolveCurrentStation() {
-            var state = NpcShipWorld.Instance?.GetNpc(npcInstanceId);
-            if (state == null || string.IsNullOrEmpty(state.CurrentRoute.fromLocationId)) return null;
-            var station = Docking.Network.DockingZoneRegistry.GetByLocation(state.CurrentRoute.fromLocationId);
             if (station == null) return null;
             return station.transform.position;
         }
@@ -3025,6 +3094,8 @@ namespace ProjectC.PeacefulShip.Stations
             _avoidFromPos += translation;
             _wallEntryY += translation.y;
             LiftStartY += translation.y;
+            // T-NS-DEPART4: точка старта слота вылета — мировая.
+            _departStartPos += translation;
             // T-NS-ALT01: границы едут вместе с миром.
             _altFloor += translation.y;
             _altCeil += translation.y;

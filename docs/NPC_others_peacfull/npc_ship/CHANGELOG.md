@@ -4,6 +4,17 @@
 
 ---
 
+## 2026-11-25 — T-NS-DEPART4: очередь вылетов из дока (этап 1) ✅ COMPILE-CLEAN
+
+Дока: `20_DEPARTURE_COORDINATION.md`. Мьютекс WF06c ждал один тик (между
+опросами блок пропускался → взлёт). Теперь: `TrafficManager.TryAcquireDeparture`
+(FIFO-заявки, слот соседа, пауза `departureMinGapSec`), опрос `departurePollSec`
+с ожиданием между опросами, центр — позиция корабля. Слот держится до ухода
+по XZ на `departureClearDistance` + габарит (`depart-clear` в логе).
+Удалены `IsDepartureClear`, `ResolveCurrentStation`. Поля — в инспекторе (Departure).
+
+---
+
 ## 2026-09-23 — T-NS-WF08: лидар-веер + VFH-скоринг (лог 215325, 0 LOS-выходов)
 
 Веер ±60°/15° (9 лучей, bulk-margin `wallClearance`), скоринг

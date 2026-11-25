@@ -353,6 +353,10 @@ namespace ProjectC.PeacefulShip.EditorTools
                 DrawProp("departureClearDistance");
                 DrawProp("departureHoldMaxSec");
                 DrawProp("departClimbMeters");
+                DrawProp("departClearanceMargin");
+                DrawProp("departClimbMaxMeters");
+                DrawProp("liftLevelRateDeg");
+                DrawProp("liftHoldXZSpeed");
                 DrawProp("liftStuckSec");
                 DrawProp("liftStuckMin");
                 EditorGUI.indentLevel--;

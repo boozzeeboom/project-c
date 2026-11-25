@@ -4,6 +4,16 @@
 
 ---
 
+## 2026-11-25 — T-NS-DEPART4: ровный взлёт + адаптивный chimney (этап 2) ✅ COMPILE-CLEAN
+
+`TickLift` держит тангаж/крен ≈ 0 (`HoldLiftAttitude`, `liftLevelRateDeg=60`)
+и мягко возвращает корпус по XZ в колодец над падом (`liftHoldXZSpeed=2`).
+Высота chimney — `ComputeDepartClimb`: выше крыш соседей с перекрытием
+XZ-габаритов (`departClearanceMargin=20`, кап `departClimbMaxMeters=250`),
+относительная (`_liftClimb`), в логе `dwell-done climb=`.
+
+---
+
 ## 2026-11-25 — T-NS-DEPART4: очередь вылетов из дока (этап 1) ✅ COMPILE-CLEAN
 
 Дока: `20_DEPARTURE_COORDINATION.md`. Мьютекс WF06c ждал один тик (между

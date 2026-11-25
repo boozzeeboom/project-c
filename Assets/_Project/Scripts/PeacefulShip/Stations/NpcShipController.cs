@@ -501,6 +501,18 @@ namespace ProjectC.PeacefulShip.Stations
         [Min(2f)] [SerializeField] private float liftStuckMin = 10f;
         private float _liftProgY;
         private float _liftProgAt; // 0 = не armed
+        // T-NS-DEPART4: адаптивный chimney + удержание ориентации на взлёте.
+        [Tooltip("T-NS-DEPART4: запас (м) над крышами соседей при расчёте высоты chimney.")]
+        [Min(0f)] [SerializeField] private float departClearanceMargin = 20f;
+        [Tooltip("T-NS-DEPART4: потолок адаптивного chimney (м над падом).")]
+        [Min(5f)] [SerializeField] private float departClimbMaxMeters = 250f;
+        [Tooltip("T-NS-DEPART4: скорость выравнивания тангажа/крена на взлёте (°/с). " +
+                 "Гасит накопленный от контактов наклон (хвост вверх / нос вниз).")]
+        [Min(1f)] [SerializeField] private float liftLevelRateDeg = 60f;
+        [Tooltip("T-NS-DEPART4: макс. скорость возврата по XZ в колодец над падом (м/с).")]
+        [Min(0f)] [SerializeField] private float liftHoldXZSpeed = 2f;
+        private float _liftClimb; // относительный (от LiftStartY), 0 = departClimbMeters
+        private static readonly List<NpcShipController> _departNeighborScratch = new List<NpcShipController>(16);
 
         // Состояние watchdog/holding — всё относительное (дистанции, таймеры, счётчики),
         // мировых Vector3 не храним: FO-хук не нужен, F8 не роняет заход.
@@ -1023,11 +1035,42 @@ namespace ProjectC.PeacefulShip.Stations
             _departStartPos = rb.position;
             _departStartAt = Time.time;
             _departWaitReason = null;
+            _liftClimb = ComputeDepartClimb(rb.position);
             rb.isKinematic = false;
             ship.ExitDocked();
             _scheduleAdvancedAfterDock = false;
             // _cargoTradeDone сбрасывается в SetMode(Docked) — здесь не нужно.
-            SetMode(NavMode.Lifting, "dwell-done");
+            SetMode(NavMode.Lifting, "dwell-done", $"climb={_liftClimb:F0}");
+        }
+
+        /// <summary>
+        /// T-NS-DEPART4: высота chimney над падом — выше крыш соседей, чьи XZ-габариты
+        /// (+margin) перекрывают наш (разворот в Yawing тоже в этом круге).
+        /// Результат относительный (от LiftStartY), кап departClimbMaxMeters.
+        /// </summary>
+        float ComputeDepartClimb(Vector3 myPos) {
+            float climb = departClimbMeters;
+            var pz = ProximityZone;
+            if (pz == null) return climb;
+            Bounds mine = pz.GetShipBounds();
+            float myFoot = HorizontalFootprint(mine);
+            float bottomOffset = myPos.y - mine.min.y;
+            NpcShipZoneRegistry.QueryNearby(myPos, departureMutexRadius, _departNeighborScratch);
+            for (int i = 0; i < _departNeighborScratch.Count; i++) {
+                var other = _departNeighborScratch[i];
+                if (other == null || other == this) continue;
+                var oz = other.ProximityZone;
+                if (oz == null) continue;
+                Bounds ob = oz.GetShipBounds();
+                float reach = myFoot + HorizontalFootprint(ob) + departClearanceMargin;
+                float dx = ob.center.x - mine.center.x;
+                float dz = ob.center.z - mine.center.z;
+                if (dx * dx + dz * dz > reach * reach) continue;
+                float need = ob.max.y + departClearanceMargin + bottomOffset - myPos.y;
+                if (need > climb) climb = need;
+            }
+            _departNeighborScratch.Clear();
+            return Mathf.Min(climb, Mathf.Max(departClimbMeters, departClimbMaxMeters));
         }
 
         /// <summary>
@@ -1070,7 +1113,9 @@ namespace ProjectC.PeacefulShip.Stations
         void TickLift(Rigidbody rb) {
             // T-NS-DEPART3: Departure-Chimney — набираем departClimbMeters над падом
             // (LiftStartY = уровень пада на выходе из дока), только потом Yawing/Cruising.
-            float targetY = LiftStartY + departClimbMeters;
+            // T-NS-DEPART4: высота — адаптивная (_liftClimb, выше соседей), см. ComputeDepartClimb.
+            float targetY = LiftStartY + (_liftClimb > 0f ? _liftClimb : departClimbMeters);
+            HoldLiftAttitude(rb);
             float dy = targetY - rb.position.y;
             if (dy <= 0.1f) {
                 var station = ResolveTargetStation();
@@ -1101,9 +1146,35 @@ namespace ProjectC.PeacefulShip.Stations
                 DivertToNextStation(rb);
                 return;
             }
-            // Прямая velocity вверх
-            rb.linearVelocity = new Vector3(0, LiftSpeed, 0);
+            // Прямая velocity вверх.
+            // T-NS-DEPART4: + мягкий возврат по XZ в колодец над падом (толчок соседа/контакт
+            // не уводит корпус в сторону). Только при живом слоте — у него валидная точка старта.
+            float vx = 0f, vz = 0f;
+            if (_departureActive && liftHoldXZSpeed > 0f) {
+                Vector3 pos = rb.position;
+                vx = Mathf.Clamp((_departStartPos.x - pos.x) * 0.5f, -liftHoldXZSpeed, liftHoldXZSpeed);
+                vz = Mathf.Clamp((_departStartPos.z - pos.z) * 0.5f, -liftHoldXZSpeed, liftHoldXZSpeed);
+            }
+            rb.linearVelocity = new Vector3(vx, LiftSpeed, vz);
             rb.angularVelocity = Vector3.zero;
+        }
+
+        /// <summary>
+        /// T-NS-DEPART4: держим тангаж/крен ≈ 0 на взлёте. Контактный решатель поворачивает
+        /// тело внутри шага (обнуление angularVelocity угол не возвращает) — длинный корпус,
+        /// зацепившись носом, задирал хвост до переворота. Yaw — из проекции forward на
+        /// горизонт (eulerAngles.y при большом тангаже врёт).
+        /// </summary>
+        void HoldLiftAttitude(Rigidbody rb) {
+            Quaternion rot = rb.rotation;
+            Vector3 fwd = rot * Vector3.forward;
+            fwd.y = 0f;
+            if (fwd.sqrMagnitude < 1e-4f) fwd = rot * Vector3.up; // нос строго вниз/вверх
+            fwd.y = 0f;
+            if (fwd.sqrMagnitude < 1e-6f) return;
+            Quaternion level = Quaternion.LookRotation(fwd.normalized, Vector3.up);
+            if (Quaternion.Angle(rot, level) < 0.05f) return;
+            rb.MoveRotation(Quaternion.RotateTowards(rot, level, liftLevelRateDeg * Time.fixedDeltaTime));
         }
 
         void TickYaw(Rigidbody rb) {

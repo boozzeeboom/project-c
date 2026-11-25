@@ -746,6 +746,30 @@ namespace ProjectC.PeacefulShip.Stations
         /// <summary>T-NS-DEPART4: Time.time освобождения последнего слота.</summary>
         public float DepartureReleasedAt => _departReleasedAt;
 
+        // T-NS-DEPART5: выходные курс-гейты — точка выхода из дока на кольце вокруг пада.
+        // Курс из дока — радиально к своему свободному гейту на высоте chimney (без снижения
+        // над городом), дальше — обычный план. Гейт = первая точка _navPlan (FO-сдвиг уже есть).
+        [Tooltip("T-NS-DEPART5: ВКЛ — выход из дока через свободный курс-гейт на кольце.")]
+        [SerializeField] private bool useDepartGates = true;
+        [Tooltip("T-NS-DEPART5: радиус кольца гейтов от точки старта (м). Не меньше clear-дистанции + 2 габарита.")]
+        [Min(100f)] [SerializeField] private float departGateRadius = 500f;
+        [Tooltip("T-NS-DEPART5: число гейтов на кольце (гейт 0 — по курсу на цель).")]
+        [Range(4, 16)] [SerializeField] private int departGateCount = 8;
+        [Tooltip("T-NS-DEPART5: мин. расстояние между занятыми гейтами (м) + габариты кораблей.")]
+        [Min(0f)] [SerializeField] private float departGateSeparation = 150f;
+        private bool _departGateActive;
+        private static readonly List<NpcShipController> _gateNeighborScratch = new List<NpcShipController>(16);
+
+        /// <summary>T-NS-DEPART5: корабль летит к своему курс-гейту (гейт = _navPlan[0]).</summary>
+        public bool HasDepartGate => _departGateActive && _navIdx == 0 && _navPlan.Count > 0
+            && Time.time - _departStartAt <= departureHoldMaxSec;
+        /// <summary>T-NS-DEPART5: точка занятого гейта (валидна при HasDepartGate).</summary>
+        public Vector3 DepartGatePos => _navPlan.Count > 0 ? _navPlan[0] : Vector3.zero;
+        /// <summary>T-NS-DEPART5: вылет под координатором (слот или гейт) — расход ведёт очередь/гейты.</summary>
+        public bool IsDepartureCoordinated => IsDepartureActive || HasDepartGate;
+        /// <summary>T-NS-DEPART5: полудиагональ XZ корпуса (м) — для расчётов соседей.</summary>
+        public float HullFootprint => HorizontalFootprint();
+
         [Header("City gates (procedural, server-only)")]
         [Tooltip("ВКЛ: заход через ворота на границе cityRadius. ВЫКЛ: старый прямой заход.")]
         [SerializeField] private bool useCityGates = false;
@@ -884,7 +908,8 @@ namespace ProjectC.PeacefulShip.Stations
             }
 
             // T-NS-DEPART4: слот вылета держим, пока не вышли из воздушного пространства дока.
-            if (_departureActive) UpdateDepartureHold(rb.position);
+            // T-NS-DEPART5: и гейт — его держим до взятия точки, слот может уйти раньше.
+            if (_departureActive || _departGateActive) UpdateDepartureHold(rb.position);
 
             // T-NS-AV02: расхождение NPC-кораблей (только в круизе) и зданий (во всех свободных режимах).
             // Berthing/Docked исключены: корабль на финальном заходе игнорирует билд-коллайдеры
@@ -1055,14 +1080,19 @@ namespace ProjectC.PeacefulShip.Stations
             Bounds mine = pz.GetShipBounds();
             float myFoot = HorizontalFootprint(mine);
             float bottomOffset = myPos.y - mine.min.y;
-            NpcShipZoneRegistry.QueryNearby(myPos, departureMutexRadius, _departNeighborScratch);
+            // T-NS-DEPART5: плечо к гейту идёт над доком — учитываем всех внутри кольца.
+            float gateReach = useDepartGates ? Mathf.Max(departGateRadius, departureClearDistance + 2f * myFoot) : 0f;
+            NpcShipZoneRegistry.QueryNearby(myPos, Mathf.Max(departureMutexRadius, gateReach), _departNeighborScratch);
             for (int i = 0; i < _departNeighborScratch.Count; i++) {
                 var other = _departNeighborScratch[i];
                 if (other == null || other == this) continue;
                 var oz = other.ProximityZone;
                 if (oz == null) continue;
                 Bounds ob = oz.GetShipBounds();
-                float reach = myFoot + HorizontalFootprint(ob) + departClearanceMargin;
+                float nearReach = myFoot + HorizontalFootprint(ob) + departClearanceMargin;
+                // По кольцу гейтов — только стоящие в доке (пролётные уйдут сами, не задираем chimney).
+                float reach = other.CurrentMode == NavMode.Docked
+                    ? Mathf.Max(nearReach, gateReach + HorizontalFootprint(ob)) : nearReach;
                 float dx = ob.center.x - mine.center.x;
                 float dz = ob.center.z - mine.center.z;
                 if (dx * dx + dz * dz > reach * reach) continue;
@@ -1079,8 +1109,15 @@ namespace ProjectC.PeacefulShip.Stations
         /// </summary>
         void UpdateDepartureHold(Vector3 position) {
             var m = CurrentMode;
+            // T-NS-DEPART5: гейт взят (план ушёл дальше) или таймаут — гейт свободен.
+            if (_departGateActive && (_navIdx > 0 || Time.time - _departStartAt > departureHoldMaxSec)) {
+                _departGateActive = false;
+                NpcShipNavLog.Transition(gameObject.name, npcInstanceId, m.ToString(), m.ToString(),
+                    "depart-gate-done", _navIdx > 0 ? "reached" : "timeout");
+            }
             if (m == NavMode.Docked || m == NavMode.Berthing
                 || Time.time - _departStartAt > departureHoldMaxSec) {
+                _departGateActive = false;
                 ReleaseDeparture();
                 return;
             }
@@ -1110,6 +1147,56 @@ namespace ProjectC.PeacefulShip.Stations
             return Mathf.Sqrt(e.x * e.x + e.z * e.z);
         }
 
+        /// <summary>
+        /// T-NS-DEPART5: выбрать свободный курс-гейт и вставить его первой точкой плана.
+        /// Гейт 0 — по курсу на первую точку плана, дальше ±1, ±2… шага кольца; занят —
+        /// рядом (departGateSeparation + габариты) чужой активный гейт. Все заняты — наименее
+        /// занятый. Высота гейта — текущая (верх chimney): над доком не снижаемся.
+        /// </summary>
+        void TryAssignDepartGate(Rigidbody rb) {
+            _departGateActive = false;
+            if (!useDepartGates || !_departureActive || _navPlan.Count == 0) return;
+            Vector3 pos = rb.position;
+            Vector3 goal = _navPlan[0];
+            Vector3 toGoal = new Vector3(goal.x - _departStartPos.x, 0f, goal.z - _departStartPos.z);
+            float myFoot = HorizontalFootprint();
+            float radius = Mathf.Max(departGateRadius, departureClearDistance + 2f * myFoot);
+            // Цель ближе кольца — гейт не нужен (заход ведёт Berthing/план).
+            if (toGoal.sqrMagnitude < (radius * 1.2f) * (radius * 1.2f)) return;
+            float baseYaw = Mathf.Atan2(toGoal.x, toGoal.z) * Mathf.Rad2Deg;
+            float step = 360f / Mathf.Max(4, departGateCount);
+
+            NpcShipZoneRegistry.QueryNearby(_departStartPos, radius * 2f, _gateNeighborScratch);
+            Vector3 best = Vector3.zero;
+            int bestK = 0;
+            float bestScore = float.MaxValue;
+            int half = Mathf.Max(4, departGateCount) / 2;
+            for (int i = 0; i <= 2 * half; i++) {
+                int k = (i + 1) / 2 * ((i & 1) == 1 ? 1 : -1); // 0, +1, -1, +2, -2…
+                if (Mathf.Abs(k) > half) continue;
+                Vector3 dir = Quaternion.AngleAxis(baseYaw + k * step, Vector3.up) * Vector3.forward;
+                Vector3 gate = _departStartPos + dir * radius;
+                gate.y = pos.y;
+                float score = Mathf.Abs(k);
+                for (int n = 0; n < _gateNeighborScratch.Count; n++) {
+                    var other = _gateNeighborScratch[n];
+                    if (other == null || other == this || !other.HasDepartGate) continue;
+                    Vector3 og = other.DepartGatePos;
+                    float sep = departGateSeparation + myFoot + other.HullFootprint;
+                    float dx = og.x - gate.x, dz = og.z - gate.z;
+                    if (dx * dx + dz * dz < sep * sep) score += 100f;
+                }
+                if (score < bestScore) { bestScore = score; best = gate; bestK = k; }
+                if (score < 1f) break; // гейт по курсу свободен
+            }
+            _gateNeighborScratch.Clear();
+            _navPlan.Insert(0, best);
+            _navIdx = 0;
+            _departGateActive = true;
+            NpcShipNavLog.Transition(gameObject.name, npcInstanceId, "Lifting", "Lifting", "depart-gate",
+                $"k={bestK} busy={(bestScore >= 100f ? "yes" : "no")} gate=({best.x:F0},{best.y:F0},{best.z:F0})");
+        }
+
         void TickLift(Rigidbody rb) {
             // T-NS-DEPART3: Departure-Chimney — набираем departClimbMeters над падом
             // (LiftStartY = уровень пада на выходе из дока), только потом Yawing/Cruising.
@@ -1121,6 +1208,8 @@ namespace ProjectC.PeacefulShip.Stations
                 var station = ResolveTargetStation();
                 if (station.HasValue) {
                     SetCruiseTarget(station.Value);
+                    // T-NS-DEPART5: выход из дока — через свободный курс-гейт (первая точка плана).
+                    TryAssignDepartGate(rb);
                     SetMode(NavMode.Yawing, "lift-done");
                 } else {
                     // Не нашли станцию — fallback hover
@@ -1182,7 +1271,8 @@ namespace ProjectC.PeacefulShip.Stations
                 rb.linearVelocity = Vector3.zero;
                 return;
             }
-            Vector3 toTarget = CruiseTargetPos - rb.position;
+            // T-NS-DEPART5: разворот на активную точку плана (курс-гейт), а не на станцию.
+            Vector3 toTarget = NavGoal() - rb.position;
             float targetYaw = Mathf.Atan2(toTarget.x, toTarget.z) * Mathf.Rad2Deg;
             float currentYaw = rb.rotation.eulerAngles.y;
             float deltaYaw = Mathf.DeltaAngle(currentYaw, targetYaw);
@@ -1472,7 +1562,10 @@ namespace ProjectC.PeacefulShip.Stations
             rb.MoveRotation(Quaternion.AngleAxis(currentYaw + yawStep, Vector3.up));
 
             float speed = (dist > 200f && !wpBlockedAhead) ? CruiseSpeed : ApproachSpeed;
-            float altHold = (ProfileY() + 5f - position.y) * 0.5f;
+            // T-NS-DEPART5: на плече к курс-гейту держим высоту гейта (верх chimney) —
+            // не снижаемся к профилю цели над доком/соседями.
+            float holdY = HasDepartGate ? _navPlan[0].y : ProfileY() + 5f;
+            float altHold = (holdY - position.y) * 0.5f;
             // T-NS-WF01 (D3): возврат к профилю — тем же капом, что после LOS-выхода.
             // T-NS-ALT01: поверх — возврат в глобальные границы.
             float vyCruise = ClampVyToLimits(
@@ -2653,6 +2746,8 @@ namespace ProjectC.PeacefulShip.Stations
         void PlanRoute(Vector3 target) {
             _navPlan.Clear();
             _navIdx = 0;
+            // T-NS-DEPART5: перепланирование (обход/divert/replan) — гейт снимается.
+            _departGateActive = false;
             if (!useNavigator) return;
             float y = ProfileY();
             Vector3 from = transform.position;

@@ -242,11 +242,18 @@ namespace ProjectC.PeacefulShip.Stations
             var candidates = _candidates;
             float awareSqr = awarenessRadius * awarenessRadius;
             bool mySphere = zoneShape == ZoneShape.Sphere;
+            // T-NS-DEPART5: пары вылетов под координатором (очередь + разные гейты) не
+            // расходятся манёвром — Separate/Yield внутри дока и толкал корабли друг на друга.
+            // Корабль на плече к гейту видит заходящих (Berthing): они сами не уклоняются.
+            bool selfCoordinated = _self != null && _self.IsDepartureCoordinated;
+            bool selfOnGate = _self != null && _self.HasDepartGate;
             for (int i = 0; i < candidates.Count; i++)
             {
                 var other = candidates[i];
                 if (other == null || other == _self) continue;
-                if (!IsAvoidable(other)) continue;
+                if (!IsAvoidable(other)
+                    && !(selfOnGate && other.CurrentMode == NpcShipController.NavMode.Berthing)) continue;
+                if (selfCoordinated && other.IsDepartureCoordinated) continue;
 
                 var oz = other.ProximityZone;
                 if (oz == null) continue;

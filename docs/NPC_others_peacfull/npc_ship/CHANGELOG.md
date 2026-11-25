@@ -4,6 +4,17 @@
 
 ---
 
+## 2026-11-25 — T-NS-DEPART5: выходные курс-гейты из дока ✅ COMPILE-CLEAN
+
+Дока 20 §7. Курс из дока — к свободному гейту на кольце (`useDepartGates`,
+`departGateRadius=500`, `departGateCount=8`, `departGateSeparation=150`) на
+высоте chimney; `TickYaw` на `NavGoal()`. Вылетающие под координатором не
+маневрируют друг от друга; корабль на плече к гейту видит `Berthing`. Очередь
+ждёт заходящих на соседний пад (`arrival:`, ≤45 с). Chimney — над всеми
+стоящими внутри кольца.
+
+---
+
 ## 2026-11-25 — T-NS-DEPART4: быстрый путь sphere-vs-sphere в `FindClosestConflict` (этап 3) ✅ COMPILE-CLEAN
 
 Awareness — по квадрату дистанции, позиция кандидата читается один раз;

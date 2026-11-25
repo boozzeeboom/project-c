@@ -352,6 +352,10 @@ namespace ProjectC.PeacefulShip.EditorTools
                 DrawProp("departureMinGapSec");
                 DrawProp("departureClearDistance");
                 DrawProp("departureHoldMaxSec");
+                DrawProp("useDepartGates");
+                DrawProp("departGateRadius");
+                DrawProp("departGateCount");
+                DrawProp("departGateSeparation");
                 DrawProp("departClimbMeters");
                 DrawProp("departClearanceMargin");
                 DrawProp("departClimbMaxMeters");

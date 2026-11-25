@@ -224,6 +224,10 @@ namespace ProjectC.PeacefulShip.Network
             = new Dictionary<ulong, (float since, float refreshed)>();
         private readonly List<ulong> _departStaleScratch = new List<ulong>(8);
         private const float DepartRequestStaleSec = 5f;
+        // T-NS-DEPART5: уступаем заходящему на соседний пад не дольше (с) — иначе holding над
+        // нами + ожидание освобождения нашего пада = дедлок.
+        private const float DepartArrivalYieldMaxSec = 45f;
+        private const float DepartArrivalMargin = 30f;
         private float _departPurgeAt;
 
         /// <summary>
@@ -246,6 +250,8 @@ namespace ProjectC.PeacefulShip.Network
 
             Vector3 pos = requester.transform.position;
             float r2 = radius * radius;
+            bool yieldToArrivals = now - since < DepartArrivalYieldMaxSec;
+            float myFoot = yieldToArrivals ? requester.HullFootprint : 0f;
             NpcShipZoneRegistry.QueryNearby(pos, radius, _nearbyScratch);
             var nearby = _nearbyScratch;
             for (int i = 0; i < nearby.Count; i++)
@@ -262,6 +268,17 @@ namespace ProjectC.PeacefulShip.Network
                 {
                     reason = "gap:" + npc.name;
                     return false;
+                }
+                // T-NS-DEPART5: заходящий с назначенным падом над/рядом с нами — не взлетаем в него.
+                if (yieldToArrivals && npc.CurrentMode == Stations.NpcShipController.NavMode.Berthing
+                    && !string.IsNullOrEmpty(npc.AssignedPadId))
+                {
+                    float reach = myFoot + npc.HullFootprint + DepartArrivalMargin;
+                    if (HorizontalSqr(npc.transform.position, pos) <= reach * reach)
+                    {
+                        reason = "arrival:" + npc.name;
+                        return false;
+                    }
                 }
                 if (_departQueue.TryGetValue(npc.NpcInstanceId, out var other)
                     && now - other.refreshed <= DepartRequestStaleSec

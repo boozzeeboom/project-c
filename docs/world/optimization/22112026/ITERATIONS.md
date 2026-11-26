@@ -1516,3 +1516,58 @@ compile + domain reload — завершены, ошибок C# нет; `git dif
 в городе (в том числе после входа/выхода из корабля, когда риг камеры пересоздаётся), число варнингов
 (ожидаемо ~25 вместо 88: 18 нативных агентов и единичные записи), а также что палубные NPC не потеряли
 навигацию после проверки меша в `EnsureProxy`.
+
+## T-PERF26 — спираль смерти физики, утечка палубного прокси, CCD флота и окно торговца (`ProjectC_client_2026-11-26_14-13-12.data`)
+
+Захват 1 901 кадр (1.7 ГБ, без Allocation Call Stacks). Экстрактор: `.Aura/Scripts/ProfilerExtract.cs`
+(Timeline / Aggregate / Tree / Counters / Series), результаты — `.Aura/ProfilerOut/`.
+
+**Таймлайн.** Кадры 0–1100: медиана ~31 мс (PlayerLoop ~17 мс); 1100–1810: ~45 мс (PlayerLoop ~22 мс),
+`EditorLoop` медленно растёт 7 → 28 мс. Кадр **1816** — перелом (512 мс), с ~1841 устойчиво 250–670 мс/кадр
+(«неиграбельно»).
+
+| Окно | шагов FixedUpdate/кадр | Physics.Simulate мс/кадр | мс/шаг | BpSAP мс/шаг | Overlaps | CCD overlaps |
+|---|---|---|---|---|---|---|
+| 1600–1810 | 3.1 | 6.9 | 2.2 | 0.47 | ~950 | ~445 |
+| 1845–1892 | **15.2** | **102.7** | **6.6** | **1.55** | 2 100–2 700 | 990–1 236 |
+
+Механизм: игроковский корабль (`_pilots.Count > 0`) влетел в плотную статику (19 903 static colliders) —
+кадр 1816: 180 `ShipController.OnCollisionEnter` за 10 шагов и 36 verbose-логов `ShipHull`
+(`ShipDamage*.asset → verboseLogging: 1`) = 127 мс. Число пар broadphase удвоилось, шаг подорожал втрое,
+кадр вырос → при `Maximum Allowed Timestep = 0.333` Unity гонит до 16 шагов на кадр (fixed 0.02) → кадр
+ещё длиннее. Классическая спираль: 15.2 шага × 6.6 мс ≈ 100 мс одной физики. Активных динамических тел
+всего 7–8, то есть цена — пары «корабль × статика» в SAP и Continuous CCD всех 23 кораблей.
+
+Попутно найдено:
+- `NpcBrain.FixedUpdate` → `TickExplicitShipAttachment` → `EnsureProxy`: при промахе `SamplePosition`
+  прокси (введено в T-PERF25) создавался и уничтожался **каждый physics-тик** — 17 `new GameObject` +
+  `Destroy` за кадр, бесконечно, пока `_deckNavActive == false`.
+- Окно торговца (T-MERCH01, тестовый режим «скупка всего»): кадры 1491/1687/1754 — `NetworkPlayer.Update`
+  181 мс / 21.6 МБ (174 644 аллокации) + `DialogPanelSettings.PrepareRepaint` 164 мс / 25.8 МБ
+  (~4 200 VisualElement). Клик по строке перестраивал весь список заново.
+- `Profiler.FlushMemoryCounters` 6–10 мс/кадр и `EditorLoop` 28 → 391 мс — накладные редактора/профайлера
+  (детей у узла нет), в билде их нет.
+
+Что сделано:
+- `ProjectSettings/TimeManager.asset`: `Maximum Allowed Timestep` 0.333 → **0.1** (≤ 5 шагов на кадр;
+  при просадке игровое время замедляется, а не уходит в спираль). Согласовано с пользователем.
+- `ProjectSettings/DynamicsManager.asset`: broadphase Sweep-and-Prune → **Automatic Box Pruning**
+  (SAP деградирует на десятках тысяч статики; ABP сам строит сетку, `m_WorldBounds` не нужны). Согласовано.
+- `ShipController.RefreshCollisionDetectionMode` (каждый FixedUpdate, присваивание только при смене):
+  kinematic → `ContinuousSpeculative` (единственный валидный CCD для kinematic), frozen-без-пилота
+  (скорость принудительно 0) → `Discrete`, иначе прежний `Continuous`. Движущиеся корабли — как было.
+- `NpcBrain.EnsureProxy`: `SamplePosition` до `new GameObject`; после промаха повтор не чаще 1 с
+  (`ProxyRetryInterval`). FO-restore снимка (`TryRestoreFloatingOriginShipDeckSnapshot`) идёт с
+  `ignoreRetryCooldown: true` — транзакция не зависит от паузы.
+- `ShipDamageLight/Medium/Heavy/HeavyII.asset`: `verboseLogging` 1 → 0 (через SerializedObject);
+  `ShipPresetCreator` больше не создаёт конфиги с verbose. Строка `repairCostCredits` ушла при
+  ресериализации — поле удалено из кода ещё в T-SHIP-FIX12.
+- `DialogWindow` (магазин): клик по строке меняет только классы двух строк (`SelectMerchantRow`),
+  без `RebuildMerchantItemsList`; список ограничен 120 строками + подпись «…и ещё N, уточните поиск»;
+  фильтр поиска без `ToLowerInvariant` на каждый предмет.
+
+compile — ошибок C# нет. Play Mode, тесты и Build агентом — **NOT RUN**. Следующий захват должен
+проверить: шагов FixedUpdate на кадр ≤ 5 при любом кадре, `BpSAP.updateWork` исчез (вместо него
+ABP-маркеры), мс/шаг физики при полёте над городом, отсутствие `GameObject.AddComponent`/`Destroy` под
+`NpcBrain.FixedUpdate`, открытие магазина < 30 мс, столкновения кораблей и посадку/стыковку
+(Discrete у frozen, Speculative у docked) — без провалов сквозь палубу.

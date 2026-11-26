@@ -552,8 +552,10 @@ namespace ProjectC.Player
 
                 // T-CARGO-04-debug: Continuous ловит тонкие/быстрые столкновения
                 // которые Discrete пропускает (стены при скорости, ребра пиков).
-                // Небольшая perf-цена оправдана — корабль один на сцену.
+                // T-PERF26: кораблей на сцене ~23; режим дальше ведёт RefreshCollisionDetectionMode
+                // (kinematic → Speculative, frozen → Discrete, иначе Continuous).
                 _rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+                _appliedCollisionMode = CollisionDetectionMode.Continuous;
                 _rb.interpolation = RigidbodyInterpolation.Interpolate;
             }
 
@@ -1343,11 +1345,28 @@ namespace ProjectC.Player
         }
 #endif
 
+        // T-PERF26: захват 2026-11-26_14-13-12 — 23 корабля с Continuous CCD давали 1 236 CCD-пар
+        // (ScScene.updateCCDSinglePassStage3 до 1.5 мс/шаг). Запаркованному (frozen, скорость = 0)
+        // кораблю sweep не нужен; kinematic поддерживает только Speculative (иначе Unity понижает сам).
+        private CollisionDetectionMode _appliedCollisionMode;
+
+        private void RefreshCollisionDetectionMode()
+        {
+            CollisionDetectionMode wanted = _rb.isKinematic
+                ? CollisionDetectionMode.ContinuousSpeculative
+                : (_frozenByNoPilot ? CollisionDetectionMode.Discrete : CollisionDetectionMode.Continuous);
+            if (wanted == _appliedCollisionMode) return;
+            _appliedCollisionMode = wanted;
+            _rb.collisionDetectionMode = wanted;
+        }
+
         private void FixedUpdate()
         {
             using var _ = ProjectCPerfCounters.ShipControllerFixedUpdate.Auto();
             if (_rb == null) return;
             if (!CanSimulateInCurrentCoordinates) { ClearCoordinateInput(); return; }
+
+            RefreshCollisionDetectionMode();
 
             // T-KEY-07: telemetry update — server-only, throttled внутри метода.
             if (IsServer) UpdateTelemetryState();

@@ -466,7 +466,7 @@ namespace ProjectC.AI
             _rideLastPos = _ridePlatform.position;
             _rideLastRot = _ridePlatform.rotation;
 
-            EnsureProxy();
+            EnsureProxy(ignoreRetryCooldown: true);
             if (_proxyAgent == null)
                 return RejectFloatingOriginSnapshot("npc_ship_proxy_restore_failed", out error);
             if (snapshot.ProxyOnNavMesh && !_proxyAgent.Warp(snapshot.ProxyPosition))
@@ -902,7 +902,14 @@ namespace ProjectC.AI
             }
         }
 
-        private void EnsureProxy()
+        // T-PERF26: захват 2026-11-26_14-13-12 — TickExplicitShipAttachment зовёт EnsureProxy каждый
+        // physics-тик, пока _deckNavActive == false; при промахе SamplePosition прокси создавался и
+        // уничтожался на каждом шаге (17 new GameObject + Destroy за кадр). Теперь меш проверяется до
+        // создания объекта, а повтор после промаха — не чаще ProxyRetryInterval.
+        private const float ProxyRetryInterval = 1f;
+        private float _nextProxyAttemptTime;
+
+        private void EnsureProxy(bool ignoreRetryCooldown = false)
         {
             // PERF: не создаём NavMeshAgent если нет зарегистрированного навмеша палубы.
             // NavMeshAgent.AddComponent при отсутствии навмеша спамит "no valid NavMesh".
@@ -915,8 +922,7 @@ namespace ProjectC.AI
                 if (_proxyAgent != null && !_proxyAgent.enabled) _proxyAgent.enabled = true;
                 return;
             }
-            _proxyGo = new GameObject($"NpcDeckNavProxy_{name}");
-            _proxyGo.hideFlags = HideFlags.HideAndDontSave;
+            if (!ignoreRetryCooldown && Time.unscaledTime < _nextProxyAttemptTime) return;
             // T-PERF02: ставим прокси в нав-кадр ДО AddComponent — иначе агент создаётся
             // в origin (км от палубного меша) и Unity спамит "Failed to create agent"
             // (692 шт. в захвате 19-19). Та же математика, что в WarpProxyToNpc.
@@ -928,11 +934,12 @@ namespace ProjectC.AI
             // на него: точную посадку всё равно делает WarpProxyToNpc своими радиусами.
             if (!NavMesh.SamplePosition(navPos, out NavMeshHit proxyLand, 2f, NavMesh.AllAreas))
             {
-                Destroy(_proxyGo);
-                _proxyGo = null;
+                _nextProxyAttemptTime = Time.unscaledTime + ProxyRetryInterval;
                 return;
             }
 
+            _proxyGo = new GameObject($"NpcDeckNavProxy_{name}");
+            _proxyGo.hideFlags = HideFlags.HideAndDontSave;
             _proxyGo.transform.position = proxyLand.position;
             _proxyAgent = _proxyGo.AddComponent<NavMeshAgent>();
             if (_agent != null)

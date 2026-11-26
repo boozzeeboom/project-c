@@ -661,7 +661,7 @@ namespace ProjectC.Editor
             cfg.minCollisionRelativeSpeed = 3f;
             cfg.postUndockGraceSeconds = 3f;
             cfg.brokenSpeedMultiplier = 0.1f;
-            cfg.verboseLogging = true;
+            cfg.verboseLogging = false; // T-PERF26: лог на каждый удар стоил ~3.5 мс в редакторе
 
             AssetDatabase.CreateAsset(cfg, path);
             return path;

@@ -23,5 +23,4 @@ MonoBehaviour:
   minCollisionRelativeSpeed: 3
   postUndockGraceSeconds: 3
   brokenSpeedMultiplier: 0.1
-  repairCostCredits: 300
-  verboseLogging: 1
+  verboseLogging: 0

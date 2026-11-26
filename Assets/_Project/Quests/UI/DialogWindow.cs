@@ -95,6 +95,11 @@ namespace ProjectC.Quests.UI
  private string _searchQuery = "";
  private int _selectedItemId = -1;
  private int _hoveredItemId = -1;
+ // T-PERF26: строки текущего списка по itemId — смена выбора без полной перестройки списка.
+ private readonly Dictionary<int, VisualElement> _merchantRowsById = new Dictionary<int, VisualElement>();
+ // T-PERF26: захват 2026-11-26_14-13-12 — тестовый режим «скупка всего» строил ~4 200 элементов
+ // (25 МБ мусора, 160–180 мс на открытие/клик). Длинный список обрезается, остальное — через поиск/фильтр.
+ private const int MaxMerchantRows = 120;
  private int _selectedQuantity = 1;
  private string _merchantStatusText = "";
  private bool _merchantStatusSuccess = true;
@@ -809,10 +814,12 @@ StartTypewriter(locText ?? "");
  {
      if (_merchantItemsList == null) return;
      _merchantItemsList.Clear();
+     _merchantRowsById.Clear();
      if (!_hasShopSnapshot || !_currentShopSnapshot.isMerchant) return;
 
      string q = (_searchQuery ?? "").Trim().ToLowerInvariant();
      int shownCount = 0;
+     int hiddenCount = 0;
 
      if (_isBuyTab)
      {
@@ -824,13 +831,16 @@ StartTypewriter(locText ?? "");
                  var item = arr[i];
                  if (_selectedCategoryFilter >= 0 && item.itemType != (byte)_selectedCategoryFilter)
                      continue;
-                 if (!string.IsNullOrEmpty(q) && (item.itemName == null || !item.itemName.ToLowerInvariant().Contains(q)))
+                 if (!string.IsNullOrEmpty(q) && (item.itemName == null || item.itemName.IndexOf(q, System.StringComparison.OrdinalIgnoreCase) < 0))
                      continue;
 
                  if (_selectedItemId <= 0 && item.isUnlocked)
                      _selectedItemId = item.itemId;
 
-                 _merchantItemsList.Add(CreateBuyItemRow(item));
+                 if (shownCount >= MaxMerchantRows) { hiddenCount++; continue; }
+                 var buyRow = CreateBuyItemRow(item);
+                 _merchantRowsById[item.itemId] = buyRow;
+                 _merchantItemsList.Add(buyRow);
                  shownCount++;
              }
          }
@@ -845,16 +855,33 @@ StartTypewriter(locText ?? "");
                  var item = arr[i];
                  if (_selectedCategoryFilter >= 0 && item.itemType != (byte)_selectedCategoryFilter)
                      continue;
-                 if (!string.IsNullOrEmpty(q) && (item.itemName == null || !item.itemName.ToLowerInvariant().Contains(q)))
+                 if (!string.IsNullOrEmpty(q) && (item.itemName == null || item.itemName.IndexOf(q, System.StringComparison.OrdinalIgnoreCase) < 0))
                      continue;
 
                  if (_selectedItemId <= 0)
                      _selectedItemId = item.itemId;
 
-                 _merchantItemsList.Add(CreateSellItemRow(item));
+                 if (shownCount >= MaxMerchantRows) { hiddenCount++; continue; }
+                 var sellRow = CreateSellItemRow(item);
+                 _merchantRowsById[item.itemId] = sellRow;
+                 _merchantItemsList.Add(sellRow);
                  shownCount++;
              }
          }
+     }
+
+     if (hiddenCount > 0)
+     {
+         var moreLbl = new Label($"…и ещё {hiddenCount}. Уточните поиск или выберите категорию.")
+         {
+             style =
+             {
+                 color = new Color(0.65f, 0.7f, 0.8f),
+                 paddingTop = 8,
+                 paddingLeft = 10
+             }
+         };
+         _merchantItemsList.Add(moreLbl);
      }
 
      if (shownCount == 0)
@@ -870,6 +897,16 @@ StartTypewriter(locText ?? "");
          };
          _merchantItemsList.Add(emptyLbl);
      }
+ }
+
+ // T-PERF26: клик по строке раньше перестраивал весь список (сотни строк) — теперь только классы двух строк.
+ private void SelectMerchantRow(int itemId)
+ {
+     if (_merchantRowsById.TryGetValue(_selectedItemId, out var prevRow))
+         prevRow.RemoveFromClassList("merchant-item-row-selected");
+     _selectedItemId = itemId;
+     if (_merchantRowsById.TryGetValue(itemId, out var newRow))
+         newRow.AddToClassList("merchant-item-row-selected");
  }
 
  private VisualElement CreateBuyItemRow(MerchantItemDto item)
@@ -933,9 +970,8 @@ StartTypewriter(locText ?? "");
      });
      row.RegisterCallback<ClickEvent>(_ =>
      {
-         _selectedItemId = capturedId;
+         SelectMerchantRow(capturedId);
          _selectedQuantity = Mathf.Clamp(_selectedQuantity, 1, Mathf.Max(1, CalculateMaxAllowedQuantity()));
-         RebuildMerchantItemsList();
          RefreshDetailAndActionPanel();
      });
 
@@ -988,9 +1024,8 @@ StartTypewriter(locText ?? "");
      });
      row.RegisterCallback<ClickEvent>(_ =>
      {
-         _selectedItemId = capturedId;
+         SelectMerchantRow(capturedId);
          _selectedQuantity = Mathf.Clamp(_selectedQuantity, 1, Mathf.Max(1, CalculateMaxAllowedQuantity()));
-         RebuildMerchantItemsList();
          RefreshDetailAndActionPanel();
      });
 

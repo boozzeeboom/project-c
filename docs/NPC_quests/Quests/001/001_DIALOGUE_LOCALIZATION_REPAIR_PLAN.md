@@ -137,7 +137,7 @@ Play Mode и screenshots выполняются вручную пользова�
 
 - Обновить этот план отметками `[x]`.
 - Добавить итоговый отчёт в `docs/NPC_quests/Quests/001`.
-- Отразить результат в `docs/NPC_quests/ITERATIONS.md`.
+- Отразить результат в `docs/archive/NPC_quests_iterations/roadmap_and_logs/ITERATIONS.md`.
 - После согласованного этапа создать git-коммит с номером тикета.
 
 ## Формат отчёта после каждого этапа

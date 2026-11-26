@@ -177,6 +177,9 @@ eventId = стабильный event id
 
 ## 6. NPC и диалоги
 
+Полный пайплайн именного NPC (definition, постановка в сцену, память игрока) —
+`docs/NPC_quests/00_NAMED_NPC_PIPELINE.md`.
+
 ### NPC definition
 
 Для каждого NPC проверить:

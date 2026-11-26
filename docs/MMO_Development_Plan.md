@@ -1,6 +1,6 @@
 # План разработки ММО "Project C: The Clouds" на Unity
 
-**Последнее обновление:** 06 ноября 2026 г. | **Текущая версия:** `v0.2.0` (целевая; маркер в сцене на HEAD — `0.1.94`)
+**Последнее обновление:** 26 ноября 2026 г. | **Текущая версия:** `v0.2.10` (маркер в сцене на HEAD — `0.2.1`)
 
 > **Что нового (08–14 сентября 2026):** **v0.1.60.** Floating Origin — крупный интеграционный slice и набор контрактов для палуб кораблей, NPC, погоды, камеры, респауна и сохранений. Исторические verify-прогоны были положительными, но текущий аудит v0.1.85 отдельно фиксирует, что concrete adapters, runtime installation, live manifest/participant admission, controlled rebase/rollback и `runtimeRebaseReadiness` ещё не доказаны. Свет — малая интеграция (T-LIGHT01–09): ночные фонари (realtime), фикс ночной экспозиции, Lighting Settings мира. Подробности: `docs/dev/RETRO_FO_LIGHT_2026-09-14.md` и `docs/world/floatingorigin/06AP_CONSOLIDATED_INTEGRATION_STATUS.md`.
 >
@@ -9,6 +9,8 @@
 > **Что нового (22–28 сентября 2026):** **v0.1.85 → v0.1.91.** 118 коммитов (`b39549b8..c7e11be9`): паром доведён до персистентности веток + carry-рестор + platform-rescue (T-PAROM-13…22, постмортем серии 04…12); NPC-навигация — лидар-веер VFH, вотчдоги сближения, граф Дейкстры, PeakRegistry-диски, воздушные магистрали AIR01…03e (LOS 92% → 97%, v0.1.90); тишина 119 точек логов; перф-расследование зон/ветра (T-PERF02, GC зон −27%); камера SHRINK/REST/RECOVER (T-CAM17/18, v0.1.91); чанк-лоадер закрыт ресёрчем (legacy 2K deprecated); ключи fail-closed (T-KEY-10/11), приватные детали трюма (T-CARGO-UI-03 Phase 1), F12 Маршрут+Тесты (T-ADM-08/09). Арт: смоделены фермерские поселения 0-0 и 0-2, мегаферма-рефайнери, корабль «Гигант» (самый большой в игре, плавучий город на 300+ человек). Полный отчёт: `docs/dev/RETRO_v0.1.85_to_v0.1.91_2026-09-28.md`.
 >
 > **Что нового (29 сентября – 06 ноября 2026):** **v0.1.91 → 0.2.0.** 366 коммитов (`c7e11be9..0c45f778`): PRIMUM — город доведён до merged-префабов/коллайдеров (10 811)/дверей (2 363)/света (2 087 источников, пул ≤96)/HLOD (5.41M → 267k трианглов)/процедурных материалов (0 URP/Lit), Y-up rebase 22 чанка; фермы 0-0…0-4 + MEGA_REFINERY_1 (90–121 батчей, 89 коллайдеров мегафермы); NPC-корабли — визуальный грейфт 17 кораблей + rebake навмешей, LOR/ALB; паром T-PAROM-23…27 (интерполяция `s`, синк физики, гашение краёв в метрах); камера T-CAM22…25 (SpringArm на платформе, высокая скорость); загрузка T-LOAD01 (экран загрузки + предзагрузка за меню, вход с первого клика); UIv2 — порт MainMenu (v4-2) и Cloudy Navigator (шаги 0–9 + A7–A13), 168 иконок (379 файлов, 17 категорий); T-CULL01 финальная приёмка (Stage 8 PASS, P1 2229 DC, L1–L6 свет); T-HOUSE01 нумерация домов + discovery на карте (534 маркера, радиус 15 м). Полный отчёт: `docs/dev/RETRO_v0.1.91_to_v0.2.0_2026-11-06.md`.
+> **Что нового (06–26 ноября 2026):** **v0.2.0 → 0.2.10.** 185 коммитов (`bbeb900b..8c19df5c`): T-PERF01…25 — глобальная оптимизация по Profiler-замерам (SendTriggerEvents self −99.8%, мусор колбэков 65 703 КБ → 0, нативные NavMesh-warning 671 → 18, FO-исполнитель −77%); облака v4 T-CLOUD43…51 (dual-HG, form/detail/stable, half-res + temporal, sun-space self-shadow); MotionBricks T-MB01…06 — ресерч с STOP-вердиктом, в билд не попал; ELIO — внешний JS-прототип правил + сайт; FENCE/SplineRoad — генератор заборов и дорог (self-check 25/25); PRIMUM_PORT v2/v3 разметен в сцене; T-CHAR-RIG01/02 — 106/106 Humanoid-ригов; T-NS-DEPART4/5 + T-SHIPDECK-01/02 — вылеты NPC и палуба игрока; T-BUILD01 — player-сборка. Полный отчёт: `docs/dev/RETRO_v0.2.0_to_v0.2.10_2026-11-26.md`.
+>
 > **Предыдущее обновление (5–20 августа 2026):** **v0.1.20 → v0.1.21.** Contract core refactor: разделены board offers, active contracts и terminal history; добавлен полный Receipt flow `Accept → Claim Cargo → Transport → Submit`, серверная валидация доставки и rollback при ошибках persistence. **v0.1.21** — локализационный фикс. Подробности: `docs/changelogs.md` и `docs/dev/RETROSPECTIVE_2026-08-17.md`.
 >
 > **☁️ Cloud Ocean 3.0 (T-CLD01, T-CLOUD02..42):** ~75 коммитов. Объёмная система облаков — 🟢 продакшн-готово. Volumetric raymarch (4 слоя 800–7000м), цветовые рампы день/закат, light march (HG g=0.7 + multi-scatter), half-res + blue-noise + temporal. Интерактивность: LocalDensityBuffer (96³), корабельный след (displacement + кильватерный конус), VFX contrail, штормовые ячейки (procedural cellular-форма «цветная капуста», иммунны к displacement, runtime save/load, anti-banding). Источник правды: `docs/world/CLOUD_system/3.0/STATUS.md`.
@@ -888,6 +890,7 @@
 2. **Облака (comic-book стиль):** ✅
    - ✅ CloudGhibli.shader — кастомный URP Unlit шейдер
    - ✅ ⭐ **Cloud Ocean 3.0 (v0.0.85)** — volumetric raymarch + RenderFeature, 4 слоя, штормовые ячейки, displacement (см. §1.1)
+   - ✅ **Cloud Ocean v4 (T-CLOUD43…51, 0.2.10)** — dual-HG + multi-scatter, form/detail/stable-слои, half-res + depth-aware upscale, temporal reprojection, sun-space self-shadow, FO-safe высоты (T-FO09T) — `docs/world/CLOUD_system/3.0/STATUS.md`
    - ✅ Noise + rim glow + vertex displacement (морфинг форм)
    - ✅ ProceduralNoiseGenerator — FBM noise текстуры (512×512)
    - ✅ Авто-интеграция в CloudLayer.cs
@@ -912,6 +915,8 @@
    - ✅ Город Примум: merged-префабы, 10 811 коллайдеров, 2 363 двери, 2 087 источников света, HLOD L1/L2 (5.41M → 267k), процедурные материалы (0 URP/Lit), Y-up rebase 22 чанка — `docs/world/primum_city/`
    - ✅ Фермы 0-0…0-4 + MEGA_REFINERY_1: материалы/двери/свет/коллайдеры/мердж (90–121 батчей) — `FARMS/*`
    - ✅ Посадочные площадки/доки: `PRIMUM_DOORS` layer, layer cull distance, shadow budget
+   - ✅ Порт Примума v2/v3 (0.2.10): `PRIMUM_PORT_V3` 216 рендереров / 15 материалов, `urpLit=0`, разметен в `WorldScene_0_0` — `docs/world/primum_city/09_MATERIALS/`
+   - ✅ FENCE + SplineRoad (0.2.10): генератор заборов (Bar/Masonry, self-check 25/25) и сплайн-дороги с привязкой к рельефу — `docs/world/spline_assets/00_DESIGN_SplineFence.md`
    - ⏳ Мосты между пиками (процедурные) — не начато
     - ⏳ Мегаферма — pending FO-размещение в сцене
 
@@ -919,6 +924,7 @@
    - ✅ **Character Animations v0.5.1** — BlendTree directional movement (MoveX/MoveY), combat clips (idle/walk/run/attack/death), female override controller
    - ✅ NetworkPlayer интеграция — capsule заменён анимированным мешем, синхронизация анимаций
    - ✅ AnimatorOverrideController импорт через ScriptableObject (L3/L4 кастомизация)
+   - ✅ **Humanoid-риги (T-CHAR-RIG01/02, 0.2.10):** 106/106 персонажей + NPC 12k/40k, 51 маппинг костей incl. пальцы — `docs/dev/character_rig_automation.md`
 
 7. **UI и предметы:** 🔄 в процессе (0.2.0)
    - ✅ UIv2: порт MainMenu (v4-2) и Cloudy Navigator (шаги 0–9 + A7–A13), 168 иконок (379 файлов, 17 категорий) — `UIv2`, `Assets/_Project/UI/Icons/`

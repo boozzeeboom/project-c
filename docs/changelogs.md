@@ -1,3 +1,39 @@
+v0.2.10
+
+Global Optimisation & Animation Research
+
+Version 0.2.10 is a technical milestone. Where 0.2.0 filled the world with content, this one makes it run smoothly: 185 commits of profiling-driven fixes, a new cloud rendering pipeline, a finished port for Primum, mass character rigging — and honest animation research that was deliberately kept out of the build.
+
+Performance (T-PERF01-25)
+- A measure-first loop: small diff, clean compile, separate commit, Profiler capture from the user, then a documented verdict. Baseline: 21,842 colliders, 2,800 door controllers, 5,898 ms of trigger events and 30,180 KB of allocations in one frame.
+- Trigger avalanche removed: ship console callbacks 2,082 + 10,786 -> 0 + 0, SendTriggerEvents self time 38.20 ms -> 0.189 ms (-99.8%), comm-zone callbacks 5,541 -> 0.
+- Garbage cleanup: GetComponent null-error messages 202.9 -> 31.25 KB/frame (-85%), four trigger callbacks 65,703 KB -> 0 KB across 102,925 calls; FixedUpdate allocations 46 KB -> 0 B.
+- Registries replace scene scans for doors, NPCs and chests: NetworkPlayer.Update 3.922 -> 0.886 ms, zone lookups 1.443 -> 0.258 ms; one global Physics.SyncTransforms per frame cuts wind cost 43.9% and NPC cruising 48.4%.
+- NavMesh warnings 671 -> 18, shadow budgets 0.347 -> 0.159 ms (City) and 0.324 -> 0.172 ms (Ships), Floating Origin executor 0.1874 -> 0.0426 ms (-77%), editor gizmos self time 25.6 -> 10.3 ms.
+- Latest capture: PlayerLoop median 21.33 ms. Routes differ between captures, so no strict A/B — the overall FPS gain is not attributed to the fixes.
+
+Clouds v4 (T-CLOUD43-51)
+- Seven stages on top of the volumetric renderer: dual-HG lighting with multi-scatter and powder, coverage/form/detail/stable noise layers, half-res raymarch with bilateral depth-aware upscale, temporal reprojection, sun-space self-shadowing with sun rays, and de-flickering behind ships.
+- Displacement runaway capped and follow-target limited to the player's ship; cloud heights now survive Floating Origin rebases (T-FO09T). Zero shader errors at every stage; visual acceptance and GPU measurements for later stages still pending.
+
+World, characters and ships
+- Primum Port v2/v3 pipeline: the port is placed in WorldScene_0_0 with 216 renderers / 15 materials, zero URP/Lit slots.
+- FENCE and SplineRoad: spline-based fence generator (steel bar and brick styles, 25/25 self-check) and generative roads with surface probing and colliders.
+- 106/106 characters re-rigged as Humanoid avatars, including fingers; NPC catalogs (12k and 40k) also 106/106 with 0 errors.
+- NPC ships: a FIFO departure queue with slot TTL, adaptive lift and chimney, plus eight course gates so ships leave the dock without colliding. Player is saved on the deck and regains control after exiting a ship.
+- Day/night: profile cloning fixed (color drift came from writing hueShift into the asset); new color filters and isolated Volume profiles.
+
+Research and infrastructure
+- MotionBricks (T-MB01-06): a 49-commit investigation of NVIDIA's generative motion model. Baking, retargeting, root motion and a runtime sidecar all worked, but the result was no better than existing crossfades. Closed with a STOP verdict; no model, package or runtime code shipped.
+- ELIO: a standalone web prototype of the board-game rules from the book, with an AI arena, headless balance runs and a research site.
+- Player build compiles again (T-BUILD01); autopilot package pinned to a git source; URP light prefilter flags updated.
+
+Notes
+- Floating Origin rebasing still works, but runtimeRebaseReadiness remains NOT_READY.
+- Play Mode verification after the last performance changes is performed by the user; the agent marks runtime checks as NOT RUN.
+- Full retrospective: docs/dev/RETRO_v0.2.0_to_v0.2.10_2026-11-26.md.
+
+----------------------------------
 v0.2.0
 
 World Content & Visual Fill

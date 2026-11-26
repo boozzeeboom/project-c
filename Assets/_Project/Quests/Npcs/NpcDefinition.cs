@@ -143,6 +143,28 @@ namespace ProjectC.Quests
         [Tooltip("Какие сервисы NPC предоставляет (битовая маска). Определяет доступность OpenMarket/OpenService диалоговых action'ов.")]
         public NpcService services = NpcService.None;
 
+        [Header("Merchant / Trade (T-MERCH01)")]
+        [Tooltip("Личная таблица предметов для продажи у этого NPC (Create > ProjectC > Quests > NPC Merchant Table). Если назначена — правее диалога открывается магазин.")]
+        public NpcMerchantTable merchantTable;
+
+        [Tooltip("WARNING FOR TESTS ONLY: Если включено — этот NPC продаёт ВСЕ pickable-предметы из ItemRegistry (кроме корабельных ключей Key). Не оставлять включённым в продакшене!")]
+        public bool sellAllItemsForTesting = false;
+
+        [Tooltip("Базовая цена по умолчанию (CR) для предметов без собственной цены в режиме 'Продаёт всё' или без таблицы.")]
+        [Min(1)]
+        public int testModeDefaultPrice = 25;
+
+        [Tooltip("Разрешить ли игроку продавать свои предметы этому NPC, если у NPC включён режим торговли без личной таблицы.")]
+        public bool allowPlayerSellInTestMode = true;
+
+        /// <summary>
+        /// Является ли данный NPC торговцем (открывать ли правый блок магазина при нажатии E).
+        /// </summary>
+        public bool IsMerchant =>
+            sellAllItemsForTesting ||
+            merchantTable != null ||
+            (services & NpcService.Trade) != 0;
+
         [Header("Interaction")]
         [Tooltip("Радиус interact в метрах (E-key pipeline, T-Q08)")]
         [Min(0.1f)]

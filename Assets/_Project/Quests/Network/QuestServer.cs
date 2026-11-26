@@ -238,7 +238,7 @@ namespace ProjectC.Quests
             int offerCount = offerIds.Length;
             int turnInCount = turnInIds.Length;
             string greeting = npc.showGreeting ? npc.greetingText : "";
-            if (offerCount == 0 && turnInCount == 0 && string.IsNullOrEmpty(greeting)) return null;
+            if (offerCount == 0 && turnInCount == 0 && string.IsNullOrEmpty(greeting) && !npc.IsMerchant) return null;
 
             var w = QuestWorld.Instance;
             var nodes = new System.Collections.Generic.List<ProjectC.Dialogue.DialogueNode>();
@@ -565,6 +565,12 @@ namespace ProjectC.Quests
             // Build first step
             var step = BuildDialogStep(tree, session.currentNodeId, clientId);
             SendDialogStepToClient(clientId, step);
+
+            // T-MERCH01: если NPC является торговцем — сразу отправляем снапшот магазина для правого блока DialogWindow
+            if (npc.IsMerchant)
+            {
+                SendMerchantShopSnapshotToClient(clientId, npc);
+            }
         }
 
         /// <summary>
@@ -676,6 +682,163 @@ namespace ProjectC.Quests
             if (session == null) return;
             if (debugMode) Debug.Log($"[QuestServer] RequestEndConversation client={clientId}");
             QuestWorld.Instance.CloseDialog(clientId);
+        }
+
+        // ============================================================
+        // T-MERCH01: Merchant Shop RPCs (server-authoritative NPC trading)
+        // ============================================================
+
+        /// <summary>
+        /// Клиент запрашивает актуальный снимок магазина NPC.
+        /// </summary>
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
+        public void RequestMerchantShopRpc(string npcId, RpcParams rpcParams = default)
+        {
+            ulong clientId = rpcParams.Receive.SenderClientId;
+            if (!CheckRateLimit(clientId)) return;
+            if (QuestWorld.Instance == null || questDatabase == null) return;
+            if (string.IsNullOrEmpty(npcId)) return;
+
+            var npc = questDatabase.GetNpc(npcId);
+            if (npc == null || !npc.IsMerchant) return;
+
+            var npcCtrl = NpcController.Find(npcId);
+            if (npcCtrl != null && !npcCtrl.IsWithinDistance(GetPlayerPosition(clientId)))
+                return;
+
+            SendMerchantShopSnapshotToClient(clientId, npc);
+        }
+
+        /// <summary>
+        /// Клиент покупает quantity штук предмета itemId у NPC-торговца.
+        /// Все проверки (дистанция, сток, слоты, кредиты) и начисление +0.1 репутации за 100 CR — на сервере.
+        /// </summary>
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
+        public void RequestMerchantBuyRpc(string npcId, int itemId, int quantity, RpcParams rpcParams = default)
+        {
+            ulong clientId = rpcParams.Receive.SenderClientId;
+            if (!CheckRateLimit(clientId))
+            {
+                SendMerchantTradeResultToClient(clientId, new MerchantTradeResultDto
+                {
+                    code = (byte)MerchantTradeResultCode.RateLimited,
+                    isBuy = true,
+                    npcId = npcId ?? "",
+                    itemId = itemId,
+                    quantity = quantity,
+                    message = "Слишком частые запросы, подождите"
+                });
+                return;
+            }
+            if (QuestWorld.Instance == null || questDatabase == null || string.IsNullOrEmpty(npcId)) return;
+
+            var npc = questDatabase.GetNpc(npcId);
+            if (npc == null)
+            {
+                SendMerchantTradeResultToClient(clientId, new MerchantTradeResultDto
+                {
+                    code = (byte)MerchantTradeResultCode.NpcNotFound,
+                    isBuy = true,
+                    npcId = npcId,
+                    itemId = itemId,
+                    quantity = quantity,
+                    message = "NPC не найден"
+                });
+                return;
+            }
+
+            var npcCtrl = NpcController.Find(npcId);
+            if (npcCtrl != null && !npcCtrl.IsWithinDistance(GetPlayerPosition(clientId)))
+            {
+                SendMerchantTradeResultToClient(clientId, new MerchantTradeResultDto
+                {
+                    code = (byte)MerchantTradeResultCode.TooFarFromNpc,
+                    isBuy = true,
+                    npcId = npcId,
+                    itemId = itemId,
+                    quantity = quantity,
+                    message = "Вы слишком далеко от торговца"
+                });
+                return;
+            }
+
+            var result = QuestWorld.Instance.TryMerchantBuy(clientId, npc, itemId, quantity);
+            if (result.IsSuccess)
+            {
+                if (ProjectC.Items.Network.InventoryServer.Instance != null)
+                    ProjectC.Items.Network.InventoryServer.Instance.PushSnapshot(clientId);
+                if (ProjectC.Trade.Network.ContractServer.Instance != null)
+                    ProjectC.Trade.Network.ContractServer.Instance.PushPlayerSnapshot(clientId);
+                BroadcastBothChange(clientId);
+            }
+
+            SendMerchantShopSnapshotToClient(clientId, npc);
+            SendMerchantTradeResultToClient(clientId, result);
+        }
+
+        /// <summary>
+        /// Клиент продаёт quantity штук предмета itemId из своего инвентаря торговцу NPC.
+        /// </summary>
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
+        public void RequestMerchantSellRpc(string npcId, int itemId, int quantity, RpcParams rpcParams = default)
+        {
+            ulong clientId = rpcParams.Receive.SenderClientId;
+            if (!CheckRateLimit(clientId))
+            {
+                SendMerchantTradeResultToClient(clientId, new MerchantTradeResultDto
+                {
+                    code = (byte)MerchantTradeResultCode.RateLimited,
+                    isBuy = false,
+                    npcId = npcId ?? "",
+                    itemId = itemId,
+                    quantity = quantity,
+                    message = "Слишком частые запросы, подождите"
+                });
+                return;
+            }
+            if (QuestWorld.Instance == null || questDatabase == null || string.IsNullOrEmpty(npcId)) return;
+
+            var npc = questDatabase.GetNpc(npcId);
+            if (npc == null)
+            {
+                SendMerchantTradeResultToClient(clientId, new MerchantTradeResultDto
+                {
+                    code = (byte)MerchantTradeResultCode.NpcNotFound,
+                    isBuy = false,
+                    npcId = npcId,
+                    itemId = itemId,
+                    quantity = quantity,
+                    message = "NPC не найден"
+                });
+                return;
+            }
+
+            var npcCtrl = NpcController.Find(npcId);
+            if (npcCtrl != null && !npcCtrl.IsWithinDistance(GetPlayerPosition(clientId)))
+            {
+                SendMerchantTradeResultToClient(clientId, new MerchantTradeResultDto
+                {
+                    code = (byte)MerchantTradeResultCode.TooFarFromNpc,
+                    isBuy = false,
+                    npcId = npcId,
+                    itemId = itemId,
+                    quantity = quantity,
+                    message = "Вы слишком далеко от торговца"
+                });
+                return;
+            }
+
+            var result = QuestWorld.Instance.TryMerchantSell(clientId, npc, itemId, quantity);
+            if (result.IsSuccess)
+            {
+                if (ProjectC.Items.Network.InventoryServer.Instance != null)
+                    ProjectC.Items.Network.InventoryServer.Instance.PushSnapshot(clientId);
+                if (ProjectC.Trade.Network.ContractServer.Instance != null)
+                    ProjectC.Trade.Network.ContractServer.Instance.PushPlayerSnapshot(clientId);
+            }
+
+            SendMerchantShopSnapshotToClient(clientId, npc);
+            SendMerchantTradeResultToClient(clientId, result);
         }
 
         /// <summary>
@@ -1140,10 +1303,11 @@ namespace ProjectC.Quests
             var options = visibleOptions.ToArray();
             // Store for RequestAdvanceDialogue index mapping
             var w = ProjectC.Quests.QuestWorld.Instance;
+            QuestWorld.DialogSession activeSession = null;
             if (w != null)
             {
-                var session = w.GetDialogSession(clientId);
-                if (session != null) session.visibleEdges = visibleEdges;
+                activeSession = w.GetDialogSession(clientId);
+                if (activeSession != null) activeSession.visibleEdges = visibleEdges;
             }
 
             // Resolve speaker
@@ -1164,7 +1328,25 @@ namespace ProjectC.Quests
                     }
                 }
             }
+            if (string.IsNullOrEmpty(speakerNpcId) && activeSession != null && !string.IsNullOrEmpty(activeSession.npcId))
+            {
+                speakerNpcId = activeSession.npcId;
+                if (questDatabase != null)
+                {
+                    var npcDef = questDatabase.GetNpc(speakerNpcId);
+                    if (npcDef != null && string.IsNullOrEmpty(speakerDisplayName))
+                        speakerDisplayName = ProjectC.Localization.Loc.Get(npcDef.displayName, npcDef.displayName ?? "");
+                }
+            }
             speakerText = ProjectC.Localization.Loc.Get(node.text ?? "", node.text ?? "");
+
+            string merchantNpcId = activeSession != null && !string.IsNullOrEmpty(activeSession.npcId)
+                ? activeSession.npcId
+                : speakerNpcId;
+            var merchantNpcDef = questDatabase != null && !string.IsNullOrEmpty(merchantNpcId)
+                ? questDatabase.GetNpc(merchantNpcId)
+                : null;
+            bool hasMerchant = merchantNpcDef != null && merchantNpcDef.IsMerchant;
 
             return new DialogStepDto
             {
@@ -1174,7 +1356,8 @@ namespace ProjectC.Quests
                 speakerDisplayName = speakerDisplayName,
                 speakerText = speakerText,
                 options = options,
-                isEnd = false
+                isEnd = false,
+                hasMerchant = hasMerchant
             };
             }
             catch (System.Exception e)
@@ -1706,6 +1889,22 @@ namespace ProjectC.Quests
             var netPlayer = FindNetworkPlayer(clientId);
             if (netPlayer == null) return;
             netPlayer.ReceiveDialogActionResultTargetRpc(result);
+        }
+
+        private void SendMerchantShopSnapshotToClient(ulong clientId, NpcDefinition npc)
+        {
+            if (QuestWorld.Instance == null || npc == null) return;
+            var netPlayer = FindNetworkPlayer(clientId);
+            if (netPlayer == null) return;
+            var snap = QuestWorld.Instance.BuildMerchantShopSnapshot(clientId, npc);
+            netPlayer.ReceiveMerchantShopSnapshotTargetRpc(snap);
+        }
+
+        private void SendMerchantTradeResultToClient(ulong clientId, MerchantTradeResultDto result)
+        {
+            var netPlayer = FindNetworkPlayer(clientId);
+            if (netPlayer == null) return;
+            netPlayer.ReceiveMerchantTradeResultTargetRpc(result);
         }
     }
 }

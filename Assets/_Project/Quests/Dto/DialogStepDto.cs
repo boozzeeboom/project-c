@@ -14,6 +14,7 @@ namespace ProjectC.Quests.Dto
         public string speakerText;         // localized text (T-Q10: plain string, T-Q18: localization key)
         public DialogOptionDto[] options; // empty = dialog end
         public bool isEnd;              // true → close dialog window
+        public bool hasMerchant;        // T-MERCH01: true если у NPC активен правый блок магазина
 
         public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter
         {
@@ -31,6 +32,7 @@ namespace ProjectC.Quests.Dto
             s.SerializeValue(ref text);
             if (s.IsReader) { treeId = tree ?? ""; nodeId = node ?? ""; speakerNpcId = npc ?? ""; speakerDisplayName = npcName ?? ""; speakerText = text ?? ""; }
             s.SerializeValue(ref isEnd);
+            s.SerializeValue(ref hasMerchant);
             SerializeOptions(ref options, s);
         }
 

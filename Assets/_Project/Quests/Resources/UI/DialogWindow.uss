@@ -12,15 +12,26 @@
     background-color: rgba(0, 0, 0, 0.4) !important;
 }
 
+.dialog-workspace {
+    flex-direction: row !important;
+    align-items: stretch !important;
+    justify-content: center !important;
+}
+
 .dialog-panel {
     width: 800px !important;
-    height: 520px !important;
+    height: 560px !important;
     background-color: rgb(31, 31, 46) !important;
     border-color: rgb(102, 178, 255) !important;
     border-width: 2px !important;
     border-radius: 8px !important;
     padding: 20px !important;
     flex-direction: column !important;
+}
+
+.dialog-panel-narrow {
+    width: 470px !important;
+    margin-right: 12px !important;
 }
 
 .dialog-npc-name {
@@ -102,6 +113,410 @@
     color: rgb(180, 220, 255) !important;
     font-size: 12px !important;
     -unity-font-style: italic !important;
+    margin-top: 4px !important;
+}
+
+/* === T-MERCH01: Правый блок магазина именных NPC === */
+.merchant-panel {
+    width: 640px !important;
+    height: 560px !important;
+    background-color: rgb(26, 30, 42) !important;
+    border-color: rgb(230, 185, 85) !important;
+    border-width: 2px !important;
+    border-radius: 8px !important;
+    padding: 14px !important;
+    flex-direction: column !important;
+}
+
+.merchant-header {
+    flex-direction: column !important;
+    margin-bottom: 6px !important;
+    padding-bottom: 6px !important;
+    border-bottom-width: 1px !important;
+    border-bottom-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.merchant-title-row {
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    margin-bottom: 4px !important;
+}
+
+.merchant-title {
+    color: rgb(255, 225, 115) !important;
+    font-size: 17px !important;
+    -unity-font-style: bold !important;
+}
+
+.merchant-test-badge {
+    background-color: rgb(185, 95, 20) !important;
+    color: rgb(255, 245, 215) !important;
+    font-size: 11px !important;
+    -unity-font-style: bold !important;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+    padding-top: 2px !important;
+    padding-bottom: 2px !important;
+    border-radius: 4px !important;
+}
+
+.merchant-stats-row {
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+}
+
+.merchant-stat-credits {
+    color: rgb(120, 240, 150) !important;
+    font-size: 13px !important;
+    -unity-font-style: bold !important;
+}
+
+.merchant-stat-slots {
+    color: rgb(185, 210, 245) !important;
+    font-size: 12px !important;
+}
+
+.merchant-stat-rep {
+    color: rgb(255, 165, 195) !important;
+    font-size: 12px !important;
+    -unity-font-style: bold !important;
+}
+
+.merchant-toolbar {
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    margin-bottom: 6px !important;
+}
+
+.merchant-tabs {
+    flex-direction: row !important;
+}
+
+.merchant-tab-button {
+    height: 28px !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    margin-right: 6px !important;
+    background-color: rgb(42, 48, 66) !important;
+    color: rgb(195, 205, 225) !important;
+    border-width: 1px !important;
+    border-color: rgb(70, 82, 110) !important;
+    border-radius: 4px !important;
+    font-size: 12px !important;
+}
+
+.merchant-tab-active {
+    background-color: rgb(72, 108, 168) !important;
+    color: rgb(255, 255, 255) !important;
+    border-color: rgb(130, 185, 255) !important;
+    -unity-font-style: bold !important;
+}
+
+.merchant-search {
+    width: 210px !important;
+    height: 26px !important;
+    font-size: 12px !important;
+    color: rgb(235, 235, 245) !important;
+}
+
+.merchant-search > .unity-base-field__label {
+    min-width: 20px !important;
+    width: 22px !important;
+    color: rgb(190, 205, 230) !important;
+}
+
+.merchant-search > .unity-base-field__input {
+    background-color: rgb(18, 22, 32) !important;
+    border-color: rgb(65, 80, 110) !important;
+    border-width: 1px !important;
+    border-radius: 4px !important;
+    color: rgb(240, 240, 245) !important;
+    padding-left: 6px !important;
+    padding-right: 6px !important;
+}
+
+.merchant-categories {
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    margin-bottom: 6px !important;
+}
+
+.merchant-cat-chip {
+    height: 22px !important;
+    padding-left: 7px !important;
+    padding-right: 7px !important;
+    margin-right: 4px !important;
+    margin-bottom: 3px !important;
+    background-color: rgb(38, 44, 60) !important;
+    color: rgb(185, 195, 215) !important;
+    border-width: 1px !important;
+    border-color: rgb(62, 72, 95) !important;
+    border-radius: 3px !important;
+    font-size: 11px !important;
+}
+
+.merchant-cat-chip-active {
+    background-color: rgb(195, 145, 50) !important;
+    color: rgb(20, 20, 26) !important;
+    border-color: rgb(255, 215, 100) !important;
+    -unity-font-style: bold !important;
+}
+
+.merchant-items-scroll {
+    flex-grow: 1 !important;
+    flex-shrink: 1 !important;
+    min-height: 150px !important;
+    background-color: rgba(12, 14, 22, 0.65) !important;
+    border-radius: 4px !important;
+    padding: 4px !important;
+    margin-bottom: 8px !important;
+}
+
+.merchant-items-list {
+    flex-direction: column !important;
+}
+
+.merchant-item-row {
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    height: 36px !important;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+    margin-bottom: 3px !important;
+    background-color: rgb(36, 42, 58) !important;
+    border-width: 1px !important;
+    border-color: rgb(54, 64, 88) !important;
+    border-radius: 4px !important;
+}
+
+.merchant-item-row:hover {
+    background-color: rgb(52, 64, 92) !important;
+    border-color: rgb(110, 155, 225) !important;
+}
+
+.merchant-item-row-selected {
+    background-color: rgb(64, 86, 130) !important;
+    border-color: rgb(245, 200, 95) !important;
+    border-width: 2px !important;
+}
+
+.merchant-item-row-locked {
+    background-color: rgb(32, 30, 38) !important;
+    opacity: 0.65 !important;
+}
+
+.merchant-item-left {
+    flex-direction: row !important;
+    align-items: center !important;
+    flex-grow: 1 !important;
+    flex-shrink: 1 !important;
+}
+
+.merchant-item-icon {
+    width: 26px !important;
+    height: 26px !important;
+    border-radius: 4px !important;
+    background-color: rgb(55, 70, 100) !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin-right: 8px !important;
+    flex-shrink: 0 !important;
+}
+
+.merchant-icon-letter {
+    color: rgb(255, 255, 255) !important;
+    font-size: 11px !important;
+    -unity-font-style: bold !important;
+}
+
+.merchant-item-name {
+    color: rgb(240, 242, 248) !important;
+    font-size: 13px !important;
+    -unity-font-style: bold !important;
+    flex-shrink: 1 !important;
+}
+
+.merchant-item-meta {
+    color: rgb(155, 175, 205) !important;
+    font-size: 11px !important;
+    margin-left: 8px !important;
+}
+
+.merchant-item-right {
+    flex-direction: row !important;
+    align-items: center !important;
+    flex-shrink: 0 !important;
+}
+
+.merchant-item-stock {
+    color: rgb(175, 190, 215) !important;
+    font-size: 11px !important;
+    margin-right: 10px !important;
+}
+
+.merchant-item-price {
+    color: rgb(255, 220, 105) !important;
+    font-size: 13px !important;
+    -unity-font-style: bold !important;
+    min-width: 72px !important;
+    -unity-text-align: middle-right !important;
+}
+
+.merchant-item-locked-label {
+    color: rgb(240, 125, 125) !important;
+    font-size: 11px !important;
+    -unity-font-style: bold !important;
+}
+
+.merchant-detail-box {
+    height: 86px !important;
+    flex-shrink: 0 !important;
+    background-color: rgba(16, 20, 30, 0.85) !important;
+    border-width: 1px !important;
+    border-color: rgb(72, 92, 130) !important;
+    border-radius: 5px !important;
+    padding: 8px !important;
+    margin-bottom: 6px !important;
+}
+
+.merchant-detail-top {
+    flex-direction: row !important;
+    align-items: flex-start !important;
+}
+
+.merchant-detail-icon {
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 6px !important;
+    background-color: rgb(48, 62, 92) !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin-right: 10px !important;
+    flex-shrink: 0 !important;
+}
+
+.merchant-detail-texts {
+    flex-direction: column !important;
+    flex-grow: 1 !important;
+    flex-shrink: 1 !important;
+}
+
+.merchant-detail-title {
+    color: rgb(255, 232, 135) !important;
+    font-size: 13px !important;
+    -unity-font-style: bold !important;
+    margin-bottom: 2px !important;
+}
+
+.merchant-detail-specs {
+    color: rgb(165, 210, 255) !important;
+    font-size: 11px !important;
+    white-space: normal !important;
+}
+
+.merchant-detail-desc {
+    color: rgb(200, 205, 218) !important;
+    font-size: 11px !important;
+    white-space: normal !important;
+    margin-top: 2px !important;
+}
+
+.merchant-controls-box {
+    flex-direction: column !important;
+    flex-shrink: 0 !important;
+    background-color: rgba(20, 24, 36, 0.75) !important;
+    border-radius: 5px !important;
+    padding: 8px !important;
+}
+
+.merchant-qty-row {
+    flex-direction: row !important;
+    align-items: center !important;
+    margin-bottom: 6px !important;
+}
+
+.merchant-qty-caption {
+    color: rgb(200, 210, 230) !important;
+    font-size: 12px !important;
+    margin-right: 6px !important;
+}
+
+.merchant-qty-btn {
+    width: 26px !important;
+    height: 24px !important;
+    background-color: rgb(58, 72, 105) !important;
+    color: rgb(255, 255, 255) !important;
+    border-width: 0 !important;
+    border-radius: 3px !important;
+    font-size: 14px !important;
+    -unity-font-style: bold !important;
+}
+
+.merchant-qty-value {
+    min-width: 38px !important;
+    color: rgb(255, 255, 255) !important;
+    font-size: 14px !important;
+    -unity-font-style: bold !important;
+    -unity-text-align: middle-center !important;
+    margin-left: 4px !important;
+    margin-right: 4px !important;
+}
+
+.merchant-qty-preset {
+    height: 22px !important;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+    margin-left: 4px !important;
+    background-color: rgb(44, 52, 74) !important;
+    color: rgb(210, 220, 240) !important;
+    border-width: 1px !important;
+    border-color: rgb(72, 86, 118) !important;
+    border-radius: 3px !important;
+    font-size: 11px !important;
+}
+
+.merchant-action-row {
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+}
+
+.merchant-trade-summary {
+    color: rgb(230, 235, 245) !important;
+    font-size: 12px !important;
+    -unity-font-style: bold !important;
+}
+
+.merchant-action-btn {
+    min-width: 165px !important;
+    height: 30px !important;
+    background-color: rgb(46, 138, 78) !important;
+    color: rgb(255, 255, 255) !important;
+    border-width: 0 !important;
+    border-radius: 4px !important;
+    font-size: 13px !important;
+    -unity-font-style: bold !important;
+}
+
+.merchant-action-btn:hover {
+    background-color: rgb(60, 165, 96) !important;
+}
+
+.merchant-action-btn-sell {
+    background-color: rgb(185, 125, 35) !important;
+}
+
+.merchant-action-btn-sell:hover {
+    background-color: rgb(210, 145, 45) !important;
+}
+
+.merchant-status {
+    color: rgb(150, 235, 175) !important;
+    font-size: 11px !important;
     margin-top: 4px !important;
 }
 

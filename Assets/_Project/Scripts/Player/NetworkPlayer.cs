@@ -2779,6 +2779,18 @@ namespace ProjectC.Player
             ProjectC.Quests.Client.QuestClientState.Instance?.RaiseOnDialogActionResultReceived(result);
         }
 
+        [Rpc(SendTo.Owner)]
+        public void ReceiveMerchantShopSnapshotTargetRpc(ProjectC.Quests.Dto.MerchantShopSnapshotDto snapshot, RpcParams rpcParams = default)
+        {
+            ProjectC.Quests.Client.QuestClientState.Instance?.RaiseOnMerchantShopReceived(snapshot);
+        }
+
+        [Rpc(SendTo.Owner)]
+        public void ReceiveMerchantTradeResultTargetRpc(ProjectC.Quests.Dto.MerchantTradeResultDto result, RpcParams rpcParams = default)
+        {
+            ProjectC.Quests.Client.QuestClientState.Instance?.RaiseOnMerchantTradeResultReceived(result);
+        }
+
         public void RequestEndConversation()
         {
             ProjectC.Quests.QuestServer.Instance?.RequestEndConversationRpc();

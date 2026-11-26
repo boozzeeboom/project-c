@@ -1,17 +1,78 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
     <ui:VisualElement name="root" class="dialog-root" picking-mode="Ignore">
-        <ui:VisualElement name="panel" class="dialog-panel">
-            <ui:VisualElement class="dialog-header">
-                <ui:Label name="npc-name" class="dialog-npc-name" text="💬 NPC" />
-                <ui:Label name="npc-attitude" class="dialog-npc-attitude" text="" />
+        <ui:VisualElement name="workspace" class="dialog-workspace" picking-mode="Ignore">
+            <ui:VisualElement name="panel" class="dialog-panel">
+                <ui:VisualElement class="dialog-header">
+                    <ui:Label name="npc-name" class="dialog-npc-name" text="💬 NPC" />
+                    <ui:Label name="npc-attitude" class="dialog-npc-attitude" text="" />
+                </ui:VisualElement>
+                <ui:ScrollView name="text-scroll" class="dialog-text-scroll">
+                    <ui:Label name="text" class="dialog-text" text="" />
+                </ui:ScrollView>
+                <ui:ScrollView name="options-scroll" class="dialog-options-scroll">
+                    <ui:VisualElement name="options" class="dialog-options" />
+                </ui:ScrollView>
+                <ui:Label name="toast" class="dialog-toast" text="" />
             </ui:VisualElement>
-            <ui:ScrollView name="text-scroll" class="dialog-text-scroll">
-                <ui:Label name="text" class="dialog-text" text="" />
-            </ui:ScrollView>
-            <ui:ScrollView name="options-scroll" class="dialog-options-scroll">
-                <ui:VisualElement name="options" class="dialog-options" />
-            </ui:ScrollView>
-            <ui:Label name="toast" class="dialog-toast" text="" />
+
+            <ui:VisualElement name="merchant-panel" class="merchant-panel">
+                <ui:VisualElement class="merchant-header">
+                    <ui:VisualElement class="merchant-title-row">
+                        <ui:Label name="merchant-title" class="merchant-title" text="🛒 Торговая лавка" />
+                        <ui:Label name="merchant-test-badge" class="merchant-test-badge" text="⚠ TEST: ПРОДАЁТ ВСЁ" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="merchant-stats-row">
+                        <ui:Label name="merchant-credits" class="merchant-stat-credits" text="💰 0 CR" />
+                        <ui:Label name="merchant-slots" class="merchant-stat-slots" text="🎒 0 / 32" />
+                        <ui:Label name="merchant-rep-info" class="merchant-stat-rep" text="❤ 0.0 • ⚑ 0.0" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <ui:VisualElement class="merchant-toolbar">
+                    <ui:VisualElement class="merchant-tabs">
+                        <ui:Button name="tab-buy" class="merchant-tab-button merchant-tab-active" text="🛒 Купить у NPC" />
+                        <ui:Button name="tab-sell" class="merchant-tab-button" text="💰 Продать из рюкзака" />
+                    </ui:VisualElement>
+                    <ui:TextField name="merchant-search" class="merchant-search" label="🔍" />
+                </ui:VisualElement>
+
+                <ui:VisualElement name="merchant-categories" class="merchant-categories" />
+
+                <ui:ScrollView name="merchant-items-scroll" class="merchant-items-scroll">
+                    <ui:VisualElement name="merchant-items-list" class="merchant-items-list" />
+                </ui:ScrollView>
+
+                <ui:VisualElement name="merchant-detail-box" class="merchant-detail-box">
+                    <ui:VisualElement class="merchant-detail-top">
+                        <ui:VisualElement name="detail-icon" class="merchant-detail-icon">
+                            <ui:Label name="detail-icon-letter" class="merchant-icon-letter" text="?" />
+                        </ui:VisualElement>
+                        <ui:VisualElement class="merchant-detail-texts">
+                            <ui:Label name="detail-title" class="merchant-detail-title" text="Наведите курсор или выберите предмет" />
+                            <ui:Label name="detail-specs" class="merchant-detail-specs" text="Выберите позицию из списка выше для просмотра деталей и покупки." />
+                            <ui:Label name="detail-desc" class="merchant-detail-desc" text="" />
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <ui:VisualElement class="merchant-controls-box">
+                    <ui:VisualElement class="merchant-qty-row">
+                        <ui:Label class="merchant-qty-caption" text="Кол-во:" />
+                        <ui:Button name="qty-minus" class="merchant-qty-btn" text="−" />
+                        <ui:Label name="qty-value" class="merchant-qty-value" text="1" />
+                        <ui:Button name="qty-plus" class="merchant-qty-btn" text="+" />
+                        <ui:Button name="qty-x1" class="merchant-qty-preset" text="x1" />
+                        <ui:Button name="qty-x5" class="merchant-qty-preset" text="x5" />
+                        <ui:Button name="qty-x10" class="merchant-qty-preset" text="x10" />
+                        <ui:Button name="qty-max" class="merchant-qty-preset" text="MAX" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="merchant-action-row">
+                        <ui:Label name="trade-summary" class="merchant-trade-summary" text="Итого: 0 CR" />
+                        <ui:Button name="trade-action-btn" class="merchant-action-btn" text="Купить" />
+                    </ui:VisualElement>
+                    <ui:Label name="merchant-status" class="merchant-status" text="" />
+                </ui:VisualElement>
+            </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

@@ -26,10 +26,12 @@ namespace ProjectC.Quests.Client
 
         // ============ Quest state ============
         public QuestSnapshotDto? CurrentSnapshot { get; private set; }
+        public MerchantShopSnapshotDto? CurrentMerchantShop { get; private set; }
 
         // ============ Last action result (для UI feedback) ============
         public QuestResultDto? LastResult { get; private set; }
         public ReputationResultDto? LastReputationResult { get; private set; }
+        public MerchantTradeResultDto? LastMerchantTradeResult { get; private set; }
 
         // ============ Events для UI ============
         public event Action<QuestSnapshotDto> OnSnapshotUpdated;
@@ -41,6 +43,10 @@ namespace ProjectC.Quests.Client
         public event Action<DialogStepDto> OnDialogStepReceived;
         /// <summary>T-Q10: server pushed dialog action result (e.g. "quest offered: find_artifact").</summary>
         public event Action<DialogActionResultDto> OnDialogActionResultReceived;
+        /// <summary>T-MERCH01: server pushed merchant shop snapshot for the right panel of DialogWindow.</summary>
+        public event Action<MerchantShopSnapshotDto> OnMerchantShopReceived;
+        /// <summary>T-MERCH01: server pushed merchant trade buy/sell result.</summary>
+        public event Action<MerchantTradeResultDto> OnMerchantTradeResultReceived;
 
         private void Awake()
         {
@@ -107,6 +113,46 @@ namespace ProjectC.Quests.Client
         {
         OnDialogActionResultReceived?.Invoke(result);
         if (Debug.isDebugBuild) Debug.Log($"[QuestClientState] RaiseOnDialogActionResultReceived: type={result.actionType} success={result.success}");
+        }
+
+        /// <summary>T-MERCH01: Server → client handler для снимка магазина NPC.</summary>
+        public void RaiseOnMerchantShopReceived(MerchantShopSnapshotDto snapshot)
+        {
+            CurrentMerchantShop = snapshot;
+            OnMerchantShopReceived?.Invoke(snapshot);
+            if (Debug.isDebugBuild)
+                Debug.Log($"[QuestClientState] RaiseOnMerchantShopReceived: npc={snapshot.npcId} items={snapshot.shopItems?.Length ?? 0} sellable={snapshot.playerSellableItems?.Length ?? 0}");
+        }
+
+        /// <summary>T-MERCH01: Server → client handler для результата покупки/продажи у NPC.</summary>
+        public void RaiseOnMerchantTradeResultReceived(MerchantTradeResultDto result)
+        {
+            LastMerchantTradeResult = result;
+            OnMerchantTradeResultReceived?.Invoke(result);
+            if (Debug.isDebugBuild)
+                Debug.Log($"[QuestClientState] RaiseOnMerchantTradeResultReceived: npc={result.npcId} isBuy={result.isBuy} code={result.code} msg='{result.message}'");
+        }
+
+        // ============================================================
+        // T-MERCH01: client-side merchant forwarders (DialogWindow → QuestServer)
+        // ============================================================
+
+        public void RequestMerchantShop(string npcId)
+        {
+            if (string.IsNullOrEmpty(npcId) || QuestServer.Instance == null) return;
+            QuestServer.Instance.RequestMerchantShopRpc(npcId);
+        }
+
+        public void RequestMerchantBuy(string npcId, int itemId, int quantity)
+        {
+            if (string.IsNullOrEmpty(npcId) || itemId <= 0 || quantity <= 0 || QuestServer.Instance == null) return;
+            QuestServer.Instance.RequestMerchantBuyRpc(npcId, itemId, quantity);
+        }
+
+        public void RequestMerchantSell(string npcId, int itemId, int quantity)
+        {
+            if (string.IsNullOrEmpty(npcId) || itemId <= 0 || quantity <= 0 || QuestServer.Instance == null) return;
+            QuestServer.Instance.RequestMerchantSellRpc(npcId, itemId, quantity);
         }
 
         // ============================================================

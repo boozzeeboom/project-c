@@ -61,6 +61,19 @@ namespace ProjectC.Quests
         /// <summary>Per-player world flags (key: (clientId, flagId)).</summary>
         private readonly Dictionary<(ulong, string), bool> _worldFlags = new Dictionary<(ulong, string), bool>();
 
+        // === T-MERCH01: Серверная память торговли с NPC (+0.1 репутации/отношения за каждые 100 CR) ===
+        /// <summary>Дробный остаток отношения с NPC от торговли (0..0.999) по (clientId, npcId).</summary>
+        private readonly Dictionary<(ulong, string), float> _npcTradeRepRemainder = new Dictionary<(ulong, string), float>();
+
+        /// <summary>Дробный остаток репутации фракции от торговли (0..0.999) по (clientId, factionWireId).</summary>
+        private readonly Dictionary<(ulong, int), float> _factionTradeRepRemainder = new Dictionary<(ulong, int), float>();
+
+        /// <summary>Рантайм-остатки лимитированных товаров у NPC на сервере по (npcId, itemId).</summary>
+        private readonly Dictionary<(string, int), int> _merchantRuntimeStock = new Dictionary<(string, int), int>();
+
+        /// <summary>Резервный серверный баланс кредитов на случай, если TradeWorld.Repository не поднят в изолированной сцене.</summary>
+        private readonly Dictionary<ulong, float> _fallbackCredits = new Dictionary<ulong, float>();
+
         /// <summary>Per-player active dialog session (key: clientId). Содержит treeId+currentNodeId для resume.</summary>
         private readonly Dictionary<ulong, DialogSession> _dialogByPlayer = new Dictionary<ulong, DialogSession>();
 
@@ -168,6 +181,601 @@ namespace ProjectC.Quests
         public int GetNpcAttitude(ulong clientId, string npcId)
         {
             return _npcAttitude.TryGetValue((clientId, npcId), out var v) ? v : 0;
+        }
+
+        // ============ T-MERCH01: Exact (float) Attitude/Reputation + Merchant Logic ============
+
+        public float GetNpcTradeRepRemainder(ulong clientId, string npcId)
+        {
+            if (string.IsNullOrEmpty(npcId)) return 0f;
+            return _npcTradeRepRemainder.TryGetValue((clientId, npcId), out var r) ? r : 0f;
+        }
+
+        public float GetFactionTradeRepRemainder(ulong clientId, int wireId)
+        {
+            if (wireId <= 0 || wireId > byte.MaxValue) return 0f;
+            return _factionTradeRepRemainder.TryGetValue((clientId, wireId), out var r) ? r : 0f;
+        }
+
+        public float GetNpcAttitudeExact(ulong clientId, string npcId)
+        {
+            return GetNpcAttitude(clientId, npcId) + GetNpcTradeRepRemainder(clientId, npcId);
+        }
+
+        public float GetReputationExact(ulong clientId, int wireId)
+        {
+            return GetReputation(clientId, wireId) + GetFactionTradeRepRemainder(clientId, wireId);
+        }
+
+        /// <summary>
+        /// T-MERCH01: Начислить репутацию с NPC и его фракцией за полученные от игрока кредиты:
+        /// скорость +0.1 за каждые 100 CR (= 0.001 за 1 CR).
+        /// Дробная часть хранится в серверной памяти (и сохраняется в JSON), а при накоплении >= 1.0
+        /// переносится в основную таблицу через ModifyNpcAttitude / ModifyReputation.
+        /// </summary>
+        public (float gain, float exactNpcAttitude, float exactFactionRep) ApplyMerchantTradeReputation(
+            ulong clientId, NpcDefinition npc, int creditsReceivedFromPlayer)
+        {
+            if (npc == null || string.IsNullOrEmpty(npc.npcId) || creditsReceivedFromPlayer <= 0)
+            {
+                string id = npc != null ? npc.npcId : "";
+                int fw = npc != null ? npc.EffectiveFactionWireId : 0;
+                return (0f, GetNpcAttitudeExact(clientId, id), GetReputationExact(clientId, fw));
+            }
+
+            float gain = MerchantPriceResolver.CalculateReputationGain(creditsReceivedFromPlayer);
+            string npcId = npc.npcId;
+            int factionWireId = npc.EffectiveFactionWireId;
+
+            // 1. Личное отношение с NPC
+            float npcRem = GetNpcTradeRepRemainder(clientId, npcId) + gain;
+            int wholeNpcDelta = Mathf.FloorToInt(npcRem + 1e-5f);
+            if (wholeNpcDelta >= 1)
+            {
+                npcRem = Mathf.Max(0f, npcRem - wholeNpcDelta);
+                _npcTradeRepRemainder[(clientId, npcId)] = npcRem;
+                ModifyNpcAttitude(clientId, npcId, wholeNpcDelta, npc, Database);
+            }
+            else
+            {
+                _npcTradeRepRemainder[(clientId, npcId)] = npcRem;
+            }
+
+            // 2. Репутация с фракцией этого NPC
+            if (factionWireId > 0 && factionWireId <= byte.MaxValue)
+            {
+                float facRem = GetFactionTradeRepRemainder(clientId, factionWireId) + gain;
+                int wholeFacDelta = Mathf.FloorToInt(facRem + 1e-5f);
+                if (wholeFacDelta >= 1)
+                {
+                    facRem = Mathf.Max(0f, facRem - wholeFacDelta);
+                    _factionTradeRepRemainder[(clientId, factionWireId)] = facRem;
+                    ModifyReputation(clientId, factionWireId, wholeFacDelta);
+                }
+                else
+                {
+                    _factionTradeRepRemainder[(clientId, factionWireId)] = facRem;
+                }
+            }
+
+            // Сохраняем в серверный JSON даже если изменился только дробный остаток (< 1.0)
+            SavePlayer(clientId);
+
+            float exactAtt = GetNpcAttitudeExact(clientId, npcId);
+            float exactRep = GetReputationExact(clientId, factionWireId);
+
+            if (Debug.isDebugBuild)
+            {
+                Debug.Log($"[QuestWorld.Merchant] Player {clientId} spent {creditsReceivedFromPlayer} CR at NPC '{npcId}' → " +
+                          $"gain=+{gain:0.###}, attitude={exactAtt:0.##}, faction({factionWireId})={exactRep:0.##}");
+            }
+
+            return (gain, exactAtt, exactRep);
+        }
+
+        /// <summary>Получить баланс кредитов игрока на сервере (TradeWorld.Repository или fallback).</summary>
+        public float GetPlayerCredits(ulong clientId)
+        {
+            var repo = ProjectC.Trade.Core.TradeWorld.Instance?.Repository;
+            if (repo != null)
+                return repo.GetCredits(clientId);
+            if (!_fallbackCredits.TryGetValue(clientId, out float c))
+            {
+                c = 1000f;
+                _fallbackCredits[clientId] = c;
+            }
+            return c;
+        }
+
+        /// <summary>Установить баланс кредитов игрока на сервере.</summary>
+        public void SetPlayerCredits(ulong clientId, float newCredits)
+        {
+            float clamped = Mathf.Max(0f, newCredits);
+            var repo = ProjectC.Trade.Core.TradeWorld.Instance?.Repository;
+            if (repo != null)
+            {
+                repo.SetCredits(clientId, clamped);
+            }
+            _fallbackCredits[clientId] = clamped;
+        }
+
+        public int GetMerchantItemStock(string npcId, int itemId, int configuredStock)
+        {
+            if (configuredStock < 0) return -1; // бесконечный сток
+            var key = (npcId ?? "", itemId);
+            if (!_merchantRuntimeStock.TryGetValue(key, out int cur))
+            {
+                cur = configuredStock;
+                _merchantRuntimeStock[key] = cur;
+            }
+            return cur;
+        }
+
+        public void SetMerchantItemStock(string npcId, int itemId, int newStock)
+        {
+            var key = (npcId ?? "", itemId);
+            _merchantRuntimeStock[key] = Mathf.Max(0, newStock);
+        }
+
+        /// <summary>
+        /// T-MERCH01: Построить полный серверный снапшот магазина NPC для клиента.
+        /// </summary>
+        public MerchantShopSnapshotDto BuildMerchantShopSnapshot(ulong clientId, NpcDefinition npc)
+        {
+            if (npc == null || !npc.IsMerchant)
+            {
+                return new MerchantShopSnapshotDto
+                {
+                    npcId = npc != null ? npc.npcId : "",
+                    isMerchant = false,
+                    shopItems = Array.Empty<MerchantItemDto>(),
+                    playerSellableItems = Array.Empty<MerchantPlayerSellItemDto>()
+                };
+            }
+
+            var inv = ProjectC.Items.InventoryWorld.Instance;
+            int usedSlots = inv != null ? inv.GetOrCreate(clientId).TotalCount : 0;
+            int maxSlots = inv != null ? inv.MaxSlots : 32;
+            float playerCredits = GetPlayerCredits(clientId);
+
+            int factionWireId = npc.EffectiveFactionWireId;
+            float exactAtt = GetNpcAttitudeExact(clientId, npc.npcId);
+            float exactRep = GetReputationExact(clientId, factionWireId);
+
+            string factionName = "";
+            if (factionWireId > 0)
+            {
+                var fDef = GetFactionCatalog().GetByWireId(factionWireId);
+                factionName = fDef != null && !string.IsNullOrEmpty(fDef.displayName)
+                    ? fDef.displayName
+                    : (npc.factionRef != null ? npc.factionRef.EffectiveFactionKey : npc.faction.ToString());
+            }
+
+            var table = npc.merchantTable;
+            bool isTestAll = npc.sellAllItemsForTesting;
+            float priceMult = table != null ? table.priceMultiplier : 1.0f;
+            bool allowSell = isTestAll ? npc.allowPlayerSellInTestMode : (table != null ? table.allowPlayerSellToNpc : npc.allowPlayerSellInTestMode);
+            float sellBackMult = table != null ? table.sellBackPriceMultiplier : 0.5f;
+            bool enableDiscount = table != null ? table.enableReputationDiscount : true;
+            float maxDisc = table != null ? table.maxReputationDiscountRatio : 0.20f;
+            int defaultPrice = npc.testModeDefaultPrice > 0 ? npc.testModeDefaultPrice : 25;
+
+            float attFactor = MerchantPriceResolver.CalculateAttitudePriceFactor(exactAtt, exactRep, enableDiscount, maxDisc);
+            int discountPct = Mathf.RoundToInt((attFactor - 1f) * 100f);
+
+            string shopTitle = (table != null && !string.IsNullOrEmpty(table.shopTitle))
+                ? table.shopTitle
+                : (!string.IsNullOrEmpty(npc.displayName) ? $"Лавка: {Loc.Get(npc.displayName, npc.displayName)}" : $"Лавка {npc.npcId}");
+
+            var shopList = new List<MerchantItemDto>();
+            var customSellPriceByItemId = new Dictionary<int, (int customBuy, int customSell, int currentBuy)>();
+
+            if (isTestAll)
+            {
+                // Режим "Продаёт ВСЁ" (Test Mode): берём все зарегистрированные pickable items (кроме Key)
+                if (inv != null)
+                {
+                    foreach (var kvp in inv.GetAllItems())
+                    {
+                        int id = kvp.Key;
+                        var itemDef = kvp.Value;
+                        if (itemDef == null || itemDef.itemType == ProjectC.Items.ItemType.Key) continue;
+
+                        int buyP = MerchantPriceResolver.ResolveBuyPrice(
+                            itemDef, 0, priceMult, defaultPrice, exactAtt, exactRep, enableDiscount, maxDisc);
+                        int sellP = MerchantPriceResolver.ResolveSellPrice(
+                            itemDef, 0, 0, sellBackMult, defaultPrice, buyP);
+
+                        customSellPriceByItemId[id] = (0, 0, buyP);
+                        shopList.Add(new MerchantItemDto
+                        {
+                            itemId = id,
+                            itemType = (byte)itemDef.itemType,
+                            itemName = itemDef.itemName ?? $"Item #{id}",
+                            buyPrice = buyP,
+                            sellPrice = sellP,
+                            stock = -1,
+                            playerOwnedCount = inv.CountOf(clientId, id),
+                            isUnlocked = true,
+                            lockedReason = ""
+                        });
+                    }
+                }
+                shopList.Sort((a, b) =>
+                {
+                    int t = a.itemType.CompareTo(b.itemType);
+                    return t != 0 ? t : string.Compare(a.itemName, b.itemName, StringComparison.OrdinalIgnoreCase);
+                });
+            }
+            else if (table != null && table.items != null)
+            {
+                var seenIds = new HashSet<int>();
+                for (int i = 0; i < table.items.Length; i++)
+                {
+                    var entry = table.items[i];
+                    if (entry == null || entry.item == null) continue;
+                    int id = ResolveItemId(null, entry.item);
+                    if (id <= 0 || !seenIds.Add(id)) continue;
+
+                    int buyP = MerchantPriceResolver.ResolveBuyPrice(
+                        entry.item, entry.customBuyPrice, priceMult, defaultPrice, exactAtt, exactRep, enableDiscount, maxDisc);
+                    int sellP = MerchantPriceResolver.ResolveSellPrice(
+                        entry.item, entry.customBuyPrice, entry.customSellPrice, sellBackMult, defaultPrice, buyP);
+                    int curStock = GetMerchantItemStock(npc.npcId, id, entry.stock);
+
+                    var (unlocked, reason) = CheckMerchantEntryUnlocked(clientId, npc, entry);
+                    customSellPriceByItemId[id] = (entry.customBuyPrice, entry.customSellPrice, buyP);
+
+                    shopList.Add(new MerchantItemDto
+                    {
+                        itemId = id,
+                        itemType = (byte)entry.item.itemType,
+                        itemName = entry.item.itemName ?? $"Item #{id}",
+                        buyPrice = buyP,
+                        sellPrice = sellP,
+                        stock = curStock,
+                        playerOwnedCount = inv != null ? inv.CountOf(clientId, id) : 0,
+                        isUnlocked = unlocked,
+                        lockedReason = reason ?? ""
+                    });
+                }
+            }
+
+            // Собираем предметы игрока для вкладки «Продать»
+            var sellList = new List<MerchantPlayerSellItemDto>();
+            if (allowSell && inv != null)
+            {
+                var snap = inv.BuildSnapshot(clientId, null);
+                if (snap.items != null)
+                {
+                    var grouped = new Dictionary<int, (byte type, string name, int count)>();
+                    for (int i = 0; i < snap.items.Length; i++)
+                    {
+                        var it = snap.items[i];
+                        if (it.quantity <= 0 || it.itemId <= 0) continue;
+                        if ((ProjectC.Items.ItemType)it.type == ProjectC.Items.ItemType.Key) continue; // ключи кораблей не продаются
+                        if (grouped.TryGetValue(it.itemId, out var prev))
+                            grouped[it.itemId] = (prev.type, prev.name, prev.count + it.quantity);
+                        else
+                            grouped[it.itemId] = (it.type, it.itemName, it.quantity);
+                    }
+
+                    foreach (var kvp in grouped)
+                    {
+                        int id = kvp.Key;
+                        var itemDef = inv.GetItemDefinition(id);
+                        int customBuy = 0, customSell = 0, buyLimit = 0;
+                        if (customSellPriceByItemId.TryGetValue(id, out var customTuple))
+                        {
+                            customBuy = customTuple.customBuy;
+                            customSell = customTuple.customSell;
+                            buyLimit = customTuple.currentBuy;
+                        }
+                        int sellP = MerchantPriceResolver.ResolveSellPrice(
+                            itemDef, customBuy, customSell, sellBackMult, defaultPrice, buyLimit);
+
+                        sellList.Add(new MerchantPlayerSellItemDto
+                        {
+                            itemId = id,
+                            itemType = kvp.Value.type,
+                            itemName = itemDef != null && !string.IsNullOrEmpty(itemDef.itemName) ? itemDef.itemName : kvp.Value.name,
+                            ownedCount = kvp.Value.count,
+                            sellPrice = sellP
+                        });
+                    }
+                }
+            }
+
+            return new MerchantShopSnapshotDto
+            {
+                npcId = npc.npcId,
+                shopTitle = shopTitle,
+                factionDisplayName = factionName,
+                isMerchant = true,
+                isTestSellAllMode = isTestAll,
+                allowPlayerSell = allowSell,
+                playerCredits = playerCredits,
+                inventoryUsedSlots = usedSlots,
+                inventoryMaxSlots = maxSlots,
+                npcAttitudeExact = exactAtt,
+                factionReputationExact = exactRep,
+                discountPercent = discountPct,
+                shopItems = shopList.ToArray(),
+                playerSellableItems = sellList.ToArray()
+            };
+        }
+
+        private (bool unlocked, string reason) CheckMerchantEntryUnlocked(ulong clientId, NpcDefinition npc, NpcMerchantItemEntry entry)
+        {
+            if (entry == null) return (false, "Недоступно");
+            float exactAtt = GetNpcAttitudeExact(clientId, npc.npcId);
+            if (entry.minNpcAttitude > -100 && exactAtt + 1e-4f < entry.minNpcAttitude)
+            {
+                return (false, $"Нужно отношение ❤ {(entry.minNpcAttitude > 0 ? "+" : "")}{entry.minNpcAttitude}");
+            }
+
+            int factionWireId = npc.EffectiveFactionWireId;
+            if (factionWireId > 0 && entry.minFactionReputation > -100)
+            {
+                float exactRep = GetReputationExact(clientId, factionWireId);
+                if (exactRep + 1e-4f < entry.minFactionReputation)
+                {
+                    return (false, $"Нужна репутация ⚑ {(entry.minFactionReputation > 0 ? "+" : "")}{entry.minFactionReputation}");
+                }
+            }
+
+            string reqQuestId = entry.GetRequiredQuestId();
+            if (!string.IsNullOrEmpty(reqQuestId))
+            {
+                var st = GetPlayerQuestState(clientId, reqQuestId);
+                if (!st.HasValue || (st.Value != QuestState.Completed && st.Value != QuestState.TurnedIn))
+                {
+                    var qDef = GetQuest(reqQuestId);
+                    string qName = qDef != null && !string.IsNullOrEmpty(qDef.displayName) ? qDef.displayName : reqQuestId;
+                    return (false, $"Нужен квест: {qName}");
+                }
+            }
+
+            return (true, "");
+        }
+
+        /// <summary>
+        /// T-MERCH01: Серверная покупка предмета у NPC за кредиты.
+        /// Начисляет +0.1 отношения с NPC и +0.1 репутации его фракции за каждые 100 CR.
+        /// </summary>
+        public MerchantTradeResultDto TryMerchantBuy(ulong clientId, NpcDefinition npc, int itemId, int quantity)
+        {
+            if (npc == null)
+                return FailMerchant(MerchantTradeResultCode.NpcNotFound, true, "", itemId, quantity, "NPC не найден");
+            if (!npc.IsMerchant)
+                return FailMerchant(MerchantTradeResultCode.NotMerchant, true, npc.npcId, itemId, quantity, "Этот NPC не торгует");
+            if (itemId <= 0 || quantity <= 0)
+                return FailMerchant(MerchantTradeResultCode.InvalidArgs, true, npc.npcId, itemId, quantity, "Некорректное количество");
+
+            var inv = ProjectC.Items.InventoryWorld.Instance;
+            if (inv == null)
+                return FailMerchant(MerchantTradeResultCode.InternalError, true, npc.npcId, itemId, quantity, "Инвентарь не инициализирован");
+
+            var itemDef = inv.GetItemDefinition(itemId);
+            if (itemDef == null || itemDef.itemType == ProjectC.Items.ItemType.Key)
+                return FailMerchant(MerchantTradeResultCode.ItemNotInShop, true, npc.npcId, itemId, quantity, "Предмет недоступен для покупки");
+
+            var table = npc.merchantTable;
+            bool isTestAll = npc.sellAllItemsForTesting;
+            float priceMult = table != null ? table.priceMultiplier : 1.0f;
+            bool enableDiscount = table != null ? table.enableReputationDiscount : true;
+            float maxDisc = table != null ? table.maxReputationDiscountRatio : 0.20f;
+            int defaultPrice = npc.testModeDefaultPrice > 0 ? npc.testModeDefaultPrice : 25;
+
+            int customBuyPrice = 0;
+            int configuredStock = -1;
+
+            if (!isTestAll)
+            {
+                if (table == null || table.items == null)
+                    return FailMerchant(MerchantTradeResultCode.ItemNotInShop, true, npc.npcId, itemId, quantity, "Ассортимент пуст");
+
+                NpcMerchantItemEntry foundEntry = null;
+                for (int i = 0; i < table.items.Length; i++)
+                {
+                    var e = table.items[i];
+                    if (e == null || e.item == null) continue;
+                    if (ResolveItemId(null, e.item) == itemId)
+                    {
+                        foundEntry = e;
+                        break;
+                    }
+                }
+                if (foundEntry == null)
+                    return FailMerchant(MerchantTradeResultCode.ItemNotInShop, true, npc.npcId, itemId, quantity, "Товар отсутствует у этого торговца");
+
+                var (unlocked, reason) = CheckMerchantEntryUnlocked(clientId, npc, foundEntry);
+                if (!unlocked)
+                    return FailMerchant(MerchantTradeResultCode.RequirementsNotMet, true, npc.npcId, itemId, quantity, reason);
+
+                customBuyPrice = foundEntry.customBuyPrice;
+                configuredStock = foundEntry.stock;
+            }
+
+            int curStock = GetMerchantItemStock(npc.npcId, itemId, configuredStock);
+            if (curStock >= 0 && curStock < quantity)
+                return FailMerchant(MerchantTradeResultCode.OutOfStock, true, npc.npcId, itemId, quantity, $"В наличии только {curStock} шт.");
+
+            // Проверка свободных слотов в рюкзаке игрока ДО списания кредитов
+            int currentSlots = inv.GetOrCreate(clientId).TotalCount;
+            if (currentSlots + quantity > inv.MaxSlots)
+                return FailMerchant(MerchantTradeResultCode.InventoryFull, true, npc.npcId, itemId, quantity,
+                    $"Недостаточно места в рюкзаке ({currentSlots}/{inv.MaxSlots})");
+
+            int factionWireId = npc.EffectiveFactionWireId;
+            float exactAtt = GetNpcAttitudeExact(clientId, npc.npcId);
+            float exactRep = GetReputationExact(clientId, factionWireId);
+
+            int unitPrice = MerchantPriceResolver.ResolveBuyPrice(
+                itemDef, customBuyPrice, priceMult, defaultPrice, exactAtt, exactRep, enableDiscount, maxDisc);
+            int totalCost = unitPrice * quantity;
+
+            float playerCredits = GetPlayerCredits(clientId);
+            if (playerCredits + 1e-3f < totalCost)
+                return FailMerchant(MerchantTradeResultCode.InsufficientCredits, true, npc.npcId, itemId, quantity,
+                    $"Недостаточно кредитов: нужно {totalCost} CR, у вас {Mathf.FloorToInt(playerCredits)} CR");
+
+            // Выдаём предметы на сервере
+            int addedCount = 0;
+            for (int n = 0; n < quantity; n++)
+            {
+                var addRes = inv.AddItemDirect(clientId, itemId, itemDef.itemType);
+                if (!addRes.IsSuccess)
+                    break;
+                addedCount++;
+            }
+
+            if (addedCount <= 0)
+                return FailMerchant(MerchantTradeResultCode.InventoryFull, true, npc.npcId, itemId, quantity, "Не удалось поместить предмет в рюкзак");
+
+            int actualCost = unitPrice * addedCount;
+            float newCredits = Mathf.Max(0f, playerCredits - actualCost);
+            SetPlayerCredits(clientId, newCredits);
+
+            if (curStock >= 0)
+                SetMerchantItemStock(npc.npcId, itemId, curStock - addedCount);
+
+            // Начисляем +0.1 отношения и репутации фракции за каждые 100 CR, полученные от игрока
+            var (repGain, newExactAtt, newExactRep) = ApplyMerchantTradeReputation(clientId, npc, actualCost);
+
+            string itemName = itemDef.itemName ?? $"Item #{itemId}";
+            string msg = repGain > 0f
+                ? $"Куплено: {itemName} x{addedCount} (-{actualCost} CR, +{repGain:0.##} ❤/⚑)"
+                : $"Куплено: {itemName} x{addedCount} (-{actualCost} CR)";
+
+            return new MerchantTradeResultDto
+            {
+                code = (byte)MerchantTradeResultCode.Ok,
+                isBuy = true,
+                npcId = npc.npcId,
+                itemId = itemId,
+                itemName = itemName,
+                quantity = addedCount,
+                totalCreditsDelta = actualCost,
+                newCredits = newCredits,
+                reputationGain = repGain,
+                newNpcAttitudeExact = newExactAtt,
+                newFactionReputationExact = newExactRep,
+                message = msg
+            };
+        }
+
+        /// <summary>
+        /// T-MERCH01: Серверная продажа предмета из инвентаря игрока торговцу NPC.
+        /// </summary>
+        public MerchantTradeResultDto TryMerchantSell(ulong clientId, NpcDefinition npc, int itemId, int quantity)
+        {
+            if (npc == null)
+                return FailMerchant(MerchantTradeResultCode.NpcNotFound, false, "", itemId, quantity, "NPC не найден");
+            if (!npc.IsMerchant)
+                return FailMerchant(MerchantTradeResultCode.NotMerchant, false, npc.npcId, itemId, quantity, "Этот NPC не торгует");
+            if (itemId <= 0 || quantity <= 0)
+                return FailMerchant(MerchantTradeResultCode.InvalidArgs, false, npc.npcId, itemId, quantity, "Некорректное количество");
+
+            var table = npc.merchantTable;
+            bool isTestAll = npc.sellAllItemsForTesting;
+            bool allowSell = isTestAll ? npc.allowPlayerSellInTestMode : (table != null ? table.allowPlayerSellToNpc : npc.allowPlayerSellInTestMode);
+            if (!allowSell)
+                return FailMerchant(MerchantTradeResultCode.SellDisabled, false, npc.npcId, itemId, quantity, "Этот торговец не скупает предметы");
+
+            var inv = ProjectC.Items.InventoryWorld.Instance;
+            if (inv == null)
+                return FailMerchant(MerchantTradeResultCode.InternalError, false, npc.npcId, itemId, quantity, "Инвентарь не инициализирован");
+
+            var itemDef = inv.GetItemDefinition(itemId);
+            if (itemDef == null || itemDef.itemType == ProjectC.Items.ItemType.Key)
+                return FailMerchant(MerchantTradeResultCode.SellDisabled, false, npc.npcId, itemId, quantity, "Этот предмет нельзя продать");
+
+            int owned = inv.CountOf(clientId, itemId);
+            if (owned < quantity)
+                return FailMerchant(MerchantTradeResultCode.ItemNotOwned, false, npc.npcId, itemId, quantity,
+                    $"В рюкзаке только {owned} шт.");
+
+            float priceMult = table != null ? table.priceMultiplier : 1.0f;
+            float sellBackMult = table != null ? table.sellBackPriceMultiplier : 0.5f;
+            bool enableDiscount = table != null ? table.enableReputationDiscount : true;
+            float maxDisc = table != null ? table.maxReputationDiscountRatio : 0.20f;
+            int defaultPrice = npc.testModeDefaultPrice > 0 ? npc.testModeDefaultPrice : 25;
+
+            int customBuy = 0, customSell = 0, configuredStock = -1;
+            if (table != null && table.items != null)
+            {
+                for (int i = 0; i < table.items.Length; i++)
+                {
+                    var e = table.items[i];
+                    if (e != null && e.item != null && ResolveItemId(null, e.item) == itemId)
+                    {
+                        customBuy = e.customBuyPrice;
+                        customSell = e.customSellPrice;
+                        configuredStock = e.stock;
+                        break;
+                    }
+                }
+            }
+
+            int factionWireId = npc.EffectiveFactionWireId;
+            float exactAtt = GetNpcAttitudeExact(clientId, npc.npcId);
+            float exactRep = GetReputationExact(clientId, factionWireId);
+
+            int currentBuyLimit = MerchantPriceResolver.ResolveBuyPrice(
+                itemDef, customBuy, priceMult, defaultPrice, exactAtt, exactRep, enableDiscount, maxDisc);
+            int unitSellPrice = MerchantPriceResolver.ResolveSellPrice(
+                itemDef, customBuy, customSell, sellBackMult, defaultPrice, currentBuyLimit);
+
+            var remRes = inv.RemoveItems(clientId, itemId, itemDef.itemType, quantity);
+            if (!remRes.IsSuccess)
+                return FailMerchant(MerchantTradeResultCode.ItemNotOwned, false, npc.npcId, itemId, quantity, "Не удалось списать предмет из рюкзака");
+
+            int totalEarned = unitSellPrice * quantity;
+            float newCredits = GetPlayerCredits(clientId) + totalEarned;
+            SetPlayerCredits(clientId, newCredits);
+
+            // Если товар есть в лимитированном стоке торговца — пополняем его сток
+            int curStock = GetMerchantItemStock(npc.npcId, itemId, configuredStock);
+            if (curStock >= 0)
+                SetMerchantItemStock(npc.npcId, itemId, curStock + quantity);
+
+            string itemName = itemDef.itemName ?? $"Item #{itemId}";
+            return new MerchantTradeResultDto
+            {
+                code = (byte)MerchantTradeResultCode.Ok,
+                isBuy = false,
+                npcId = npc.npcId,
+                itemId = itemId,
+                itemName = itemName,
+                quantity = quantity,
+                totalCreditsDelta = totalEarned,
+                newCredits = newCredits,
+                reputationGain = 0f,
+                newNpcAttitudeExact = exactAtt,
+                newFactionReputationExact = exactRep,
+                message = $"Продано: {itemName} x{quantity} (+{totalEarned} CR)"
+            };
+        }
+
+        private MerchantTradeResultDto FailMerchant(
+            MerchantTradeResultCode code, bool isBuy, string npcId, int itemId, int qty, string msg)
+        {
+            return new MerchantTradeResultDto
+            {
+                code = (byte)code,
+                isBuy = isBuy,
+                npcId = npcId ?? "",
+                itemId = itemId,
+                itemName = "",
+                quantity = qty,
+                totalCreditsDelta = 0,
+                newCredits = -1f,
+                reputationGain = 0f,
+                newNpcAttitudeExact = 0f,
+                newFactionReputationExact = 0f,
+                message = msg ?? code.ToString()
+            };
         }
 
         // ============ T-Q28: Prerequisite check (для цепочек через prereqQuest в CSV) ============
@@ -1542,6 +2150,26 @@ namespace ProjectC.Quests
                     data.knownRecipes.Add(rid);
             }
 
+            // T-MERCH01: сохраняем дробные остатки репутации от торговли
+            foreach (var kv in _npcTradeRepRemainder)
+            {
+                if (kv.Key.Item1 != clientId || kv.Value <= 1e-5f) continue;
+                data.npcTradeRepRemainders.Add(new ProjectC.Quests.Persistence.NpcTradeRepSaveEntry
+                {
+                    npcId = kv.Key.Item2,
+                    remainder = kv.Value
+                });
+            }
+            foreach (var kv in _factionTradeRepRemainder)
+            {
+                if (kv.Key.Item1 != clientId || kv.Value <= 1e-5f) continue;
+                data.factionTradeRepRemainders.Add(new ProjectC.Quests.Persistence.FactionTradeRepSaveEntry
+                {
+                    factionId = kv.Key.Item2,
+                    remainder = kv.Value
+                });
+            }
+
             return data;
         }
 
@@ -1589,6 +2217,12 @@ namespace ProjectC.Quests
             var flagToRemove = new List<(ulong, string)>();
             foreach (var kv in _worldFlags) if (kv.Key.Item1 == clientId) flagToRemove.Add(kv.Key);
             foreach (var k in flagToRemove) _worldFlags.Remove(k);
+            var npcRemToRemove = new List<(ulong, string)>();
+            foreach (var kv in _npcTradeRepRemainder) if (kv.Key.Item1 == clientId) npcRemToRemove.Add(kv.Key);
+            foreach (var k in npcRemToRemove) _npcTradeRepRemainder.Remove(k);
+            var facRemToRemove = new List<(ulong, int)>();
+            foreach (var kv in _factionTradeRepRemainder) if (kv.Key.Item1 == clientId) facRemToRemove.Add(kv.Key);
+            foreach (var k in facRemToRemove) _factionTradeRepRemainder.Remove(k);
 
             // Apply quests
             if (data.quests != null)
@@ -1710,6 +2344,26 @@ namespace ProjectC.Quests
             // T-KNOWLEDGE-V2: restore known recipes
             Crafting.CraftingWorld.LoadRecipeKnowledge(clientId, data.knownRecipes);
 
+            // T-MERCH01: restore fractional trade reputation remainders
+            if (data.npcTradeRepRemainders != null)
+            {
+                for (int i = 0; i < data.npcTradeRepRemainders.Count; i++)
+                {
+                    var e = data.npcTradeRepRemainders[i];
+                    if (e != null && !string.IsNullOrEmpty(e.npcId) && e.remainder > 0f)
+                        _npcTradeRepRemainder[(clientId, e.npcId)] = Mathf.Clamp(e.remainder, 0f, 0.9999f);
+                }
+            }
+            if (data.factionTradeRepRemainders != null)
+            {
+                for (int i = 0; i < data.factionTradeRepRemainders.Count; i++)
+                {
+                    var e = data.factionTradeRepRemainders[i];
+                    if (e != null && e.factionId > 0 && e.factionId <= byte.MaxValue && e.remainder > 0f)
+                        _factionTradeRepRemainder[(clientId, e.factionId)] = Mathf.Clamp(e.remainder, 0f, 0.9999f);
+                }
+            }
+
             if (Debug.isDebugBuild) Debug.Log($"[QuestWorld] LoadPlayer: client={clientId} restored {data.quests?.Count ?? 0} quests, {data.reputation?.Count ?? 0} factions, {data.npcAttitude?.Count ?? 0} npcAttitudes");
             return true;
         }
@@ -1764,6 +2418,10 @@ namespace ProjectC.Quests
             _knownFactions.Clear();
             _knownNpcs.Clear();
             _dialogByPlayer.Clear();
+            _npcTradeRepRemainder.Clear();
+            _factionTradeRepRemainder.Clear();
+            _merchantRuntimeStock.Clear();
+            _fallbackCredits.Clear();
         }
     }
 }

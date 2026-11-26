@@ -42,6 +42,11 @@ namespace ProjectC.Items
         [Tooltip("Вес одного предмета (кг). Используется в будущей cargo-системе.")]
         public float weightKg = 0.1f;
 
+        [Header("Economy (T-MERCH01)")]
+        [Tooltip("Базовая цена предмета в кредитах (CR) у торговцев NPC. 0 = вычисляется автоматически по типу/тиру предмета.")]
+        [Min(0)]
+        public int basePrice = 0;
+
         // === Equipment Visual System (Phase 1, 2026-06-29) ===
         // Опциональные поля для 3D-визуала предмета. Default = null/zero означает
         // старое поведение: предмет отображается только иконкой (Sprite).

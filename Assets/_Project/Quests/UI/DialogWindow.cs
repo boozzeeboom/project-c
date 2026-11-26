@@ -14,11 +14,14 @@
 using UnityEngine;
 using UnityEngine.UIElements;
 using System.Collections;
+using System.Collections.Generic;
 using ProjectC.Localization;
 using ProjectC.Quests.Dto;
 using ProjectC.Quests.Client;
 using ProjectC.Player;
 using ProjectC.Reputation;
+using ProjectC.Items;
+using ProjectC.Items.Client;
 
 namespace ProjectC.Quests.UI
 {
@@ -51,10 +54,52 @@ namespace ProjectC.Quests.UI
  private VisualElement _optionsContainer;
  private Label _toastLabel;
 
+ // T-MERCH01: Merchant panel UI refs
+ private VisualElement _merchantPanel;
+ private Label _merchantTitleLabel;
+ private Label _merchantTestBadge;
+ private Label _merchantCreditsLabel;
+ private Label _merchantSlotsLabel;
+ private Label _merchantRepInfoLabel;
+ private Button _tabBuyBtn;
+ private Button _tabSellBtn;
+ private TextField _merchantSearchField;
+ private VisualElement _merchantCategoriesContainer;
+ private VisualElement _merchantItemsList;
+ private VisualElement _detailIconBox;
+ private Label _detailIconLetter;
+ private Label _detailTitleLabel;
+ private Label _detailSpecsLabel;
+ private Label _detailDescLabel;
+ private Button _qtyMinusBtn;
+ private Label _qtyValueLabel;
+ private Button _qtyPlusBtn;
+ private Button _qtyX1Btn;
+ private Button _qtyX5Btn;
+ private Button _qtyX10Btn;
+ private Button _qtyMaxBtn;
+ private Label _tradeSummaryLabel;
+ private Button _tradeActionBtn;
+ private Label _merchantStatusLabel;
+
  // State
  private DialogStepDto _currentStep;
  private string _lastActionMessage;
  private float _lastActionMessageTime;
+
+ // T-MERCH01: Merchant runtime state
+ private MerchantShopSnapshotDto _currentShopSnapshot;
+ private bool _hasShopSnapshot;
+ private bool _isBuyTab = true;
+ private int _selectedCategoryFilter = -1; // -1 = Все, 0..7 = ItemType
+ private string _searchQuery = "";
+ private int _selectedItemId = -1;
+ private int _hoveredItemId = -1;
+ private int _selectedQuantity = 1;
+ private string _merchantStatusText = "";
+ private bool _merchantStatusSuccess = true;
+ private float _merchantStatusTime = -10f;
+
  // T-Q12: typewriter state.
  private Coroutine _typewriterCoroutine;
  private string _fullText;
@@ -143,6 +188,8 @@ namespace ProjectC.Quests.UI
  if (QuestClientState.Instance == null) return;
  QuestClientState.Instance.OnDialogStepReceived += HandleStepReceived;
  QuestClientState.Instance.OnDialogActionResultReceived += HandleActionResultReceived;
+ QuestClientState.Instance.OnMerchantShopReceived += HandleMerchantShopReceived;
+ QuestClientState.Instance.OnMerchantTradeResultReceived += HandleMerchantTradeResultReceived;
  _subscribed = true;
  }
  private void TryUnsubscribe()
@@ -151,6 +198,8 @@ namespace ProjectC.Quests.UI
  if (QuestClientState.Instance == null) { _subscribed = false; return; }
  QuestClientState.Instance.OnDialogStepReceived -= HandleStepReceived;
  QuestClientState.Instance.OnDialogActionResultReceived -= HandleActionResultReceived;
+ QuestClientState.Instance.OnMerchantShopReceived -= HandleMerchantShopReceived;
+ QuestClientState.Instance.OnMerchantTradeResultReceived -= HandleMerchantTradeResultReceived;
  _subscribed = false;
  }
 
@@ -177,12 +226,24 @@ namespace ProjectC.Quests.UI
  }
 
  // T-Q13: показать "❤ +N" / "❤ -N" / "" (если 0 или нет snapshot) для текущего NPC.
+ // T-MERCH01: если открыт магазин с точным серверным float-отношением (с учётом +0.1 за 100 CR),
+ // показываем точное значение с десятыми долями (например "❤ +1.3").
  private void UpdateNpcAttitudeBadge()
  {
  if (_npcAttitudeLabel == null) return;
  // DialogStepDto — struct, поэтому проверяем treeId+nodeId как "is set" indicator.
  string npcId = (_currentStep.treeId != null) ? _currentStep.speakerNpcId : null;
  if (string.IsNullOrEmpty(npcId)) { _npcAttitudeLabel.text = ""; return; }
+
+ if (_hasShopSnapshot && _currentShopSnapshot.isMerchant && _currentShopSnapshot.npcId == npcId)
+ {
+     float exact = _currentShopSnapshot.npcAttitudeExact;
+     bool hasFraction = Mathf.Abs(exact - Mathf.Round(exact)) > 0.005f;
+     string formatted = hasFraction ? exact.ToString("0.0") : Mathf.RoundToInt(exact).ToString();
+     _npcAttitudeLabel.text = exact > 0.001f ? $"❤ +{formatted}" : $"❤ {formatted}";
+     return;
+ }
+
  var att = NpcAttitudeClientState.Instance;
  if (att == null) { _npcAttitudeLabel.text = ""; return; }
  int value = att.GetAttitudeForNpc(npcId);
@@ -236,6 +297,38 @@ namespace ProjectC.Quests.UI
  _textLabel = _root.Q<Label>("text");
  _optionsContainer = _root.Q<VisualElement>("options");
  _toastLabel = _root.Q<Label>("toast");
+
+ // T-MERCH01: query merchant UI elements
+ _merchantPanel = _root.Q<VisualElement>("merchant-panel");
+ _merchantTitleLabel = _root.Q<Label>("merchant-title");
+ _merchantTestBadge = _root.Q<Label>("merchant-test-badge");
+ _merchantCreditsLabel = _root.Q<Label>("merchant-credits");
+ _merchantSlotsLabel = _root.Q<Label>("merchant-slots");
+ _merchantRepInfoLabel = _root.Q<Label>("merchant-rep-info");
+ _tabBuyBtn = _root.Q<Button>("tab-buy");
+ _tabSellBtn = _root.Q<Button>("tab-sell");
+ _merchantSearchField = _root.Q<TextField>("merchant-search");
+ _merchantCategoriesContainer = _root.Q<VisualElement>("merchant-categories");
+ _merchantItemsList = _root.Q<VisualElement>("merchant-items-list");
+ _detailIconBox = _root.Q<VisualElement>("detail-icon");
+ _detailIconLetter = _root.Q<Label>("detail-icon-letter");
+ _detailTitleLabel = _root.Q<Label>("detail-title");
+ _detailSpecsLabel = _root.Q<Label>("detail-specs");
+ _detailDescLabel = _root.Q<Label>("detail-desc");
+ _qtyMinusBtn = _root.Q<Button>("qty-minus");
+ _qtyValueLabel = _root.Q<Label>("qty-value");
+ _qtyPlusBtn = _root.Q<Button>("qty-plus");
+ _qtyX1Btn = _root.Q<Button>("qty-x1");
+ _qtyX5Btn = _root.Q<Button>("qty-x5");
+ _qtyX10Btn = _root.Q<Button>("qty-x10");
+ _qtyMaxBtn = _root.Q<Button>("qty-max");
+ _tradeSummaryLabel = _root.Q<Label>("trade-summary");
+ _tradeActionBtn = _root.Q<Button>("trade-action-btn");
+ _merchantStatusLabel = _root.Q<Label>("merchant-status");
+
+ BindMerchantCallbacks();
+ SetMerchantPanelVisible(false);
+
  if (_toastLabel != null) _toastLabel.style.display = DisplayStyle.None;
  if (_npcAttitudeLabel != null) _npcAttitudeLabel.text = "";
  // Initially hidden — Show() переключит на Flex.
@@ -263,11 +356,31 @@ namespace ProjectC.Quests.UI
 
  private void HandleStepReceived(DialogStepDto step)
  {
+ string prevNpcId = _currentStep.speakerNpcId;
  _currentStep = step;
  EnsureBuilt();
  if (_root == null) return;
  if (step.isEnd) { Close(); }
- else { Show(); BuildUI(); }
+ else
+ {
+     if (prevNpcId != step.speakerNpcId)
+     {
+         _selectedItemId = -1;
+         _hoveredItemId = -1;
+         _selectedQuantity = 1;
+         _merchantStatusText = "";
+     }
+     Show();
+     BuildUI();
+     SetMerchantPanelVisible(step.hasMerchant);
+     if (step.hasMerchant)
+     {
+         if (_hasShopSnapshot && _currentShopSnapshot.npcId == step.speakerNpcId)
+             RefreshMerchantUI();
+         else if (!string.IsNullOrEmpty(step.speakerNpcId))
+             QuestClientState.Instance?.RequestMerchantShop(step.speakerNpcId);
+     }
+ }
  }
 
  // T-Q23: format DialogActionResultDto → human-readable text.
@@ -342,6 +455,8 @@ namespace ProjectC.Quests.UI
  public void Close()
  {
      IsOpen = false;
+     _hasShopSnapshot = false;
+     SetMerchantPanelVisible(false);
      if (_root != null)
      {
          _root.style.display = DisplayStyle.None;
@@ -505,6 +620,614 @@ StartTypewriter(locText ?? "");
  {
  _toastLabel.style.display = DisplayStyle.None;
  }
+
+ if (_merchantStatusLabel != null)
+ {
+     if (Time.time - _merchantStatusTime < 6f && !string.IsNullOrEmpty(_merchantStatusText))
+     {
+         _merchantStatusLabel.text = _merchantStatusText;
+         _merchantStatusLabel.style.color = _merchantStatusSuccess
+             ? new Color(0.55f, 0.95f, 0.65f)
+             : new Color(0.95f, 0.45f, 0.45f);
+     }
+     else
+     {
+         _merchantStatusLabel.text = "";
+     }
+ }
+ }
+
+ // ============================================================
+ // T-MERCH01: Правый блок магазина в DialogWindow
+ // ============================================================
+
+ private void BindMerchantCallbacks()
+ {
+     if (_tabBuyBtn != null)
+         _tabBuyBtn.clicked += () => SwitchMerchantTab(true);
+     if (_tabSellBtn != null)
+         _tabSellBtn.clicked += () => SwitchMerchantTab(false);
+
+     if (_merchantSearchField != null)
+     {
+         _merchantSearchField.RegisterValueChangedCallback(evt =>
+         {
+             _searchQuery = evt.newValue ?? "";
+             RebuildMerchantItemsList();
+         });
+     }
+
+     if (_qtyMinusBtn != null) _qtyMinusBtn.clicked += () => AdjustQuantity(-1);
+     if (_qtyPlusBtn != null) _qtyPlusBtn.clicked += () => AdjustQuantity(+1);
+     if (_qtyX1Btn != null) _qtyX1Btn.clicked += () => SetQuantity(1);
+     if (_qtyX5Btn != null) _qtyX5Btn.clicked += () => SetQuantity(5);
+     if (_qtyX10Btn != null) _qtyX10Btn.clicked += () => SetQuantity(10);
+     if (_qtyMaxBtn != null) _qtyMaxBtn.clicked += SetMaxQuantity;
+     if (_tradeActionBtn != null) _tradeActionBtn.clicked += OnExecuteMerchantTradeClicked;
+
+     BuildCategoryFilterButtons();
+ }
+
+ private void BuildCategoryFilterButtons()
+ {
+     if (_merchantCategoriesContainer == null) return;
+     _merchantCategoriesContainer.Clear();
+
+     AddCategoryChip(-1, "Все");
+     AddCategoryChip((int)ItemType.Resources, "Ресурсы");
+     AddCategoryChip((int)ItemType.Equipment, "Оборуд.");
+     AddCategoryChip((int)ItemType.Food, "Еда");
+     AddCategoryChip((int)ItemType.Fuel, "Топливо");
+     AddCategoryChip((int)ItemType.Antigrav, "Антиграв");
+     AddCategoryChip((int)ItemType.Meziy, "Мезий");
+     AddCategoryChip((int)ItemType.Medical, "Медицина");
+     AddCategoryChip((int)ItemType.Tech, "Техника");
+ }
+
+ private void AddCategoryChip(int catValue, string title)
+ {
+     var chip = new Button(() =>
+     {
+         _selectedCategoryFilter = catValue;
+         UpdateCategoryChipVisuals();
+         RebuildMerchantItemsList();
+     })
+     {
+         text = title,
+         userData = catValue
+     };
+     chip.AddToClassList("merchant-cat-chip");
+     if (catValue == _selectedCategoryFilter)
+         chip.AddToClassList("merchant-cat-chip-active");
+     _merchantCategoriesContainer.Add(chip);
+ }
+
+ private void UpdateCategoryChipVisuals()
+ {
+     if (_merchantCategoriesContainer == null) return;
+     foreach (var child in _merchantCategoriesContainer.Children())
+     {
+         if (child is Button b && b.userData is int val)
+         {
+             b.EnableInClassList("merchant-cat-chip-active", val == _selectedCategoryFilter);
+         }
+     }
+ }
+
+ private void SetMerchantPanelVisible(bool visible)
+ {
+     if (_merchantPanel != null)
+         _merchantPanel.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+     if (_panel != null)
+         _panel.EnableInClassList("dialog-panel-narrow", visible);
+ }
+
+ private void SwitchMerchantTab(bool isBuy)
+ {
+     if (_isBuyTab == isBuy) return;
+     _isBuyTab = isBuy;
+     _selectedItemId = -1;
+     _hoveredItemId = -1;
+     _selectedQuantity = 1;
+     if (_tabBuyBtn != null) _tabBuyBtn.EnableInClassList("merchant-tab-active", _isBuyTab);
+     if (_tabSellBtn != null) _tabSellBtn.EnableInClassList("merchant-tab-active", !_isBuyTab);
+     RebuildMerchantItemsList();
+     RefreshDetailAndActionPanel();
+ }
+
+ private void HandleMerchantShopReceived(MerchantShopSnapshotDto snapshot)
+ {
+     _currentShopSnapshot = snapshot;
+     _hasShopSnapshot = true;
+     if (!IsOpen) return;
+
+     SetMerchantPanelVisible(snapshot.isMerchant);
+     UpdateNpcAttitudeBadge();
+     if (snapshot.isMerchant)
+         RefreshMerchantUI();
+ }
+
+ private void HandleMerchantTradeResultReceived(MerchantTradeResultDto result)
+ {
+     _merchantStatusText = (result.IsSuccess ? "✅ " : "❌ ") + (result.message ?? "");
+     _merchantStatusSuccess = result.IsSuccess;
+     _merchantStatusTime = Time.time;
+     UpdateToast();
+     UpdateNpcAttitudeBadge();
+ }
+
+ private void RefreshMerchantUI()
+ {
+     if (!_hasShopSnapshot || !_currentShopSnapshot.isMerchant) return;
+
+     if (_merchantTitleLabel != null)
+         _merchantTitleLabel.text = !string.IsNullOrEmpty(_currentShopSnapshot.shopTitle)
+             ? $"🛒 {_currentShopSnapshot.shopTitle}"
+             : "🛒 Торговая лавка";
+
+     if (_merchantTestBadge != null)
+         _merchantTestBadge.style.display = _currentShopSnapshot.isTestSellAllMode ? DisplayStyle.Flex : DisplayStyle.None;
+
+     if (_merchantCreditsLabel != null)
+         _merchantCreditsLabel.text = $"💰 {Mathf.FloorToInt(_currentShopSnapshot.playerCredits):N0} CR";
+
+     if (_merchantSlotsLabel != null)
+         _merchantSlotsLabel.text = $"🎒 {_currentShopSnapshot.inventoryUsedSlots} / {_currentShopSnapshot.inventoryMaxSlots}";
+
+     if (_merchantRepInfoLabel != null)
+     {
+         float att = _currentShopSnapshot.npcAttitudeExact;
+         float rep = _currentShopSnapshot.factionReputationExact;
+         string attSign = att > 0.001f ? "+" : "";
+         string repSign = rep > 0.001f ? "+" : "";
+         string facTitle = !string.IsNullOrEmpty(_currentShopSnapshot.factionDisplayName)
+             ? _currentShopSnapshot.factionDisplayName
+             : "Фракция";
+         string discStr = "";
+         if (_currentShopSnapshot.discountPercent < 0)
+             discStr = $"  •  Скидка {-_currentShopSnapshot.discountPercent}%";
+         else if (_currentShopSnapshot.discountPercent > 0)
+             discStr = $"  •  Наценка +{_currentShopSnapshot.discountPercent}%";
+
+         _merchantRepInfoLabel.text = $"❤ {attSign}{att:0.0}  •  ⚑ {facTitle}: {repSign}{rep:0.0}{discStr}";
+     }
+
+     if (_tabSellBtn != null)
+     {
+         _tabSellBtn.SetEnabled(_currentShopSnapshot.allowPlayerSell);
+         if (!_currentShopSnapshot.allowPlayerSell && !_isBuyTab)
+             _isBuyTab = true;
+     }
+     if (_tabBuyBtn != null) _tabBuyBtn.EnableInClassList("merchant-tab-active", _isBuyTab);
+     if (_tabSellBtn != null) _tabSellBtn.EnableInClassList("merchant-tab-active", !_isBuyTab);
+
+     RebuildMerchantItemsList();
+     RefreshDetailAndActionPanel();
+ }
+
+ private void RebuildMerchantItemsList()
+ {
+     if (_merchantItemsList == null) return;
+     _merchantItemsList.Clear();
+     if (!_hasShopSnapshot || !_currentShopSnapshot.isMerchant) return;
+
+     string q = (_searchQuery ?? "").Trim().ToLowerInvariant();
+     int shownCount = 0;
+
+     if (_isBuyTab)
+     {
+         var arr = _currentShopSnapshot.shopItems;
+         if (arr != null)
+         {
+             for (int i = 0; i < arr.Length; i++)
+             {
+                 var item = arr[i];
+                 if (_selectedCategoryFilter >= 0 && item.itemType != (byte)_selectedCategoryFilter)
+                     continue;
+                 if (!string.IsNullOrEmpty(q) && (item.itemName == null || !item.itemName.ToLowerInvariant().Contains(q)))
+                     continue;
+
+                 if (_selectedItemId <= 0 && item.isUnlocked)
+                     _selectedItemId = item.itemId;
+
+                 _merchantItemsList.Add(CreateBuyItemRow(item));
+                 shownCount++;
+             }
+         }
+     }
+     else
+     {
+         var arr = _currentShopSnapshot.playerSellableItems;
+         if (arr != null)
+         {
+             for (int i = 0; i < arr.Length; i++)
+             {
+                 var item = arr[i];
+                 if (_selectedCategoryFilter >= 0 && item.itemType != (byte)_selectedCategoryFilter)
+                     continue;
+                 if (!string.IsNullOrEmpty(q) && (item.itemName == null || !item.itemName.ToLowerInvariant().Contains(q)))
+                     continue;
+
+                 if (_selectedItemId <= 0)
+                     _selectedItemId = item.itemId;
+
+                 _merchantItemsList.Add(CreateSellItemRow(item));
+                 shownCount++;
+             }
+         }
+     }
+
+     if (shownCount == 0)
+     {
+         var emptyLbl = new Label(_isBuyTab ? "Нет подходящих товаров в ассортименте." : "В вашем рюкзаке нет предметов для продажи.")
+         {
+             style =
+             {
+                 color = new Color(0.65f, 0.7f, 0.8f),
+                 paddingTop = 18,
+                 paddingLeft = 10
+             }
+         };
+         _merchantItemsList.Add(emptyLbl);
+     }
+ }
+
+ private VisualElement CreateBuyItemRow(MerchantItemDto item)
+ {
+     var row = new VisualElement();
+     row.AddToClassList("merchant-item-row");
+     if (item.itemId == _selectedItemId)
+         row.AddToClassList("merchant-item-row-selected");
+     if (!item.isUnlocked || item.stock == 0)
+         row.AddToClassList("merchant-item-row-locked");
+
+     var left = new VisualElement();
+     left.AddToClassList("merchant-item-left");
+     left.Add(CreateItemIconElement(item.itemId, (ItemType)item.itemType));
+
+     var nameLbl = new Label(item.itemName);
+     nameLbl.AddToClassList("merchant-item-name");
+     left.Add(nameLbl);
+
+     string metaText = $"[{ItemTypeNames.GetDisplayName((ItemType)item.itemType)}]";
+     if (item.playerOwnedCount > 0)
+         metaText += $" • В рюкз: {item.playerOwnedCount}";
+     var metaLbl = new Label(metaText);
+     metaLbl.AddToClassList("merchant-item-meta");
+     left.Add(metaLbl);
+
+     var right = new VisualElement();
+     right.AddToClassList("merchant-item-right");
+
+     if (!item.isUnlocked)
+     {
+         var lockLbl = new Label($"🔒 {item.lockedReason}");
+         lockLbl.AddToClassList("merchant-item-locked-label");
+         right.Add(lockLbl);
+     }
+     else
+     {
+         string stockStr = item.stock < 0 ? "Запас: ∞" : (item.stock > 0 ? $"Запас: {item.stock}" : "Нет в наличии");
+         var stockLbl = new Label(stockStr);
+         stockLbl.AddToClassList("merchant-item-stock");
+         right.Add(stockLbl);
+
+         var priceLbl = new Label($"{item.buyPrice} CR");
+         priceLbl.AddToClassList("merchant-item-price");
+         right.Add(priceLbl);
+     }
+
+     row.Add(left);
+     row.Add(right);
+
+     int capturedId = item.itemId;
+     row.RegisterCallback<PointerEnterEvent>(_ =>
+     {
+         _hoveredItemId = capturedId;
+         RefreshDetailAndActionPanel();
+     });
+     row.RegisterCallback<PointerLeaveEvent>(_ =>
+     {
+         if (_hoveredItemId == capturedId) _hoveredItemId = -1;
+         RefreshDetailAndActionPanel();
+     });
+     row.RegisterCallback<ClickEvent>(_ =>
+     {
+         _selectedItemId = capturedId;
+         _selectedQuantity = Mathf.Clamp(_selectedQuantity, 1, Mathf.Max(1, CalculateMaxAllowedQuantity()));
+         RebuildMerchantItemsList();
+         RefreshDetailAndActionPanel();
+     });
+
+     return row;
+ }
+
+ private VisualElement CreateSellItemRow(MerchantPlayerSellItemDto item)
+ {
+     var row = new VisualElement();
+     row.AddToClassList("merchant-item-row");
+     if (item.itemId == _selectedItemId)
+         row.AddToClassList("merchant-item-row-selected");
+
+     var left = new VisualElement();
+     left.AddToClassList("merchant-item-left");
+     left.Add(CreateItemIconElement(item.itemId, (ItemType)item.itemType));
+
+     var nameLbl = new Label(item.itemName);
+     nameLbl.AddToClassList("merchant-item-name");
+     left.Add(nameLbl);
+
+     var metaLbl = new Label($"[{ItemTypeNames.GetDisplayName((ItemType)item.itemType)}]");
+     metaLbl.AddToClassList("merchant-item-meta");
+     left.Add(metaLbl);
+
+     var right = new VisualElement();
+     right.AddToClassList("merchant-item-right");
+
+     var stockLbl = new Label($"В рюкзаке: x{item.ownedCount}");
+     stockLbl.AddToClassList("merchant-item-stock");
+     right.Add(stockLbl);
+
+     var priceLbl = new Label($"+{item.sellPrice} CR");
+     priceLbl.AddToClassList("merchant-item-price");
+     right.Add(priceLbl);
+
+     row.Add(left);
+     row.Add(right);
+
+     int capturedId = item.itemId;
+     row.RegisterCallback<PointerEnterEvent>(_ =>
+     {
+         _hoveredItemId = capturedId;
+         RefreshDetailAndActionPanel();
+     });
+     row.RegisterCallback<PointerLeaveEvent>(_ =>
+     {
+         if (_hoveredItemId == capturedId) _hoveredItemId = -1;
+         RefreshDetailAndActionPanel();
+     });
+     row.RegisterCallback<ClickEvent>(_ =>
+     {
+         _selectedItemId = capturedId;
+         _selectedQuantity = Mathf.Clamp(_selectedQuantity, 1, Mathf.Max(1, CalculateMaxAllowedQuantity()));
+         RebuildMerchantItemsList();
+         RefreshDetailAndActionPanel();
+     });
+
+     return row;
+ }
+
+ private VisualElement CreateItemIconElement(int itemId, ItemType type)
+ {
+     var iconBox = new VisualElement();
+     iconBox.AddToClassList("merchant-item-icon");
+     iconBox.style.backgroundColor = GetCategoryColor(type);
+
+     var def = InventoryClientState.Instance != null ? InventoryClientState.Instance.GetItemDefinition(itemId) : null;
+     if (def != null && def.icon != null)
+     {
+         iconBox.style.backgroundImage = new StyleBackground(def.icon);
+     }
+     else
+     {
+         var letter = new Label(GetCategoryShortTag(type));
+         letter.AddToClassList("merchant-icon-letter");
+         iconBox.Add(letter);
+     }
+     return iconBox;
+ }
+
+ private void RefreshDetailAndActionPanel()
+ {
+     int inspectId = _hoveredItemId > 0 ? _hoveredItemId : _selectedItemId;
+     var def = inspectId > 0 && InventoryClientState.Instance != null
+         ? InventoryClientState.Instance.GetItemDefinition(inspectId)
+         : null;
+
+     if (_isBuyTab && TryFindBuyItem(inspectId, out var buyDto))
+     {
+         ApplyDetailCard(def, buyDto.itemName, (ItemType)buyDto.itemType,
+             $"Цена: {buyDto.buyPrice} CR  •  Скупка: {buyDto.sellPrice} CR  •  У вас в рюкзаке: {buyDto.playerOwnedCount} шт.");
+     }
+     else if (!_isBuyTab && TryFindSellItem(inspectId, out var sellDto))
+     {
+         ApplyDetailCard(def, sellDto.itemName, (ItemType)sellDto.itemType,
+             $"Цена скупки: +{sellDto.sellPrice} CR / шт.  •  В рюкзаке: {sellDto.ownedCount} шт.");
+     }
+     else
+     {
+         if (_detailTitleLabel != null) _detailTitleLabel.text = "Наведите курсор или кликните по товару";
+         if (_detailSpecsLabel != null) _detailSpecsLabel.text = "Здесь появятся характеристики предмета, вес и описание.";
+         if (_detailDescLabel != null) _detailDescLabel.text = "";
+         if (_detailIconBox != null)
+         {
+             _detailIconBox.style.backgroundImage = StyleKeyword.None;
+             _detailIconBox.style.backgroundColor = new Color(0.2f, 0.25f, 0.36f);
+         }
+         if (_detailIconLetter != null) _detailIconLetter.text = "?";
+     }
+
+     // Блок количества и кнопки действия считает по ВЫБРАННОМУ предмету (_selectedItemId)
+     int maxAllowed = CalculateMaxAllowedQuantity();
+     _selectedQuantity = Mathf.Clamp(_selectedQuantity, 1, Mathf.Max(1, maxAllowed));
+     if (_qtyValueLabel != null) _qtyValueLabel.text = _selectedQuantity.ToString();
+
+     if (_isBuyTab && TryFindBuyItem(_selectedItemId, out var selBuy))
+     {
+         int totalCost = selBuy.buyPrice * _selectedQuantity;
+         float repGain = MerchantPriceResolver.CalculateReputationGain(totalCost);
+         if (_tradeSummaryLabel != null)
+             _tradeSummaryLabel.text = $"Итого: {totalCost} CR   •   Репутация: +{repGain:0.##} ❤/⚑";
+
+         bool canBuy = selBuy.isUnlocked
+                       && (selBuy.stock < 0 || selBuy.stock >= _selectedQuantity)
+                       && _currentShopSnapshot.playerCredits + 1e-3f >= totalCost
+                       && (_currentShopSnapshot.inventoryUsedSlots + _selectedQuantity <= _currentShopSnapshot.inventoryMaxSlots);
+
+         if (_tradeActionBtn != null)
+         {
+             _tradeActionBtn.EnableInClassList("merchant-action-btn-sell", false);
+             _tradeActionBtn.SetEnabled(canBuy);
+             _tradeActionBtn.text = !selBuy.isUnlocked
+                 ? "🔒 Заблокировано"
+                 : (selBuy.stock == 0 ? "Нет в наличии" : $"Купить x{_selectedQuantity} ({totalCost} CR)");
+         }
+     }
+     else if (!_isBuyTab && TryFindSellItem(_selectedItemId, out var selSell))
+     {
+         int totalEarn = selSell.sellPrice * _selectedQuantity;
+         if (_tradeSummaryLabel != null)
+             _tradeSummaryLabel.text = $"Выручка: +{totalEarn} CR";
+
+         bool canSell = _currentShopSnapshot.allowPlayerSell && selSell.ownedCount >= _selectedQuantity;
+         if (_tradeActionBtn != null)
+         {
+             _tradeActionBtn.EnableInClassList("merchant-action-btn-sell", true);
+             _tradeActionBtn.SetEnabled(canSell);
+             _tradeActionBtn.text = $"Продать x{_selectedQuantity} (+{totalEarn} CR)";
+         }
+     }
+     else
+     {
+         if (_tradeSummaryLabel != null) _tradeSummaryLabel.text = "Выберите предмет";
+         if (_tradeActionBtn != null)
+         {
+             _tradeActionBtn.SetEnabled(false);
+             _tradeActionBtn.text = _isBuyTab ? "Купить" : "Продать";
+         }
+     }
+ }
+
+ private void ApplyDetailCard(ItemData def, string fallbackName, ItemType itemType, string economyLine)
+ {
+     if (_detailTitleLabel != null)
+         _detailTitleLabel.text = def != null && !string.IsNullOrEmpty(def.itemName) ? def.itemName : fallbackName;
+
+     if (_detailSpecsLabel != null)
+     {
+         string specs = def != null ? MerchantPriceResolver.BuildItemSpecsSummary(def) : $"Категория: {ItemTypeNames.GetDisplayName(itemType)}";
+         _detailSpecsLabel.text = $"{specs}\n{economyLine}";
+     }
+
+     if (_detailDescLabel != null)
+         _detailDescLabel.text = def != null && !string.IsNullOrEmpty(def.description) ? def.description : "";
+
+     if (_detailIconBox != null)
+     {
+         _detailIconBox.style.backgroundColor = GetCategoryColor(itemType);
+         if (def != null && def.icon != null)
+         {
+             _detailIconBox.style.backgroundImage = new StyleBackground(def.icon);
+             if (_detailIconLetter != null) _detailIconLetter.text = "";
+         }
+         else
+         {
+             _detailIconBox.style.backgroundImage = StyleKeyword.None;
+             if (_detailIconLetter != null) _detailIconLetter.text = GetCategoryShortTag(itemType);
+         }
+     }
+ }
+
+ private void AdjustQuantity(int delta)
+ {
+     SetQuantity(_selectedQuantity + delta);
+ }
+
+ private void SetQuantity(int newQty)
+ {
+     int maxAllowed = Mathf.Max(1, CalculateMaxAllowedQuantity());
+     _selectedQuantity = Mathf.Clamp(newQty, 1, maxAllowed);
+     RefreshDetailAndActionPanel();
+ }
+
+ private void SetMaxQuantity()
+ {
+     _selectedQuantity = Mathf.Max(1, CalculateMaxAllowedQuantity());
+     RefreshDetailAndActionPanel();
+ }
+
+ private int CalculateMaxAllowedQuantity()
+ {
+     if (!_hasShopSnapshot) return 1;
+     if (_isBuyTab && TryFindBuyItem(_selectedItemId, out var buyItem))
+     {
+         int freeSlots = Mathf.Max(0, _currentShopSnapshot.inventoryMaxSlots - _currentShopSnapshot.inventoryUsedSlots);
+         int byCredits = buyItem.buyPrice > 0 ? Mathf.FloorToInt(_currentShopSnapshot.playerCredits / buyItem.buyPrice) : freeSlots;
+         int byStock = buyItem.stock < 0 ? 999 : buyItem.stock;
+         int max = Mathf.Min(freeSlots, Mathf.Min(byCredits, byStock));
+         return Mathf.Clamp(max, 1, 999);
+     }
+     if (!_isBuyTab && TryFindSellItem(_selectedItemId, out var sellItem))
+     {
+         return Mathf.Clamp(sellItem.ownedCount, 1, 999);
+     }
+     return 1;
+ }
+
+ private void OnExecuteMerchantTradeClicked()
+ {
+     if (!_hasShopSnapshot || string.IsNullOrEmpty(_currentShopSnapshot.npcId) || _selectedItemId <= 0) return;
+     int qty = Mathf.Max(1, _selectedQuantity);
+     if (_isBuyTab)
+         QuestClientState.Instance?.RequestMerchantBuy(_currentShopSnapshot.npcId, _selectedItemId, qty);
+     else
+         QuestClientState.Instance?.RequestMerchantSell(_currentShopSnapshot.npcId, _selectedItemId, qty);
+ }
+
+ private bool TryFindBuyItem(int itemId, out MerchantItemDto found)
+ {
+     found = default;
+     if (itemId <= 0 || !_hasShopSnapshot || _currentShopSnapshot.shopItems == null) return false;
+     var arr = _currentShopSnapshot.shopItems;
+     for (int i = 0; i < arr.Length; i++)
+     {
+         if (arr[i].itemId == itemId) { found = arr[i]; return true; }
+     }
+     return false;
+ }
+
+ private bool TryFindSellItem(int itemId, out MerchantPlayerSellItemDto found)
+ {
+     found = default;
+     if (itemId <= 0 || !_hasShopSnapshot || _currentShopSnapshot.playerSellableItems == null) return false;
+     var arr = _currentShopSnapshot.playerSellableItems;
+     for (int i = 0; i < arr.Length; i++)
+     {
+         if (arr[i].itemId == itemId) { found = arr[i]; return true; }
+     }
+     return false;
+ }
+
+ private static Color GetCategoryColor(ItemType type)
+ {
+     return type switch
+     {
+         ItemType.Resources => new Color(0.32f, 0.44f, 0.34f),
+         ItemType.Equipment => new Color(0.34f, 0.42f, 0.58f),
+         ItemType.Food      => new Color(0.55f, 0.42f, 0.24f),
+         ItemType.Fuel      => new Color(0.58f, 0.34f, 0.22f),
+         ItemType.Antigrav  => new Color(0.28f, 0.48f, 0.62f),
+         ItemType.Meziy     => new Color(0.48f, 0.28f, 0.58f),
+         ItemType.Medical   => new Color(0.58f, 0.25f, 0.32f),
+         ItemType.Tech      => new Color(0.28f, 0.46f, 0.48f),
+         _                  => new Color(0.35f, 0.38f, 0.45f)
+     };
+ }
+
+ private static string GetCategoryShortTag(ItemType type)
+ {
+     return type switch
+     {
+         ItemType.Resources => "РЕС",
+         ItemType.Equipment => "ЭКП",
+         ItemType.Food      => "ЕДА",
+         ItemType.Fuel      => "ТПЛ",
+         ItemType.Antigrav  => "АГ",
+         ItemType.Meziy     => "МЕЗ",
+         ItemType.Medical   => "МЕД",
+         ItemType.Tech      => "ТЕХ",
+         _                  => "ПРД"
+     };
  }
 
  private void Update()

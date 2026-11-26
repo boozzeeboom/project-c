@@ -8,6 +8,7 @@
 
 - `docs/NPC_quests/Quests/00_UNIVERSAL_QUEST_GUIDE.md` — квесты, стадии, objectives, награды.
 - `docs/NPC_quests/Faction/FACTION_ID_DATA_DRIVEN_PLAN.md` — фракции и data-driven `FactionDefinition`.
+- `docs/NPC_quests/merchants/00_NPC_MERCHANT_GUIDE.md` — магазины именных NPC (правый блок в `DialogWindow`, личные таблицы `NpcMerchantTable`, тестовый режим «продаёт всё», репутация `+0.1 за 100 CR`).
 - `docs/world/floatingorigin/09S_NEW_CONTENT_PIPELINE.md` — правила контента с мировыми координатами.
 
 ---
@@ -87,6 +88,8 @@
 | `questOfferRefs` | Квесты, которые NPC **выдаёт**. |
 | `questTurnInRefs` | Квесты, которые NPC **принимает** на сдачу. |
 | `services` | `Trade`, `Repair`, `Refuel`, `Restock`, … |
+| `merchantTable` | Личный прайс-лист торговца (`NpcMerchantTable`). Если задан — при нажатии `E` правее диалога открывается магазин (см. `merchants/00_NPC_MERCHANT_GUIDE.md`). |
+| `sellAllItemsForTesting` | `WARNING FOR TESTS ONLY`: включает продажу всех pickable-предметов из `ItemRegistry` для тестов. |
 | `greetingText` | Loc key/литерал. Используется только fallback-деревом, если `defaultDialogTree` пуст. |
 | `attitudeLinks` | Кросс-фракционное влияние при изменении отношения. |
 | `personalAttitudeMin/Max` | Границы отношения именно с этим NPC (по умолчанию −100…200). |

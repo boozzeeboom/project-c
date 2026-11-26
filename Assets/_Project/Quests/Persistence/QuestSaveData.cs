@@ -42,6 +42,20 @@ namespace ProjectC.Quests.Persistence
     }
 
     [Serializable]
+    public class NpcTradeRepSaveEntry
+    {
+        public string npcId = "";
+        public float remainder = 0f;
+    }
+
+    [Serializable]
+    public class FactionTradeRepSaveEntry
+    {
+        public int factionId = 0;
+        public float remainder = 0f;
+    }
+
+    [Serializable]
     public class StringSetSaveEntry
     {
         public string setName = ""; // "eventsOccurred" / "contractsCompleted" / "contractsAccepted" / "npcTalkedTo" / "worldFlags"
@@ -68,5 +82,9 @@ namespace ProjectC.Quests.Persistence
 
         // === T-KNOWLEDGE-V3: Recipe knowledge (string keys) ===
         public List<string> knownRecipes = new List<string>();  // recipeId (string, V3 stable key)
+
+        // === T-MERCH01: Дробные накопители репутации от торговли с NPC (+0.1 за 100 CR) ===
+        public List<NpcTradeRepSaveEntry> npcTradeRepRemainders = new List<NpcTradeRepSaveEntry>();
+        public List<FactionTradeRepSaveEntry> factionTradeRepRemainders = new List<FactionTradeRepSaveEntry>();
     }
 }

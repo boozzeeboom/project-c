@@ -30,6 +30,7 @@ namespace ProjectC.Quests.Editor
         private bool _showDialogue = true;
         private bool _showQuests = true;
         private bool _showServices = true;
+        private bool _showMerchant = true;
         private bool _showInteraction = true;
         private bool _showAttitude = true;
         private bool _showAudio = true;
@@ -50,6 +51,7 @@ namespace ProjectC.Quests.Editor
             DrawDialogueBlock();
             DrawQuestsBlock(npc);
             DrawServicesBlock();
+            DrawMerchantBlock(npc);
             DrawInteractionBlock();
             DrawAttitudeBlock();
             DrawAudioBlock();
@@ -153,6 +155,14 @@ namespace ProjectC.Quests.Editor
             // Services
             if (npc.services != NpcService.None)
                 sb.Append($"<b>🛠 Services:</b> <color=#ccff88>{npc.services}</color>    ");
+
+            // Merchant status
+            if (npc.sellAllItemsForTesting)
+                sb.Append("<b>🛒 Shop:</b> <color=#ffcc33>⚠ SELL ALL (TEST)</color>    ");
+            else if (npc.merchantTable != null)
+                sb.Append($"<b>🛒 Shop:</b> <color=#88ffaa>{npc.merchantTable.name} ({npc.merchantTable.items?.Length ?? 0})</color>    ");
+            else if ((npc.services & NpcService.Trade) != 0)
+                sb.Append("<b>🛒 Shop:</b> <color=#ffaa55>Trade (empty table)</color>    ");
 
             // Dialog tree
             sb.Append($"<b>💬 Tree:</b> ");
@@ -377,6 +387,110 @@ namespace ProjectC.Quests.Editor
             }
 
             EditorGUILayout.EndVertical();
+        }
+
+        // ══════════════════════════════════════════
+        // BLOCK: MERCHANT / TRADE (T-MERCH01)
+        // ══════════════════════════════════════════
+
+        private void DrawMerchantBlock(NpcDefinition npc)
+        {
+            _showMerchant = DrawBlockHeader("🛒 Merchant / Trade (Магазин NPC)", _showMerchant);
+            if (!_showMerchant) return;
+
+            EditorGUILayout.BeginVertical(BlockBoxStyle);
+
+            var tableProp = serializedObject.FindProperty("merchantTable");
+            var sellAllProp = serializedObject.FindProperty("sellAllItemsForTesting");
+            var defaultPriceProp = serializedObject.FindProperty("testModeDefaultPrice");
+            var allowSellProp = serializedObject.FindProperty("allowPlayerSellInTestMode");
+
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.PropertyField(tableProp, new GUIContent("Personal Merchant Table",
+                "Личный прайс-лист предметов для этого NPC (NpcMerchantTable asset)."));
+            if (tableProp != null && tableProp.objectReferenceValue == null)
+            {
+                if (GUILayout.Button("+ Create Table", GUILayout.Width(115), GUILayout.Height(18)))
+                {
+                    CreateMerchantTableForNpc(npc);
+                }
+            }
+            EditorGUILayout.EndHorizontal();
+
+            if (npc.merchantTable != null)
+            {
+                int itemCount = npc.merchantTable.items != null ? npc.merchantTable.items.Length : 0;
+                EditorGUILayout.HelpBox(
+                    $"Личный магазин активен: {itemCount} поз. в таблице «{npc.merchantTable.name}» " +
+                    $"(наценка x{npc.merchantTable.priceMultiplier:0.##}, скупка {(npc.merchantTable.allowPlayerSellToNpc ? $"{npc.merchantTable.sellBackPriceMultiplier * 100f:0}%" : "выкл")}).\n" +
+                    "При нажатии E справа от диалога откроется панель магазина.",
+                    MessageType.Info);
+            }
+
+            EditorGUILayout.Space(4);
+            EditorGUILayout.PropertyField(sellAllProp, new GUIContent("Sell ALL Items (Test Mode)",
+                "Включить продажу ВСЕХ pickable-предметов из ItemRegistry (только для тестирования!)."));
+
+            if (sellAllProp != null && sellAllProp.boolValue)
+            {
+                var prevColor = GUI.backgroundColor;
+                GUI.backgroundColor = new Color(1f, 0.65f, 0.15f, 1f);
+                EditorGUILayout.HelpBox(
+                    "⚠️ WARNING FOR TESTS ONLY!\n" +
+                    "Включён тестовый режим «Продаёт ВСЁ» (sellAllItemsForTesting = true).\n" +
+                    "Этот NPC будет продавать ВСЕ зарегистрированные в ItemRegistry pickable-предметы " +
+                    "(кроме уникальных корабельных ключей Key). Не оставляйте этот флаг включённым в продакшене!",
+                    MessageType.Warning);
+                GUI.backgroundColor = prevColor;
+
+                EditorGUILayout.PropertyField(defaultPriceProp, new GUIContent("Default Base Price (CR)",
+                    "Базовая цена по умолчанию для предметов без собственной цены."));
+                EditorGUILayout.PropertyField(allowSellProp, new GUIContent("Allow Player Sell to NPC",
+                    "Разрешить игроку продавать свои предметы этому NPC в тестовом режиме."));
+            }
+            else if (npc.merchantTable == null && (npc.services & NpcService.Trade) != 0)
+            {
+                EditorGUILayout.HelpBox(
+                    "У NPC включён сервис Trade, но не назначена Personal Merchant Table и не включён Sell ALL Items.\n" +
+                    "Назначьте таблицу предметов или включите тестовый режим «Sell ALL Items».",
+                    MessageType.Warning);
+                EditorGUILayout.PropertyField(defaultPriceProp, new GUIContent("Default Base Price (CR)"));
+                EditorGUILayout.PropertyField(allowSellProp, new GUIContent("Allow Player Sell to NPC"));
+            }
+
+            EditorGUILayout.Space(2);
+            EditorGUILayout.LabelField("📈 Репутация от торговли: +0.1 к отношению NPC и его фракции за каждые 100 CR, полученных от игрока (серверная память).",
+                EditorStyles.miniLabel);
+
+            EditorGUILayout.EndVertical();
+        }
+
+        private void CreateMerchantTableForNpc(NpcDefinition npc)
+        {
+            string npcPath = AssetDatabase.GetAssetPath(npc);
+            string folder = "Assets/_Project/Quests/Data/Npcs";
+            if (!string.IsNullOrEmpty(npcPath))
+            {
+                var dir = System.IO.Path.GetDirectoryName(npcPath)?.Replace('\\', '/');
+                if (!string.IsNullOrEmpty(dir)) folder = dir;
+            }
+
+            string safeId = !string.IsNullOrEmpty(npc.npcId) ? npc.npcId : npc.name;
+            string assetPath = AssetDatabase.GenerateUniqueAssetPath($"{folder}/MerchantTable_{safeId}.asset");
+
+            var table = ScriptableObject.CreateInstance<NpcMerchantTable>();
+            table.shopTitle = !string.IsNullOrEmpty(npc.displayName) ? $"Лавка: {npc.displayName}" : $"Лавка {safeId}";
+            AssetDatabase.CreateAsset(table, assetPath);
+            AssetDatabase.SaveAssets();
+
+            serializedObject.Update();
+            var tableProp = serializedObject.FindProperty("merchantTable");
+            if (tableProp != null) tableProp.objectReferenceValue = table;
+            var svcProp = serializedObject.FindProperty("services");
+            if (svcProp != null) svcProp.intValue |= (int)NpcService.Trade;
+            serializedObject.ApplyModifiedProperties();
+            EditorUtility.SetDirty(npc);
+            EditorGUIUtility.PingObject(table);
         }
 
         private void DrawServiceChip(string name, bool active)

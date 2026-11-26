@@ -12,6 +12,7 @@
 | `Quests/001/001_ASH_UNDER_GLASS_DRAFT.md` | Текущий квест Q001: сюжет, ID, ветки, ассеты. |
 | `audits/DEEP_AUDIT_2026-08-13.md` | Последний глубокий аудит квестовой подсистемы (снимок, не статус). |
 | `Faction/FACTION_ID_DATA_DRIVEN_PLAN.md` | План перевода фракций на data-driven `FactionDefinition`. |
+| `merchants/00_NPC_MERCHANT_GUIDE.md` | Магазины именных/квестовых NPC: правый блок в `DialogWindow`, личные таблицы, тестовый режим «продаёт всё», серверная репутация `+0.1 за 100 CR`. |
 
 Короткое правило: **квесты — universal guide, именные NPC — named NPC pipeline**.
 
@@ -25,6 +26,9 @@ docs/NPC_quests/
 │   └── DEEP_AUDIT_2026-08-13.md
 ├── Faction/
 │   └── FACTION_ID_DATA_DRIVEN_PLAN.md
+├── merchants/
+│   ├── README.md
+│   └── 00_NPC_MERCHANT_GUIDE.md  ← торговля с именными NPC
 └── Quests/
     ├── 00_UNIVERSAL_QUEST_GUIDE.md
     └── 001/                      ← активный Q001
@@ -53,7 +57,7 @@ open questions) лежит в `docs/archive/NPC_quests_design_legacy/`.
 - В `WorldScene_0_0` стоят 8 именных NPC (Mira, Onboarding alfa + шесть Q001) как экземпляры этого префаба.
 - Q001 — активный квест-пакет: ассеты и связи готовы, финальная расстановка NPC/зон ещё ручная.
 - Известный хвост: `mira_default.asset` и `MiraDefault.asset` делят `treeId: mira_default`; новые NPC так не делать.
-- `merchants/` — пустой задел под будущие документы торговцев.
+- `merchants/` — спецификация и гайд по торговле с именными NPC (`00_NPC_MERCHANT_GUIDE.md`).
 
 ## Ссылки извне
 

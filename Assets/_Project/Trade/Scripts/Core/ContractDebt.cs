@@ -66,6 +66,10 @@ namespace ProjectC.Trade.Core
             const float DecayPerSecond = DecayPerHour / 3600f;
             const float MinDebt = 0f;
 
+            // T-PERF27: при нулевом долге не мутировать LastDecayTime каждый тик,
+            // иначе ContractWorld.TickCore считает состояние изменённым и вызывает SaveAll() на каждый FixedUpdate.
+            if (CurrentDebt <= MinDebt) return;
+
             float dt = now - LastDecayTime;
             if (dt <= 0f) return;
 

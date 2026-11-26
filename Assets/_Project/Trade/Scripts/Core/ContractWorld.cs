@@ -1262,11 +1262,65 @@ private ContractOpResult TryAcceptCore(ulong clientId, string contractId)
         /// Возвращает список (playerId, contractId) контрактов, которые провалились
         /// по таймеру — ContractServer шлёт клиентам ContractResultDto для каждого.
         /// </summary>
+        private static readonly List<(ulong playerId, string contractId, ContractData contract)> s_emptyExpired
+            = new List<(ulong playerId, string contractId, ContractData contract)>(0);
+
         public List<(ulong playerId, string contractId, ContractData contract)> Tick(float deltaTime, float now)
         {
+            // T-PERF27: fast-path без RepositoryTransactionScope и аллокаций,
+            // когда ни один активный контракт не истекает на этом шаге и нет положительного долга.
+            if (!NeedsPersistentTick(deltaTime))
+            {
+                TickActiveTimersInMemory(deltaTime);
+                return s_emptyExpired;
+            }
+
             return RepositoryTransactionScope.Execute(
                 Repository,
                 () => TickCore(deltaTime, now));
+        }
+
+        private bool NeedsPersistentTick(float deltaTime)
+        {
+            foreach (var debtPair in _playerDebts)
+            {
+                if (debtPair.Value != null && debtPair.Value.CurrentDebt > 0f)
+                    return true;
+            }
+
+            foreach (var pair in _runtimeStore.ActiveByPlayer)
+            {
+                var activeIds = pair.Value;
+                if (activeIds == null) continue;
+                foreach (var contractId in activeIds)
+                {
+                    if (!_runtimeStore.ContractsById.TryGetValue(contractId, out var contract))
+                        continue;
+                    if (contract == null || contract.state != ContractState.Active)
+                        continue;
+                    if (contract.timeLimit > 0f && contract.timeRemaining - deltaTime <= 0f)
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void TickActiveTimersInMemory(float deltaTime)
+        {
+            foreach (var pair in _runtimeStore.ActiveByPlayer)
+            {
+                var activeIds = pair.Value;
+                if (activeIds == null) continue;
+                foreach (var contractId in activeIds)
+                {
+                    if (!_runtimeStore.ContractsById.TryGetValue(contractId, out var contract))
+                        continue;
+                    if (contract == null || contract.state != ContractState.Active)
+                        continue;
+                    contract.TickTimer(deltaTime);
+                }
+            }
         }
 
         private List<(ulong playerId, string contractId, ContractData contract)> TickCore(float deltaTime, float now)

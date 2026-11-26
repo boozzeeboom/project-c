@@ -397,12 +397,22 @@ namespace ProjectC.Trade.Network
         // TICK
         // ========================================================
 
+        private const float TickIntervalSeconds = 1f;
+        private float _tickAccumulator;
+
         private void FixedUpdate()
         {
             if (!IsServer) return;
             if (ContractWorld.Instance == null) return;
 
-            var expired = ContractWorld.Instance.Tick(Time.fixedDeltaTime, Time.realtimeSinceStartup);
+            // T-PERF27: таймеры контрактов измеряются в минутах, а decay долга — в часах;
+            // тикать 50 Гц в FixedUpdate не нужно.
+            _tickAccumulator += Time.fixedDeltaTime;
+            if (_tickAccumulator < TickIntervalSeconds) return;
+            float dt = _tickAccumulator;
+            _tickAccumulator = 0f;
+
+            var expired = ContractWorld.Instance.Tick(dt, Time.realtimeSinceStartup);
             foreach (var (playerId, contractId, contract) in expired)
             {
                 // Шлём result клиенту (auto-fail по таймеру)

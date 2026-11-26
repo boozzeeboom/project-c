@@ -554,8 +554,9 @@ namespace ProjectC.Player
                 // которые Discrete пропускает (стены при скорости, ребра пиков).
                 // T-PERF26: кораблей на сцене ~23; режим дальше ведёт RefreshCollisionDetectionMode
                 // (kinematic → Speculative, frozen → Discrete, иначе Continuous).
-                _rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
-                _appliedCollisionMode = CollisionDetectionMode.Continuous;
+                // T-PERF27: начинаем с Discrete — тяжёлые корабли имеют 124-250 BoxCollider.
+                _rb.collisionDetectionMode = CollisionDetectionMode.Discrete;
+                _appliedCollisionMode = CollisionDetectionMode.Discrete;
                 _rb.interpolation = RigidbodyInterpolation.Interpolate;
             }
 
@@ -1352,9 +1353,12 @@ namespace ProjectC.Player
 
         private void RefreshCollisionDetectionMode()
         {
-            CollisionDetectionMode wanted = _rb.isKinematic
-                ? CollisionDetectionMode.ContinuousSpeculative
-                : (_frozenByNoPilot ? CollisionDetectionMode.Discrete : CollisionDetectionMode.Continuous);
+            // T-PERF27: у тяжёлых кораблей 124-250 BoxCollider на одном Rigidbody.
+            // Sweep Continuous и Speculative на kinematic давали 250-570 CCD overlaps и >2.5 мс/кадр.
+            // Корабли крупные и медленные — Discrete достаточно до 20 м/с, выше — ContinuousSpeculative.
+            CollisionDetectionMode wanted = CollisionDetectionMode.Discrete;
+            if (!_rb.isKinematic && !_frozenByNoPilot && _rb.linearVelocity.sqrMagnitude > 400f)
+                wanted = CollisionDetectionMode.ContinuousSpeculative;
             if (wanted == _appliedCollisionMode) return;
             _appliedCollisionMode = wanted;
             _rb.collisionDetectionMode = wanted;

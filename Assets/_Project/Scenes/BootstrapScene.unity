@@ -20986,7 +20986,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.UI.MainMenu.MainMenuWindow
   mainUxml: {fileID: 0}
   mainUss: {fileID: 0}
-  versionText: 0.2.05
+  versionText: 0.2.1
   changelogUrl: https://raw.githubusercontent.com/boozzeeboom/project-c/main/docs/UI/MainMenu/changelogs.md
   changelogTimeoutSeconds: 8
 --- !u!114 &1567705307
@@ -22753,6 +22753,7 @@ MonoBehaviour:
   RelaxationRate: 0.643
   DisplacementRelaxationRate: 1.5
   MaxSplatRadius: 1000
+  MaxDisplacement: 4
   FollowTarget: {fileID: 0}
   _verboseLogging: 0
   _compute: {fileID: 7200000, guid: 1e911b3517e91034da325c33c715f934, type: 3}

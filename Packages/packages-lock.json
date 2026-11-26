@@ -59,16 +59,16 @@
         "com.unity.inputsystem": "1.1.1",
         "com.unity.cloud.gltfast": "6.12.1"
       },
-      "hash": "f7786a8ecbff7d7d427d84e36bb0235e1432d529"
+      "hash": "f12ea86d5feb1e78bbb72dd70565df8c44c695ff"
     },
     "com.ramenvr.autopilot": {
-      "version": "https://github.com/ramenvr/autopilot.git?path=/plugin/unity/com.ramenvr.autopilot#286ee8a758e89dd77921b8f55ba409306410c5c5",
+      "version": "https://github.com/ramenvr/autopilot.git?path=/plugin/unity/com.ramenvr.autopilot#e08ca12635f4e2bf2f37a6f15465f1620cc39335",
       "depth": 0,
       "source": "git",
       "dependencies": {
         "com.unity.nuget.mono-cecil": "1.11.6"
       },
-      "hash": "286ee8a758e89dd77921b8f55ba409306410c5c5"
+      "hash": "e08ca12635f4e2bf2f37a6f15465f1620cc39335"
     },
     "com.unity.2d.sprite": {
       "version": "1.0.0",

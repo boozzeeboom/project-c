@@ -15,6 +15,7 @@ namespace ProjectC.Quests.Dto
         public DialogOptionDto[] options; // empty = dialog end
         public bool isEnd;              // true → close dialog window
         public bool hasMerchant;        // T-MERCH01: true если у NPC активен правый блок магазина
+        public bool hasBlacksmith;      // T-SMITH01: true если у NPC активен блок кузницы
 
         public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter
         {
@@ -33,6 +34,7 @@ namespace ProjectC.Quests.Dto
             if (s.IsReader) { treeId = tree ?? ""; nodeId = node ?? ""; speakerNpcId = npc ?? ""; speakerDisplayName = npcName ?? ""; speakerText = text ?? ""; }
             s.SerializeValue(ref isEnd);
             s.SerializeValue(ref hasMerchant);
+            s.SerializeValue(ref hasBlacksmith);
             SerializeOptions(ref options, s);
         }
 

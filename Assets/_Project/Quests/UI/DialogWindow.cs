@@ -82,6 +82,37 @@ namespace ProjectC.Quests.UI
  private Button _tradeActionBtn;
  private Label _merchantStatusLabel;
 
+ // T-SMITH01: Service layout switcher + Blacksmith panel UI refs
+ private VisualElement _serviceSwitcher;
+ private Button _viewBothBtn;
+ private Button _viewShopBtn;
+ private Button _viewSmithBtn;
+
+ private VisualElement _blacksmithPanel;
+ private Label _blacksmithTitleLabel;
+ private Label _blacksmithTestBadge;
+ private Label _blacksmithCreditsLabel;
+ private Label _blacksmithRepInfoLabel;
+ private TextField _blacksmithSearchField;
+ private VisualElement _blacksmithCategoriesContainer;
+ private VisualElement _blacksmithItemsList;
+ private VisualElement _blacksmithTiersRow;
+ private Button _payWithResBtn;
+ private Button _payCreditsOnlyBtn;
+ private Label _blacksmithPreviewTitle;
+ private Label _blacksmithPreviewDiff;
+ private Label _blacksmithPreviewReq;
+ private Label _blacksmithSummaryLabel;
+ private Button _blacksmithUpgradeBtn;
+ private Label _blacksmithStatusLabel;
+
+ private enum ServiceLayoutMode : byte
+ {
+     Both          = 0,
+     MerchantOnly  = 1,
+     BlacksmithOnly = 2
+ }
+
  // State
  private DialogStepDto _currentStep;
  private string _lastActionMessage;
@@ -104,6 +135,20 @@ namespace ProjectC.Quests.UI
  private string _merchantStatusText = "";
  private bool _merchantStatusSuccess = true;
  private float _merchantStatusTime = -10f;
+
+ // T-SMITH01: Blacksmith runtime state
+ private ServiceLayoutMode _serviceLayoutMode = ServiceLayoutMode.Both;
+ private BlacksmithShopSnapshotDto _currentBlacksmithSnapshot;
+ private bool _hasBlacksmithSnapshot;
+ private int _blacksmithCategoryFilter = -1;
+ private string _blacksmithSearchQuery = "";
+ private int _selectedBlacksmithItemId = -1;
+ private int _hoveredBlacksmithItemId = -1;
+ private BlacksmithUpgradeTier _selectedUpgradeTier = BlacksmithUpgradeTier.Bronze;
+ private BlacksmithPaymentMode _selectedPaymentMode = BlacksmithPaymentMode.WithPlayerResource;
+ private string _blacksmithStatusText = "";
+ private bool _blacksmithStatusSuccess = true;
+ private float _blacksmithStatusTime = -10f;
 
  // T-Q12: typewriter state.
  private Coroutine _typewriterCoroutine;
@@ -195,6 +240,8 @@ namespace ProjectC.Quests.UI
  QuestClientState.Instance.OnDialogActionResultReceived += HandleActionResultReceived;
  QuestClientState.Instance.OnMerchantShopReceived += HandleMerchantShopReceived;
  QuestClientState.Instance.OnMerchantTradeResultReceived += HandleMerchantTradeResultReceived;
+ QuestClientState.Instance.OnBlacksmithShopReceived += HandleBlacksmithShopReceived;
+ QuestClientState.Instance.OnBlacksmithUpgradeResultReceived += HandleBlacksmithUpgradeResultReceived;
  _subscribed = true;
  }
  private void TryUnsubscribe()
@@ -205,6 +252,8 @@ namespace ProjectC.Quests.UI
  QuestClientState.Instance.OnDialogActionResultReceived -= HandleActionResultReceived;
  QuestClientState.Instance.OnMerchantShopReceived -= HandleMerchantShopReceived;
  QuestClientState.Instance.OnMerchantTradeResultReceived -= HandleMerchantTradeResultReceived;
+ QuestClientState.Instance.OnBlacksmithShopReceived -= HandleBlacksmithShopReceived;
+ QuestClientState.Instance.OnBlacksmithUpgradeResultReceived -= HandleBlacksmithUpgradeResultReceived;
  _subscribed = false;
  }
 
@@ -243,6 +292,14 @@ namespace ProjectC.Quests.UI
  if (_hasShopSnapshot && _currentShopSnapshot.isMerchant && _currentShopSnapshot.npcId == npcId)
  {
      float exact = _currentShopSnapshot.npcAttitudeExact;
+     bool hasFraction = Mathf.Abs(exact - Mathf.Round(exact)) > 0.005f;
+     string formatted = hasFraction ? exact.ToString("0.0") : Mathf.RoundToInt(exact).ToString();
+     _npcAttitudeLabel.text = exact > 0.001f ? $"❤ +{formatted}" : $"❤ {formatted}";
+     return;
+ }
+ if (_hasBlacksmithSnapshot && _currentBlacksmithSnapshot.isBlacksmith && _currentBlacksmithSnapshot.npcId == npcId)
+ {
+     float exact = _currentBlacksmithSnapshot.npcAttitudeExact;
      bool hasFraction = Mathf.Abs(exact - Mathf.Round(exact)) > 0.005f;
      string formatted = hasFraction ? exact.ToString("0.0") : Mathf.RoundToInt(exact).ToString();
      _npcAttitudeLabel.text = exact > 0.001f ? $"❤ +{formatted}" : $"❤ {formatted}";
@@ -331,7 +388,32 @@ namespace ProjectC.Quests.UI
  _tradeActionBtn = _root.Q<Button>("trade-action-btn");
  _merchantStatusLabel = _root.Q<Label>("merchant-status");
 
+ // T-SMITH01: query service switcher & blacksmith UI elements
+ _serviceSwitcher = _root.Q<VisualElement>("service-switcher");
+ _viewBothBtn = _root.Q<Button>("view-both-btn");
+ _viewShopBtn = _root.Q<Button>("view-shop-btn");
+ _viewSmithBtn = _root.Q<Button>("view-smith-btn");
+
+ _blacksmithPanel = _root.Q<VisualElement>("blacksmith-panel");
+ _blacksmithTitleLabel = _root.Q<Label>("blacksmith-title");
+ _blacksmithTestBadge = _root.Q<Label>("blacksmith-test-badge");
+ _blacksmithCreditsLabel = _root.Q<Label>("blacksmith-credits");
+ _blacksmithRepInfoLabel = _root.Q<Label>("blacksmith-rep-info");
+ _blacksmithSearchField = _root.Q<TextField>("blacksmith-search");
+ _blacksmithCategoriesContainer = _root.Q<VisualElement>("blacksmith-categories");
+ _blacksmithItemsList = _root.Q<VisualElement>("blacksmith-items-list");
+ _blacksmithTiersRow = _root.Q<VisualElement>("blacksmith-tiers-row");
+ _payWithResBtn = _root.Q<Button>("pay-with-res-btn");
+ _payCreditsOnlyBtn = _root.Q<Button>("pay-credits-only-btn");
+ _blacksmithPreviewTitle = _root.Q<Label>("blacksmith-preview-title");
+ _blacksmithPreviewDiff = _root.Q<Label>("blacksmith-preview-diff");
+ _blacksmithPreviewReq = _root.Q<Label>("blacksmith-preview-req");
+ _blacksmithSummaryLabel = _root.Q<Label>("blacksmith-summary");
+ _blacksmithUpgradeBtn = _root.Q<Button>("blacksmith-upgrade-btn");
+ _blacksmithStatusLabel = _root.Q<Label>("blacksmith-status");
+
  BindMerchantCallbacks();
+ BindBlacksmithCallbacks();
  SetMerchantPanelVisible(false);
 
  if (_toastLabel != null) _toastLabel.style.display = DisplayStyle.None;
@@ -374,16 +456,27 @@ namespace ProjectC.Quests.UI
          _hoveredItemId = -1;
          _selectedQuantity = 1;
          _merchantStatusText = "";
+         _selectedBlacksmithItemId = -1;
+         _hoveredBlacksmithItemId = -1;
+         _blacksmithStatusText = "";
+         _serviceLayoutMode = ServiceLayoutMode.Both;
      }
      Show();
      BuildUI();
-     SetMerchantPanelVisible(step.hasMerchant);
+     UpdateServicePanelsLayout();
      if (step.hasMerchant)
      {
          if (_hasShopSnapshot && _currentShopSnapshot.npcId == step.speakerNpcId)
              RefreshMerchantUI();
          else if (!string.IsNullOrEmpty(step.speakerNpcId))
              QuestClientState.Instance?.RequestMerchantShop(step.speakerNpcId);
+     }
+     if (step.hasBlacksmith)
+     {
+         if (_hasBlacksmithSnapshot && _currentBlacksmithSnapshot.npcId == step.speakerNpcId)
+             RefreshBlacksmithUI();
+         else if (!string.IsNullOrEmpty(step.speakerNpcId))
+             QuestClientState.Instance?.RequestBlacksmithShop(step.speakerNpcId);
      }
  }
  }
@@ -461,6 +554,7 @@ namespace ProjectC.Quests.UI
  {
      IsOpen = false;
      _hasShopSnapshot = false;
+     _hasBlacksmithSnapshot = false;
      SetMerchantPanelVisible(false);
      if (_root != null)
      {
@@ -640,6 +734,21 @@ StartTypewriter(locText ?? "");
          _merchantStatusLabel.text = "";
      }
  }
+
+ if (_blacksmithStatusLabel != null)
+ {
+     if (Time.time - _blacksmithStatusTime < 6f && !string.IsNullOrEmpty(_blacksmithStatusText))
+     {
+         _blacksmithStatusLabel.text = _blacksmithStatusText;
+         _blacksmithStatusLabel.style.color = _blacksmithStatusSuccess
+             ? new Color(0.55f, 0.95f, 0.65f)
+             : new Color(0.95f, 0.45f, 0.45f);
+     }
+     else
+     {
+         _blacksmithStatusLabel.text = "";
+     }
+ }
  }
 
  // ============================================================
@@ -721,10 +830,59 @@ StartTypewriter(locText ?? "");
 
  private void SetMerchantPanelVisible(bool visible)
  {
+     if (!visible)
+     {
+         if (_merchantPanel != null) _merchantPanel.style.display = DisplayStyle.None;
+         if (_blacksmithPanel != null) _blacksmithPanel.style.display = DisplayStyle.None;
+         if (_serviceSwitcher != null) _serviceSwitcher.style.display = DisplayStyle.None;
+         if (_panel != null)
+         {
+             _panel.EnableInClassList("dialog-panel-narrow", false);
+             _panel.EnableInClassList("dialog-panel-compact", false);
+         }
+         return;
+     }
+     UpdateServicePanelsLayout();
+ }
+
+ /// <summary>
+ /// T-SMITH01: Адаптивное расположение окон Диалога, Магазина и Кузницы.
+ /// Позволяет открыть одновременно И Торговца, И Кузнеца (3 колонки рядом) или переключаться между ними.
+ /// </summary>
+ private void UpdateServicePanelsLayout()
+ {
+     bool hasShop = _currentStep.hasMerchant || (_hasShopSnapshot && _currentShopSnapshot.isMerchant && _currentShopSnapshot.npcId == _currentStep.speakerNpcId);
+     bool hasSmith = _currentStep.hasBlacksmith || (_hasBlacksmithSnapshot && _currentBlacksmithSnapshot.isBlacksmith && _currentBlacksmithSnapshot.npcId == _currentStep.speakerNpcId);
+
+     bool bothAvailable = hasShop && hasSmith;
+     if (_serviceSwitcher != null)
+     {
+         _serviceSwitcher.style.display = bothAvailable ? DisplayStyle.Flex : DisplayStyle.None;
+         if (_viewBothBtn != null) _viewBothBtn.EnableInClassList("service-switch-btn-active", _serviceLayoutMode == ServiceLayoutMode.Both);
+         if (_viewShopBtn != null) _viewShopBtn.EnableInClassList("service-switch-btn-active", _serviceLayoutMode == ServiceLayoutMode.MerchantOnly);
+         if (_viewSmithBtn != null) _viewSmithBtn.EnableInClassList("service-switch-btn-active", _serviceLayoutMode == ServiceLayoutMode.BlacksmithOnly);
+     }
+
+     bool showShop = hasShop && (!bothAvailable || _serviceLayoutMode == ServiceLayoutMode.Both || _serviceLayoutMode == ServiceLayoutMode.MerchantOnly);
+     bool showSmith = hasSmith && (!bothAvailable || _serviceLayoutMode == ServiceLayoutMode.Both || _serviceLayoutMode == ServiceLayoutMode.BlacksmithOnly);
+     bool showBothSideBySide = showShop && showSmith;
+     bool showSingleService = (showShop ^ showSmith);
+
      if (_merchantPanel != null)
-         _merchantPanel.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+     {
+         _merchantPanel.style.display = showShop ? DisplayStyle.Flex : DisplayStyle.None;
+         _merchantPanel.EnableInClassList("service-panel-compact", showBothSideBySide);
+     }
+     if (_blacksmithPanel != null)
+     {
+         _blacksmithPanel.style.display = showSmith ? DisplayStyle.Flex : DisplayStyle.None;
+         _blacksmithPanel.EnableInClassList("service-panel-compact", showBothSideBySide);
+     }
      if (_panel != null)
-         _panel.EnableInClassList("dialog-panel-narrow", visible);
+     {
+         _panel.EnableInClassList("dialog-panel-narrow", showSingleService);
+         _panel.EnableInClassList("dialog-panel-compact", showBothSideBySide);
+     }
  }
 
  private void SwitchMerchantTab(bool isBuy)
@@ -746,7 +904,7 @@ StartTypewriter(locText ?? "");
      _hasShopSnapshot = true;
      if (!IsOpen) return;
 
-     SetMerchantPanelVisible(snapshot.isMerchant);
+     UpdateServicePanelsLayout();
      UpdateNpcAttitudeBadge();
      if (snapshot.isMerchant)
          RefreshMerchantUI();
@@ -1263,6 +1421,397 @@ StartTypewriter(locText ?? "");
          ItemType.Tech      => "ТЕХ",
          _                  => "ПРД"
      };
+ }
+
+ // ============================================================
+ // T-SMITH01: Панель Кузнеца (NPC Blacksmith UI) в DialogWindow
+ // ============================================================
+
+ private void BindBlacksmithCallbacks()
+ {
+     if (_viewBothBtn != null)
+         _viewBothBtn.clicked += () => { _serviceLayoutMode = ServiceLayoutMode.Both; UpdateServicePanelsLayout(); };
+     if (_viewShopBtn != null)
+         _viewShopBtn.clicked += () => { _serviceLayoutMode = ServiceLayoutMode.MerchantOnly; UpdateServicePanelsLayout(); };
+     if (_viewSmithBtn != null)
+         _viewSmithBtn.clicked += () => { _serviceLayoutMode = ServiceLayoutMode.BlacksmithOnly; UpdateServicePanelsLayout(); };
+
+     if (_blacksmithSearchField != null)
+     {
+         _blacksmithSearchField.RegisterValueChangedCallback(evt =>
+         {
+             _blacksmithSearchQuery = evt.newValue ?? "";
+             RebuildBlacksmithItemsList();
+         });
+     }
+
+     if (_payWithResBtn != null)
+     {
+         _payWithResBtn.clicked += () =>
+         {
+             _selectedPaymentMode = BlacksmithPaymentMode.WithPlayerResource;
+             RefreshBlacksmithPreviewAndActions();
+         };
+     }
+     if (_payCreditsOnlyBtn != null)
+     {
+         _payCreditsOnlyBtn.clicked += () =>
+         {
+             _selectedPaymentMode = BlacksmithPaymentMode.CreditsOnly;
+             RefreshBlacksmithPreviewAndActions();
+         };
+     }
+     if (_blacksmithUpgradeBtn != null)
+         _blacksmithUpgradeBtn.clicked += OnExecuteBlacksmithUpgradeClicked;
+
+     BuildBlacksmithCategoryChips();
+ }
+
+ private void BuildBlacksmithCategoryChips()
+ {
+     if (_blacksmithCategoriesContainer == null) return;
+     _blacksmithCategoriesContainer.Clear();
+
+     AddBlacksmithCategoryChip(-1, "Все");
+     AddBlacksmithCategoryChip((int)ItemType.Equipment, "Оборуд.");
+     AddBlacksmithCategoryChip((int)ItemType.Resources, "Ресурсы");
+     AddBlacksmithCategoryChip((int)ItemType.Food, "Еда");
+     AddBlacksmithCategoryChip((int)ItemType.Medical, "Медицина");
+     AddBlacksmithCategoryChip((int)ItemType.Tech, "Техника");
+     AddBlacksmithCategoryChip((int)ItemType.Antigrav, "Антиграв");
+     AddBlacksmithCategoryChip((int)ItemType.Meziy, "Мезий");
+ }
+
+ private void AddBlacksmithCategoryChip(int catValue, string title)
+ {
+     var chip = new Button(() =>
+     {
+         _blacksmithCategoryFilter = catValue;
+         if (_blacksmithCategoriesContainer != null)
+         {
+             foreach (var child in _blacksmithCategoriesContainer.Children())
+             {
+                 if (child is Button b && b.userData is int val)
+                     b.EnableInClassList("merchant-cat-chip-active", val == _blacksmithCategoryFilter);
+             }
+         }
+         RebuildBlacksmithItemsList();
+     })
+     {
+         text = title,
+         userData = catValue
+     };
+     chip.AddToClassList("merchant-cat-chip");
+     if (catValue == _blacksmithCategoryFilter)
+         chip.AddToClassList("merchant-cat-chip-active");
+     _blacksmithCategoriesContainer.Add(chip);
+ }
+
+ private void HandleBlacksmithShopReceived(BlacksmithShopSnapshotDto snapshot)
+ {
+     _currentBlacksmithSnapshot = snapshot;
+     _hasBlacksmithSnapshot = true;
+     if (!IsOpen) return;
+
+     UpdateServicePanelsLayout();
+     UpdateNpcAttitudeBadge();
+     if (snapshot.isBlacksmith)
+         RefreshBlacksmithUI();
+ }
+
+ private void HandleBlacksmithUpgradeResultReceived(BlacksmithUpgradeResultDto result)
+ {
+     _blacksmithStatusText = (result.IsSuccess ? "✅ " : "❌ ") + (result.message ?? "");
+     _blacksmithStatusSuccess = result.IsSuccess;
+     _blacksmithStatusTime = Time.time;
+     UpdateToast();
+     UpdateNpcAttitudeBadge();
+ }
+
+ private void RefreshBlacksmithUI()
+ {
+     if (!_hasBlacksmithSnapshot || !_currentBlacksmithSnapshot.isBlacksmith) return;
+
+     if (_blacksmithTitleLabel != null)
+         _blacksmithTitleLabel.text = !string.IsNullOrEmpty(_currentBlacksmithSnapshot.smithyTitle)
+             ? $"⚒ {_currentBlacksmithSnapshot.smithyTitle}"
+             : "⚒ Кузница";
+
+     if (_blacksmithTestBadge != null)
+         _blacksmithTestBadge.style.display = _currentBlacksmithSnapshot.isTestAllTiersMode ? DisplayStyle.Flex : DisplayStyle.None;
+
+     if (_blacksmithCreditsLabel != null)
+         _blacksmithCreditsLabel.text = $"💰 {Mathf.FloorToInt(_currentBlacksmithSnapshot.playerCredits):N0} CR";
+
+     if (_blacksmithRepInfoLabel != null)
+     {
+         float att = _currentBlacksmithSnapshot.npcAttitudeExact;
+         float rep = _currentBlacksmithSnapshot.factionReputationExact;
+         string attSign = att > 0.001f ? "+" : "";
+         string repSign = rep > 0.001f ? "+" : "";
+         string facTitle = !string.IsNullOrEmpty(_currentBlacksmithSnapshot.factionDisplayName)
+             ? _currentBlacksmithSnapshot.factionDisplayName
+             : "Фракция";
+         _blacksmithRepInfoLabel.text = $"❤ {attSign}{att:0.0} • ⚑ {facTitle}: {repSign}{rep:0.0} (+0.2 / 100 CR)";
+     }
+
+     RebuildBlacksmithItemsList();
+     RebuildBlacksmithTierButtons();
+     RefreshBlacksmithPreviewAndActions();
+ }
+
+ private void RebuildBlacksmithItemsList()
+ {
+     if (_blacksmithItemsList == null) return;
+     _blacksmithItemsList.Clear();
+     if (!_hasBlacksmithSnapshot || !_currentBlacksmithSnapshot.isBlacksmith) return;
+
+     string q = (_blacksmithSearchQuery ?? "").Trim().ToLowerInvariant();
+     var arr = _currentBlacksmithSnapshot.playerItems;
+     int shownCount = 0;
+
+     if (arr != null)
+     {
+         for (int i = 0; i < arr.Length; i++)
+         {
+             var item = arr[i];
+             if (_blacksmithCategoryFilter >= 0 && item.itemType != (byte)_blacksmithCategoryFilter)
+                 continue;
+             if (!string.IsNullOrEmpty(q) && (item.displayName == null || !item.displayName.ToLowerInvariant().Contains(q)))
+                 continue;
+
+             if (_selectedBlacksmithItemId <= 0)
+                 _selectedBlacksmithItemId = item.itemId;
+
+             _blacksmithItemsList.Add(CreateBlacksmithItemRow(item));
+             shownCount++;
+         }
+     }
+
+     if (shownCount == 0)
+     {
+         var emptyLbl = new Label("В вашем рюкзаке нет предметов для ковки (подберите или купите любой предмет).")
+         {
+             style =
+             {
+                 color = new Color(0.65f, 0.7f, 0.8f),
+                 paddingTop = 14,
+                 paddingLeft = 8
+             }
+         };
+         _blacksmithItemsList.Add(emptyLbl);
+     }
+ }
+
+ private VisualElement CreateBlacksmithItemRow(BlacksmithTargetItemDto item)
+ {
+     var row = new VisualElement();
+     row.AddToClassList("merchant-item-row");
+     if (item.itemId == _selectedBlacksmithItemId)
+         row.AddToClassList("merchant-item-row-selected");
+
+     var left = new VisualElement();
+     left.AddToClassList("merchant-item-left");
+     left.Add(CreateItemIconElement(item.itemId, (ItemType)item.itemType));
+
+     var nameLbl = new Label(item.displayName);
+     nameLbl.AddToClassList("merchant-item-name");
+     left.Add(nameLbl);
+
+     var metaLbl = new Label($"[{ItemTypeNames.GetDisplayName((ItemType)item.itemType)}] x{item.ownedCount}");
+     metaLbl.AddToClassList("merchant-item-meta");
+     left.Add(metaLbl);
+
+     var right = new VisualElement();
+     right.AddToClassList("merchant-item-right");
+
+     string curTierText = item.currentUpgradeTier >= 0
+         ? $"Тир: {BlacksmithUpgradeEngine.GetTierDisplayName((BlacksmithUpgradeTier)item.currentUpgradeTier)}"
+         : "Базовый";
+     var tierLbl = new Label(curTierText);
+     tierLbl.AddToClassList("merchant-item-stock");
+     right.Add(tierLbl);
+
+     row.Add(left);
+     row.Add(right);
+
+     int capturedId = item.itemId;
+     row.RegisterCallback<PointerEnterEvent>(_ =>
+     {
+         _hoveredBlacksmithItemId = capturedId;
+         RefreshBlacksmithPreviewAndActions();
+     });
+     row.RegisterCallback<PointerLeaveEvent>(_ =>
+     {
+         if (_hoveredBlacksmithItemId == capturedId) _hoveredBlacksmithItemId = -1;
+         RefreshBlacksmithPreviewAndActions();
+     });
+     row.RegisterCallback<ClickEvent>(_ =>
+     {
+         _selectedBlacksmithItemId = capturedId;
+         // Авто-выбор следующего доступного тира выше текущего
+         if (TryFindBlacksmithTargetItem(capturedId, out var tItem) && tItem.currentUpgradeTier >= (int)_selectedUpgradeTier)
+         {
+             int nextT = Mathf.Clamp(tItem.currentUpgradeTier + 1, 0, 3);
+             _selectedUpgradeTier = (BlacksmithUpgradeTier)nextT;
+         }
+         RebuildBlacksmithItemsList();
+         RebuildBlacksmithTierButtons();
+         RefreshBlacksmithPreviewAndActions();
+     });
+
+     return row;
+ }
+
+ private void RebuildBlacksmithTierButtons()
+ {
+     if (_blacksmithTiersRow == null) return;
+     _blacksmithTiersRow.Clear();
+
+     BlacksmithTierMask allowedMask = _hasBlacksmithSnapshot
+         ? (BlacksmithTierMask)_currentBlacksmithSnapshot.allowedTiersMask
+         : (BlacksmithTierMask.Bronze | BlacksmithTierMask.Steel);
+
+     for (int ti = 0; ti < 4; ti++)
+     {
+         var tierEnum = (BlacksmithUpgradeTier)ti;
+         bool allowedByNpc = BlacksmithUpgradeEngine.IsTierAllowed(allowedMask, tierEnum);
+         string tName = BlacksmithUpgradeEngine.GetTierDisplayName(tierEnum);
+
+         var btn = new Button(() =>
+         {
+             _selectedUpgradeTier = tierEnum;
+             RebuildBlacksmithTierButtons();
+             RefreshBlacksmithPreviewAndActions();
+         })
+         {
+             text = allowedByNpc ? $"⚒ {tName}" : $"🔒 {tName}"
+         };
+         btn.AddToClassList("blacksmith-tier-btn");
+         if (tierEnum == _selectedUpgradeTier)
+             btn.AddToClassList("blacksmith-tier-btn-selected");
+         if (!allowedByNpc)
+             btn.AddToClassList("blacksmith-tier-btn-disabled");
+
+         _blacksmithTiersRow.Add(btn);
+     }
+ }
+
+ private void RefreshBlacksmithPreviewAndActions()
+ {
+     if (_payWithResBtn != null)
+         _payWithResBtn.EnableInClassList("blacksmith-pay-btn-active", _selectedPaymentMode == BlacksmithPaymentMode.WithPlayerResource);
+     if (_payCreditsOnlyBtn != null)
+         _payCreditsOnlyBtn.EnableInClassList("blacksmith-pay-btn-active", _selectedPaymentMode == BlacksmithPaymentMode.CreditsOnly);
+
+     int inspectId = _hoveredBlacksmithItemId > 0 ? _hoveredBlacksmithItemId : _selectedBlacksmithItemId;
+     if (!TryFindBlacksmithTargetItem(inspectId, out var targetItem) || targetItem.tierOptions == null || (int)_selectedUpgradeTier >= targetItem.tierOptions.Length)
+     {
+         if (_blacksmithPreviewTitle != null) _blacksmithPreviewTitle.text = "Выберите предмет в списке выше";
+         if (_blacksmithPreviewDiff != null) _blacksmithPreviewDiff.text = BlacksmithUpgradeEngine.GetTierEffectShortDescription(_selectedUpgradeTier);
+         if (_blacksmithPreviewReq != null) _blacksmithPreviewReq.text = "";
+         if (_blacksmithSummaryLabel != null) _blacksmithSummaryLabel.text = "Выберите предмет";
+         if (_blacksmithUpgradeBtn != null)
+         {
+             _blacksmithUpgradeBtn.SetEnabled(false);
+             _blacksmithUpgradeBtn.text = "⚒ Улучшить";
+         }
+         return;
+     }
+
+     var opt = targetItem.tierOptions[(int)_selectedUpgradeTier];
+
+     // Обновляем подписи на кнопках оплаты для наглядности цен
+     if (_payWithResBtn != null)
+         _payWithResBtn.text = $"📦 С ресурсом ({opt.playerResourceCount}/{opt.requiredResourceCount}) + {opt.withResourceCreditsCost} CR";
+     if (_payCreditsOnlyBtn != null)
+         _payCreditsOnlyBtn.text = $"💰 Только за кредиты ({opt.creditsOnlyCost} CR)";
+
+     if (_blacksmithPreviewTitle != null)
+         _blacksmithPreviewTitle.text = $"Результат: {opt.previewNewName}";
+
+     if (_blacksmithPreviewDiff != null)
+         _blacksmithPreviewDiff.text = !string.IsNullOrEmpty(opt.previewDiffSummary)
+             ? opt.previewDiffSummary
+             : BlacksmithUpgradeEngine.GetTierEffectShortDescription(_selectedUpgradeTier);
+
+     if (_blacksmithPreviewReq != null)
+     {
+         if (!string.IsNullOrEmpty(opt.lockedReason))
+         {
+             _blacksmithPreviewReq.text = $"🔒 {opt.lockedReason}";
+             _blacksmithPreviewReq.style.color = new Color(0.95f, 0.45f, 0.45f);
+         }
+         else if (_selectedPaymentMode == BlacksmithPaymentMode.WithPlayerResource)
+         {
+             bool enoughRes = opt.resourceItemId > 0 && opt.playerResourceCount >= opt.requiredResourceCount;
+             _blacksmithPreviewReq.text = enoughRes
+                 ? $"✓ Ресурс в рюкзаке: {opt.resourceName} (есть {opt.playerResourceCount}, нужно {opt.requiredResourceCount}) + доплата {opt.withResourceCreditsCost} CR"
+                 : $"⚠ Нужен ресурс «{opt.resourceName}» ({opt.playerResourceCount}/{opt.requiredResourceCount} в рюкзаке) — либо выберите «Только за кредиты ({opt.creditsOnlyCost} CR)»";
+             _blacksmithPreviewReq.style.color = enoughRes ? new Color(0.6f, 0.95f, 0.7f) : new Color(1f, 0.78f, 0.4f);
+         }
+         else
+         {
+             _blacksmithPreviewReq.text = $"Оплата без вашего ресурса (материал кузнеца): {opt.creditsOnlyCost} CR";
+             _blacksmithPreviewReq.style.color = new Color(1f, 0.85f, 0.5f);
+         }
+     }
+
+     // Кнопка действия считает по ВЫБРАННОМУ предмету (_selectedBlacksmithItemId)
+     if (TryFindBlacksmithTargetItem(_selectedBlacksmithItemId, out var selItem) && selItem.tierOptions != null && (int)_selectedUpgradeTier < selItem.tierOptions.Length)
+     {
+         var selOpt = selItem.tierOptions[(int)_selectedUpgradeTier];
+         int costCr = _selectedPaymentMode == BlacksmithPaymentMode.WithPlayerResource
+             ? selOpt.withResourceCreditsCost
+             : selOpt.creditsOnlyCost;
+         float repGain = BlacksmithUpgradeEngine.CalculateReputationGain(costCr);
+
+         if (_blacksmithSummaryLabel != null)
+             _blacksmithSummaryLabel.text = $"К оплате: {costCr} CR   •   Репутация: +{repGain:0.##} ❤/⚑";
+
+         bool hasResIfNeeded = _selectedPaymentMode == BlacksmithPaymentMode.CreditsOnly ||
+                               (selOpt.resourceItemId > 0 && selOpt.playerResourceCount >= selOpt.requiredResourceCount &&
+                                (selOpt.resourceItemId != selItem.itemId || selOpt.playerResourceCount >= selOpt.requiredResourceCount + 1));
+         bool canUpgrade = selOpt.isAllowedByNpc && selOpt.isUnlockedByRep &&
+                           _currentBlacksmithSnapshot.playerCredits + 1e-3f >= costCr &&
+                           hasResIfNeeded;
+
+         if (_blacksmithUpgradeBtn != null)
+         {
+             _blacksmithUpgradeBtn.SetEnabled(canUpgrade);
+             if (!selOpt.isAllowedByNpc)
+                 _blacksmithUpgradeBtn.text = "🔒 Тир недоступен";
+             else if (!selOpt.isUnlockedByRep)
+                 _blacksmithUpgradeBtn.text = "🔒 Уже улучшено / Заблокировано";
+             else if (!hasResIfNeeded)
+                 _blacksmithUpgradeBtn.text = "Нет ресурса в рюкзаке";
+             else
+                 _blacksmithUpgradeBtn.text = $"⚒ Выковать ({costCr} CR)";
+         }
+     }
+ }
+
+ private void OnExecuteBlacksmithUpgradeClicked()
+ {
+     if (!_hasBlacksmithSnapshot || string.IsNullOrEmpty(_currentBlacksmithSnapshot.npcId) || _selectedBlacksmithItemId <= 0)
+         return;
+     QuestClientState.Instance?.RequestBlacksmithUpgrade(
+         _currentBlacksmithSnapshot.npcId,
+         _selectedBlacksmithItemId,
+         _selectedUpgradeTier,
+         _selectedPaymentMode);
+ }
+
+ private bool TryFindBlacksmithTargetItem(int itemId, out BlacksmithTargetItemDto found)
+ {
+     found = default;
+     if (itemId <= 0 || !_hasBlacksmithSnapshot || _currentBlacksmithSnapshot.playerItems == null) return false;
+     var arr = _currentBlacksmithSnapshot.playerItems;
+     for (int i = 0; i < arr.Length; i++)
+     {
+         if (arr[i].itemId == itemId) { found = arr[i]; return true; }
+     }
+     return false;
  }
 
  private void Update()

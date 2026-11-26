@@ -31,6 +31,7 @@ namespace ProjectC.Quests.Editor
         private bool _showQuests = true;
         private bool _showServices = true;
         private bool _showMerchant = true;
+        private bool _showBlacksmith = true;
         private bool _showInteraction = true;
         private bool _showAttitude = true;
         private bool _showAudio = true;
@@ -52,6 +53,7 @@ namespace ProjectC.Quests.Editor
             DrawQuestsBlock(npc);
             DrawServicesBlock();
             DrawMerchantBlock(npc);
+            DrawBlacksmithBlock(npc);
             DrawInteractionBlock();
             DrawAttitudeBlock();
             DrawAudioBlock();
@@ -163,6 +165,15 @@ namespace ProjectC.Quests.Editor
                 sb.Append($"<b>🛒 Shop:</b> <color=#88ffaa>{npc.merchantTable.name} ({npc.merchantTable.items?.Length ?? 0})</color>    ");
             else if ((npc.services & NpcService.Trade) != 0)
                 sb.Append("<b>🛒 Shop:</b> <color=#ffaa55>Trade (empty table)</color>    ");
+
+            // Blacksmith status
+            if (npc.IsBlacksmith)
+            {
+                if (npc.blacksmithAllowAllTiersForTesting)
+                    sb.Append("<b>⚒ Smith:</b> <color=#ffcc33>⚠ ALL TIERS (TEST)</color>    ");
+                else
+                    sb.Append($"<b>⚒ Smith:</b> <color=#88ddff>{npc.EffectiveBlacksmithTiers}</color>    ");
+            }
 
             // Dialog tree
             sb.Append($"<b>💬 Tree:</b> ");
@@ -383,6 +394,7 @@ namespace ProjectC.Quests.Editor
                 DrawServiceChip("Restock", svc.HasFlag(NpcService.Restock));
                 DrawServiceChip("Banking", svc.HasFlag(NpcService.Banking));
                 DrawServiceChip("Healing", svc.HasFlag(NpcService.Healing));
+                DrawServiceChip("Blacksmith", svc.HasFlag(NpcService.Blacksmith));
                 EditorGUILayout.EndHorizontal();
             }
 
@@ -491,6 +503,115 @@ namespace ProjectC.Quests.Editor
             serializedObject.ApplyModifiedProperties();
             EditorUtility.SetDirty(npc);
             EditorGUIUtility.PingObject(table);
+        }
+
+        // ══════════════════════════════════════════
+        // BLOCK: BLACKSMITH / UPGRADE (T-SMITH01)
+        // ══════════════════════════════════════════
+
+        private void DrawBlacksmithBlock(NpcDefinition npc)
+        {
+            _showBlacksmith = DrawBlockHeader("⚒ Blacksmith / Upgrade (Кузнец NPC)", _showBlacksmith);
+            if (!_showBlacksmith) return;
+
+            EditorGUILayout.BeginVertical(BlockBoxStyle);
+
+            var enableProp = serializedObject.FindProperty("enableBlacksmith");
+            var configProp = serializedObject.FindProperty("blacksmithConfig");
+            var tiersProp = serializedObject.FindProperty("blacksmithAllowedTiers");
+            var testAllProp = serializedObject.FindProperty("blacksmithAllowAllTiersForTesting");
+
+            EditorGUILayout.PropertyField(enableProp, new GUIContent("Enable Blacksmith",
+                "Включить кузнеца для этого NPC (улучшает любые pickable items игрока)."));
+
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.PropertyField(configProp, new GUIContent("Blacksmith Config (Optional)",
+                "Ассет NpcBlacksmithConfig для индивидуальных цен и ресурсов тиров."));
+            if (configProp != null && configProp.objectReferenceValue == null)
+            {
+                if (GUILayout.Button("+ Create Config", GUILayout.Width(115), GUILayout.Height(18)))
+                {
+                    CreateBlacksmithConfigForNpc(npc);
+                }
+            }
+            EditorGUILayout.EndHorizontal();
+
+            if (npc.blacksmithConfig == null)
+            {
+                EditorGUILayout.PropertyField(tiersProp, new GUIContent("Allowed Upgrade Tiers",
+                    "Какие металлы/материалы может обрабатывать этот кузнец (Бронза, Сталь, Композит, Антигравий)."));
+            }
+            else
+            {
+                EditorGUILayout.HelpBox(
+                    $"Используется конфиг «{npc.blacksmithConfig.name}»: доступные тиры = {npc.blacksmithConfig.allowedTiers}, " +
+                    $"множитель цен x{npc.blacksmithConfig.priceMultiplier:0.##}.",
+                    MessageType.Info);
+            }
+
+            EditorGUILayout.Space(2);
+            EditorGUILayout.PropertyField(testAllProp, new GUIContent("Allow ALL Tiers (Test Mode)",
+                "WARNING FOR TESTS ONLY: Разрешить этому кузнецу обрабатывать все тиры материалов (Бронза, Сталь, Композит, Антигравий)."));
+
+            if (testAllProp != null && testAllProp.boolValue)
+            {
+                var prevColor = GUI.backgroundColor;
+                GUI.backgroundColor = new Color(1f, 0.65f, 0.15f, 1f);
+                EditorGUILayout.HelpBox(
+                    "⚠️ WARNING FOR TESTS ONLY!\n" +
+                    "Включён тестовый режим кузнеца «Allow ALL Tiers» (blacksmithAllowAllTiersForTesting = true).\n" +
+                    "Кузнец сможет улучшать любые pickable-предметы на все 4 тира (Бронза, Сталь, Композит, Антигравий). " +
+                    "Не оставляйте включённым в продакшене!",
+                    MessageType.Warning);
+                GUI.backgroundColor = prevColor;
+            }
+
+            if (npc.IsMerchant && npc.IsBlacksmith)
+            {
+                EditorGUILayout.HelpBox(
+                    "✨ У этого NPC включены И Магазин, И Кузница одновременно!\n" +
+                    "При нажатии E откроется 3-колоночный интерфейс (Диалог + Магазин + Кузница) с переключателем вкладок.",
+                    MessageType.Info);
+            }
+
+            EditorGUILayout.Space(2);
+            EditorGUILayout.LabelField("📈 Репутация от кузнеца: +0.2 к отношению NPC и его фракции за каждые 100 CR, потраченные игроком (серверная память).",
+                EditorStyles.miniLabel);
+
+            EditorGUILayout.EndVertical();
+        }
+
+        private void CreateBlacksmithConfigForNpc(NpcDefinition npc)
+        {
+            string npcPath = AssetDatabase.GetAssetPath(npc);
+            string folder = "Assets/_Project/Quests/Data/Npcs";
+            if (!string.IsNullOrEmpty(npcPath))
+            {
+                var dir = System.IO.Path.GetDirectoryName(npcPath)?.Replace('\\', '/');
+                if (!string.IsNullOrEmpty(dir)) folder = dir;
+            }
+
+            string safeId = !string.IsNullOrEmpty(npc.npcId) ? npc.npcId : npc.name;
+            string assetPath = AssetDatabase.GenerateUniqueAssetPath($"{folder}/BlacksmithConfig_{safeId}.asset");
+
+            var cfg = ScriptableObject.CreateInstance<NpcBlacksmithConfig>();
+            cfg.smithyTitle = !string.IsNullOrEmpty(npc.displayName) ? $"Кузница: {npc.displayName}" : $"Кузница {safeId}";
+            cfg.allowedTiers = npc.blacksmithAllowedTiers != BlacksmithTierMask.None
+                ? npc.blacksmithAllowedTiers
+                : (BlacksmithTierMask.Bronze | BlacksmithTierMask.Steel);
+            AssetDatabase.CreateAsset(cfg, assetPath);
+            AssetDatabase.SaveAssets();
+
+            serializedObject.Update();
+            var cfgProp = serializedObject.FindProperty("blacksmithConfig");
+            if (cfgProp != null) cfgProp.objectReferenceValue = cfg;
+            var enableProp = serializedObject.FindProperty("enableBlacksmith");
+            if (enableProp != null) enableProp.boolValue = true;
+            var svcProp = serializedObject.FindProperty("services");
+            if (svcProp != null) svcProp.intValue |= (int)NpcService.Blacksmith;
+            serializedObject.ApplyModifiedProperties();
+            EditorUtility.SetDirty(npc);
+            EditorGUIUtility.PingObject(cfg);
         }
 
         private void DrawServiceChip(string name, bool active)

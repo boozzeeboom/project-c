@@ -56,6 +56,19 @@ namespace ProjectC.Quests.Persistence
     }
 
     [Serializable]
+    public class BlacksmithUpgradedItemSaveEntry
+    {
+        public int itemId = 0;
+        public int instanceId = 0;
+        public int upgradedTier = 0; // BlacksmithUpgradeTier
+        public long seed = 0;
+        public string displayName = "";
+        public string statsDiffSummary = "";
+        public int finalPrice = 0;
+        public ProjectC.Items.Variation.ItemVariationBaseStats finalStats;
+    }
+
+    [Serializable]
     public class StringSetSaveEntry
     {
         public string setName = ""; // "eventsOccurred" / "contractsCompleted" / "contractsAccepted" / "npcTalkedTo" / "worldFlags"
@@ -86,5 +99,8 @@ namespace ProjectC.Quests.Persistence
         // === T-MERCH01: Дробные накопители репутации от торговли с NPC (+0.1 за 100 CR) ===
         public List<NpcTradeRepSaveEntry> npcTradeRepRemainders = new List<NpcTradeRepSaveEntry>();
         public List<FactionTradeRepSaveEntry> factionTradeRepRemainders = new List<FactionTradeRepSaveEntry>();
+
+        // === T-SMITH01: Улучшенные у кузнеца предметы игрока (на базе ItemVariation) ===
+        public List<BlacksmithUpgradedItemSaveEntry> upgradedInventoryItems = new List<BlacksmithUpgradedItemSaveEntry>();
     }
 }

@@ -27,11 +27,13 @@ namespace ProjectC.Quests.Client
         // ============ Quest state ============
         public QuestSnapshotDto? CurrentSnapshot { get; private set; }
         public MerchantShopSnapshotDto? CurrentMerchantShop { get; private set; }
+        public BlacksmithShopSnapshotDto? CurrentBlacksmithShop { get; private set; }
 
         // ============ Last action result (для UI feedback) ============
         public QuestResultDto? LastResult { get; private set; }
         public ReputationResultDto? LastReputationResult { get; private set; }
         public MerchantTradeResultDto? LastMerchantTradeResult { get; private set; }
+        public BlacksmithUpgradeResultDto? LastBlacksmithUpgradeResult { get; private set; }
 
         // ============ Events для UI ============
         public event Action<QuestSnapshotDto> OnSnapshotUpdated;
@@ -47,6 +49,10 @@ namespace ProjectC.Quests.Client
         public event Action<MerchantShopSnapshotDto> OnMerchantShopReceived;
         /// <summary>T-MERCH01: server pushed merchant trade buy/sell result.</summary>
         public event Action<MerchantTradeResultDto> OnMerchantTradeResultReceived;
+        /// <summary>T-SMITH01: server pushed blacksmith shop snapshot for DialogWindow.</summary>
+        public event Action<BlacksmithShopSnapshotDto> OnBlacksmithShopReceived;
+        /// <summary>T-SMITH01: server pushed blacksmith upgrade result.</summary>
+        public event Action<BlacksmithUpgradeResultDto> OnBlacksmithUpgradeResultReceived;
 
         private void Awake()
         {
@@ -153,6 +159,36 @@ namespace ProjectC.Quests.Client
         {
             if (string.IsNullOrEmpty(npcId) || itemId <= 0 || quantity <= 0 || QuestServer.Instance == null) return;
             QuestServer.Instance.RequestMerchantSellRpc(npcId, itemId, quantity);
+        }
+
+        /// <summary>T-SMITH01: Server → client handler для снимка кузницы NPC.</summary>
+        public void RaiseOnBlacksmithShopReceived(BlacksmithShopSnapshotDto snapshot)
+        {
+            CurrentBlacksmithShop = snapshot;
+            OnBlacksmithShopReceived?.Invoke(snapshot);
+            if (Debug.isDebugBuild)
+                Debug.Log($"[QuestClientState] RaiseOnBlacksmithShopReceived: npc={snapshot.npcId} items={snapshot.playerItems?.Length ?? 0}");
+        }
+
+        /// <summary>T-SMITH01: Server → client handler для результата улучшения у кузнеца.</summary>
+        public void RaiseOnBlacksmithUpgradeResultReceived(BlacksmithUpgradeResultDto result)
+        {
+            LastBlacksmithUpgradeResult = result;
+            OnBlacksmithUpgradeResultReceived?.Invoke(result);
+            if (Debug.isDebugBuild)
+                Debug.Log($"[QuestClientState] RaiseOnBlacksmithUpgradeResultReceived: npc={result.npcId} code={result.code} msg='{result.message}'");
+        }
+
+        public void RequestBlacksmithShop(string npcId)
+        {
+            if (string.IsNullOrEmpty(npcId) || QuestServer.Instance == null) return;
+            QuestServer.Instance.RequestBlacksmithShopRpc(npcId);
+        }
+
+        public void RequestBlacksmithUpgrade(string npcId, int targetItemId, BlacksmithUpgradeTier tier, BlacksmithPaymentMode paymentMode)
+        {
+            if (string.IsNullOrEmpty(npcId) || targetItemId <= 0 || QuestServer.Instance == null) return;
+            QuestServer.Instance.RequestBlacksmithUpgradeRpc(npcId, targetItemId, (byte)tier, (byte)paymentMode);
         }
 
         // ============================================================

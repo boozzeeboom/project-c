@@ -27,6 +27,10 @@ MonoBehaviour:
   questTurnInRefs:
   - {fileID: 11400000, guid: ccd8acda6ffd33c41b7f7d60bf175b3d, type: 2}
   services: -1
+  merchantTable: {fileID: 0}
+  sellAllItemsForTesting: 1
+  testModeDefaultPrice: 25
+  allowPlayerSellInTestMode: 1
   interactionRadius: 3
   showGreeting: 1
   greetingText: dialogue.npc.mira_01.greeting

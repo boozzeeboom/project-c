@@ -6,6 +6,11 @@
                     <ui:Label name="npc-name" class="dialog-npc-name" text="💬 NPC" />
                     <ui:Label name="npc-attitude" class="dialog-npc-attitude" text="" />
                 </ui:VisualElement>
+                <ui:VisualElement name="service-switcher" class="dialog-service-switcher">
+                    <ui:Button name="view-both-btn" class="service-switch-btn service-switch-btn-active" text="⧉ Магазин + Кузница" />
+                    <ui:Button name="view-shop-btn" class="service-switch-btn" text="🛒 Магазин" />
+                    <ui:Button name="view-smith-btn" class="service-switch-btn" text="⚒ Кузница" />
+                </ui:VisualElement>
                 <ui:ScrollView name="text-scroll" class="dialog-text-scroll">
                     <ui:Label name="text" class="dialog-text" text="" />
                 </ui:ScrollView>
@@ -71,6 +76,53 @@
                         <ui:Button name="trade-action-btn" class="merchant-action-btn" text="Купить" />
                     </ui:VisualElement>
                     <ui:Label name="merchant-status" class="merchant-status" text="" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <ui:VisualElement name="blacksmith-panel" class="blacksmith-panel">
+                <ui:VisualElement class="merchant-header">
+                    <ui:VisualElement class="merchant-title-row">
+                        <ui:Label name="blacksmith-title" class="blacksmith-title" text="⚒ Кузница" />
+                        <ui:Label name="blacksmith-test-badge" class="merchant-test-badge" text="⚠ TEST: ВСЕ ТИРЫ" />
+                    </ui:VisualElement>
+                    <ui:VisualElement class="merchant-stats-row">
+                        <ui:Label name="blacksmith-credits" class="merchant-stat-credits" text="💰 0 CR" />
+                        <ui:Label name="blacksmith-rep-info" class="merchant-stat-rep" text="❤ 0.0 • ⚑ 0.0 (+0.2/100 CR)" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <ui:VisualElement class="merchant-toolbar">
+                    <ui:Label class="blacksmith-section-caption" text="1. Выберите любой предмет из рюкзака:" />
+                    <ui:TextField name="blacksmith-search" class="merchant-search" label="🔍" />
+                </ui:VisualElement>
+
+                <ui:VisualElement name="blacksmith-categories" class="merchant-categories" />
+
+                <ui:ScrollView name="blacksmith-items-scroll" class="blacksmith-items-scroll">
+                    <ui:VisualElement name="blacksmith-items-list" class="merchant-items-list" />
+                </ui:ScrollView>
+
+                <ui:Label class="blacksmith-section-caption" text="2. Выберите металл/тир обработки кузнеца:" />
+                <ui:VisualElement name="blacksmith-tiers-row" class="blacksmith-tiers-row" />
+
+                <ui:Label class="blacksmith-section-caption" text="3. Способ оплаты:" />
+                <ui:VisualElement class="blacksmith-payment-row">
+                    <ui:Button name="pay-with-res-btn" class="blacksmith-pay-btn blacksmith-pay-btn-active" text="📦 Предмет + Ресурс + CR" />
+                    <ui:Button name="pay-credits-only-btn" class="blacksmith-pay-btn" text="💰 Предмет + Только CR (Дороже)" />
+                </ui:VisualElement>
+
+                <ui:VisualElement name="blacksmith-preview-box" class="blacksmith-preview-box">
+                    <ui:Label name="blacksmith-preview-title" class="blacksmith-preview-title" text="Выберите предмет для ковки" />
+                    <ui:Label name="blacksmith-preview-diff" class="blacksmith-preview-diff" text="Кузнец может улучшить любой предмет из вашего инвентаря — от яблока до меча." />
+                    <ui:Label name="blacksmith-preview-req" class="blacksmith-preview-req" text="" />
+                </ui:VisualElement>
+
+                <ui:VisualElement class="merchant-controls-box">
+                    <ui:VisualElement class="merchant-action-row">
+                        <ui:Label name="blacksmith-summary" class="merchant-trade-summary" text="Стоимость: 0 CR" />
+                        <ui:Button name="blacksmith-upgrade-btn" class="blacksmith-upgrade-btn" text="⚒ Улучшить" />
+                    </ui:VisualElement>
+                    <ui:Label name="blacksmith-status" class="merchant-status" text="" />
                 </ui:VisualElement>
             </ui:VisualElement>
         </ui:VisualElement>

@@ -74,6 +74,12 @@ namespace ProjectC.Quests
         /// <summary>Резервный серверный баланс кредитов на случай, если TradeWorld.Repository не поднят в изолированной сцене.</summary>
         private readonly Dictionary<ulong, float> _fallbackCredits = new Dictionary<ulong, float>();
 
+        // === T-SMITH01: Серверная память улучшенных у кузнеца предметов (на базе ItemVariation) ===
+        private readonly Dictionary<(ulong, int), ProjectC.Quests.Persistence.BlacksmithUpgradedItemSaveEntry> _upgradedItemsByPlayerItem
+            = new Dictionary<(ulong, int), ProjectC.Quests.Persistence.BlacksmithUpgradedItemSaveEntry>();
+        private readonly ProjectC.Items.Variation.ItemVariationService _variationService
+            = new ProjectC.Items.Variation.ItemVariationService();
+
         /// <summary>Per-player active dialog session (key: clientId). Содержит treeId+currentNodeId для resume.</summary>
         private readonly Dictionary<ulong, DialogSession> _dialogByPlayer = new Dictionary<ulong, DialogSession>();
 
@@ -471,6 +477,18 @@ namespace ProjectC.Quests
                             customSell = customTuple.customSell;
                             buyLimit = customTuple.currentBuy;
                         }
+                        string displayItemName = itemDef != null && !string.IsNullOrEmpty(itemDef.itemName) ? itemDef.itemName : kvp.Value.name;
+                        if (TryGetPlayerUpgradedItem(clientId, id, out var upgEntry) && upgEntry != null)
+                        {
+                            if (!string.IsNullOrEmpty(upgEntry.displayName))
+                                displayItemName = upgEntry.displayName;
+                            if (upgEntry.finalPrice > 0)
+                            {
+                                customBuy = upgEntry.finalPrice;
+                                customSell = 0;
+                                buyLimit = 0;
+                            }
+                        }
                         int sellP = MerchantPriceResolver.ResolveSellPrice(
                             itemDef, customBuy, customSell, sellBackMult, defaultPrice, buyLimit);
 
@@ -478,7 +496,7 @@ namespace ProjectC.Quests
                         {
                             itemId = id,
                             itemType = kvp.Value.type,
-                            itemName = itemDef != null && !string.IsNullOrEmpty(itemDef.itemName) ? itemDef.itemName : kvp.Value.name,
+                            itemName = displayItemName,
                             ownedCount = kvp.Value.count,
                             sellPrice = sellP
                         });
@@ -724,12 +742,31 @@ namespace ProjectC.Quests
 
             int currentBuyLimit = MerchantPriceResolver.ResolveBuyPrice(
                 itemDef, customBuy, priceMult, defaultPrice, exactAtt, exactRep, enableDiscount, maxDisc);
+            string soldItemName = itemDef.itemName ?? $"Item #{itemId}";
+            if (TryGetPlayerUpgradedItem(clientId, itemId, out var soldUpg) && soldUpg != null)
+            {
+                if (!string.IsNullOrEmpty(soldUpg.displayName))
+                    soldItemName = soldUpg.displayName;
+                if (soldUpg.finalPrice > 0)
+                {
+                    customBuy = soldUpg.finalPrice;
+                    customSell = 0;
+                    currentBuyLimit = 0;
+                }
+            }
             int unitSellPrice = MerchantPriceResolver.ResolveSellPrice(
                 itemDef, customBuy, customSell, sellBackMult, defaultPrice, currentBuyLimit);
 
             var remRes = inv.RemoveItems(clientId, itemId, itemDef.itemType, quantity);
             if (!remRes.IsSuccess)
                 return FailMerchant(MerchantTradeResultCode.ItemNotOwned, false, npc.npcId, itemId, quantity, "Не удалось списать предмет из рюкзака");
+
+            // Если все экземпляры этого предмета проданы — сбрасываем запись улучшения для этого itemId
+            if (inv.CountOf(clientId, itemId) <= 0)
+            {
+                _upgradedItemsByPlayerItem.Remove((clientId, itemId));
+                SavePlayer(clientId);
+            }
 
             int totalEarned = unitSellPrice * quantity;
             float newCredits = GetPlayerCredits(clientId) + totalEarned;
@@ -740,21 +777,409 @@ namespace ProjectC.Quests
             if (curStock >= 0)
                 SetMerchantItemStock(npc.npcId, itemId, curStock + quantity);
 
-            string itemName = itemDef.itemName ?? $"Item #{itemId}";
             return new MerchantTradeResultDto
             {
                 code = (byte)MerchantTradeResultCode.Ok,
                 isBuy = false,
                 npcId = npc.npcId,
                 itemId = itemId,
-                itemName = itemName,
+                itemName = soldItemName,
                 quantity = quantity,
                 totalCreditsDelta = totalEarned,
                 newCredits = newCredits,
                 reputationGain = 0f,
                 newNpcAttitudeExact = exactAtt,
                 newFactionReputationExact = exactRep,
-                message = $"Продано: {itemName} x{quantity} (+{totalEarned} CR)"
+                message = $"Продано: {soldItemName} x{quantity} (+{totalEarned} CR)"
+            };
+        }
+
+        // ============ T-SMITH01: Серверная логика Кузнеца (+0.2 реп за 100 CR) ============
+
+        public bool TryGetPlayerUpgradedItem(
+            ulong clientId,
+            int itemId,
+            out ProjectC.Quests.Persistence.BlacksmithUpgradedItemSaveEntry entry)
+        {
+            return _upgradedItemsByPlayerItem.TryGetValue((clientId, itemId), out entry) && entry != null;
+        }
+
+        /// <summary>
+        /// T-SMITH01: Начислить репутацию с кузнецом и его фракцией со скоростью +0.2 за каждые 100 CR,
+        /// потраченные игроком у кузнеца (= 0.002 за 1 CR).
+        /// </summary>
+        public (float gain, float exactNpcAttitude, float exactFactionRep) ApplyBlacksmithUpgradeReputation(
+            ulong clientId, NpcDefinition npc, int creditsSpentByPlayer)
+        {
+            if (npc == null || string.IsNullOrEmpty(npc.npcId) || creditsSpentByPlayer <= 0)
+            {
+                string id = npc != null ? npc.npcId : "";
+                int fw = npc != null ? npc.EffectiveFactionWireId : 0;
+                return (0f, GetNpcAttitudeExact(clientId, id), GetReputationExact(clientId, fw));
+            }
+
+            float gain = BlacksmithUpgradeEngine.CalculateReputationGain(creditsSpentByPlayer);
+            string npcId = npc.npcId;
+            int factionWireId = npc.EffectiveFactionWireId;
+
+            float npcRem = GetNpcTradeRepRemainder(clientId, npcId) + gain;
+            int wholeNpcDelta = Mathf.FloorToInt(npcRem + 1e-5f);
+            if (wholeNpcDelta >= 1)
+            {
+                npcRem = Mathf.Max(0f, npcRem - wholeNpcDelta);
+                _npcTradeRepRemainder[(clientId, npcId)] = npcRem;
+                ModifyNpcAttitude(clientId, npcId, wholeNpcDelta, npc, Database);
+            }
+            else
+            {
+                _npcTradeRepRemainder[(clientId, npcId)] = npcRem;
+            }
+
+            if (factionWireId > 0 && factionWireId <= byte.MaxValue)
+            {
+                float facRem = GetFactionTradeRepRemainder(clientId, factionWireId) + gain;
+                int wholeFacDelta = Mathf.FloorToInt(facRem + 1e-5f);
+                if (wholeFacDelta >= 1)
+                {
+                    facRem = Mathf.Max(0f, facRem - wholeFacDelta);
+                    _factionTradeRepRemainder[(clientId, factionWireId)] = facRem;
+                    ModifyReputation(clientId, factionWireId, wholeFacDelta);
+                }
+                else
+                {
+                    _factionTradeRepRemainder[(clientId, factionWireId)] = facRem;
+                }
+            }
+
+            SavePlayer(clientId);
+            return (gain, GetNpcAttitudeExact(clientId, npcId), GetReputationExact(clientId, factionWireId));
+        }
+
+        /// <summary>
+        /// T-SMITH01: Построить полный серверный снимок Кузницы NPC для клиента.
+        /// Включает все pickable-предметы в рюкзаке игрока (от яблок и ресурсов до оружия и брони)
+        /// и расчёт всех 4 тиров (Бронза, Сталь, Композит, Антигравий) с двумя режимами оплаты.
+        /// </summary>
+        public BlacksmithShopSnapshotDto BuildBlacksmithShopSnapshot(ulong clientId, NpcDefinition npc)
+        {
+            if (npc == null || !npc.IsBlacksmith)
+            {
+                return new BlacksmithShopSnapshotDto
+                {
+                    npcId = npc != null ? npc.npcId : "",
+                    isBlacksmith = false,
+                    playerItems = Array.Empty<BlacksmithTargetItemDto>()
+                };
+            }
+
+            var inv = ProjectC.Items.InventoryWorld.Instance;
+            float playerCredits = GetPlayerCredits(clientId);
+            int factionWireId = npc.EffectiveFactionWireId;
+            float exactAtt = GetNpcAttitudeExact(clientId, npc.npcId);
+            float exactRep = GetReputationExact(clientId, factionWireId);
+
+            string factionName = "";
+            if (factionWireId > 0)
+            {
+                var fDef = GetFactionCatalog().GetByWireId(factionWireId);
+                factionName = fDef != null && !string.IsNullOrEmpty(fDef.displayName)
+                    ? fDef.displayName
+                    : (npc.factionRef != null ? npc.factionRef.EffectiveFactionKey : npc.faction.ToString());
+            }
+
+            var cfg = npc.blacksmithConfig;
+            BlacksmithTierMask allowedMask = npc.EffectiveBlacksmithTiers;
+            bool enableDisc = cfg != null ? cfg.enableReputationDiscount : true;
+            float maxDisc = cfg != null ? cfg.maxReputationDiscountRatio : 0.20f;
+            float attFactor = MerchantPriceResolver.CalculateAttitudePriceFactor(exactAtt, exactRep, enableDisc, maxDisc);
+            int discountPct = Mathf.RoundToInt((attFactor - 1f) * 100f);
+
+            string smithyTitle = (cfg != null && !string.IsNullOrEmpty(cfg.smithyTitle))
+                ? cfg.smithyTitle
+                : (!string.IsNullOrEmpty(npc.displayName) ? $"Кузница: {Loc.Get(npc.displayName, npc.displayName)}" : $"Кузница {npc.npcId}");
+
+            var itemsList = new List<BlacksmithTargetItemDto>();
+            if (inv != null)
+            {
+                var snap = inv.BuildSnapshot(clientId, null);
+                if (snap.items != null)
+                {
+                    var grouped = new Dictionary<int, (byte type, string name, int count)>();
+                    for (int i = 0; i < snap.items.Length; i++)
+                    {
+                        var it = snap.items[i];
+                        if (it.quantity <= 0 || it.itemId <= 0) continue;
+                        if ((ProjectC.Items.ItemType)it.type == ProjectC.Items.ItemType.Key) continue;
+                        if (grouped.TryGetValue(it.itemId, out var prev))
+                            grouped[it.itemId] = (prev.type, prev.name, prev.count + it.quantity);
+                        else
+                            grouped[it.itemId] = (it.type, it.itemName, it.quantity);
+                    }
+
+                    foreach (var kvp in grouped)
+                    {
+                        int id = kvp.Key;
+                        var itemDef = inv.GetItemDefinition(id);
+                        if (itemDef == null) continue;
+
+                        int curTier = -1;
+                        string dispName = itemDef.itemName ?? kvp.Value.name;
+                        string curStats = MerchantPriceResolver.BuildItemSpecsSummary(itemDef);
+                        if (TryGetPlayerUpgradedItem(clientId, id, out var upg) && upg != null)
+                        {
+                            curTier = upg.upgradedTier;
+                            if (!string.IsNullOrEmpty(upg.displayName))
+                                dispName = upg.displayName;
+                            if (!string.IsNullOrEmpty(upg.statsDiffSummary))
+                                curStats = $"Текущее улучшение: {upg.statsDiffSummary}";
+                        }
+
+                        var tierOpts = new BlacksmithTierOptionDto[4];
+                        for (int ti = 0; ti < 4; ti++)
+                        {
+                            var tierEnum = (BlacksmithUpgradeTier)ti;
+                            bool allowed = BlacksmithUpgradeEngine.IsTierAllowed(allowedMask, tierEnum);
+                            var (unlockedByRep, repReason) = CheckBlacksmithTierRepUnlocked(clientId, npc, cfg, tierEnum);
+                            var (resId, resName, reqResCount, playerResCount) =
+                                BlacksmithUpgradeEngine.ResolveTierResourceForPlayer(clientId, tierEnum, cfg);
+                            var (withResCredits, creditsOnlyCost) =
+                                BlacksmithUpgradeEngine.CalculateUpgradeCosts(itemDef, tierEnum, cfg, exactAtt, exactRep);
+
+                            long previewSeed = ((long)id * 10007L) ^ ((long)(ti + 1) * 99991L);
+                            var previewRes = BlacksmithUpgradeEngine.GenerateUpgradedItemResult(itemDef, id, tierEnum, previewSeed);
+                            string diffSummary = BlacksmithUpgradeEngine.BuildUpgradeDiffSummary(previewRes.baseStats, previewRes.finalStats);
+
+                            string lockMsg = "";
+                            if (!allowed)
+                                lockMsg = "Кузнец не работает с этим материалом";
+                            else if (!unlockedByRep)
+                                lockMsg = repReason;
+                            else if (curTier >= ti)
+                                lockMsg = "Уже улучшено до этого или более высокого тира";
+
+                            tierOpts[ti] = new BlacksmithTierOptionDto
+                            {
+                                tier = (byte)ti,
+                                tierName = BlacksmithUpgradeEngine.GetTierDisplayName(tierEnum),
+                                colorHex = BlacksmithUpgradeEngine.GetTierColorHex(tierEnum),
+                                isAllowedByNpc = allowed,
+                                isUnlockedByRep = unlockedByRep && curTier < ti,
+                                lockedReason = lockMsg,
+                                resourceItemId = resId,
+                                resourceName = resName ?? "",
+                                requiredResourceCount = reqResCount,
+                                playerResourceCount = playerResCount,
+                                withResourceCreditsCost = withResCredits,
+                                creditsOnlyCost = creditsOnlyCost,
+                                previewNewName = previewRes.displayName ?? "",
+                                previewDiffSummary = diffSummary ?? ""
+                            };
+                        }
+
+                        itemsList.Add(new BlacksmithTargetItemDto
+                        {
+                            itemId = id,
+                            itemType = kvp.Value.type,
+                            displayName = dispName,
+                            ownedCount = kvp.Value.count,
+                            currentUpgradeTier = curTier,
+                            currentStatsSummary = curStats,
+                            tierOptions = tierOpts
+                        });
+                    }
+                }
+            }
+
+            return new BlacksmithShopSnapshotDto
+            {
+                npcId = npc.npcId,
+                smithyTitle = smithyTitle,
+                factionDisplayName = factionName,
+                isBlacksmith = true,
+                isTestAllTiersMode = npc.blacksmithAllowAllTiersForTesting,
+                allowedTiersMask = (byte)allowedMask,
+                playerCredits = playerCredits,
+                npcAttitudeExact = exactAtt,
+                factionReputationExact = exactRep,
+                discountPercent = discountPct,
+                playerItems = itemsList.ToArray()
+            };
+        }
+
+        private (bool unlocked, string reason) CheckBlacksmithTierRepUnlocked(
+            ulong clientId, NpcDefinition npc, NpcBlacksmithConfig cfg, BlacksmithUpgradeTier tier)
+        {
+            var entryOverride = cfg != null ? cfg.FindOverride(tier) : null;
+            if (entryOverride == null) return (true, "");
+
+            float exactAtt = GetNpcAttitudeExact(clientId, npc.npcId);
+            if (entryOverride.minNpcAttitude > -100 && exactAtt + 1e-4f < entryOverride.minNpcAttitude)
+                return (false, $"Нужно отношение ❤ {(entryOverride.minNpcAttitude > 0 ? "+" : "")}{entryOverride.minNpcAttitude}");
+
+            int factionWireId = npc.EffectiveFactionWireId;
+            if (factionWireId > 0 && entryOverride.minFactionReputation > -100)
+            {
+                float exactRep = GetReputationExact(clientId, factionWireId);
+                if (exactRep + 1e-4f < entryOverride.minFactionReputation)
+                    return (false, $"Нужна репутация ⚑ {(entryOverride.minFactionReputation > 0 ? "+" : "")}{entryOverride.minFactionReputation}");
+            }
+            return (true, "");
+        }
+
+        /// <summary>
+        /// T-SMITH01: Серверная обработка улучшения предмета у кузнеца.
+        /// Начисляет +0.2 отношения с NPC и +0.2 репутации его фракции за каждые 100 CR.
+        /// </summary>
+        public BlacksmithUpgradeResultDto TryBlacksmithUpgrade(
+            ulong clientId,
+            NpcDefinition npc,
+            int targetItemId,
+            BlacksmithUpgradeTier targetTier,
+            BlacksmithPaymentMode paymentMode)
+        {
+            if (npc == null)
+                return FailBlacksmith(BlacksmithUpgradeResultCode.NpcNotFound, "", targetItemId, targetTier, paymentMode, "NPC не найден");
+            if (!npc.IsBlacksmith)
+                return FailBlacksmith(BlacksmithUpgradeResultCode.NotBlacksmith, npc.npcId, targetItemId, targetTier, paymentMode, "Этот NPC не является кузнецом");
+            if (targetItemId <= 0)
+                return FailBlacksmith(BlacksmithUpgradeResultCode.InvalidArgs, npc.npcId, targetItemId, targetTier, paymentMode, "Предмет не выбран");
+
+            BlacksmithTierMask allowedMask = npc.EffectiveBlacksmithTiers;
+            if (!BlacksmithUpgradeEngine.IsTierAllowed(allowedMask, targetTier))
+                return FailBlacksmith(BlacksmithUpgradeResultCode.TierNotSupported, npc.npcId, targetItemId, targetTier, paymentMode,
+                    $"Кузнец не умеет работать с материалом «{BlacksmithUpgradeEngine.GetTierDisplayName(targetTier)}»");
+
+            var inv = ProjectC.Items.InventoryWorld.Instance;
+            if (inv == null)
+                return FailBlacksmith(BlacksmithUpgradeResultCode.InternalError, npc.npcId, targetItemId, targetTier, paymentMode, "Инвентарь не инициализирован");
+
+            var itemDef = inv.GetItemDefinition(targetItemId);
+            if (itemDef == null || itemDef.itemType == ProjectC.Items.ItemType.Key)
+                return FailBlacksmith(BlacksmithUpgradeResultCode.InvalidArgs, npc.npcId, targetItemId, targetTier, paymentMode, "Этот предмет нельзя улучшить");
+
+            int ownedTargetCount = inv.CountOf(clientId, targetItemId);
+            if (ownedTargetCount <= 0)
+                return FailBlacksmith(BlacksmithUpgradeResultCode.ItemNotOwned, npc.npcId, targetItemId, targetTier, paymentMode, "Предмет отсутствует в вашем рюкзаке");
+
+            if (TryGetPlayerUpgradedItem(clientId, targetItemId, out var existingUpg) && existingUpg != null)
+            {
+                if (existingUpg.upgradedTier >= (int)targetTier)
+                    return FailBlacksmith(BlacksmithUpgradeResultCode.AlreadyAtOrAboveTier, npc.npcId, targetItemId, targetTier, paymentMode,
+                        "Предмет уже улучшен до этого или более высокого тира");
+            }
+
+            var cfg = npc.blacksmithConfig;
+            var (unlockedByRep, repReason) = CheckBlacksmithTierRepUnlocked(clientId, npc, cfg, targetTier);
+            if (!unlockedByRep)
+                return FailBlacksmith(BlacksmithUpgradeResultCode.RequirementsNotMet, npc.npcId, targetItemId, targetTier, paymentMode, repReason);
+
+            int factionWireId = npc.EffectiveFactionWireId;
+            float exactAtt = GetNpcAttitudeExact(clientId, npc.npcId);
+            float exactRep = GetReputationExact(clientId, factionWireId);
+
+            var (withResCredits, creditsOnlyCost) =
+                BlacksmithUpgradeEngine.CalculateUpgradeCosts(itemDef, targetTier, cfg, exactAtt, exactRep);
+
+            int requiredCredits = paymentMode == BlacksmithPaymentMode.WithPlayerResource
+                ? withResCredits
+                : creditsOnlyCost;
+
+            float playerCredits = GetPlayerCredits(clientId);
+            if (playerCredits + 1e-3f < requiredCredits)
+                return FailBlacksmith(BlacksmithUpgradeResultCode.InsufficientCredits, npc.npcId, targetItemId, targetTier, paymentMode,
+                    $"Недостаточно кредитов: нужно {requiredCredits} CR, у вас {Mathf.FloorToInt(playerCredits)} CR");
+
+            // Если выбран режим "Предмет + Ресурс игрока + Доп. кредиты" — проверяем и списываем ресурс
+            if (paymentMode == BlacksmithPaymentMode.WithPlayerResource)
+            {
+                var (resId, resName, reqResCount, playerResCount) =
+                    BlacksmithUpgradeEngine.ResolveTierResourceForPlayer(clientId, targetTier, cfg);
+
+                // Если улучшаемый предмет и есть тот самый ресурс (например, игрок улучшает сам слиток бронзы бронзой),
+                // то нужно иметь в рюкзаке на 1 штуку больше (1 как предмет + reqResCount как расходный ресурс)!
+                int neededInBag = (resId == targetItemId) ? (reqResCount + 1) : reqResCount;
+                if (resId <= 0 || playerResCount < neededInBag)
+                {
+                    return FailBlacksmith(BlacksmithUpgradeResultCode.MissingResource, npc.npcId, targetItemId, targetTier, paymentMode,
+                        $"Не хватает ресурса «{resName}» ({playerResCount}/{neededInBag} в рюкзаке). Выберите опцию «Только за кредиты» или добудьте ресурс.");
+                }
+
+                var resDef = inv.GetItemDefinition(resId);
+                var remRes = inv.RemoveItems(clientId, resId, resDef != null ? resDef.itemType : ProjectC.Items.ItemType.Resources, reqResCount);
+                if (!remRes.IsSuccess)
+                {
+                    return FailBlacksmith(BlacksmithUpgradeResultCode.MissingResource, npc.npcId, targetItemId, targetTier, paymentMode,
+                        $"Не удалось списать ресурс «{resName}»");
+                }
+            }
+
+            // Списываем кредиты
+            float newCredits = Mathf.Max(0f, playerCredits - requiredCredits);
+            SetPlayerCredits(clientId, newCredits);
+
+            // Генерируем улучшенный предмет на базе ItemVariationGenerator
+            long seed = ((long)clientId * 31337L) ^ ((long)targetItemId * 10007L) ^ ((long)((int)targetTier + 1) * 99991L);
+            var varResult = BlacksmithUpgradeEngine.GenerateUpgradedItemResult(itemDef, targetItemId, targetTier, seed);
+            int instanceId = _variationService.Instances.Add(varResult);
+            var instanceDto = ProjectC.Items.Variation.Dto.ItemInstanceDto.FromResult(varResult, instanceId);
+            string diffSummary = BlacksmithUpgradeEngine.BuildUpgradeDiffSummary(varResult.baseStats, varResult.finalStats);
+
+            _upgradedItemsByPlayerItem[(clientId, targetItemId)] = new ProjectC.Quests.Persistence.BlacksmithUpgradedItemSaveEntry
+            {
+                itemId = targetItemId,
+                instanceId = instanceId,
+                upgradedTier = (int)targetTier,
+                seed = seed,
+                displayName = varResult.displayName ?? itemDef.itemName,
+                statsDiffSummary = diffSummary,
+                finalPrice = varResult.finalPrice,
+                finalStats = varResult.finalStats
+            };
+
+            // Начисляем +0.2 отношения с NPC и +0.2 репутации его фракции за каждые 100 CR
+            var (repGain, newExactAtt, newExactRep) = ApplyBlacksmithUpgradeReputation(clientId, npc, requiredCredits);
+
+            string msg = $"⚒ Выковано: {varResult.displayName}! ({diffSummary}) [−{requiredCredits} CR, +{repGain:0.##} ❤/⚑]";
+            return new BlacksmithUpgradeResultDto
+            {
+                code = (byte)BlacksmithUpgradeResultCode.Ok,
+                npcId = npc.npcId,
+                itemId = targetItemId,
+                upgradedToTier = (byte)targetTier,
+                paymentMode = (byte)paymentMode,
+                upgradedDisplayName = varResult.displayName ?? itemDef.itemName,
+                statsDiffSummary = diffSummary,
+                creditsSpent = requiredCredits,
+                newCredits = newCredits,
+                reputationGain = repGain,
+                newNpcAttitudeExact = newExactAtt,
+                newFactionReputationExact = newExactRep,
+                upgradedInstance = instanceDto,
+                message = msg
+            };
+        }
+
+        private static BlacksmithUpgradeResultDto FailBlacksmith(
+            BlacksmithUpgradeResultCode code,
+            string npcId,
+            int itemId,
+            BlacksmithUpgradeTier tier,
+            BlacksmithPaymentMode mode,
+            string msg)
+        {
+            return new BlacksmithUpgradeResultDto
+            {
+                code = (byte)code,
+                npcId = npcId ?? "",
+                itemId = itemId,
+                upgradedToTier = (byte)tier,
+                paymentMode = (byte)mode,
+                upgradedDisplayName = "",
+                statsDiffSummary = "",
+                creditsSpent = 0,
+                newCredits = -1f,
+                reputationGain = 0f,
+                message = msg ?? code.ToString()
             };
         }
 
@@ -2170,6 +2595,13 @@ namespace ProjectC.Quests
                 });
             }
 
+            // T-SMITH01: сохраняем улучшенные у кузнеца предметы игрока
+            foreach (var kv in _upgradedItemsByPlayerItem)
+            {
+                if (kv.Key.Item1 != clientId || kv.Value == null) continue;
+                data.upgradedInventoryItems.Add(kv.Value);
+            }
+
             return data;
         }
 
@@ -2223,6 +2655,9 @@ namespace ProjectC.Quests
             var facRemToRemove = new List<(ulong, int)>();
             foreach (var kv in _factionTradeRepRemainder) if (kv.Key.Item1 == clientId) facRemToRemove.Add(kv.Key);
             foreach (var k in facRemToRemove) _factionTradeRepRemainder.Remove(k);
+            var upgToRemove = new List<(ulong, int)>();
+            foreach (var kv in _upgradedItemsByPlayerItem) if (kv.Key.Item1 == clientId) upgToRemove.Add(kv.Key);
+            foreach (var k in upgToRemove) _upgradedItemsByPlayerItem.Remove(k);
 
             // Apply quests
             if (data.quests != null)
@@ -2364,6 +2799,17 @@ namespace ProjectC.Quests
                 }
             }
 
+            // T-SMITH01: restore blacksmith upgraded items
+            if (data.upgradedInventoryItems != null)
+            {
+                for (int i = 0; i < data.upgradedInventoryItems.Count; i++)
+                {
+                    var e = data.upgradedInventoryItems[i];
+                    if (e != null && e.itemId > 0)
+                        _upgradedItemsByPlayerItem[(clientId, e.itemId)] = e;
+                }
+            }
+
             if (Debug.isDebugBuild) Debug.Log($"[QuestWorld] LoadPlayer: client={clientId} restored {data.quests?.Count ?? 0} quests, {data.reputation?.Count ?? 0} factions, {data.npcAttitude?.Count ?? 0} npcAttitudes");
             return true;
         }
@@ -2422,6 +2868,8 @@ namespace ProjectC.Quests
             _factionTradeRepRemainder.Clear();
             _merchantRuntimeStock.Clear();
             _fallbackCredits.Clear();
+            _upgradedItemsByPlayerItem.Clear();
+            _variationService.ClearInstances();
         }
     }
 }

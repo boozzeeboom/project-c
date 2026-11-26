@@ -238,7 +238,7 @@ namespace ProjectC.Quests
             int offerCount = offerIds.Length;
             int turnInCount = turnInIds.Length;
             string greeting = npc.showGreeting ? npc.greetingText : "";
-            if (offerCount == 0 && turnInCount == 0 && string.IsNullOrEmpty(greeting) && !npc.IsMerchant) return null;
+            if (offerCount == 0 && turnInCount == 0 && string.IsNullOrEmpty(greeting) && !npc.IsMerchant && !npc.IsBlacksmith) return null;
 
             var w = QuestWorld.Instance;
             var nodes = new System.Collections.Generic.List<ProjectC.Dialogue.DialogueNode>();
@@ -571,6 +571,12 @@ namespace ProjectC.Quests
             {
                 SendMerchantShopSnapshotToClient(clientId, npc);
             }
+
+            // T-SMITH01: если NPC является кузнецом — сразу отправляем снапшот кузницы
+            if (npc.IsBlacksmith)
+            {
+                SendBlacksmithShopSnapshotToClient(clientId, npc);
+            }
         }
 
         /// <summary>
@@ -773,6 +779,8 @@ namespace ProjectC.Quests
             }
 
             SendMerchantShopSnapshotToClient(clientId, npc);
+            if (npc.IsBlacksmith)
+                SendBlacksmithShopSnapshotToClient(clientId, npc);
             SendMerchantTradeResultToClient(clientId, result);
         }
 
@@ -838,9 +846,98 @@ namespace ProjectC.Quests
             }
 
             SendMerchantShopSnapshotToClient(clientId, npc);
+            if (npc.IsBlacksmith)
+                SendBlacksmithShopSnapshotToClient(clientId, npc);
             SendMerchantTradeResultToClient(clientId, result);
         }
 
+        // ============================================================
+        // T-SMITH01: Blacksmith Upgrade RPCs (server-authoritative NPC blacksmith)
+        // ============================================================
+
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
+        public void RequestBlacksmithShopRpc(string npcId, RpcParams rpcParams = default)
+        {
+            ulong clientId = rpcParams.Receive.SenderClientId;
+            if (!CheckRateLimit(clientId)) return;
+            if (QuestWorld.Instance == null || questDatabase == null || string.IsNullOrEmpty(npcId)) return;
+
+            var npc = questDatabase.GetNpc(npcId);
+            if (npc == null || !npc.IsBlacksmith) return;
+
+            var npcCtrl = NpcController.Find(npcId);
+            if (npcCtrl != null && !npcCtrl.IsWithinDistance(GetPlayerPosition(clientId)))
+                return;
+
+            SendBlacksmithShopSnapshotToClient(clientId, npc);
+        }
+
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
+        public void RequestBlacksmithUpgradeRpc(string npcId, int targetItemId, byte targetTierByte, byte paymentModeByte, RpcParams rpcParams = default)
+        {
+            ulong clientId = rpcParams.Receive.SenderClientId;
+            if (!CheckRateLimit(clientId))
+            {
+                SendBlacksmithUpgradeResultToClient(clientId, new BlacksmithUpgradeResultDto
+                {
+                    code = (byte)BlacksmithUpgradeResultCode.RateLimited,
+                    npcId = npcId ?? "",
+                    itemId = targetItemId,
+                    upgradedToTier = targetTierByte,
+                    paymentMode = paymentModeByte,
+                    message = "Слишком частые запросы, подождите"
+                });
+                return;
+            }
+            if (QuestWorld.Instance == null || questDatabase == null || string.IsNullOrEmpty(npcId)) return;
+
+            var npc = questDatabase.GetNpc(npcId);
+            if (npc == null)
+            {
+                SendBlacksmithUpgradeResultToClient(clientId, new BlacksmithUpgradeResultDto
+                {
+                    code = (byte)BlacksmithUpgradeResultCode.NpcNotFound,
+                    npcId = npcId,
+                    itemId = targetItemId,
+                    upgradedToTier = targetTierByte,
+                    paymentMode = paymentModeByte,
+                    message = "NPC не найден"
+                });
+                return;
+            }
+
+            var npcCtrl = NpcController.Find(npcId);
+            if (npcCtrl != null && !npcCtrl.IsWithinDistance(GetPlayerPosition(clientId)))
+            {
+                SendBlacksmithUpgradeResultToClient(clientId, new BlacksmithUpgradeResultDto
+                {
+                    code = (byte)BlacksmithUpgradeResultCode.TooFarFromNpc,
+                    npcId = npcId,
+                    itemId = targetItemId,
+                    upgradedToTier = targetTierByte,
+                    paymentMode = paymentModeByte,
+                    message = "Вы слишком далеко от кузнеца"
+                });
+                return;
+            }
+
+            var tier = (BlacksmithUpgradeTier)Mathf.Clamp(targetTierByte, 0, 3);
+            var mode = (BlacksmithPaymentMode)Mathf.Clamp(paymentModeByte, 0, 1);
+            var result = QuestWorld.Instance.TryBlacksmithUpgrade(clientId, npc, targetItemId, tier, mode);
+            if (result.IsSuccess)
+            {
+                if (ProjectC.Items.Network.InventoryServer.Instance != null)
+                    ProjectC.Items.Network.InventoryServer.Instance.PushSnapshot(clientId);
+                if (ProjectC.Trade.Network.ContractServer.Instance != null)
+                    ProjectC.Trade.Network.ContractServer.Instance.PushPlayerSnapshot(clientId);
+                BroadcastBothChange(clientId);
+            }
+
+            SendBlacksmithShopSnapshotToClient(clientId, npc);
+            if (npc.IsMerchant)
+                SendMerchantShopSnapshotToClient(clientId, npc);
+            SendBlacksmithUpgradeResultToClient(clientId, result);
+        }
         /// <summary>
         /// Player explicitly accepts a quest (either via dialog OfferQuest action or
         /// CharacterWindow "Accept" button на Discovered квесте).
@@ -1347,6 +1444,7 @@ namespace ProjectC.Quests
                 ? questDatabase.GetNpc(merchantNpcId)
                 : null;
             bool hasMerchant = merchantNpcDef != null && merchantNpcDef.IsMerchant;
+            bool hasBlacksmith = merchantNpcDef != null && merchantNpcDef.IsBlacksmith;
 
             return new DialogStepDto
             {
@@ -1357,7 +1455,8 @@ namespace ProjectC.Quests
                 speakerText = speakerText,
                 options = options,
                 isEnd = false,
-                hasMerchant = hasMerchant
+                hasMerchant = hasMerchant,
+                hasBlacksmith = hasBlacksmith
             };
             }
             catch (System.Exception e)
@@ -1905,6 +2004,22 @@ namespace ProjectC.Quests
             var netPlayer = FindNetworkPlayer(clientId);
             if (netPlayer == null) return;
             netPlayer.ReceiveMerchantTradeResultTargetRpc(result);
+        }
+
+        private void SendBlacksmithShopSnapshotToClient(ulong clientId, NpcDefinition npc)
+        {
+            if (QuestWorld.Instance == null || npc == null) return;
+            var netPlayer = FindNetworkPlayer(clientId);
+            if (netPlayer == null) return;
+            var snap = QuestWorld.Instance.BuildBlacksmithShopSnapshot(clientId, npc);
+            netPlayer.ReceiveBlacksmithShopSnapshotTargetRpc(snap);
+        }
+
+        private void SendBlacksmithUpgradeResultToClient(ulong clientId, BlacksmithUpgradeResultDto result)
+        {
+            var netPlayer = FindNetworkPlayer(clientId);
+            if (netPlayer == null) return;
+            netPlayer.ReceiveBlacksmithUpgradeResultTargetRpc(result);
         }
     }
 }

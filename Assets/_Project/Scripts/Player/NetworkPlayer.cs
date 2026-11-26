@@ -2791,6 +2791,18 @@ namespace ProjectC.Player
             ProjectC.Quests.Client.QuestClientState.Instance?.RaiseOnMerchantTradeResultReceived(result);
         }
 
+        [Rpc(SendTo.Owner)]
+        public void ReceiveBlacksmithShopSnapshotTargetRpc(ProjectC.Quests.Dto.BlacksmithShopSnapshotDto snapshot, RpcParams rpcParams = default)
+        {
+            ProjectC.Quests.Client.QuestClientState.Instance?.RaiseOnBlacksmithShopReceived(snapshot);
+        }
+
+        [Rpc(SendTo.Owner)]
+        public void ReceiveBlacksmithUpgradeResultTargetRpc(ProjectC.Quests.Dto.BlacksmithUpgradeResultDto result, RpcParams rpcParams = default)
+        {
+            ProjectC.Quests.Client.QuestClientState.Instance?.RaiseOnBlacksmithUpgradeResultReceived(result);
+        }
+
         public void RequestEndConversation()
         {
             ProjectC.Quests.QuestServer.Instance?.RequestEndConversationRpc();

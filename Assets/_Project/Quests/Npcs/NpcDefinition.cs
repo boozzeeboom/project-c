@@ -49,7 +49,8 @@ namespace ProjectC.Quests
         Refuel = 1 << 2,     // заправка / пополнение расходников
         Restock = 1 << 3,    // пополнение стандартного ассортимента
         Banking = 1 << 4,    // (future) кредиты / escrow
-        Healing = 1 << 5     // (future) лечение / статус-effects
+        Healing = 1 << 5,    // (future) лечение / статус-effects
+        Blacksmith = 1 << 6  // T-SMITH01: кузнец (улучшение любых pickable items)
     }
 
     /// <summary>
@@ -164,6 +165,45 @@ namespace ProjectC.Quests
             sellAllItemsForTesting ||
             merchantTable != null ||
             (services & NpcService.Trade) != 0;
+
+        [Header("Blacksmith / Upgrade (T-SMITH01)")]
+        [Tooltip("Включить сервис Кузнеца у этого NPC (улучшает любые pickable items игрока бронзой, сталью, композитом, антигравием).")]
+        public bool enableBlacksmith = false;
+
+        [Tooltip("Опциональный ассет тонкой настройки кузнеца (Create > ProjectC > Quests > NPC Blacksmith Config).")]
+        public NpcBlacksmithConfig blacksmithConfig;
+
+        [Tooltip("Какие тиры материалов может обрабатывать этот кузнец (если не переопределено в blacksmithConfig).")]
+        public BlacksmithTierMask blacksmithAllowedTiers = BlacksmithTierMask.Bronze | BlacksmithTierMask.Steel;
+
+        [Tooltip("WARNING FOR TESTS ONLY: Разрешить этому кузнецу обрабатывать ВСЕ тиры материалов (Бронза, Сталь, Композит, Антигравий) для тестов.")]
+        public bool blacksmithAllowAllTiersForTesting = false;
+
+        /// <summary>
+        /// Является ли данный NPC кузнецом (открывать ли блок кузницы при нажатии E).
+        /// </summary>
+        public bool IsBlacksmith =>
+            enableBlacksmith ||
+            blacksmithAllowAllTiersForTesting ||
+            blacksmithConfig != null ||
+            (services & NpcService.Blacksmith) != 0;
+
+        /// <summary>
+        /// Итоговая маска доступных тиров улучшения у этого кузнеца.
+        /// </summary>
+        public BlacksmithTierMask EffectiveBlacksmithTiers
+        {
+            get
+            {
+                if (blacksmithAllowAllTiersForTesting)
+                    return BlacksmithTierMask.All;
+                if (blacksmithConfig != null && blacksmithConfig.allowedTiers != BlacksmithTierMask.None)
+                    return blacksmithConfig.allowedTiers;
+                return blacksmithAllowedTiers != BlacksmithTierMask.None
+                    ? blacksmithAllowedTiers
+                    : (BlacksmithTierMask.Bronze | BlacksmithTierMask.Steel);
+            }
+        }
 
         [Header("Interaction")]
         [Tooltip("Радиус interact в метрах (E-key pipeline, T-Q08)")]

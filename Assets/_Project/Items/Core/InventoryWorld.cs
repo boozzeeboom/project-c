@@ -927,12 +927,21 @@ namespace ProjectC.Items
                         string name = null;
                         if (_itemDatabase.TryGetValue(id, out var def))
                             name = def.itemName;
+                        int instId = 0;
+                        var qw = ProjectC.Quests.QuestWorld.Instance;
+                        if (qw != null && qw.TryGetPlayerUpgradedItem(clientId, id, out var upg) && upg != null)
+                        {
+                            instId = upg.instanceId;
+                            if (!string.IsNullOrEmpty(upg.displayName))
+                                name = upg.displayName;
+                        }
                         items.Add(new InventoryItemDto
                         {
                             itemId    = id,
                             type      = (byte)type,
                             quantity  = 1,
                             slotIndex = slotIndex++,
+                            instanceId = instId,
                             itemName  = name ?? $"Item#{id}",
                         });
                     }

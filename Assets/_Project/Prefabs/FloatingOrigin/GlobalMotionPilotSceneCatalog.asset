@@ -321,15 +321,20 @@ MonoBehaviour:
         layoutHash: b78284cd6e66a2f72679523106b7a2f0620a36b9d00182cfe768128095d27166
     - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
       assetPath: Assets/_Project/Scenes/World/WorldScene_0_0.unity
-      dependencyHash: aa77f848e44ea19f8d687163a3538127
+      dependencyHash: b4c5b9c64cc965c48d10e535d42ff7a1
       inspectedComplete: 1
       saved: 1
       observations:
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:1166050885:0
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: f014b63304c91468c4ddb09a0755f94c314718fc677c04b3461c3bec646fc142
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:1171079311907173941:1418405993
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: ab61011b42d0f3a8b40d195250f00ebeb397946d18e5b56b7391fdb38a587854
+        layoutHash: 3eeef9a80f3a3fe9e4f9eb8924a32101927392fc56740062e9e05f7803964bcb
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:1177720397:0
         parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
         isRoot: 0
@@ -359,7 +364,7 @@ MonoBehaviour:
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 0
-        layoutHash: 38f2d0fab481364870ad9705f1fe47db6a4feecc4e03625555c5405645007992
+        layoutHash: 4ae6b763c889ea0e1dbbe6a7587e1b9fe862231a15c73f982a440792c88715d2
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:1505408850:0
         parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
         isRoot: 0
@@ -369,7 +374,7 @@ MonoBehaviour:
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: 6f7222b50f74dc45d1201575f61871702099a54b183c9b139eddf3a961494ed3
+        layoutHash: a83bf5e4c18d6adc2f0cb4c3f05bca8ad997956342442893bb7aca1c123f2564
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:1631178272:0
         parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
         isRoot: 0
@@ -389,7 +394,7 @@ MonoBehaviour:
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 0
-        layoutHash: d6c1b0fdc7f1ecd4a3451955ff1fca314e905f818ec35bf89ab3ae8d80d2883b
+        layoutHash: cab0da0e86aec03ba613bee754e95f881bc4659ab96d080b89a678074b8ae1df
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:1987571259:0
         parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
         isRoot: 0
@@ -409,12 +414,22 @@ MonoBehaviour:
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: be8a0cd01e8e6f142714c1eee5ca2b691610636b9f81072907aefaf313b2f0fa
+        layoutHash: 8667122d2f80bede6222ca034b340156a532ef7aab15a145aa5bdb56a27162de
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:242449662:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: efd8b429db080ddbf97620aba3fa64a38e923aa2170242536ff7e42337b1a7c5
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:337059921531908604:1170723420
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
         layoutHash: 61b3f1c9142d7390793168677785719d4b938fa78d8b07a91ae66ed2c163d34a
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:337059921531908604:154670443
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 1
+        layoutHash: 684aa1985bb53f877c25746463438824561afd9adbfc70862b1d3887eb6a505b
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:337059921531908604:8645957853286282446
         parentSourceId: 
         isRoot: 1
@@ -424,12 +439,12 @@ MonoBehaviour:
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: 9df39605d020e2aecc254fc502c69b3a7e805ffd786c3cf086a01fbb3dd893b3
+        layoutHash: 48404c807f53e81478800a145e569e156c4977fe930c2c7dac3a8ebd233b996c
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:409003302271648103:2066362739
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: e1aba56a1beed236380c93bc1ce642dae7013e6b7084dcd31f865e1a492b711a
+        layoutHash: c986e0e242a937a7b1b6015116b0382f4ff6bb6a85b49b9b62c398f0caf37741
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:409548021:0
         parentSourceId: 
         isRoot: 1
@@ -439,22 +454,22 @@ MonoBehaviour:
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: 02ee9a670007bdda09dbf95f447898a09a9e97e2ff93538c00e658f59d6c84c7
+        layoutHash: a553288b8de512cd7b755b45138cc43eda564a88a2548a93e4cb594be4831fcd
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:4375928684233543869:1485405139
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: 2cb9d7dc6f4f72952e96d0edfdfddfb9da69a22568678000d71e2c3198c71c5d
+        layoutHash: 439cab7943d754823b3611588993a154916cd6bcc1e638169917ad0967b0d8c2
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:4794494763504228605:453181472
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: 22b59261766131accf30fa5f40fccc32a95939d72ddb1637f2c40e8d9fd8067b
+        layoutHash: d94d4f31cf7627208bd27af7018bc9aa64d755ca42607508c0c96ccf6d5465ad
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:5280015872767050384:1832724165
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: 1d2e3a0224fd8823a287db8954b11701ce2dc219065f69269178d336128296ce
+        layoutHash: f8f22770c086c1e28d3d6575b37973093ca3ff09505e6ddc6d7232666a2a7fe9
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:5886009066709116313:1417069060
         parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
         isRoot: 0
@@ -514,37 +529,37 @@ MonoBehaviour:
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: 6715909d158972de56572db26e70ed59a0d21a5f69af1725d33b1e2d70a100be
+        layoutHash: ea10502333b58c47abca10382d429e048a8a494708ea12304304f89ce403dec8
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:5962711429974873311:1526862534
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: 7a7f66ffb65568738c8385be1dca37f9d7a38b5e8df40e03bee19207ea7314fb
+        layoutHash: 54a0a5152b6f32db82c0439516bceca65b59e213194a49f2ba6deb6f0f79b8c2
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:6314410203132540618:744699252
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: 9efb731cee45759659b444ca844f640c71ac441b3c09c66059d5856bafd16e04
+        layoutHash: aa9ac5555c24db9157500665810680b0594796843bbc495aece984ec25fc0020
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:6321653361273976007:1230577403
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: 11e5e04f05a2aaa6bed2b821a4120f56a2dd6293e087a5fc1d9f1f87a0dd3ab3
+        layoutHash: c8c4cfab8c267f8607e3afa0c939a3a9caeef2667be0f12ab4822eebf7225d49
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:6368427781584931994:1961728343
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: 11acd3aaf0123f0a6ccf7b714a5562522e5f427b5b163b1e20d21250b7f31b7a
+        layoutHash: 25cdfe38c13bbb0942e0ee74dcaa080ff26c7c0e3d400e0ff1813cc2b2f88746
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:6423233993187137997:1961986156
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: 41ed86da4697d11981fc9630c24cd26a6c56a92d5d60bdfe73b22e0560d6e9a8
+        layoutHash: 0d7f70287a951232c7316c0ea0b96af7f7747d297cb02beafba96ba559edb5d3
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 0
-        layoutHash: 5763923122e1f708ad92e2e14e5e4ac84988b700b6c23982d09e96737ff41383
+        layoutHash: 771f768625111f968e383a9721fd0d6b62b62dca9edbbb1c6fa28a317425f774
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:666140169:0
         parentSourceId: 
         isRoot: 1
@@ -554,17 +569,22 @@ MonoBehaviour:
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: 443734122b129c2234257168a344fa25c8e4db23071530f2a2c0a691591d82b1
+        layoutHash: 6a9fb2b6157edf74ad2039a4fe79de7d1c5614249d6ec9797523d264682cf465
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:698596844:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: 0217d6c60ddfb3d69be2756017e3b4a571d3768fa06b6bf913c6239c13fbf968
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:7069497028711984000:1553188250
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: 6ad1e15eb1f81c5fd9e1a1838d2b8c4621e08b648cbc645e4e0c90a0f40f8509
+        layoutHash: 188a24cc6ba32e9db7df60f4aba518181fc54cf442d82c5ebebaafe90a442f41
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:7136846278023162379:542155640
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: 2b03fc43dab93f4898867f379e74c2bfe1b0a0b65758a6f79057d57e3818f5a0
+        layoutHash: 1b4e52260fab9e0eda5ad0dd126cd3022b01ce5e2176c87909bb03e89b51704d
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:7747837703169966031:1154386615
         parentSourceId: 837a3910185f2b9478ce71df025ccc7c:1177720397:0
         isRoot: 0
@@ -609,17 +629,142 @@ MonoBehaviour:
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: 22a3f176130010aa3945fa3b1fde901cab5a7ca9b1aa24cd2538697fae72b539
+        layoutHash: 84eb56547cbfbc181ae72fe38968e7eebb7d64f0feec7d5d5b0b043493ff2b90
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:834841855:0
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: c24e2f126c79199335c4d2c6491656742b2e4c34368ec3fd2f20f4fd2fe692b6
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1008270019
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 8aed9a1fb56dcf9b3782fc27606d4c37d89ab20409876aca5178c0cc7b2802f9
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1012497579
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 39bde3ded1b2fd58873dc0aad8458cf377ba6ada700751f2f2fd1326e88ab67d
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1015319576
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: b7c33df0e572b5f70ea20a4cbb28678fe78a1e0ed89b44e69a288f7dbfbd1216
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1019629952
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 4d08c2e62add8514d1d3452f317e84acf5f5c8d49020fed4887cd61ba15806e8
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1050772201
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 3b31ad30820d6117279c6b959901c8caa57f100c3124082414df69ea9725d7a2
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1058181883
         parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
         isRoot: 0
         isNetworkObject: 1
-        layoutHash: bba6ea13c53912716a249d69edbd4e97b52b049cc539701ee95faf9752a5edcf
+        layoutHash: c897e25a4b0249aaef90e7fa97c712f7ddbddecfbb8b44d784152b935de39a06
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1084116511
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: e1a2cfc23f524a5d2e2d68b9fd97a965e7e725e69fe045d1a3d6e96c4e8ad6f1
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1126427322
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 59808ad42d18ac8f71cd42c5a13b6389661800a96e63a3b73c0a5f728914e2b4
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1130524862
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 5ac7ac111c34a36fe470833eb572ea4cd1644b76be2753f0adba612c4db3fd65
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1172540941
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 3cfa3458135c298b54cb1f742921d8e0482984d9e32531ad7533c85d94267449
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1190142146
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 96adc90622addfa9b1df0bd93112c28db051af8e07ae4b916dd07c15b0c52a7d
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1201647058
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 615c894b3cb0c6410cd7ff15a0c125dd455d990991bec9fe420be8db3881ab23
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1274050482
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 35594f7081ba14cfc33db70dae2d35805a34b82c8dee1f42099758adf3a9d40e
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1309420098
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 87452d36f248c1333656c98bcf243d1e5814b51caed254f1ab8f9e3dc00d36aa
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1346800965
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: aa1d949b18adfb61d1d347806524817ad659db796f7309045259c54b2febdf19
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1377942717
         parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
         isRoot: 0
         isNetworkObject: 1
-        layoutHash: fd863f8f68020acbb26719bee440418ea9a4073428aba96c6e47aa688df77ce1
+        layoutHash: 97a1065becbb5f99fe32b4c2f11a3e7bf4bf752fd2340e8b493a256fa9383990
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1400259018
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 2f946fdb77e23982c8ff9d839b4f7fc6168404fb9e1d3bee1bb088952d34ef4c
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1447001743
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 5e1bfa637a5e0e004b519431ee13ac7fe9c527b4f111e08497ef4750038aaa4d
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1451162039
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: f0a264904227ccc9bb28adc15c53f7743d2d45befe65b8da0b6b0cb3bacfcd79
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1459389567
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 64c9a061aa20661b3415c35e68374ba04993a48f7e3769bd381480e657897211
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1462978830
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 8da53c9e321388461fe50451f324912918d76fcf891c2c9bd18dc2bc29fe5003
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1467319062
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 80e2c845988b125f60f203250abf36b9d4fdf43d77f8119e23ddb3bbf5d0f3ce
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1471157158
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 30435b3a0885981977f2e14de1493ec55ce752c5c17305719369556e1431e293
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1475603790
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: fd57b249d7f11ce5a7de183a975e5a624ce6f5eca0f59ff4e29fc715cffddf9c
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1504173446
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 3f79bb8728a05db1c8598777ca4fc4e35dbd184b1075abc07c1521d4afe06a79
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1552463179
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 346509a62399ce8c8d67779113bf43543e9f265e96bd053c8bf976624279790d
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:160254273
         parentSourceId: 837a3910185f2b9478ce71df025ccc7c:1895139887:0
         isRoot: 0
@@ -629,47 +774,312 @@ MonoBehaviour:
         parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
         isRoot: 0
         isNetworkObject: 1
-        layoutHash: 2a8b68e7e86d4ff687a1128066379371f63b58e0eb440bee82cdb2ef47dbabfe
+        layoutHash: ac1e4a3b0b921635bb9073056696171381936c24487527a314d1c290d1cfa025
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1656733450
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 28ccad81712799c9d22ecf6f653bac61367c6e5828536627225243499a2717e0
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1750518882
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 398207f8bee8c9bb53489c03f6225fbc04e251c875ae1df5ff2f3332fe7107de
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1764384197
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: f62cfabf5b845f1c69fa8688d30f6cb4bfa68ba81eae83b76d07cfe9d9c2928f
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1768797125
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: a828e0c3db436138779c4cc8fd4346d94eab1fa1aceea5348754088d6ff3cd52
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1772683661
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: b345949c578ff7189cb8ee232e9a43de5ffb9b787bc95525704d25df7f18987f
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1777018653
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 32045137faebbc06ad5a9e154bc82bdac2bcc3a2fdffff06de278763614ee72c
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:177843197
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 091a5fa92ed4a22bcfb7eb17c2a1f97281a8f0a0283bed6f5b6e9c1ad4a47102
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1780913676
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: bf6f9bc434682eedb9e557c33dfd6a65bc41e82456f8c24aa51e3d68a2f9adb9
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1789831629
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: b66c0b72a323a2bb641e9f178a46316fe7dad748c3073a11de50b7aea481fe25
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1792782173
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 4f7f607b8504405baffa9bd3a0312bb1e54d0bd215024a74b83773af1c68469a
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1794068301
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: eeb935103e1e6f1305892f933db2921ff5a2f24cc36841e47af493e204e5a210
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1874967655
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 7d0bb9ad276b906b1231dd84bc0f16c308589cda80f370fa2215e76c323f50dc
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1891874029
         parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
         isRoot: 0
         isNetworkObject: 1
-        layoutHash: 1bb72208887331695786478f93b0667d3d6948b5479872ce4d65cd627a10017d
+        layoutHash: 9960f8bfd80c457457627dc83a93ed11031f6e010b366db8ba0f23421ccf9ebf
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:189786323
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: df9b6293515dabd3d5171d9b1d07f56d2271a604e95d2fa862b2fc021d877b70
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1903231259
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 13c2bf57d8797ef441f6e894d4ede3ed1a5a65b53c60cbae4d0ee05b263592ad
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1957144840
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 828484a446aaf9596ff0b2b1a48bd8864aca426d13973ad53cfc0bca805312be
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1988188212
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: aaf3c14d6a3547d968ab9360988ac44a2d8084e8fb44b39a47552dcbe99f695a
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:2070472614
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 4644fb74e38c9eb4513a7dba6fdfdc909c92108b2281db2d3a7357473a7a4bc2
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:2075327060
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: a31b7bfc515a1e88c4eb3b6f1b46b934e201d12f411c81062826f06bd1f429ef
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:2082915530
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: ec02eb2c767bbee3857bb963f7197e371d218df5d1ce7dd10c589c2d31c8f199
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:2088341501
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 3d6bd4a863b2409927cc23839098adf20c33ebe5f644b0c8a972b9dfa7621b69
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:2091129178
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 118a653f4b9031b13edac8ac5e59a722d35af29bb0fd565e89efd10c25966704
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:2095538902
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 33dc52d5c28a4bf959d6602e3550f037c81c61a37c358fa39f14e1060c6de2a7
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:2109387209
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 3487fa257b2a15c3046568ead8ad066d579c679fd55a9a830daace654c7264d2
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:2131097948
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 2648162f436e4844c89a09fbe92d7cff0f52681e802891b6a1b8f91c453f98ed
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:220442468
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 2b9f12ac17749d15095dd4a64a7df60b6bf5f60c559e550fa863eb5421ceb2f0
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:231746261
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 69462f38331cdca211fe8d25210e72dca8943e995faa6e5d22d1019dbe4de658
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:251991778
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 9b6abeb9f094f91db9434ab3526923ec565b3fb11a4fcf706907b0ef8ac71911
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:2565592759201354974
         parentSourceId: 837a3910185f2b9478ce71df025ccc7c:1895139887:0
         isRoot: 0
         isNetworkObject: 1
-        layoutHash: 0537a220bb4252099a426bc9c9af1c30f4dff669fb2e3c7e923a943f8b882b4c
+        layoutHash: 58f38407ae4aedbaa5f15323c8700040232cd37081b701c7d3c7932573fd89c1
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:272961369
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: d104e07f7581571c624af8ce96bf8ce76dfeac88a30512687f871ef21bf5c5fe
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:284020152
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: b6c7092df2c664ce8085682c438b94f91ab0a014b2e98801f537cf70d7c45f45
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:371121081
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 27290842253545c9378374a2364791ef8dd08331292bd2e22133bd1343329654
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:374453972
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: d6a9de6e0db68558c595135495545d884589ca987aba34209bebc7efb2df01b7
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:375977134
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: e4b20a639009891e29495a57103f19e63945d67bc58b2f9b50be4a6ce81f26f4
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:379389793
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 132c3771fb4ce98e295514009bbd6eacad3ef2ad6bbccde3254a5b63491b9f30
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:383525349
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: c6dc2f7a44786a9c98a17936bb1aa2da6d750d0ca06031eff1205b6ba0448d7e
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:387187752
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: ef61f4a2d0504adad35e8d7636bb831707df623e86ce9a50eee9235f674c5120
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:395358272
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 37240210a46f8aafa009a4303a26b5503d067bd97725e3f08217aec35ae3dd75
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:399756244
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 18a77fea582bf978c705faeff2aa57d1ac9e2f41efcfaca3b4623310d4377f4f
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:457704991
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 7b5b564e610f3aa2a1c9b84f807c64dca346510daab616ae6abc7a8f7df24115
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:494893193
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 7e443eaa1c01341350ff6d84641569f7f99bb2daeadfaa5a0bc6b569241f2f4f
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:495333719
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 050c96240301209662b2db9abaa5be345673c1950c71c0f9786c0d047478f3c9
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:50538480
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 7f30ca8348022a6fba3cf55b077a84232340742f224d5893f3b183127be0e7bc
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:531015897
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 8e84c98862c4f86165e5407f0c8f73165b1435ee7cbba34f1eb30046d8f9b1e3
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:54898040
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 9a9e37c62f12f7c4fea7444e566660cb5d3c986105486db18f2173a6a19237f3
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:630011074
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 4087339c28f95f55b9bb2e293f7076a7d5a5f3763f882a700c68ffb09b9b8fb3
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:675917571
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 635f8e29025a1c2224444c9bf072017cd741fd560c12c1adf83b7a3ab17e54dc
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:688746719
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: bbc9712a5b638615069d09a4d02c129bf66f615fa48420a32c2143d353bb9315
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:692909363
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 306c7aa47f74e5abd1552568ee98d3b706913974b3fc23453bdf17ca12bb96a9
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:696812703
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 18ec1a73de8c9f484f88678ae67f3b39bba3b15310ce7657bc2f29e50654fd52
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:701225515
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 79a43b16e08b48e90c2b23e7f3c6c9e7d777886962902b80ae76526c92abdbba
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:709958742
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 6aebb32fe204252c3c6c7b81d3b7da6fffba453f52d0e9da89a59b4d4abcf2bc
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:713976527
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 480da522981358910e95576ad7d5a3b2591f420b470c8eb56a71b48ecc6ed156
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:715249731
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 0bb5e1623b6852cdc4eaeed020ebecce975cd012cd27e0bce2d18207874fb1fa
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:752191310
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: c9b79e99d319f2fc2135e50cdc2cb4700a20f9ec863d6a1113c2d650ffc03eae
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:801983718
         parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
         isRoot: 0
         isNetworkObject: 1
-        layoutHash: d92754a2a4eeda4c47a73a13d74ba62529e41317b3f24142fbf6ff63cd8d34e3
+        layoutHash: 44c514ab3f670d5e8e8d6ecbe2bc5c19e77e297e50f238e04c51ca8bdb4d498b
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:940753756
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 5020eb37f27453dd2ca40720bbdbfa11fbea6bc6b3f73a7a66f30f4554e63584
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:941234509
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: d86854e8ed7b51ff32ae0ab216d193854ac5a1fa843620fc80f2a904471f7866
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:961525693
         parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
         isRoot: 0
         isNetworkObject: 1
-        layoutHash: 87ab4ef3e05f860a14ffba35d37c5750d052dd5ca6280aee54a523d9c2b557a1
+        layoutHash: 14ddb61129a3fa69f51214edc9353a593ae9e725e29939accdb4e713a3bf91bc
+      - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:977674711
+        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+        isRoot: 0
+        isNetworkObject: 1
+        layoutHash: 9b3a180c5ced5e3984fbb6665b996f773103e2d0f87fa39209507e4a0f546d1d
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:8707299315759427390:1296217192
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 1
-        layoutHash: 76555fd080c6d77e39fb3a00f6113add860f42456cdfdc6b5f4a01e3f6e98fbc
-      - sourceId: 837a3910185f2b9478ce71df025ccc7c:834841855:0
-        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
-        isRoot: 0
-        isNetworkObject: 1
-        layoutHash: c24e2f126c79199335c4d2c6491656742b2e4c34368ec3fd2f20f4fd2fe692b6
-      - sourceId: 837a3910185f2b9478ce71df025ccc7c:337059921531908604:154670443
-        parentSourceId: 
-        isRoot: 1
-        isNetworkObject: 1
-        layoutHash: 684aa1985bb53f877c25746463438824561afd9adbfc70862b1d3887eb6a505b
-      - sourceId: 837a3910185f2b9478ce71df025ccc7c:1166050885:0
-        parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
-        isRoot: 0
-        isNetworkObject: 1
-        layoutHash: f014b63304c91468c4ddb09a0755f94c314718fc677c04b3461c3bec646fc142
+        layoutHash: dc4303ed2b3d478f3ec566bb35e9ed70e3ec0c8780661cde461407505c750140
     entries:
     - sceneGuid: 336a190646b19bc46b22dd4e78f99800
       sourceId: 336a190646b19bc46b22dd4e78f99800:100000:1757335980
@@ -1746,6 +2156,22 @@ MonoBehaviour:
       scale: {x: 1, y: 1, z: 1}
       parentSourceId: 
     - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:1166050885:0
+      reviewNote: "\u043F\u0430\u0440\u043E\u043C 2 \u0432\u0435\u0442\u043A\u0430"
+      treatment: 5
+      ownership: 4
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
       sourceId: 837a3910185f2b9478ce71df025ccc7c:1171079311907173941:1418405993
       reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
         leaves this source exactly as authored and does not place, activate, spawn
@@ -2052,10 +2478,44 @@ MonoBehaviour:
       scale: {x: 1, y: 1, z: 1}
       parentSourceId: 
     - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:242449662:0
+      reviewNote: 'T-MERCH80: pre-existing world-scene root admitted to the pilot
+        catalog as Unmanaged during the merchant bake; no NetworkObject, executor
+        leaves it as authored.'
+      treatment: 5
+      ownership: 1
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
       sourceId: 837a3910185f2b9478ce71df025ccc7c:337059921531908604:1170723420
       reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
         leaves this source exactly as authored and does not place, activate, spawn
         or retire it.'
+      treatment: 5
+      ownership: 4
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:337059921531908604:154670443
+      reviewNote: heavyII ship to the world_0_0
       treatment: 5
       ownership: 4
       spatial: 0
@@ -2574,6 +3034,24 @@ MonoBehaviour:
       scale: {x: 1, y: 1, z: 1}
       parentSourceId: 
     - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:698596844:0
+      reviewNote: 'T-MERCH80: pre-existing world-scene root admitted to the pilot
+        catalog as Unmanaged during the merchant bake; no NetworkObject, executor
+        leaves it as authored.'
+      treatment: 5
+      ownership: 1
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
       sourceId: 837a3910185f2b9478ce71df025ccc7c:7069497028711984000:1553188250
       reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
         leaves this source exactly as authored and does not place, activate, spawn
@@ -2772,6 +3250,110 @@ MonoBehaviour:
       scale: {x: 1, y: 1, z: 1}
       parentSourceId: 
     - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:834841855:0
+      reviewNote: 'T-PAROM-01: parom cable-ferry route root (Unmanaged); the global
+        executor leaves this source exactly as authored and does not place, activate,
+        spawn or retire it; NGO scene spawn via ScenePlacedObjectSpawner; motion
+        is server-authoritative over NetworkVariables.'
+      treatment: 5
+      ownership: 4
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1008270019
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1012497579
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1015319576
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1019629952
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1050772201
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
       sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1058181883
       reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
         leaves this source exactly as authored and does not place, activate, spawn
@@ -2790,6 +3372,159 @@ MonoBehaviour:
       scale: {x: 1, y: 1, z: 1}
       parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
     - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1084116511
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1126427322
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1130524862
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1172540941
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1190142146
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1201647058
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1274050482
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1309420098
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1346800965
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
       sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1377942717
       reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
         leaves this source exactly as authored and does not place, activate, spawn
@@ -2807,6 +3542,176 @@ MonoBehaviour:
       rotation: {x: 0, y: 0, z: 0, w: 1}
       scale: {x: 1, y: 1, z: 1}
       parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1400259018
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1447001743
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1451162039
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1459389567
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1462978830
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1467319062
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1471157158
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1475603790
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1504173446
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1552463179
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
     - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
       sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:160254273
       reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
@@ -2844,6 +3749,210 @@ MonoBehaviour:
       scale: {x: 1, y: 1, z: 1}
       parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
     - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1656733450
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1750518882
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1764384197
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1768797125
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1772683661
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1777018653
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:177843197
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1780913676
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1789831629
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1792782173
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1794068301
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1874967655
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
       sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1891874029
       reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
         leaves this source exactly as authored and does not place, activate, spawn
@@ -2861,6 +3970,261 @@ MonoBehaviour:
       rotation: {x: 0, y: 0, z: 0, w: 1}
       scale: {x: 1, y: 1, z: 1}
       parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:189786323
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1903231259
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1957144840
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1988188212
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:2070472614
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:2075327060
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:2082915530
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:2088341501
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:2091129178
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:2095538902
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:2109387209
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:2131097948
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:220442468
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:231746261
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:251991778
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
     - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
       sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:2565592759201354974
       reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
@@ -2880,6 +4244,448 @@ MonoBehaviour:
       scale: {x: 1, y: 1, z: 1}
       parentSourceId: 837a3910185f2b9478ce71df025ccc7c:1895139887:0
     - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:272961369
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:284020152
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:371121081
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:374453972
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:375977134
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:379389793
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:383525349
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:387187752
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:395358272
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:399756244
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:457704991
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:494893193
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:495333719
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:50538480
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:531015897
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:54898040
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:630011074
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:675917571
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:688746719
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:692909363
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:696812703
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:701225515
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:709958742
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:713976527
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:715249731
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:752191310
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
       sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:801983718
       reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
         leaves this source exactly as authored and does not place, activate, spawn
@@ -2897,6 +4703,40 @@ MonoBehaviour:
       rotation: {x: 0, y: 0, z: 0, w: 1}
       scale: {x: 1, y: 1, z: 1}
       parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:940753756
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:941234509
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
     - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
       sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:961525693
       reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
@@ -2916,6 +4756,23 @@ MonoBehaviour:
       scale: {x: 1, y: 1, z: 1}
       parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
     - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
+      sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:977674711
+      reviewNote: 'T-MERCH80: PRIMUM merchant NPC on the canonical [Mira] prefab;
+        authored scene content reviewed as Unmanaged (FO leaves it to ScenePlacedObjectSpawner/NGO).'
+      treatment: 5
+      ownership: 3
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
+    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
       sourceId: 837a3910185f2b9478ce71df025ccc7c:8707299315759427390:1296217192
       reviewNote: 'T-FO06L pilot: reviewed static authored content; the global executor
         leaves this source exactly as authored and does not place, activate, spawn
@@ -2933,54 +4790,3 @@ MonoBehaviour:
       rotation: {x: 0, y: 0, z: 0, w: 1}
       scale: {x: 1, y: 1, z: 1}
       parentSourceId: 
-    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
-      sourceId: 837a3910185f2b9478ce71df025ccc7c:834841855:0
-      reviewNote: 'T-PAROM-01: parom cable-ferry route root (Unmanaged); the global
-        executor leaves this source exactly as authored and does not place, activate,
-        spawn or retire it; NGO scene spawn via ScenePlacedObjectSpawner; motion
-        is server-authoritative over NetworkVariables.'
-      treatment: 5
-      ownership: 4
-      spatial: 0
-      replacementPrefabHash: 0
-      poseKind: 0
-      worldPosition:
-        X: 0
-        Y: 0
-        Z: 0
-      parentLocalPosition: {x: 0, y: 0, z: 0}
-      rotation: {x: 0, y: 0, z: 0, w: 1}
-      scale: {x: 1, y: 1, z: 1}
-      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
-    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
-      sourceId: 837a3910185f2b9478ce71df025ccc7c:337059921531908604:154670443
-      reviewNote: heavyII ship to the world_0_0
-      treatment: 5
-      ownership: 4
-      spatial: 0
-      replacementPrefabHash: 0
-      poseKind: 0
-      worldPosition:
-        X: 0
-        Y: 0
-        Z: 0
-      parentLocalPosition: {x: 0, y: 0, z: 0}
-      rotation: {x: 0, y: 0, z: 0, w: 1}
-      scale: {x: 1, y: 1, z: 1}
-      parentSourceId: 
-    - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
-      sourceId: 837a3910185f2b9478ce71df025ccc7c:1166050885:0
-      reviewNote: "\u043F\u0430\u0440\u043E\u043C 2 \u0432\u0435\u0442\u043A\u0430"
-      treatment: 5
-      ownership: 4
-      spatial: 0
-      replacementPrefabHash: 0
-      poseKind: 0
-      worldPosition:
-        X: 0
-        Y: 0
-        Z: 0
-      parentLocalPosition: {x: 0, y: 0, z: 0}
-      rotation: {x: 0, y: 0, z: 0, w: 1}
-      scale: {x: 1, y: 1, z: 1}
-      parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0

@@ -1,0 +1,102 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e3cc1a5e7499fa4bac54c2576c3f0a8, type: 3}
+  m_Name: Merchant_035_Table
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Quests.NpcMerchantTable
+  shopTitle: "\u0421\u043D\u0430\u0440\u044F\u0436\u0435\u043D\u0438\u0435 \u0438
+    \u0438\u043D\u0441\u0442\u0440\u0443\u043C\u0435\u043D\u0442"
+  priceMultiplier: 1.1999999
+  allowPlayerSellToNpc: 1
+  sellBackPriceMultiplier: 0.5
+  enableReputationDiscount: 1
+  maxReputationDiscountRatio: 0.2
+  items:
+  - item: {fileID: 11400000, guid: 7228cf3fb1d4a8c41a1c054f5c4cefb3, type: 2}
+    customBuyPrice: 0
+    customSellPrice: 0
+    stock: -1
+    minNpcAttitude: -100
+    minFactionReputation: -100
+    requiredQuest: {fileID: 0}
+    requiredQuestId: 
+  - item: {fileID: 11400000, guid: b7c5a293cdd04ff42a590399a51a18fa, type: 2}
+    customBuyPrice: 0
+    customSellPrice: 0
+    stock: -1
+    minNpcAttitude: -100
+    minFactionReputation: -100
+    requiredQuest: {fileID: 0}
+    requiredQuestId: 
+  - item: {fileID: 11400000, guid: a14412a3d49c7cd4fb351545f557cb42, type: 2}
+    customBuyPrice: 0
+    customSellPrice: 0
+    stock: 3
+    minNpcAttitude: -100
+    minFactionReputation: -100
+    requiredQuest: {fileID: 0}
+    requiredQuestId: 
+  - item: {fileID: 11400000, guid: 38d0d55f5c6ff7c45befdbf3cec59189, type: 2}
+    customBuyPrice: 0
+    customSellPrice: 0
+    stock: -1
+    minNpcAttitude: -100
+    minFactionReputation: -100
+    requiredQuest: {fileID: 0}
+    requiredQuestId: 
+  - item: {fileID: 11400000, guid: 3ac1d045306f5d64db1bb0af3e7e5d25, type: 2}
+    customBuyPrice: 0
+    customSellPrice: 0
+    stock: -1
+    minNpcAttitude: -100
+    minFactionReputation: -100
+    requiredQuest: {fileID: 0}
+    requiredQuestId: 
+  - item: {fileID: 11400000, guid: b0ab57b0824471b41972f37d9b6e3d8e, type: 2}
+    customBuyPrice: 0
+    customSellPrice: 0
+    stock: -1
+    minNpcAttitude: -100
+    minFactionReputation: -100
+    requiredQuest: {fileID: 0}
+    requiredQuestId: 
+  - item: {fileID: 11400000, guid: d9c1a7b6b13ab844faf43942126099ac, type: 2}
+    customBuyPrice: 0
+    customSellPrice: 0
+    stock: -1
+    minNpcAttitude: -100
+    minFactionReputation: -100
+    requiredQuest: {fileID: 0}
+    requiredQuestId: 
+  - item: {fileID: 11400000, guid: 432657f6b02523446955d5579f0b04c0, type: 2}
+    customBuyPrice: 0
+    customSellPrice: 0
+    stock: -1
+    minNpcAttitude: -100
+    minFactionReputation: -100
+    requiredQuest: {fileID: 0}
+    requiredQuestId: 
+  - item: {fileID: 11400000, guid: e780d71470a2fa0428b82151b7b11225, type: 2}
+    customBuyPrice: 0
+    customSellPrice: 0
+    stock: -1
+    minNpcAttitude: -100
+    minFactionReputation: -100
+    requiredQuest: {fileID: 0}
+    requiredQuestId: 
+  - item: {fileID: 11400000, guid: 589d00c63ca33074eaefdce0b6f10cf3, type: 2}
+    customBuyPrice: 0
+    customSellPrice: 0
+    stock: -1
+    minNpcAttitude: -100
+    minFactionReputation: -100
+    requiredQuest: {fileID: 0}
+    requiredQuestId: 

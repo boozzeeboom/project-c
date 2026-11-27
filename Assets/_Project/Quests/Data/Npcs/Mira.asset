@@ -31,6 +31,10 @@ MonoBehaviour:
   sellAllItemsForTesting: 1
   testModeDefaultPrice: 25
   allowPlayerSellInTestMode: 1
+  enableBlacksmith: 0
+  blacksmithConfig: {fileID: 0}
+  blacksmithAllowedTiers: 3
+  blacksmithAllowAllTiersForTesting: 0
   interactionRadius: 3
   showGreeting: 1
   greetingText: dialogue.npc.mira_01.greeting

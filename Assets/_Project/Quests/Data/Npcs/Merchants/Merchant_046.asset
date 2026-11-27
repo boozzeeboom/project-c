@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da5e4b0f6b8a20541b6d1a4ae82cf468, type: 3}
+  m_Name: Merchant_046
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Quests.NpcDefinition
+  npcId: npc_merchant_primum_046
+  displayName: "\u041D\u0430\u0442\u0430\u043B\u044C\u044F \u0421\u044B\u0447\u0451\u0432\u0430"
+  factionRef: {fileID: 11400000, guid: 52d26a5460fa81c4b8b59ee4d00d10d5, type: 2}
+  faction: 8
+  portrait: {fileID: 0}
+  prefab: {fileID: 836964523381807351, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
+  animatorTriggerPrefix: 
+  defaultDialogTree: {fileID: 11400000, guid: 5506f5dc82414764d8ab2e45b55ebe28, type: 2}
+  questOffers: []
+  questOfferRefs: []
+  questTurnIns: []
+  questTurnInRefs: []
+  services: 1
+  merchantTable: {fileID: 11400000, guid: 0000d63f8d488d84d9e7aa62d993486b, type: 2}
+  sellAllItemsForTesting: 0
+  testModeDefaultPrice: 25
+  allowPlayerSellInTestMode: 1
+  enableBlacksmith: 0
+  blacksmithConfig: {fileID: 0}
+  blacksmithAllowedTiers: 3
+  blacksmithAllowAllTiersForTesting: 0
+  interactionRadius: 3
+  showGreeting: 1
+  greetingText: "\u0421\u044B\u0432\u043E\u0440\u043E\u0442\u043A\u0438 \u0441\u0432\u0435\u0436\u0438\u0435.
+    \u041D\u0435 \u0432\u0441\u0435, \u043D\u043E \u0431\u043E\u043B\u044C\u0448\u0438\u043D\u0441\u0442\u0432\u043E."
+  attitudeLinks: []
+  personalAttitudeMin: -100
+  personalAttitudeMax: 200
+  voicePrefix: 

@@ -12,3 +12,18 @@
 - `Assets/_Project/Quests/Editor/GraphNodes.cs` — 6 классов нод (новый)
 - `Assets/_Project/Quests/Editor/UnifiedQuestGraphView.cs` — GraphView + Window (переписан)
 - `Assets/_Project/Quests/Editor/UnifiedQuestGraphView_DEPRECATED.txt` — старый v4 (архивирован)
+
+## Итерация от 2026-11-27 — T-MERCH80
+
+**Задача:** 80 именных торговцев PRIMUM на базе канонического префаба Миры: свои `NpcDefinition`, свои `NpcMerchantTable`, живые диалоги, расстановка в `WorldScene_0_0` группой `NPC_PRIMUM_MERCHANTS`, FO-регистрация.
+
+**Коммит:** T-MERCH80 (см. `git log`).
+
+**Изменения:**
+- `Assets/_Project/Quests/Data/Npcs/Merchants/` — 80 `NpcDefinition`.
+- `Assets/_Project/Quests/Data/Merchants/` — 80 `NpcMerchantTable`.
+- `Assets/_Project/Quests/Data/Dialogs/Merchants/` — 80 `DialogTree`.
+- `Assets/_Project/Quests/Data/QuestDatabase.asset` — аддитивная регистрация.
+- `Assets/_Project/Scenes/World/WorldScene_0_0.unity` — группа `NPC_PRIMUM_MERCHANTS` (80 экземпляров).
+- `Assets/_Project/Prefabs/FloatingOrigin/GlobalMotionPilotSceneCatalog.asset`, `GlobalMotionPilotProfile.asset` — FO-записи и digest.
+- `docs/dev/T_MERCH80_PRIMUM_MERCHANTS.md` — описание, группы, проверка.

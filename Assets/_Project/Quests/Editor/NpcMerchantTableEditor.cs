@@ -38,7 +38,17 @@ namespace ProjectC.Quests.Editor
             EditorGUILayout.PropertyField(serializedObject.FindProperty("enableReputationDiscount"), new GUIContent("Enable Reputation Discount"));
             if (table.enableReputationDiscount)
             {
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("maxReputationDiscountRatio"), new GUIContent("Max Discount Ratio"));
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("maxReputationDiscountRatio"), new GUIContent("Max Discount Ratio (up to 75%)"));
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("maxReputationMarkupRatio"), new GUIContent("Max Markup Ratio (Neg Rep)"));
+            }
+
+            EditorGUILayout.Space(4);
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("refuseTradeOnLowReputation"), new GUIContent("Refuse Trade On Low Rep"));
+            if (table.refuseTradeOnLowReputation)
+            {
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("refuseTradeNpcAttitudeThreshold"), new GUIContent("Refuse Attitude ❤ Threshold"));
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("refuseTradeFactionRepThreshold"), new GUIContent("Refuse Faction ⚑ Threshold"));
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("refuseTradeStandingScoreThreshold"), new GUIContent("Refuse Standing Score Threshold"));
             }
 
             EditorGUILayout.Space(8);

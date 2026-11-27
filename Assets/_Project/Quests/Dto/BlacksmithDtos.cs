@@ -21,7 +21,8 @@ namespace ProjectC.Quests.Dto
         RequirementsNotMet  = 9,
         AlreadyAtOrAboveTier = 10,
         RateLimited         = 11,
-        InternalError       = 12
+        InternalError       = 12,
+        TradeRefused        = 13 // T-MERCH-REP01: кузнец отказывается работать из-за сильно отрицательной репутации
     }
 
     /// <summary>
@@ -141,6 +142,10 @@ namespace ProjectC.Quests.Dto
         public float npcAttitudeExact;
         public float factionReputationExact;
         public int discountPercent;
+        public byte standingTier;
+        public float standingScore;
+        public bool isTradeRefused;
+        public string tradeRefusedReason;
         public BlacksmithTargetItemDto[] playerItems;
 
         public void NetworkSerialize<T>(BufferSerializer<T> s) where T : IReaderWriter
@@ -148,6 +153,7 @@ namespace ProjectC.Quests.Dto
             var npcStr = npcId ?? "";
             var titleStr = smithyTitle ?? "";
             var facStr = factionDisplayName ?? "";
+            var refusedStr = tradeRefusedReason ?? "";
 
             s.SerializeValue(ref npcStr);
             s.SerializeValue(ref titleStr);
@@ -159,12 +165,17 @@ namespace ProjectC.Quests.Dto
             s.SerializeValue(ref npcAttitudeExact);
             s.SerializeValue(ref factionReputationExact);
             s.SerializeValue(ref discountPercent);
+            s.SerializeValue(ref standingTier);
+            s.SerializeValue(ref standingScore);
+            s.SerializeValue(ref isTradeRefused);
+            s.SerializeValue(ref refusedStr);
 
             if (s.IsReader)
             {
                 npcId = npcStr ?? "";
                 smithyTitle = titleStr ?? "";
                 factionDisplayName = facStr ?? "";
+                tradeRefusedReason = refusedStr ?? "";
             }
 
             int len = playerItems != null ? playerItems.Length : 0;

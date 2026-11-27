@@ -946,19 +946,24 @@ StartTypewriter(locText ?? "");
          string facTitle = !string.IsNullOrEmpty(_currentShopSnapshot.factionDisplayName)
              ? _currentShopSnapshot.factionDisplayName
              : "Фракция";
+         var tier = (MerchantStandingTier)_currentShopSnapshot.standingTier;
+         string tierLabel = MerchantPriceResolver.GetStandingTierDisplayName(tier);
          string discStr = "";
-         if (_currentShopSnapshot.discountPercent < 0)
+         if (_currentShopSnapshot.isTradeRefused)
+             discStr = "  •  🚫 ОТКАЗ ОТ ТОРГОВЛИ";
+         else if (_currentShopSnapshot.discountPercent < 0)
              discStr = $"  •  Скидка {-_currentShopSnapshot.discountPercent}%";
          else if (_currentShopSnapshot.discountPercent > 0)
              discStr = $"  •  Наценка +{_currentShopSnapshot.discountPercent}%";
 
-         _merchantRepInfoLabel.text = $"❤ {attSign}{att:0.0}  •  ⚑ {facTitle}: {repSign}{rep:0.0}{discStr}";
+         _merchantRepInfoLabel.text = $"[{tierLabel}]  ❤ {attSign}{att:0.0}  •  ⚑ {facTitle}: {repSign}{rep:0.0}{discStr}";
      }
 
      if (_tabSellBtn != null)
      {
-         _tabSellBtn.SetEnabled(_currentShopSnapshot.allowPlayerSell);
-         if (!_currentShopSnapshot.allowPlayerSell && !_isBuyTab)
+         bool canUseSellTab = _currentShopSnapshot.allowPlayerSell && !_currentShopSnapshot.isTradeRefused;
+         _tabSellBtn.SetEnabled(canUseSellTab);
+         if (!canUseSellTab && !_isBuyTab)
              _isBuyTab = true;
      }
      if (_tabBuyBtn != null) _tabBuyBtn.EnableInClassList("merchant-tab-active", _isBuyTab);
@@ -974,6 +979,29 @@ StartTypewriter(locText ?? "");
      _merchantItemsList.Clear();
      _merchantRowsById.Clear();
      if (!_hasShopSnapshot || !_currentShopSnapshot.isMerchant) return;
+
+     if (_currentShopSnapshot.isTradeRefused)
+     {
+         var embargoBanner = new Label(
+             !string.IsNullOrEmpty(_currentShopSnapshot.tradeRefusedReason)
+                 ? $"🚫 {_currentShopSnapshot.tradeRefusedReason}"
+                 : "🚫 Торговец отказывается вести с вами дела из-за крайне отрицательной репутации.")
+         {
+             style =
+             {
+                 color = new Color(1f, 0.45f, 0.45f),
+                 backgroundColor = new Color(0.32f, 0.08f, 0.10f, 0.85f),
+                 paddingTop = 8,
+                 paddingBottom = 8,
+                 paddingLeft = 10,
+                 paddingRight = 10,
+                 marginBottom = 6,
+                 unityFontStyleAndWeight = FontStyle.Bold,
+                 whiteSpace = WhiteSpace.Normal
+             }
+         };
+         _merchantItemsList.Add(embargoBanner);
+     }
 
      string q = (_searchQuery ?? "").Trim().ToLowerInvariant();
      int shownCount = 0;
@@ -1250,9 +1278,14 @@ StartTypewriter(locText ?? "");
          int totalCost = selBuy.buyPrice * _selectedQuantity;
          float repGain = MerchantPriceResolver.CalculateReputationGain(totalCost);
          if (_tradeSummaryLabel != null)
-             _tradeSummaryLabel.text = $"Итого: {totalCost} CR   •   Репутация: +{repGain:0.##} ❤/⚑";
+         {
+             _tradeSummaryLabel.text = _currentShopSnapshot.isTradeRefused
+                 ? "🚫 Торговец отказывается продавать товары"
+                 : $"Итого: {totalCost} CR   •   Репутация: +{repGain:0.##} ❤/⚑";
+         }
 
-         bool canBuy = selBuy.isUnlocked
+         bool canBuy = !_currentShopSnapshot.isTradeRefused
+                       && selBuy.isUnlocked
                        && (selBuy.stock < 0 || selBuy.stock >= _selectedQuantity)
                        && _currentShopSnapshot.playerCredits + 1e-3f >= totalCost
                        && (_currentShopSnapshot.inventoryUsedSlots + _selectedQuantity <= _currentShopSnapshot.inventoryMaxSlots);
@@ -1261,32 +1294,47 @@ StartTypewriter(locText ?? "");
          {
              _tradeActionBtn.EnableInClassList("merchant-action-btn-sell", false);
              _tradeActionBtn.SetEnabled(canBuy);
-             _tradeActionBtn.text = !selBuy.isUnlocked
-                 ? "🔒 Заблокировано"
-                 : (selBuy.stock == 0 ? "Нет в наличии" : $"Купить x{_selectedQuantity} ({totalCost} CR)");
+             _tradeActionBtn.text = _currentShopSnapshot.isTradeRefused
+                 ? "🚫 Отказ от торговли"
+                 : (!selBuy.isUnlocked
+                     ? "🔒 Заблокировано"
+                     : (selBuy.stock == 0 ? "Нет в наличии" : $"Купить x{_selectedQuantity} ({totalCost} CR)"));
          }
      }
      else if (!_isBuyTab && TryFindSellItem(_selectedItemId, out var selSell))
      {
          int totalEarn = selSell.sellPrice * _selectedQuantity;
          if (_tradeSummaryLabel != null)
-             _tradeSummaryLabel.text = $"Выручка: +{totalEarn} CR";
+         {
+             _tradeSummaryLabel.text = _currentShopSnapshot.isTradeRefused
+                 ? "🚫 Торговец отказывается скупать предметы"
+                 : $"Выручка: +{totalEarn} CR";
+         }
 
-         bool canSell = _currentShopSnapshot.allowPlayerSell && selSell.ownedCount >= _selectedQuantity;
+         bool canSell = !_currentShopSnapshot.isTradeRefused && _currentShopSnapshot.allowPlayerSell && selSell.ownedCount >= _selectedQuantity;
          if (_tradeActionBtn != null)
          {
              _tradeActionBtn.EnableInClassList("merchant-action-btn-sell", true);
              _tradeActionBtn.SetEnabled(canSell);
-             _tradeActionBtn.text = $"Продать x{_selectedQuantity} (+{totalEarn} CR)";
+             _tradeActionBtn.text = _currentShopSnapshot.isTradeRefused
+                 ? "🚫 Отказ от торговли"
+                 : $"Продать x{_selectedQuantity} (+{totalEarn} CR)";
          }
      }
      else
      {
-         if (_tradeSummaryLabel != null) _tradeSummaryLabel.text = "Выберите предмет";
+         if (_tradeSummaryLabel != null)
+         {
+             _tradeSummaryLabel.text = _currentShopSnapshot.isTradeRefused
+                 ? "🚫 Торговец отказывается торговать с вами"
+                 : "Выберите предмет";
+         }
          if (_tradeActionBtn != null)
          {
              _tradeActionBtn.SetEnabled(false);
-             _tradeActionBtn.text = _isBuyTab ? "Купить" : "Продать";
+             _tradeActionBtn.text = _currentShopSnapshot.isTradeRefused
+                 ? "🚫 Отказ от торговли"
+                 : (_isBuyTab ? "Купить" : "Продать");
          }
      }
  }
@@ -1552,7 +1600,17 @@ StartTypewriter(locText ?? "");
          string facTitle = !string.IsNullOrEmpty(_currentBlacksmithSnapshot.factionDisplayName)
              ? _currentBlacksmithSnapshot.factionDisplayName
              : "Фракция";
-         _blacksmithRepInfoLabel.text = $"❤ {attSign}{att:0.0} • ⚑ {facTitle}: {repSign}{rep:0.0} (+0.2 / 100 CR)";
+         var tier = (MerchantStandingTier)_currentBlacksmithSnapshot.standingTier;
+         string tierLabel = MerchantPriceResolver.GetStandingTierDisplayName(tier);
+         string discStr = "";
+         if (_currentBlacksmithSnapshot.isTradeRefused)
+             discStr = " • 🚫 ОТКАЗ";
+         else if (_currentBlacksmithSnapshot.discountPercent < 0)
+             discStr = $" • Скидка {-_currentBlacksmithSnapshot.discountPercent}%";
+         else if (_currentBlacksmithSnapshot.discountPercent > 0)
+             discStr = $" • Наценка +{_currentBlacksmithSnapshot.discountPercent}%";
+
+         _blacksmithRepInfoLabel.text = $"[{tierLabel}] ❤ {attSign}{att:0.0} • ⚑ {facTitle}: {repSign}{rep:0.0}{discStr}";
      }
 
      RebuildBlacksmithItemsList();
@@ -1772,14 +1830,17 @@ StartTypewriter(locText ?? "");
          bool hasResIfNeeded = _selectedPaymentMode == BlacksmithPaymentMode.CreditsOnly ||
                                (selOpt.resourceItemId > 0 && selOpt.playerResourceCount >= selOpt.requiredResourceCount &&
                                 (selOpt.resourceItemId != selItem.itemId || selOpt.playerResourceCount >= selOpt.requiredResourceCount + 1));
-         bool canUpgrade = selOpt.isAllowedByNpc && selOpt.isUnlockedByRep &&
+         bool canUpgrade = !_currentBlacksmithSnapshot.isTradeRefused &&
+                           selOpt.isAllowedByNpc && selOpt.isUnlockedByRep &&
                            _currentBlacksmithSnapshot.playerCredits + 1e-3f >= costCr &&
                            hasResIfNeeded;
 
          if (_blacksmithUpgradeBtn != null)
          {
              _blacksmithUpgradeBtn.SetEnabled(canUpgrade);
-             if (!selOpt.isAllowedByNpc)
+             if (_currentBlacksmithSnapshot.isTradeRefused)
+                 _blacksmithUpgradeBtn.text = "🚫 Отказ кузнеца";
+             else if (!selOpt.isAllowedByNpc)
                  _blacksmithUpgradeBtn.text = "🔒 Тир недоступен";
              else if (!selOpt.isUnlockedByRep)
                  _blacksmithUpgradeBtn.text = "🔒 Уже улучшено / Заблокировано";

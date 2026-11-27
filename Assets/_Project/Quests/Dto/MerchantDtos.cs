@@ -21,7 +21,8 @@ namespace ProjectC.Quests.Dto
         RequirementsNotMet  = 10,
         SellDisabled        = 11,
         RateLimited         = 12,
-        InternalError       = 13
+        InternalError       = 13,
+        TradeRefused        = 14 // T-MERCH-REP01: отказ от торговли из-за сильно отрицательной репутации
     }
 
     /// <summary>
@@ -106,6 +107,10 @@ namespace ProjectC.Quests.Dto
         public float npcAttitudeExact;
         public float factionReputationExact;
         public int discountPercent; // <0 = скидка, >0 = наценка
+        public byte standingTier;   // T-MERCH-REP01: MerchantStandingTier (0..7)
+        public float standingScore; // T-MERCH-REP01: сводный индекс доверия (-100..+100)
+        public bool isTradeRefused; // T-MERCH-REP01: полный отказ от торговли
+        public string tradeRefusedReason;
         public MerchantItemDto[] shopItems;
         public MerchantPlayerSellItemDto[] playerSellableItems;
 
@@ -114,6 +119,7 @@ namespace ProjectC.Quests.Dto
             var npcStr = npcId ?? "";
             var titleStr = shopTitle ?? "";
             var facStr = factionDisplayName ?? "";
+            var refusedStr = tradeRefusedReason ?? "";
             s.SerializeValue(ref npcStr);
             s.SerializeValue(ref titleStr);
             s.SerializeValue(ref facStr);
@@ -126,11 +132,16 @@ namespace ProjectC.Quests.Dto
             s.SerializeValue(ref npcAttitudeExact);
             s.SerializeValue(ref factionReputationExact);
             s.SerializeValue(ref discountPercent);
+            s.SerializeValue(ref standingTier);
+            s.SerializeValue(ref standingScore);
+            s.SerializeValue(ref isTradeRefused);
+            s.SerializeValue(ref refusedStr);
             if (s.IsReader)
             {
                 npcId = npcStr ?? "";
                 shopTitle = titleStr ?? "";
                 factionDisplayName = facStr ?? "";
+                tradeRefusedReason = refusedStr ?? "";
             }
 
             int shopLen = shopItems != null ? shopItems.Length : 0;

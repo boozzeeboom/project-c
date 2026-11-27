@@ -363,10 +363,21 @@ namespace ProjectC.Quests
             bool allowSell = isTestAll ? npc.allowPlayerSellInTestMode : (table != null ? table.allowPlayerSellToNpc : npc.allowPlayerSellInTestMode);
             float sellBackMult = table != null ? table.sellBackPriceMultiplier : 0.5f;
             bool enableDiscount = table != null ? table.enableReputationDiscount : true;
-            float maxDisc = table != null ? table.maxReputationDiscountRatio : 0.20f;
+            float maxDisc = table != null ? table.EffectiveMaxDiscountRatio : MerchantPriceResolver.DefaultMaxDiscountRatio;
+            float maxMarkup = table != null ? table.maxReputationMarkupRatio : MerchantPriceResolver.DefaultMaxMarkupRatio;
+            bool enableRefusal = table != null ? table.refuseTradeOnLowReputation : true;
+            float refuseAtt = table != null ? table.refuseTradeNpcAttitudeThreshold : MerchantPriceResolver.DefaultRefuseNpcAttitude;
+            float refuseFac = table != null ? table.refuseTradeFactionRepThreshold : MerchantPriceResolver.DefaultRefuseFactionRep;
+            float refuseScore = table != null ? table.refuseTradeStandingScoreThreshold : MerchantPriceResolver.DefaultRefuseStandingScore;
             int defaultPrice = npc.testModeDefaultPrice > 0 ? npc.testModeDefaultPrice : 25;
 
-            float attFactor = MerchantPriceResolver.CalculateAttitudePriceFactor(exactAtt, exactRep, enableDiscount, maxDisc);
+            var (isRefused, refusedReason) = MerchantPriceResolver.EvaluateTradeRefusal(
+                exactAtt, exactRep, factionName, enableRefusal, refuseAtt, refuseFac, refuseScore);
+            var standingTier = MerchantPriceResolver.ResolveStandingTier(
+                exactAtt, exactRep, enableRefusal, refuseAtt, refuseFac, refuseScore);
+            float standingScore = MerchantPriceResolver.CalculateStandingScore(exactAtt, exactRep);
+
+            float attFactor = MerchantPriceResolver.CalculateAttitudePriceFactor(exactAtt, exactRep, enableDiscount, maxDisc, maxMarkup);
             int discountPct = Mathf.RoundToInt((attFactor - 1f) * 100f);
 
             string shopTitle = (table != null && !string.IsNullOrEmpty(table.shopTitle))
@@ -388,9 +399,9 @@ namespace ProjectC.Quests
                         if (itemDef == null || itemDef.itemType == ProjectC.Items.ItemType.Key) continue;
 
                         int buyP = MerchantPriceResolver.ResolveBuyPrice(
-                            itemDef, 0, priceMult, defaultPrice, exactAtt, exactRep, enableDiscount, maxDisc);
+                            itemDef, 0, priceMult, defaultPrice, exactAtt, exactRep, enableDiscount, maxDisc, maxMarkup);
                         int sellP = MerchantPriceResolver.ResolveSellPrice(
-                            itemDef, 0, 0, sellBackMult, defaultPrice, buyP);
+                            itemDef, 0, 0, sellBackMult, defaultPrice, buyP, exactAtt, exactRep, enableDiscount);
 
                         customSellPriceByItemId[id] = (0, 0, buyP);
                         shopList.Add(new MerchantItemDto
@@ -402,8 +413,8 @@ namespace ProjectC.Quests
                             sellPrice = sellP,
                             stock = -1,
                             playerOwnedCount = inv.CountOf(clientId, id),
-                            isUnlocked = true,
-                            lockedReason = ""
+                            isUnlocked = !isRefused,
+                            lockedReason = isRefused ? "Отказ от торговли" : ""
                         });
                     }
                 }
@@ -424,12 +435,17 @@ namespace ProjectC.Quests
                     if (id <= 0 || !seenIds.Add(id)) continue;
 
                     int buyP = MerchantPriceResolver.ResolveBuyPrice(
-                        entry.item, entry.customBuyPrice, priceMult, defaultPrice, exactAtt, exactRep, enableDiscount, maxDisc);
+                        entry.item, entry.customBuyPrice, priceMult, defaultPrice, exactAtt, exactRep, enableDiscount, maxDisc, maxMarkup);
                     int sellP = MerchantPriceResolver.ResolveSellPrice(
-                        entry.item, entry.customBuyPrice, entry.customSellPrice, sellBackMult, defaultPrice, buyP);
+                        entry.item, entry.customBuyPrice, entry.customSellPrice, sellBackMult, defaultPrice, buyP, exactAtt, exactRep, enableDiscount);
                     int curStock = GetMerchantItemStock(npc.npcId, id, entry.stock);
 
                     var (unlocked, reason) = CheckMerchantEntryUnlocked(clientId, npc, entry);
+                    if (isRefused)
+                    {
+                        unlocked = false;
+                        reason = "Отказ от торговли";
+                    }
                     customSellPriceByItemId[id] = (entry.customBuyPrice, entry.customSellPrice, buyP);
 
                     shopList.Add(new MerchantItemDto
@@ -489,8 +505,13 @@ namespace ProjectC.Quests
                                 buyLimit = 0;
                             }
                         }
+                        if (buyLimit <= 0)
+                        {
+                            buyLimit = MerchantPriceResolver.ResolveBuyPrice(
+                                itemDef, customBuy, priceMult, defaultPrice, exactAtt, exactRep, enableDiscount, maxDisc, maxMarkup);
+                        }
                         int sellP = MerchantPriceResolver.ResolveSellPrice(
-                            itemDef, customBuy, customSell, sellBackMult, defaultPrice, buyLimit);
+                            itemDef, customBuy, customSell, sellBackMult, defaultPrice, buyLimit, exactAtt, exactRep, enableDiscount);
 
                         sellList.Add(new MerchantPlayerSellItemDto
                         {
@@ -518,6 +539,10 @@ namespace ProjectC.Quests
                 npcAttitudeExact = exactAtt,
                 factionReputationExact = exactRep,
                 discountPercent = discountPct,
+                standingTier = (byte)standingTier,
+                standingScore = standingScore,
+                isTradeRefused = isRefused,
+                tradeRefusedReason = refusedReason ?? "",
                 shopItems = shopList.ToArray(),
                 playerSellableItems = sellList.ToArray()
             };
@@ -582,8 +607,22 @@ namespace ProjectC.Quests
             bool isTestAll = npc.sellAllItemsForTesting;
             float priceMult = table != null ? table.priceMultiplier : 1.0f;
             bool enableDiscount = table != null ? table.enableReputationDiscount : true;
-            float maxDisc = table != null ? table.maxReputationDiscountRatio : 0.20f;
+            float maxDisc = table != null ? table.EffectiveMaxDiscountRatio : MerchantPriceResolver.DefaultMaxDiscountRatio;
+            float maxMarkup = table != null ? table.maxReputationMarkupRatio : MerchantPriceResolver.DefaultMaxMarkupRatio;
+            bool enableRefusal = table != null ? table.refuseTradeOnLowReputation : true;
+            float refuseAtt = table != null ? table.refuseTradeNpcAttitudeThreshold : MerchantPriceResolver.DefaultRefuseNpcAttitude;
+            float refuseFac = table != null ? table.refuseTradeFactionRepThreshold : MerchantPriceResolver.DefaultRefuseFactionRep;
+            float refuseScore = table != null ? table.refuseTradeStandingScoreThreshold : MerchantPriceResolver.DefaultRefuseStandingScore;
             int defaultPrice = npc.testModeDefaultPrice > 0 ? npc.testModeDefaultPrice : 25;
+
+            int factionWireId = npc.EffectiveFactionWireId;
+            float exactAtt = GetNpcAttitudeExact(clientId, npc.npcId);
+            float exactRep = GetReputationExact(clientId, factionWireId);
+
+            var (isRefused, refusedReason) = MerchantPriceResolver.EvaluateTradeRefusal(
+                exactAtt, exactRep, "", enableRefusal, refuseAtt, refuseFac, refuseScore);
+            if (isRefused)
+                return FailMerchant(MerchantTradeResultCode.TradeRefused, true, npc.npcId, itemId, quantity, refusedReason);
 
             int customBuyPrice = 0;
             int configuredStock = -1;
@@ -625,12 +664,8 @@ namespace ProjectC.Quests
                 return FailMerchant(MerchantTradeResultCode.InventoryFull, true, npc.npcId, itemId, quantity,
                     $"Недостаточно места в рюкзаке ({currentSlots}/{inv.MaxSlots})");
 
-            int factionWireId = npc.EffectiveFactionWireId;
-            float exactAtt = GetNpcAttitudeExact(clientId, npc.npcId);
-            float exactRep = GetReputationExact(clientId, factionWireId);
-
             int unitPrice = MerchantPriceResolver.ResolveBuyPrice(
-                itemDef, customBuyPrice, priceMult, defaultPrice, exactAtt, exactRep, enableDiscount, maxDisc);
+                itemDef, customBuyPrice, priceMult, defaultPrice, exactAtt, exactRep, enableDiscount, maxDisc, maxMarkup);
             int totalCost = unitPrice * quantity;
 
             float playerCredits = GetPlayerCredits(clientId);
@@ -701,6 +736,19 @@ namespace ProjectC.Quests
             if (!allowSell)
                 return FailMerchant(MerchantTradeResultCode.SellDisabled, false, npc.npcId, itemId, quantity, "Этот торговец не скупает предметы");
 
+            int factionWireId = npc.EffectiveFactionWireId;
+            float exactAtt = GetNpcAttitudeExact(clientId, npc.npcId);
+            float exactRep = GetReputationExact(clientId, factionWireId);
+            bool enableRefusal = table != null ? table.refuseTradeOnLowReputation : true;
+            float refuseAtt = table != null ? table.refuseTradeNpcAttitudeThreshold : MerchantPriceResolver.DefaultRefuseNpcAttitude;
+            float refuseFac = table != null ? table.refuseTradeFactionRepThreshold : MerchantPriceResolver.DefaultRefuseFactionRep;
+            float refuseScore = table != null ? table.refuseTradeStandingScoreThreshold : MerchantPriceResolver.DefaultRefuseStandingScore;
+
+            var (isRefused, refusedReason) = MerchantPriceResolver.EvaluateTradeRefusal(
+                exactAtt, exactRep, "", enableRefusal, refuseAtt, refuseFac, refuseScore);
+            if (isRefused)
+                return FailMerchant(MerchantTradeResultCode.TradeRefused, false, npc.npcId, itemId, quantity, refusedReason);
+
             var inv = ProjectC.Items.InventoryWorld.Instance;
             if (inv == null)
                 return FailMerchant(MerchantTradeResultCode.InternalError, false, npc.npcId, itemId, quantity, "Инвентарь не инициализирован");
@@ -717,7 +765,8 @@ namespace ProjectC.Quests
             float priceMult = table != null ? table.priceMultiplier : 1.0f;
             float sellBackMult = table != null ? table.sellBackPriceMultiplier : 0.5f;
             bool enableDiscount = table != null ? table.enableReputationDiscount : true;
-            float maxDisc = table != null ? table.maxReputationDiscountRatio : 0.20f;
+            float maxDisc = table != null ? table.EffectiveMaxDiscountRatio : MerchantPriceResolver.DefaultMaxDiscountRatio;
+            float maxMarkup = table != null ? table.maxReputationMarkupRatio : MerchantPriceResolver.DefaultMaxMarkupRatio;
             int defaultPrice = npc.testModeDefaultPrice > 0 ? npc.testModeDefaultPrice : 25;
 
             int customBuy = 0, customSell = 0, configuredStock = -1;
@@ -736,12 +785,8 @@ namespace ProjectC.Quests
                 }
             }
 
-            int factionWireId = npc.EffectiveFactionWireId;
-            float exactAtt = GetNpcAttitudeExact(clientId, npc.npcId);
-            float exactRep = GetReputationExact(clientId, factionWireId);
-
             int currentBuyLimit = MerchantPriceResolver.ResolveBuyPrice(
-                itemDef, customBuy, priceMult, defaultPrice, exactAtt, exactRep, enableDiscount, maxDisc);
+                itemDef, customBuy, priceMult, defaultPrice, exactAtt, exactRep, enableDiscount, maxDisc, maxMarkup);
             string soldItemName = itemDef.itemName ?? $"Item #{itemId}";
             if (TryGetPlayerUpgradedItem(clientId, itemId, out var soldUpg) && soldUpg != null)
             {
@@ -751,11 +796,12 @@ namespace ProjectC.Quests
                 {
                     customBuy = soldUpg.finalPrice;
                     customSell = 0;
-                    currentBuyLimit = 0;
+                    currentBuyLimit = MerchantPriceResolver.ResolveBuyPrice(
+                        itemDef, customBuy, priceMult, defaultPrice, exactAtt, exactRep, enableDiscount, maxDisc, maxMarkup);
                 }
             }
             int unitSellPrice = MerchantPriceResolver.ResolveSellPrice(
-                itemDef, customBuy, customSell, sellBackMult, defaultPrice, currentBuyLimit);
+                itemDef, customBuy, customSell, sellBackMult, defaultPrice, currentBuyLimit, exactAtt, exactRep, enableDiscount);
 
             var remRes = inv.RemoveItems(clientId, itemId, itemDef.itemType, quantity);
             if (!remRes.IsSuccess)
@@ -890,8 +936,14 @@ namespace ProjectC.Quests
             var cfg = npc.blacksmithConfig;
             BlacksmithTierMask allowedMask = npc.EffectiveBlacksmithTiers;
             bool enableDisc = cfg != null ? cfg.enableReputationDiscount : true;
-            float maxDisc = cfg != null ? cfg.maxReputationDiscountRatio : 0.20f;
-            float attFactor = MerchantPriceResolver.CalculateAttitudePriceFactor(exactAtt, exactRep, enableDisc, maxDisc);
+            float maxDisc = cfg != null ? cfg.EffectiveMaxDiscountRatio : MerchantPriceResolver.DefaultMaxDiscountRatio;
+            float maxMarkup = cfg != null ? cfg.maxReputationMarkupRatio : MerchantPriceResolver.DefaultMaxMarkupRatio;
+            bool enableRefusal = cfg != null ? cfg.refuseServiceOnLowReputation : true;
+            var (isRefused, refusedReason) = MerchantPriceResolver.EvaluateTradeRefusal(
+                exactAtt, exactRep, factionName, enableRefusal);
+            var standingTier = MerchantPriceResolver.ResolveStandingTier(exactAtt, exactRep, enableRefusal);
+            float standingScore = MerchantPriceResolver.CalculateStandingScore(exactAtt, exactRep);
+            float attFactor = MerchantPriceResolver.CalculateAttitudePriceFactor(exactAtt, exactRep, enableDisc, maxDisc, maxMarkup);
             int discountPct = Mathf.RoundToInt((attFactor - 1f) * 100f);
 
             string smithyTitle = (cfg != null && !string.IsNullOrEmpty(cfg.smithyTitle))
@@ -950,7 +1002,9 @@ namespace ProjectC.Quests
                             string diffSummary = BlacksmithUpgradeEngine.BuildUpgradeDiffSummary(previewRes.baseStats, previewRes.finalStats);
 
                             string lockMsg = "";
-                            if (!allowed)
+                            if (isRefused)
+                                lockMsg = refusedReason;
+                            else if (!allowed)
                                 lockMsg = "Кузнец не работает с этим материалом";
                             else if (!unlockedByRep)
                                 lockMsg = repReason;
@@ -963,7 +1017,7 @@ namespace ProjectC.Quests
                                 tierName = BlacksmithUpgradeEngine.GetTierDisplayName(tierEnum),
                                 colorHex = BlacksmithUpgradeEngine.GetTierColorHex(tierEnum),
                                 isAllowedByNpc = allowed,
-                                isUnlockedByRep = unlockedByRep && curTier < ti,
+                                isUnlockedByRep = !isRefused && unlockedByRep && curTier < ti,
                                 lockedReason = lockMsg,
                                 resourceItemId = resId,
                                 resourceName = resName ?? "",
@@ -1002,6 +1056,10 @@ namespace ProjectC.Quests
                 npcAttitudeExact = exactAtt,
                 factionReputationExact = exactRep,
                 discountPercent = discountPct,
+                standingTier = (byte)standingTier,
+                standingScore = standingScore,
+                isTradeRefused = isRefused,
+                tradeRefusedReason = refusedReason ?? "",
                 playerItems = itemsList.ToArray()
             };
         }
@@ -1069,13 +1127,18 @@ namespace ProjectC.Quests
             }
 
             var cfg = npc.blacksmithConfig;
-            var (unlockedByRep, repReason) = CheckBlacksmithTierRepUnlocked(clientId, npc, cfg, targetTier);
-            if (!unlockedByRep)
-                return FailBlacksmith(BlacksmithUpgradeResultCode.RequirementsNotMet, npc.npcId, targetItemId, targetTier, paymentMode, repReason);
-
             int factionWireId = npc.EffectiveFactionWireId;
             float exactAtt = GetNpcAttitudeExact(clientId, npc.npcId);
             float exactRep = GetReputationExact(clientId, factionWireId);
+            bool enableRefusal = cfg != null ? cfg.refuseServiceOnLowReputation : true;
+            var (isRefused, refusedReason) = MerchantPriceResolver.EvaluateTradeRefusal(
+                exactAtt, exactRep, "", enableRefusal);
+            if (isRefused)
+                return FailBlacksmith(BlacksmithUpgradeResultCode.TradeRefused, npc.npcId, targetItemId, targetTier, paymentMode, refusedReason);
+
+            var (unlockedByRep, repReason) = CheckBlacksmithTierRepUnlocked(clientId, npc, cfg, targetTier);
+            if (!unlockedByRep)
+                return FailBlacksmith(BlacksmithUpgradeResultCode.RequirementsNotMet, npc.npcId, targetItemId, targetTier, paymentMode, repReason);
 
             var (withResCredits, creditsOnlyCost) =
                 BlacksmithUpgradeEngine.CalculateUpgradeCosts(itemDef, targetTier, cfg, exactAtt, exactRep);

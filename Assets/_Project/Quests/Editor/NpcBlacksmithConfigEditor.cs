@@ -41,8 +41,10 @@ namespace ProjectC.Quests.Editor
             EditorGUILayout.PropertyField(serializedObject.FindProperty("enableReputationDiscount"), new GUIContent("Enable Reputation Discount"));
             if (cfg.enableReputationDiscount)
             {
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("maxReputationDiscountRatio"), new GUIContent("Max Discount Ratio"));
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("maxReputationDiscountRatio"), new GUIContent("Max Discount Ratio (up to 75%)"));
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("maxReputationMarkupRatio"), new GUIContent("Max Markup Ratio (Neg Rep)"));
             }
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("refuseServiceOnLowReputation"), new GUIContent("Refuse Service On Low Rep"));
 
             EditorGUILayout.Space(6);
             EditorGUILayout.PropertyField(serializedObject.FindProperty("tierOverrides"), new GUIContent("Per-Tier Custom Overrides"), true);

@@ -108,9 +108,41 @@ namespace ProjectC.Quests
         [Tooltip("Влияют ли отношение с кузнецом и репутация фракции на скидку.")]
         public bool enableReputationDiscount = true;
 
-        [Tooltip("Максимальная скидка за отношение и репутацию (0.20 = до 20%).")]
-        [Range(0f, 0.5f)]
-        public float maxReputationDiscountRatio = 0.20f;
+        [Tooltip("Максимальная скидка за отношение и репутацию (0.75 = до 75% скидки).")]
+        [Range(0f, 0.75f)]
+        public float maxReputationDiscountRatio = MerchantPriceResolver.DefaultMaxDiscountRatio;
+
+        [Tooltip("Максимальная наценка при отрицательной репутации перед отказом (1.00 = до +100% к цене работы).")]
+        [Range(0f, 2.0f)]
+        public float maxReputationMarkupRatio = MerchantPriceResolver.DefaultMaxMarkupRatio;
+
+        [Header("Trade Refusal (Negative Reputation Embargo)")]
+        [Tooltip("Если включено — при сильной вражде кузнец отказывается ковать для игрока.")]
+        public bool refuseServiceOnLowReputation = true;
+
+        [HideInInspector]
+        [SerializeField]
+        private int _pricingSchemaVersion = 2;
+
+        public float EffectiveMaxDiscountRatio
+        {
+            get
+            {
+                if (_pricingSchemaVersion < 2 && Mathf.Approximately(maxReputationDiscountRatio, 0.20f))
+                    return MerchantPriceResolver.DefaultMaxDiscountRatio;
+                return Mathf.Clamp(maxReputationDiscountRatio, 0f, MerchantPriceResolver.MaxAllowedDiscountRatio);
+            }
+        }
+
+        private void OnValidate()
+        {
+            if (_pricingSchemaVersion < 2)
+            {
+                if (Mathf.Approximately(maxReputationDiscountRatio, 0.20f))
+                    maxReputationDiscountRatio = MerchantPriceResolver.DefaultMaxDiscountRatio;
+                _pricingSchemaVersion = 2;
+            }
+        }
 
         [Header("Per-Tier Custom Overrides (Optional)")]
         [Tooltip("Опциональные переопределения ресурса, цены и порогов отношения для конкретных тиров.")]
@@ -337,9 +369,10 @@ namespace ProjectC.Quests
             float configMult = config != null ? Mathf.Max(0.1f, config.priceMultiplier) : 1.0f;
             float markupMult = config != null ? Mathf.Max(1.3f, config.creditsOnlyMarkupMultiplier) : 2.35f;
             bool enableDisc = config != null ? config.enableReputationDiscount : true;
-            float maxDisc = config != null ? config.maxReputationDiscountRatio : 0.20f;
+            float maxDisc = config != null ? config.EffectiveMaxDiscountRatio : MerchantPriceResolver.DefaultMaxDiscountRatio;
+            float maxMarkup = config != null ? config.maxReputationMarkupRatio : MerchantPriceResolver.DefaultMaxMarkupRatio;
 
-            float attFactor = MerchantPriceResolver.CalculateAttitudePriceFactor(npcAttitude, factionRep, enableDisc, maxDisc);
+            float attFactor = MerchantPriceResolver.CalculateAttitudePriceFactor(npcAttitude, factionRep, enableDisc, maxDisc, maxMarkup);
             float finalMult = configMult * attFactor;
 
             int rawWithResource = (entryOverride != null && entryOverride.customWorkFeeCredits > 0)

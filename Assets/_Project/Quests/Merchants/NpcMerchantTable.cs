@@ -10,6 +10,30 @@ using ProjectC.Equipment;
 namespace ProjectC.Quests
 {
     /// <summary>
+    /// T-MERCH-REP01: Ступень торговых отношений игрока с NPC и его фракцией.
+    /// Определяется по сводному индексу доверия StandingScore (-100..+100) и порогам враждебности.
+    /// </summary>
+    public enum MerchantStandingTier : byte
+    {
+        /// <summary>Полный бойкот / отказ от торговли (❤ &lt;= -50, ⚑ &lt;= -60 или индекс &lt;= -50).</summary>
+        Refused    = 0,
+        /// <summary>Изгой / Презираемый (индекс -49..-30): наценка +50%..+100%, скупка за бесценок.</summary>
+        Despised   = 1,
+        /// <summary>Недружелюбный / Подозрительный (индекс -29..-5): наценка +5%..+50%.</summary>
+        Unfriendly = 2,
+        /// <summary>Нейтральный (индекс -5..+10): от +5% наценки до -10% скидки (при 0 — базовая цена ×1.00).</summary>
+        Neutral    = 3,
+        /// <summary>Приятель / Постоянный клиент (индекс +10..+30): скидка -10%..-25%.</summary>
+        Friendly   = 4,
+        /// <summary>Уважаемый партнёр (индекс +30..+55): скидка -25%..-45%.</summary>
+        Honored    = 5,
+        /// <summary>Почитаемый союзник (индекс +55..+80): скидка -45%..-62%.</summary>
+        Revered    = 6,
+        /// <summary>Свой человек / Легенда гильдии (индекс +80..+100): скидка -62%..-75%.</summary>
+        Exalted    = 7
+    }
+
+    /// <summary>
     /// Запись одного товара в личной таблице торговца NPC.
     /// </summary>
     [Serializable]
@@ -77,9 +101,56 @@ namespace ProjectC.Quests
         [Tooltip("Если включено — высокое отношение с NPC и репутация фракции дают скидку на покупку (до maxReputationDiscountRatio).")]
         public bool enableReputationDiscount = true;
 
-        [Tooltip("Максимальная скидка за максимальное отношение/репутацию (0.20 = до 20% скидки).")]
-        [Range(0f, 0.5f)]
-        public float maxReputationDiscountRatio = 0.20f;
+        [Tooltip("Максимальная скидка за максимальное отношение с NPC (+200) и репутацию фракции (+100). По умолчанию 0.75 = до 75% скидки.")]
+        [Range(0f, 0.75f)]
+        public float maxReputationDiscountRatio = MerchantPriceResolver.DefaultMaxDiscountRatio;
+
+        [Tooltip("Максимальная наценка при сильно отрицательной репутации перед полным отказом от торговли (1.00 = до +100% к цене, т.е. ×2.0).")]
+        [Range(0f, 2.0f)]
+        public float maxReputationMarkupRatio = MerchantPriceResolver.DefaultMaxMarkupRatio;
+
+        [Header("Trade Refusal (Negative Reputation Embargo)")]
+        [Tooltip("Если включено — при сильной вражде NPC или фракции торговец полностью отказывается торговать с игроком.")]
+        public bool refuseTradeOnLowReputation = true;
+
+        [Tooltip("Порог личного отношения NPC (❤), на котором и ниже которого торговец отказывается торговать (по умолчанию -50, совпадает с порогом агрессии NpcBrain).")]
+        [Range(-100f, 0f)]
+        public float refuseTradeNpcAttitudeThreshold = MerchantPriceResolver.DefaultRefuseNpcAttitude;
+
+        [Tooltip("Порог репутации фракции NPC (⚑), на котором и ниже которого объявляется фракционный бойкот (по умолчанию -60).")]
+        [Range(-100f, 0f)]
+        public float refuseTradeFactionRepThreshold = MerchantPriceResolver.DefaultRefuseFactionRep;
+
+        [Tooltip("Порог сводного индекса торгового доверия (-100..+100), на котором и ниже которого торговец прекращает торговлю (по умолчанию -50).")]
+        [Range(-100f, 0f)]
+        public float refuseTradeStandingScoreThreshold = MerchantPriceResolver.DefaultRefuseStandingScore;
+
+        [HideInInspector]
+        [SerializeField]
+        private int _pricingSchemaVersion = 2;
+
+        /// <summary>
+        /// Эффективный потолок скидки с учётом бесшовной миграции таблиц T-MERCH01/T-MERCH80 (где был старый дефолт 0.20).
+        /// </summary>
+        public float EffectiveMaxDiscountRatio
+        {
+            get
+            {
+                if (_pricingSchemaVersion < 2 && Mathf.Approximately(maxReputationDiscountRatio, 0.20f))
+                    return MerchantPriceResolver.DefaultMaxDiscountRatio;
+                return Mathf.Clamp(maxReputationDiscountRatio, 0f, MerchantPriceResolver.MaxAllowedDiscountRatio);
+            }
+        }
+
+        private void OnValidate()
+        {
+            if (_pricingSchemaVersion < 2)
+            {
+                if (Mathf.Approximately(maxReputationDiscountRatio, 0.20f))
+                    maxReputationDiscountRatio = MerchantPriceResolver.DefaultMaxDiscountRatio;
+                _pricingSchemaVersion = 2;
+            }
+        }
 
         [Header("Assortment (Personal Item Table)")]
         [Tooltip("Список предметов, которые продаёт этот NPC.")]
@@ -97,6 +168,22 @@ namespace ProjectC.Quests
         /// </summary>
         public const float ReputationPer100Credits = 0.1f;
         public const float ReputationPerCredit = ReputationPer100Credits / 100f; // 0.001f
+
+        /// <summary>Максимальная скидка по умолчанию при пиковой репутации (75%).</summary>
+        public const float DefaultMaxDiscountRatio = 0.75f;
+        public const float MaxAllowedDiscountRatio = 0.75f;
+
+        /// <summary>Максимальная наценка по умолчанию на грани бойкота (+100%, т.е. ×2.0).</summary>
+        public const float DefaultMaxMarkupRatio = 1.00f;
+
+        /// <summary>Канонические пороги отказа от торговли при отрицательной репутации.</summary>
+        public const float DefaultRefuseNpcAttitude   = -50f;
+        public const float DefaultRefuseFactionRep    = -60f;
+        public const float DefaultRefuseStandingScore = -50f;
+
+        /// <summary>Веса личного отношения NPC (60%) и репутации фракции (40%) в сводном индексе доверия.</summary>
+        public const float NpcAttitudeWeight = 0.60f;
+        public const float FactionRepWeight  = 0.40f;
 
         /// <summary>
         /// Вычислить точный прирост репутации/отношения за потраченные игроком кредиты.
@@ -168,28 +255,211 @@ namespace ProjectC.Quests
         }
 
         /// <summary>
+        /// T-MERCH-REP01: Нормализовать личное отношение NPC (-100..+200) к шкале [-100..+100].
+        /// При положительном отношении +200 даёт +100; при отрицательном -100 даёт -100.
+        /// </summary>
+        public static float NormalizeNpcAttitude(float npcAttitude)
+        {
+            if (npcAttitude >= 0f)
+                return Mathf.Clamp(npcAttitude / 200f, 0f, 1f) * 100f;
+            return Mathf.Clamp(npcAttitude, -100f, 0f);
+        }
+
+        /// <summary>
+        /// T-MERCH-REP01: Вычислить сводный индекс торгового доверия в диапазоне [-100..+100].
+        /// Учитывает 60% личного отношения с NPC (нормированного к -100..+100) и 40% репутации фракции (-100..+100).
+        /// </summary>
+        public static float CalculateStandingScore(float npcAttitude, float factionRep)
+        {
+            float normNpc = NormalizeNpcAttitude(npcAttitude);
+            float normFac = Mathf.Clamp(factionRep, -100f, 100f);
+            return Mathf.Clamp(normNpc * NpcAttitudeWeight + normFac * FactionRepWeight, -100f, 100f);
+        }
+
+        /// <summary>
+        /// T-MERCH-REP01: Проверить, отказывается ли торговец/кузнец вести дела с игроком из-за сильной вражды.
+        /// Отказ наступает при пробитии любого из трёх порогов:
+        /// 1) Личное отношение ❤ &lt;= refuseNpcAttitudeThreshold (по умолчанию -50);
+        /// 2) Репутация фракции ⚑ &lt;= refuseFactionRepThreshold (по умолчанию -60);
+        /// 3) Сводный индекс доверия &lt;= refuseStandingScoreThreshold (по умолчанию -50).
+        /// </summary>
+        public static (bool isRefused, string reason) EvaluateTradeRefusal(
+            float npcAttitude,
+            float factionRep,
+            string factionDisplayName = "",
+            bool enableRefusal = true,
+            float refuseNpcAttitudeThreshold = DefaultRefuseNpcAttitude,
+            float refuseFactionRepThreshold = DefaultRefuseFactionRep,
+            float refuseStandingScoreThreshold = DefaultRefuseStandingScore)
+        {
+            if (!enableRefusal)
+                return (false, "");
+
+            float eps = 1e-3f;
+            if (npcAttitude <= refuseNpcAttitudeThreshold + eps)
+            {
+                return (true,
+                    $"Торговец враждебен к вам (отношение ❤ {npcAttitude:0.0} ≤ {refuseNpcAttitudeThreshold:0}). Торговля прекращена.");
+            }
+
+            if (factionRep <= refuseFactionRepThreshold + eps)
+            {
+                string facLabel = string.IsNullOrEmpty(factionDisplayName) ? "фракции" : $"фракции «{factionDisplayName}»";
+                return (true,
+                    $"Бойкот {facLabel} (репутация ⚑ {factionRep:0.0} ≤ {refuseFactionRepThreshold:0}). Торговец отказывается иметь с вами дело.");
+            }
+
+            float standingScore = CalculateStandingScore(npcAttitude, factionRep);
+            if (standingScore <= refuseStandingScoreThreshold + eps)
+            {
+                return (true,
+                    $"Слишком дурная репутация (индекс доверия {standingScore:0.0} ≤ {refuseStandingScoreThreshold:0}). Торговец не ведёт с вами дел.");
+            }
+
+            return (false, "");
+        }
+
+        /// <summary>
+        /// T-MERCH-REP01: Определить текущую ступень отношений с торговцем по отношению NPC и репутации фракции.
+        /// </summary>
+        public static MerchantStandingTier ResolveStandingTier(
+            float npcAttitude,
+            float factionRep,
+            bool enableRefusal = true,
+            float refuseNpcAttitudeThreshold = DefaultRefuseNpcAttitude,
+            float refuseFactionRepThreshold = DefaultRefuseFactionRep,
+            float refuseStandingScoreThreshold = DefaultRefuseStandingScore)
+        {
+            var (isRefused, _) = EvaluateTradeRefusal(
+                npcAttitude,
+                factionRep,
+                "",
+                enableRefusal,
+                refuseNpcAttitudeThreshold,
+                refuseFactionRepThreshold,
+                refuseStandingScoreThreshold);
+
+            if (isRefused)
+                return MerchantStandingTier.Refused;
+
+            float score = CalculateStandingScore(npcAttitude, factionRep);
+            if (score <= -30f) return MerchantStandingTier.Despised;
+            if (score <= -5f)  return MerchantStandingTier.Unfriendly;
+            if (score < 10f)   return MerchantStandingTier.Neutral;
+            if (score < 30f)   return MerchantStandingTier.Friendly;
+            if (score < 55f)   return MerchantStandingTier.Honored;
+            if (score < 80f)   return MerchantStandingTier.Revered;
+            return MerchantStandingTier.Exalted;
+        }
+
+        /// <summary>
+        /// T-MERCH-REP01: Человекочитаемое название ступени отношений с торговцем.
+        /// </summary>
+        public static string GetStandingTierDisplayName(MerchantStandingTier tier)
+        {
+            return tier switch
+            {
+                MerchantStandingTier.Refused    => "🚫 Бойкот (Отказ)",
+                MerchantStandingTier.Despised   => "⚠ Изгой",
+                MerchantStandingTier.Unfriendly => "Недружелюбный",
+                MerchantStandingTier.Neutral    => "Нейтральный",
+                MerchantStandingTier.Friendly   => "Приятель",
+                MerchantStandingTier.Honored    => "Уважаемый",
+                MerchantStandingTier.Revered    => "Почитаемый",
+                MerchantStandingTier.Exalted    => "★ Свой человек",
+                _                               => "Нейтральный"
+            };
+        }
+
+        /// <summary>
         /// Рассчитать коэффициент скидки/наценки от отношения NPC и репутации фракции.
-        /// При положительном отношении цена снижается до (1 - maxDiscountRatio),
-        /// при отрицательном — увеличивается до +25%.
+        /// T-MERCH-REP01: Кусочно-линейная кривая по ступеням доверия:
+        /// - При положительном индексе (0..+100): плавная скидка по тирам вплоть до -75% (множитель 0.25):
+        ///   Neutral (0..10) → 0%..-10% | Friendly (10..30) → -10%..-25% | Honored (30..55) → -25%..-45% |
+        ///   Revered (55..80) → -45%..-62% | Exalted (80..100) → -62%..-75%.
+        /// - При отрицательном индексе (0..-50): плавная наценка по тирам вплоть до +100% (множитель 2.00):
+        ///   Neutral (0..-5) → 0%..+5% | Unfriendly (-5..-30) → +5%..+50% | Despised (-30..-50) → +50%..+100%.
         /// </summary>
         public static float CalculateAttitudePriceFactor(
             float npcAttitude,
             float factionRep,
             bool enableDiscount,
-            float maxDiscountRatio = 0.20f)
+            float maxDiscountRatio = DefaultMaxDiscountRatio,
+            float maxMarkupRatio = DefaultMaxMarkupRatio)
         {
             if (!enableDiscount) return 1.0f;
-            // Комбинированный рейтинг: отношение NPC (до 200) + репутация фракции (до 100)
-            float combinedNormalized = Mathf.Clamp((npcAttitude / 200f) * 0.65f + (factionRep / 100f) * 0.35f, -1f, 1f);
-            if (combinedNormalized >= 0f)
+
+            float score = CalculateStandingScore(npcAttitude, factionRep);
+            if (score >= 0f)
             {
-                float discount = combinedNormalized * Mathf.Clamp(maxDiscountRatio, 0f, 0.5f);
-                return Mathf.Max(0.5f, 1f - discount);
+                // Каноническая кривая скидки (при эталонном потолке 0.75):
+                //   0  -> 0.00 (0%)
+                //   10 -> 0.10 (-10%, Приятель)
+                //   30 -> 0.25 (-25%, Уважаемый)
+                //   55 -> 0.45 (-45%, Почитаемый)
+                //   80 -> 0.62 (-62%, Свой человек)
+                //   100-> 0.75 (-75%, Максимум)
+                float canonicalDiscount;
+                if (score <= 10f)
+                    canonicalDiscount = Mathf.Lerp(0f, 0.10f, score / 10f);
+                else if (score <= 30f)
+                    canonicalDiscount = Mathf.Lerp(0.10f, 0.25f, (score - 10f) / 20f);
+                else if (score <= 55f)
+                    canonicalDiscount = Mathf.Lerp(0.25f, 0.45f, (score - 30f) / 25f);
+                else if (score <= 80f)
+                    canonicalDiscount = Mathf.Lerp(0.45f, 0.62f, (score - 55f) / 25f);
+                else
+                    canonicalDiscount = Mathf.Lerp(0.62f, DefaultMaxDiscountRatio, (score - 80f) / 20f);
+
+                float clampedMaxDisc = Mathf.Clamp(maxDiscountRatio, 0f, MaxAllowedDiscountRatio);
+                float scale = DefaultMaxDiscountRatio > 1e-4f ? (clampedMaxDisc / DefaultMaxDiscountRatio) : 0f;
+                float finalDiscount = Mathf.Clamp(canonicalDiscount * scale, 0f, MaxAllowedDiscountRatio);
+                return Mathf.Max(1f - MaxAllowedDiscountRatio, 1f - finalDiscount);
             }
             else
             {
-                float penalty = (-combinedNormalized) * 0.25f;
-                return 1f + penalty;
+                // Каноническая кривая наценки при плохой репутации (0..-50, до порога бойкота):
+                //   0   -> +0%
+                //  -5   -> +5%  (Недружелюбный)
+                //  -30  -> +50% (Изгой / Презираемый)
+                //  -50  -> +100% (×2.0 на пороге отказа от торговли)
+                float neg = Mathf.Clamp(-score, 0f, 50f);
+                float canonicalMarkup;
+                if (neg <= 5f)
+                    canonicalMarkup = Mathf.Lerp(0f, 0.05f, neg / 5f);
+                else if (neg <= 30f)
+                    canonicalMarkup = Mathf.Lerp(0.05f, 0.50f, (neg - 5f) / 25f);
+                else
+                    canonicalMarkup = Mathf.Lerp(0.50f, DefaultMaxMarkupRatio, (neg - 30f) / 20f);
+
+                float clampedMaxMarkup = Mathf.Clamp(maxMarkupRatio, 0f, 2.0f);
+                float scale = DefaultMaxMarkupRatio > 1e-4f ? (clampedMaxMarkup / DefaultMaxMarkupRatio) : 0f;
+                float finalMarkup = Mathf.Clamp(canonicalMarkup * scale, 0f, 2.0f);
+                return 1f + finalMarkup;
+            }
+        }
+
+        /// <summary>
+        /// T-MERCH-REP01: Коэффициент влияния репутации на цену скупки предметов у игрока.
+        /// При отрицательной репутации торговец занижает выплату вплоть до ×0.50 от базовой скупки;
+        /// при высокой репутации повышает ставку скупки до ×1.30 (но итоговая цена скупки всегда
+        /// остаётся строго ниже текущей цены покупки этого предмета у торговца, исключая абуз перепродажи).
+        /// </summary>
+        public static float CalculateAttitudeSellBackFactor(
+            float npcAttitude,
+            float factionRep,
+            bool enableDiscount)
+        {
+            if (!enableDiscount) return 1.0f;
+            float score = CalculateStandingScore(npcAttitude, factionRep);
+            if (score >= 0f)
+            {
+                return Mathf.Lerp(1.0f, 1.30f, Mathf.Clamp01(score / 100f));
+            }
+            else
+            {
+                float negT = Mathf.Clamp01((-score) / 50f);
+                return Mathf.Lerp(1.0f, 0.50f, negT);
             }
         }
 
@@ -204,14 +474,15 @@ namespace ProjectC.Quests
             float npcAttitude,
             float factionRep,
             bool enableReputationDiscount,
-            float maxDiscountRatio = 0.20f)
+            float maxDiscountRatio = DefaultMaxDiscountRatio,
+            float maxMarkupRatio = DefaultMaxMarkupRatio)
         {
             int rawBase = customBuyPrice > 0
                 ? customBuyPrice
                 : EstimateBaseItemPrice(item, fallbackBasePrice);
 
             float mult = Mathf.Max(0.1f, tablePriceMultiplier) *
-                         CalculateAttitudePriceFactor(npcAttitude, factionRep, enableReputationDiscount, maxDiscountRatio);
+                         CalculateAttitudePriceFactor(npcAttitude, factionRep, enableReputationDiscount, maxDiscountRatio, maxMarkupRatio);
 
             return Mathf.Max(1, Mathf.RoundToInt(rawBase * mult));
         }
@@ -226,12 +497,16 @@ namespace ProjectC.Quests
             int customSellPrice,
             float sellBackMultiplier,
             int fallbackBasePrice,
-            int currentBuyPriceLimit = 0)
+            int currentBuyPriceLimit = 0,
+            float npcAttitude = 0f,
+            float factionRep = 0f,
+            bool enableReputationDiscount = false)
         {
             int sellPrice;
+            float repSellFactor = CalculateAttitudeSellBackFactor(npcAttitude, factionRep, enableReputationDiscount);
             if (customSellPrice > 0)
             {
-                sellPrice = customSellPrice;
+                sellPrice = Mathf.Max(1, Mathf.RoundToInt(customSellPrice * repSellFactor));
             }
             else
             {
@@ -239,7 +514,7 @@ namespace ProjectC.Quests
                     ? customBuyPrice
                     : EstimateBaseItemPrice(item, fallbackBasePrice);
                 float ratio = Mathf.Clamp(sellBackMultiplier, 0.05f, 0.95f);
-                sellPrice = Mathf.Max(1, Mathf.RoundToInt(baseVal * ratio));
+                sellPrice = Mathf.Max(1, Mathf.RoundToInt(baseVal * ratio * repSellFactor));
             }
 
             if (currentBuyPriceLimit > 0 && sellPrice >= currentBuyPriceLimit)

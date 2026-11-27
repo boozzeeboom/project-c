@@ -377,7 +377,12 @@ namespace ProjectC.EditorTools.Merchants
                     table.allowPlayerSellToNpc = true;
                     table.sellBackPriceMultiplier = 0.40f + (i % 4) * 0.05f;
                     table.enableReputationDiscount = true;
-                    table.maxReputationDiscountRatio = 0.20f;
+                    table.maxReputationDiscountRatio = MerchantPriceResolver.DefaultMaxDiscountRatio;
+                    table.maxReputationMarkupRatio = MerchantPriceResolver.DefaultMaxMarkupRatio;
+                    table.refuseTradeOnLowReputation = true;
+                    table.refuseTradeNpcAttitudeThreshold = MerchantPriceResolver.DefaultRefuseNpcAttitude;
+                    table.refuseTradeFactionRepThreshold = MerchantPriceResolver.DefaultRefuseFactionRep;
+                    table.refuseTradeStandingScoreThreshold = MerchantPriceResolver.DefaultRefuseStandingScore;
                     table.items = BuildEntries(pool, spec, i);
                     EditorUtility.SetDirty(table);
 

@@ -40,3 +40,18 @@
 - `Assets/_Project/Prefabs/FloatingOrigin/GlobalMotionPilotSceneCatalog.asset`, `GlobalMotionPilotProfile.asset` — перепечён каталог после смены вложенных префабов (210 entries, digest сходится).
 - `Tools/MerchantPrimumn80/Generator.cs` — `PreviewModels`, `ApplyFactionsAndModels`, `ProbeModelBounds`, `VerifyFactionsAndModels`, `AuditAllTradeNpcs`.
 - `docs/dev/T_MERCH80_PRIMUM_MERCHANTS.md` — таблица фракций и моделей.
+
+## Итерация от 2026-11-27 — T-MERCH-REP01
+
+**Задача:** динамическое ценообразование торговцев и кузнецов от личного отношения NPC (`NpcAttitude`) и репутации фракции (`FactionReputation`): 8 геймплейных ступеней (`MerchantStandingTier`), скидка вплоть до 75% при высокой репутации, наценка до +100% при отрицательной и полный отказ от торговли при сильной вражде (`❤ <= -50`, `⚑ <= -60` или индекс `<= -50`).
+
+**Коммит:** T-MERCH-REP01 (см. `git log`).
+
+**Изменения:**
+- `Assets/_Project/Quests/Merchants/NpcMerchantTable.cs` — `MerchantStandingTier`, расчёт `StandingScore` (60% NPC + 40% фракция), кусочно-линейная шкала скидок до `-75%` и наценок до `+100%`, влияние на цену скупки с анти-эксплойт потолком, проверка отказа `EvaluateTradeRefusal`, бесшовная миграция существующих таблиц (`0.20 → 0.75`).
+- `Assets/_Project/Quests/Merchants/NpcBlacksmithConfig.cs` — синхронизация потолка скидки до 75%, наценки до +100% и флага отказа кузнеца при низкой репутации.
+- `Assets/_Project/Quests/Dto/MerchantDtos.cs`, `Assets/_Project/Quests/Dto/BlacksmithDtos.cs` — код результата `TradeRefused`, поля `standingTier`, `standingScore`, `isTradeRefused`, `tradeRefusedReason` в снапшотах.
+- `Assets/_Project/Quests/Core/QuestWorld.cs` — серверная блокировка сделок при бойкоте (`TradeRefused`), заполнение тира и причины отказа в снапшотах магазина и кузницы.
+- `Assets/_Project/Quests/UI/DialogWindow.cs` — отображение ступени отношений (`[★ Свой человек]`, `[Уважаемый]`, `[🚫 Бойкот]` и т.д.), баннера причины отказа и блокировки кнопок покупки/продажи/ковки.
+- `Assets/_Project/Quests/Editor/NpcMerchantTableEditor.cs`, `Assets/_Project/Quests/Editor/NpcBlacksmithConfigEditor.cs`, `Tools/MerchantPrimumn80/Generator.cs` — поля настройки наценки и порогов отказа в инспекторе и генераторе.
+- `docs/NPC_quests/merchants/README.md`, `00_NPC_MERCHANT_GUIDE.md`, `01_NPC_BLACKSMITH_GUIDE.md`, `docs/dev/T_MERCH80_PRIMUM_MERCHANTS.md` — документация формул и таблицы уровней.

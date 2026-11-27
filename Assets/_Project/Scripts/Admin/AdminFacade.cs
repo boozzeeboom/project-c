@@ -5,7 +5,13 @@ using ProjectC.AI;
 using ProjectC.Combat;
 using ProjectC.Core;
 using ProjectC.Core.ShipPosition;
+using ProjectC.Items;
+using ProjectC.Items.Client;
+using ProjectC.Items.Network;
 using ProjectC.Player;
+using ProjectC.Trade.Client;
+using ProjectC.Trade.Core;
+using ProjectC.Trade.Network;
 using ProjectC.UI;
 using ProjectC.UI.MainMenu;
 using ProjectC.World;
@@ -306,5 +312,115 @@ namespace ProjectC.Admin
         public string WipeKeyInstances() => PersistenceDebugTools.DeleteKeyInstanceSaves();
         public string WipeWorldTime() => PersistenceDebugTools.DeleteWorldTimeSaves();
         public string WipeTrade() => PersistenceDebugTools.DeleteTradeSaves();
+
+        // ==================== T-ADM-10: выдача предметов ====================
+
+        /// <summary>Максимум за одно нажатие «Дать» (защита от случайного 999999).</summary>
+        public const int AdminGrantMaxCount = 500;
+
+        /// <summary>Каталог всех предметов (ItemRegistry + Resources/Items, включая экипировку).</summary>
+        public IReadOnlyList<AdminItemEntry> GetItemCatalog() => AdminItemCatalog.All;
+
+        /// <summary>
+        /// Выдать предмет локальному игроку. На сервере — сразу, на клиенте — RPC.
+        /// id &lt;= 0 → сервер резолвит предмет по имени ассета (экипировка вне ItemRegistry).
+        /// </summary>
+        public string AdminGiveItem(int itemId, string assetName, int count)
+        {
+            var p = LocalPlayer();
+            if (p == null) return "Нет локального игрока";
+            var inv = InventoryServer.Instance;
+            if (inv == null) return "InventoryServer не найден";
+
+            count = Mathf.Clamp(count, 1, AdminGrantMaxCount);
+            var nm = NetworkManager.Singleton;
+            if (nm != null && nm.IsServer)
+                return inv.AdminGiveItem(p.OwnerClientId, itemId, assetName, count);
+
+            inv.RequestAdminGiveItemRpc(itemId, assetName ?? string.Empty, count);
+            return $"Запрос серверу: ×{count} (id={itemId})";
+        }
+
+        // ==================== T-ADM-10: деньги ====================
+
+        private bool _infiniteCreditsOn;
+
+        public bool InfiniteCreditsEnabled => _infiniteCreditsOn;
+
+        /// <summary>Текущий баланс: сервер — из репозитория, клиент — из последнего snapshot.</summary>
+        public bool TryGetLocalCredits(out float credits)
+        {
+            var p = LocalPlayer();
+            var world = TradeWorld.Instance;
+            if (p != null && world != null && world.Repository != null)
+            {
+                credits = world.Repository.GetCredits(p.OwnerClientId);
+                return true;
+            }
+
+            var market = MarketClientState.Instance;
+            if (market != null && market.CurrentSnapshot.HasValue)
+            {
+                credits = market.CurrentSnapshot.Value.credits;
+                return true;
+            }
+
+            var inv = InventoryClientState.Instance;
+            if (inv != null && inv.CurrentSnapshot.HasValue)
+            {
+                credits = inv.CurrentSnapshot.Value.credits;
+                return true;
+            }
+
+            credits = 0f;
+            return false;
+        }
+
+        public string GetLocalCreditsText()
+            => TryGetLocalCredits(out float credits) ? $"{credits:N0} CR" : "н/д";
+
+        /// <summary>Установить точную сумму кредитов. На клиенте — RPC в MarketServer.</summary>
+        public string AdminSetCredits(float amount)
+        {
+            var p = LocalPlayer();
+            if (p == null) return "Нет локального игрока";
+            var market = MarketServer.Instance;
+            if (market == null) return "MarketServer не найден";
+
+            amount = Mathf.Max(0f, amount);
+            var nm = NetworkManager.Singleton;
+            // Явная сумма отменяет бесконечный режим, иначе рефилл перезапишет её через секунду.
+            if (_infiniteCreditsOn)
+            {
+                _infiniteCreditsOn = false;
+                if (nm != null && nm.IsServer) market.AdminSetInfiniteCredits(p.OwnerClientId, false);
+                else market.RequestAdminInfiniteCreditsRpc(false);
+            }
+            if (nm != null && nm.IsServer)
+                return market.AdminSetCredits(p.OwnerClientId, amount)
+                    ? $"Кредиты = {amount:N0} CR"
+                    : "Сервер: не удалось записать кредиты";
+
+            market.RequestAdminSetCreditsRpc(amount);
+            return $"Запрос серверу: {amount:N0} CR";
+        }
+
+        /// <summary>Бесконечные деньги: сервер держит баланс на потолке после каждой покупки.</summary>
+        public string SetInfiniteCredits(bool enabled)
+        {
+            var p = LocalPlayer();
+            if (p == null) return "Нет локального игрока";
+            var market = MarketServer.Instance;
+            if (market == null) return "MarketServer не найден";
+
+            _infiniteCreditsOn = enabled;
+            var nm = NetworkManager.Singleton;
+            if (nm != null && nm.IsServer)
+                market.AdminSetInfiniteCredits(p.OwnerClientId, enabled);
+            else
+                market.RequestAdminInfiniteCreditsRpc(enabled);
+
+            return enabled ? "Бесконечные деньги: ВКЛ" : "Бесконечные деньги: выкл";
+        }
     }
 }

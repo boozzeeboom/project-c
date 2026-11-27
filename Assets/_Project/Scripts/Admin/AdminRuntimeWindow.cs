@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using ProjectC.Items;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.UIElements;
@@ -39,12 +40,13 @@ namespace ProjectC.Admin
 
         private static readonly string[] Tabs =
         {
-            "fly", "teleport", "respawn", "hud", "world", "route", "tests", "logs", "saves"
+            "fly", "teleport", "grant", "respawn", "hud", "world", "route", "tests", "logs", "saves"
         };
 
         private static readonly Dictionary<string, string> TabTitles = new Dictionary<string, string>
         {
-            { "fly", "Полёт" }, { "teleport", "Телепорт" }, { "respawn", "Респавн" },
+            { "fly", "Полёт" }, { "teleport", "Телепорт" }, { "grant", "Выдача" },
+            { "respawn", "Респавн" },
             { "hud", "HUD" }, { "world", "Мир" }, { "route", "Маршрут" },
             { "tests", "Тесты" }, { "logs", "Логи" }, { "saves", "Сейвы" }
         };
@@ -206,6 +208,7 @@ namespace ProjectC.Admin
             {
                 case "fly": BuildFlyTab(); break;
                 case "teleport": BuildTeleportTab(); break;
+                case "grant": BuildGrantTab(); break;
                 case "respawn": BuildRespawnTab(); break;
                 case "hud": BuildHudTab(); break;
                 case "world": BuildWorldTab(); break;
@@ -375,6 +378,191 @@ namespace ProjectC.Admin
             {
                 if (int.TryParse(_peakIndex, out int i)) Facade().TeleportToPeak(i);
             });
+        }
+
+        // ==================== Вкладка «Выдача» (T-ADM-10) ====================
+        // Деньги: точная сумма + бесконечный режим (сервер, MarketServer).
+        // Предметы: каталог ItemRegistry + Resources/Items с поиском, фильтром типа
+        // и постраничным списком (2100+ записей в один список не влезают).
+
+        private string _grantSearch = "";
+        private int _grantTypeFilter = -1;
+        private int _grantPage;
+        private string _grantCount = "1";
+        private string _creditAmount = "10000";
+        private const int GrantPageSize = 25;
+        private VisualElement _grantList;
+        private Label _grantReport;
+        private Label _grantCreditsLabel;
+        private Toggle _infiniteToggle;
+
+        private void BuildGrantTab()
+        {
+            AddLabel("💰 Деньги", 14);
+            _grantCreditsLabel = AddLabel("Кредитов: " + Facade().GetLocalCreditsText(), 13);
+            AddTextRow("Сумма:", _creditAmount, v => _creditAmount = v);
+
+            var presets = new VisualElement();
+            presets.style.flexDirection = FlexDirection.Row;
+            presets.Add(CreateContentButton("10 000", () => ApplyCredits(10000f)));
+            presets.Add(CreateContentButton("100 000", () => ApplyCredits(100000f)));
+            presets.Add(CreateContentButton("1 000 000", () => ApplyCredits(1000000f)));
+            presets.Add(CreateContentButton("0", () => ApplyCredits(0f)));
+            _content.Add(presets);
+
+            AddButton("УСТАНОВИТЬ СУММУ", () =>
+            {
+                if (float.TryParse(_creditAmount, out float amount)) ApplyCredits(amount);
+                else SetGrantReport("Не число: " + _creditAmount);
+            });
+            _infiniteToggle = AddToggle("♾ Бесконечные деньги", Facade().InfiniteCreditsEnabled, v =>
+            {
+                SetGrantReport(Facade().SetInfiniteCredits(v));
+                RefreshCreditsLabel();
+            });
+            AddLabel("Бесконечный режим: сервер раз в секунду возвращает баланс к 999 999 999 CR — покупки не блокируются. " +
+                     "Сейв кредитов и торговые операции не меняются. Установка суммы выключает режим.", 11);
+
+            AddLabel("📦 Предметы", 14);
+            AddTextRow("Поиск:", _grantSearch, v =>
+            {
+                _grantSearch = v;
+                _grantPage = 0;
+                RenderGrantList();
+            });
+            AddTextRow("Кол-во:", _grantCount, v => _grantCount = v);
+
+            var choices = new List<string> { "Все типы" };
+            foreach (ItemType type in System.Enum.GetValues(typeof(ItemType)))
+                choices.Add(AdminItemCatalog.TypeLabel(type));
+            var typeDrop = new DropdownField("Тип", choices, Mathf.Max(0, _grantTypeFilter + 1));
+            typeDrop.style.fontSize = 13;
+            typeDrop.style.marginBottom = 3;
+            typeDrop.RegisterValueChangedCallback(e =>
+            {
+                _grantTypeFilter = Mathf.Max(-1, choices.IndexOf(e.newValue) - 1);
+                _grantPage = 0;
+                RenderGrantList();
+            });
+            _content.Add(typeDrop);
+
+            _grantList = new VisualElement();
+            _content.Add(_grantList);
+            _grantReport = AddLabel("", 12);
+            RenderGrantList();
+        }
+
+        private Button CreateContentButton(string label, System.Action onClick)
+        {
+            var b = new Button(() => { onClick?.Invoke(); RefreshStatus(); }) { text = label };
+            b.style.fontSize = 13;
+            b.style.color = Color.white;
+            b.style.whiteSpace = WhiteSpace.Normal;
+            b.style.paddingTop = 2; b.style.paddingBottom = 2;
+            b.style.marginRight = 2; b.style.marginBottom = 2;
+            return b;
+        }
+
+        private void ApplyCredits(float amount)
+        {
+            SetGrantReport(Facade().AdminSetCredits(amount));
+            if (_infiniteToggle != null && !Facade().InfiniteCreditsEnabled)
+                _infiniteToggle.SetValueWithoutNotify(false);
+            RefreshCreditsLabel();
+        }
+
+        private void RefreshCreditsLabel()
+        {
+            if (_grantCreditsLabel != null)
+                _grantCreditsLabel.text = "Кредитов: " + Facade().GetLocalCreditsText();
+        }
+
+        private void SetGrantReport(string text)
+        {
+            if (_grantReport != null) _grantReport.text = text ?? string.Empty;
+        }
+
+        private void RenderGrantList()
+        {
+            if (_grantList == null) return;
+            _grantList.Clear();
+
+            var all = Facade().GetItemCatalog();
+            string search = _grantSearch != null ? _grantSearch.Trim() : "";
+            var filtered = new List<AdminItemEntry>();
+            for (int i = 0; i < all.Count; i++)
+            {
+                var e = all[i];
+                if (_grantTypeFilter >= 0 && (int)e.Type != _grantTypeFilter) continue;
+                if (search.Length > 0
+                    && e.DisplayName.IndexOf(search, System.StringComparison.OrdinalIgnoreCase) < 0
+                    && e.AssetName.IndexOf(search, System.StringComparison.OrdinalIgnoreCase) < 0) continue;
+                filtered.Add(e);
+            }
+
+            int pages = Mathf.Max(1, Mathf.CeilToInt(filtered.Count / (float)GrantPageSize));
+            _grantPage = Mathf.Clamp(_grantPage, 0, pages - 1);
+            AddLabelTo(_grantList, $"Найдено: {filtered.Count} (стр. {_grantPage + 1}/{pages})", 12);
+
+            var nav = new VisualElement();
+            nav.style.flexDirection = FlexDirection.Row;
+            nav.Add(CreateContentButton("◀", () =>
+            {
+                _grantPage = Mathf.Max(0, _grantPage - 1);
+                RenderGrantList();
+            }));
+            nav.Add(CreateContentButton("▶", () =>
+            {
+                _grantPage++;
+                RenderGrantList();
+            }));
+            nav.Add(CreateContentButton("🔄", () =>
+            {
+                AdminItemCatalog.Reload();
+                _grantPage = 0;
+                RenderGrantList();
+            }));
+            _grantList.Add(nav);
+
+            int start = _grantPage * GrantPageSize;
+            int end = Mathf.Min(filtered.Count, start + GrantPageSize);
+            for (int i = start; i < end; i++)
+            {
+                var entry = filtered[i];
+                var row = new VisualElement();
+                row.style.flexDirection = FlexDirection.Row;
+                row.style.marginBottom = 2;
+                row.style.borderBottomWidth = 1;
+                row.style.borderBottomColor = new Color(0.22f, 0.22f, 0.28f, 1f);
+                row.style.paddingBottom = 2;
+
+                string idPart = entry.Id > 0 ? $"#{entry.Id}" : "#—";
+                string pricePart = entry.BasePrice > 0 ? $" · {entry.BasePrice} CR" : "";
+                var lbl = new Label($"{idPart} {entry.DisplayName}\n{entry.TypeLabel}{pricePart}");
+                lbl.style.fontSize = 12;
+                lbl.style.flexGrow = 1;
+                lbl.style.minWidth = 0;
+                lbl.style.whiteSpace = WhiteSpace.Normal;
+                row.Add(lbl);
+
+                var give = new Button(() => GiveItem(entry)) { text = "Дать" };
+                give.style.width = 54;
+                give.style.fontSize = 12;
+                row.Add(give);
+                _grantList.Add(row);
+            }
+
+            if (filtered.Count == 0)
+                AddLabelTo(_grantList, "Ничего не найдено.", 12, new Color(0.75f, 0.75f, 0.75f));
+        }
+
+        private void GiveItem(AdminItemEntry entry)
+        {
+            int count = int.TryParse(_grantCount, out int c)
+                ? Mathf.Clamp(c, 1, AdminFacade.AdminGrantMaxCount)
+                : 1;
+            string report = Facade().AdminGiveItem(entry.Id, entry.AssetName, count);
+            SetGrantReport($"{entry.DisplayName} ×{count}: {report}");
         }
 
         private void BuildRespawnTab()

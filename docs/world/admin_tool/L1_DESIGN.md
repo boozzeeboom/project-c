@@ -70,6 +70,7 @@
 | `Scripts/Admin/AdminMoveCheats.cs` | `AdminMoveCheats : NetworkBehaviour` (на игроке, добавляется фасадом по кнопке) | God (флаг урона, клиент+сервер, T-ADM-05), noclip (отключение коллайдеров игрока + `CharacterController.enabled=false` на время), speed multiplier (×1/×2/×5/×10) |
 | `Scripts/Admin/AdminLogBus.cs` | `static AdminLogBus` | `public static bool Muted`; `Register(Action<bool>)/Unregister`; фасад дёргает `SetMuted(bool)` |
 | `Scripts/Admin/AdminRuntimeWindow.cs` | `AdminRuntimeWindow : MonoBehaviour` (UI Toolkit) | Окно, 8 вкладок, паттерн `CharacterWindow` (Clear+CloneTree+Add, Resources.Load fallback); чтение F12 — новый слот `GameAction.AdminPanel` через копию `IsActionJustPressed` (код `NetworkPlayer.cs:2683–2698` как образец, дублируем 20 строк хелпера у себя, `NetworkPlayer` не правим) |
+| `Scripts/Admin/AdminItemCatalog.cs` | `AdminItemCatalog` (static) + `AdminItemEntry` | T-ADM-10: ленивый каталог всех `ItemData` для вкладки «Выдача»: id из `ItemRegistry`, экипировка вне реестра — по имени ассета. |
 | `Scripts/Admin/RouteOverlay.cs` | `RouteOverlay : MonoBehaviour` | `LineRenderer` по точкам активного `NpcShipRoute`; вкл/выкл из фасада; точек не кэширует (читает каждый кадр — FO-безопасно) |
 | `Scripts/Admin/Editor/AdminEditorWindow.cs` | `AdminEditorWindow : EditorWindow` (`Tools/Project C/Admin`) | Те же кнопки фасада для Edit Mode: регены облаков, `Setup Altitude Corridors`, вайп сейвов, список ContextMenu §4 как кнопки |
 
@@ -85,10 +86,12 @@
 | `Player/ShipController.cs` | Удалить `InitializeDebugHUD()` + поле `_showLegacyMeziyHud` (T-ADM-00; вместе с файлами ниже) |
 | Удалить (через Unity Editor, не `rm`): `Ship/ShipDebugHUD.cs`, `Ship/MeziyStatusHUD_Legacy.cs` (+ `.meta` уйдут сами) | Основание D1 + S-HUD-05; `ShipHudController` — замена. Перед удалением: `grep` по сценам/префабам на висячие ссылки (сейчас ссылки только в 4 `.cs`, сцен/префабов нет — проверено 2026-09-15) |
 | `AI/NpcSpawner.cs`, `PlayerPositionServer.cs`, `ShipPositionServer.cs`, `DayNightController.cs`, `ConstellationController.cs`, `PlayerRespawnTracker.cs`, `World/Clouds/LocalDensityBuffer.cs` | + однострочная подписка на `AdminLogBus` **или** + `public void SetDebugLogs(bool)` сеттеры (на выбор исполнителя, по 1 строке на файл; сами поля и `if` не трогаем) |
+| `Items/Network/InventoryServer.cs` | T-ADM-10: + `public string AdminGiveItem(...)` и `RequestAdminGiveItemRpc` — серверная выдача N предметов, snapshot клиенту. Существующие RPC не меняются |
+| `Trade/Scripts/Network/MarketServer.cs` | T-ADM-10: + `AdminSetCredits` / `AdminSetInfiniteCredits` + 2 RPC + `Update()`-рефилл бесконечного баланса. Торговые операции не меняются |
 
 ---
 
-## 3. Вкладки окна (8, по D5 — максимально полно)
+## 3. Вкладки окна (по D5 — максимально полно; + «Тесты» T-ADM-09, + «Выдача» T-ADM-10)
 
 Каждая строка = кнопка/поле → метод фасада → существующий API.
 
@@ -110,6 +113,21 @@
 | Список пиков (индекс + имя) + Go | `WorldCamera.TeleportToPeak(i)` |
 | Тест-позиции стриминга (список + Go) | `StreamingTest.TeleportToPeak/TeleportToCoordinates` (бывшие F5/F6 по D2) |
 | Координаты текущего фокуса (read-only строка) | Grove `playerRoot.position` — только чтение, не храним (FO 🟡) |
+
+### В2a «Выдача» (T-ADM-10, 2026-11-27)
+
+Одна вкладка на две админские операции: деньги и предметы.
+
+| Элемент | Вызывает |
+|---|---|
+| Баланс (read-only) | `AdminFacade.TryGetLocalCredits` — сервер: `TradeWorld.Repository.GetCredits`, клиент: последний snapshot |
+| Поле суммы + «Установить», пресеты 10k/100k/1M/0 | `AdminFacade.AdminSetCredits` → `MarketServer.AdminSetCredits` (на клиенте — `RequestAdminSetCreditsRpc`) |
+| Тоггл «Бесконечные деньги» | `AdminFacade.SetInfiniteCredits` → `MarketServer.AdminSetInfiniteCredits`; сервер раз в секунду возвращает баланс к `999 999 999 CR` после списаний |
+| Поиск по имени + фильтр `ItemType` (Dropdown) + пагинация по 25 | `AdminItemCatalog.All` (локально; `ItemRegistry` + `Resources/Items`, включая Clothing/Modules/Weapons) |
+| Кнопка «Дать» у строки + поле «Кол-во» | `AdminFacade.AdminGiveItem` → `InventoryServer.AdminGiveItem` (на клиенте — `RequestAdminGiveItemRpc`); сервер берёт тип из `ItemData`, id для экипировки резолвит по имени ассета |
+
+Ограничения: выдача идёт через `InventoryServer` (он уже в BootstrapScene, новый NetworkBehaviour не нужен);
+ключи (`ItemType.Key`) выдаются через `AddKeyItemDirect` и только по 1 шт.
 
 ### В3 «Респавн»
 

@@ -79,6 +79,86 @@ namespace ProjectC.Items.Network
             }
             return result.IsSuccess;
         }
+
+        // ============================================================
+        // T-ADM-10: выдача предметов из админ-панели
+        // ============================================================
+        /// <summary>
+        /// Серверная выдача N штук предмета игроку (админ-панель).
+        /// itemId &lt;= 0 → резолв по assetName (экипировка вне ItemRegistry,
+        /// id у неё появляется только в runtime-базе InventoryWorld).
+        /// Тип берём из определения, а не из запроса клиента.
+        /// </summary>
+        public string AdminGiveItem(ulong clientId, int itemId, string assetName, int count)
+        {
+            if (!IsServer) return "not server";
+            var world = InventoryWorld.Instance;
+            if (world == null) return "InventoryWorld нет";
+
+            ItemData definition = itemId > 0 ? world.GetItemDefinition(itemId) : null;
+            int resolvedId = itemId;
+            if (definition == null && !string.IsNullOrEmpty(assetName))
+            {
+                foreach (var kv in world.GetAllItems())
+                {
+                    if (kv.Value != null && kv.Value.name == assetName)
+                    {
+                        definition = kv.Value;
+                        resolvedId = kv.Key;
+                        break;
+                    }
+                }
+            }
+            if (definition == null && !string.IsNullOrEmpty(assetName))
+            {
+                // Equipment assets регистрируются EquipmentServer'ом; если он ещё не успел
+                // (порядок OnNetworkSpawn) — грузим по имени ассета из известных папок.
+                var folders = new[] { "Items/Equipment", "Items/Weapons", "Items/Clothing", "Items/Modules" };
+                for (int i = 0; i < folders.Length && definition == null; i++)
+                {
+                    var loaded = Resources.Load<ItemData>(folders[i] + "/" + assetName);
+                    if (loaded == null) continue;
+                    definition = loaded;
+                    resolvedId = world.RegisterIfMissing(loaded);
+                }
+            }
+            if (definition == null)
+                return $"предмет не найден (id={itemId}, asset='{assetName}')";
+
+            count = Mathf.Clamp(count, 1, 500);
+            if (definition.itemType == ItemType.Key) count = 1;
+
+            int granted = 0;
+            string lastError = null;
+            for (int i = 0; i < count; i++)
+            {
+                var result = definition.itemType == ItemType.Key
+                    ? world.AddKeyItemDirect(clientId, resolvedId)
+                    : world.AddItemDirect(clientId, resolvedId, definition.itemType);
+                if (!result.IsSuccess)
+                {
+                    lastError = result.message;
+                    break;
+                }
+                granted++;
+            }
+
+            if (granted > 0) SendSnapshot(clientId, null);
+            if (granted == 0)
+                return $"ошибка: {lastError ?? "unknown"}";
+            string suffix = lastError != null ? $" (стоп: {lastError})" : string.Empty;
+            return $"+{granted}×{definition.itemName}{suffix}";
+        }
+
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
+        public void RequestAdminGiveItemRpc(int itemId, string assetName, int count, RpcParams rpcParams = default)
+        {
+            if (!IsServer) return;
+            ulong clientId = rpcParams.Receive.SenderClientId;
+            string report = AdminGiveItem(clientId, itemId, assetName, count);
+            Debug.Log($"[InventoryServer][Admin] give: client={clientId} {report}");
+        }
+
         // ============================================================
         // CLIENT RPCs — RequestXxx
         // ============================================================

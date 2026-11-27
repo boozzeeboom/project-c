@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using ProjectC.Items.Network;
 using ProjectC.Player;
 using ProjectC.Ship.Key;
 using ProjectC.Trade.Config;
@@ -69,6 +70,13 @@ namespace ProjectC.Trade.Network
         private readonly Dictionary<string, ulong> _clientSelectedShip = new Dictionary<string, ulong>();
         private string SelectedShipKey(ulong clientId, string locationId)
             => $"{clientId}:{MarketConfigCollector.NormalizeLocationId(locationId)}";
+
+        // T-ADM-10: админ-экономика. Бесконечные деньги = сервер держит баланс
+        // на потолке; сами операции торговли не меняются (флаг живёт только здесь).
+        public const float AdminInfiniteCreditsValue = 999999999f;
+        private readonly HashSet<ulong> _adminInfiniteCredits = new HashSet<ulong>();
+        private readonly List<ulong> _adminStaleClients = new List<ulong>();
+        private float _adminCreditsTimer;
 
         public override void OnNetworkSpawn()
         {
@@ -519,6 +527,99 @@ namespace ProjectC.Trade.Network
 
             list.Add(now);
             return true;
+        }
+
+        // ========================================================
+        // T-ADM-10: АДМИН-ЭКОНОМИКА (серверная сторона)
+        // ========================================================
+
+        /// <summary>Сервер: установить точный баланс кредитов игроку + обновить UI.</summary>
+        public bool AdminSetCredits(ulong clientId, float amount)
+        {
+            if (!IsServer) return false;
+            var world = TradeWorld.Instance;
+            var repo = world != null ? world.Repository : null;
+            if (repo == null)
+            {
+                Debug.LogWarning("[MarketServer][Admin] нет TradeWorld.Repository");
+                return false;
+            }
+
+            float clamped = Mathf.Max(0f, amount);
+            if (!repo.SetCredits(clientId, clamped))
+            {
+                Debug.LogWarning($"[MarketServer][Admin] SetCredits({clamped}) не удался для {clientId}");
+                return false;
+            }
+            Debug.Log($"[MarketServer][Admin] credits client={clientId} → {clamped:F0}");
+            PushPlayerSnapshot(clientId);
+            if (InventoryServer.Instance != null) InventoryServer.Instance.PushSnapshot(clientId);
+            return true;
+        }
+
+        /// <summary>Сервер: вкл/выкл режим бесконечных кредитов для игрока.</summary>
+        public bool AdminSetInfiniteCredits(ulong clientId, bool enabled)
+        {
+            if (!IsServer) return false;
+            if (!enabled)
+            {
+                _adminInfiniteCredits.Remove(clientId);
+                Debug.Log($"[MarketServer][Admin] infinite credits OFF для {clientId}");
+                return true;
+            }
+
+            _adminInfiniteCredits.Add(clientId);
+            RefillInfiniteCredits(clientId);
+            Debug.Log($"[MarketServer][Admin] infinite credits ON для {clientId}");
+            return true;
+        }
+
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
+        public void RequestAdminSetCreditsRpc(float amount, RpcParams rpcParams = default)
+        {
+            if (!IsServer) return;
+            AdminSetCredits(rpcParams.Receive.SenderClientId, amount);
+        }
+
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Owner)]
+        public void RequestAdminInfiniteCreditsRpc(bool enabled, RpcParams rpcParams = default)
+        {
+            if (!IsServer) return;
+            AdminSetInfiniteCredits(rpcParams.Receive.SenderClientId, enabled);
+        }
+
+        /// <summary>Раз в секунду возвращает баланс к потолку (после покупок/списаний).</summary>
+        private void Update()
+        {
+            if (!IsServer || _adminInfiniteCredits.Count == 0) return;
+            _adminCreditsTimer += Time.unscaledDeltaTime;
+            if (_adminCreditsTimer < 1f) return;
+            _adminCreditsTimer = 0f;
+
+            var nm = NetworkManager.Singleton;
+            _adminStaleClients.Clear();
+            foreach (var clientId in _adminInfiniteCredits)
+            {
+                if (nm == null || !nm.ConnectedClients.ContainsKey(clientId))
+                {
+                    _adminStaleClients.Add(clientId);
+                    continue;
+                }
+                RefillInfiniteCredits(clientId);
+            }
+            for (int i = 0; i < _adminStaleClients.Count; i++)
+                _adminInfiniteCredits.Remove(_adminStaleClients[i]);
+        }
+
+        private void RefillInfiniteCredits(ulong clientId)
+        {
+            var world = TradeWorld.Instance;
+            var repo = world != null ? world.Repository : null;
+            if (repo == null) return;
+            if (repo.GetCredits(clientId) >= AdminInfiniteCreditsValue) return;
+            if (!repo.SetCredits(clientId, AdminInfiniteCreditsValue)) return;
+            PushPlayerSnapshot(clientId);
+            if (InventoryServer.Instance != null) InventoryServer.Instance.PushSnapshot(clientId);
         }
 
         private static ShipClass ResolveShipClass(ulong shipNetworkObjectId)

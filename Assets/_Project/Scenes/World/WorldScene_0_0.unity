@@ -353874,7 +353874,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6fd32ac4d0afeb7459bc863921030876, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Skills.SkillsClientState
-  dontDestroyOnLoad: 1
+  dontDestroyOnLoad: 0
 --- !u!4 &698596846
 Transform:
   m_ObjectHideFlags: 0
@@ -392505,9 +392505,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 836964523381807351, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
       insertIndex: -1
       addedObject: {fileID: 801983721}
-    - targetCorrespondingSourceObject: {fileID: 343379444949621057, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 0}
   m_SourcePrefab: {fileID: 100100000, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
 --- !u!4 &801983719 stripped
 Transform:
@@ -455359,9 +455356,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 836964523381807351, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
       insertIndex: -1
       addedObject: {fileID: 961525696}
-    - targetCorrespondingSourceObject: {fileID: 343379444949621057, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 0}
   m_SourcePrefab: {fileID: 100100000, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
 --- !u!4 &961525694 stripped
 Transform:
@@ -1196652,9 +1196646,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 836964523381807351, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1058181886}
-    - targetCorrespondingSourceObject: {fileID: 343379444949621057, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 0}
   m_SourcePrefab: {fileID: 100100000, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
 --- !u!4 &1058181884 stripped
 Transform:
@@ -1344504,9 +1344495,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 836964523381807351, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1377942720}
-    - targetCorrespondingSourceObject: {fileID: 343379444949621057, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 0}
   m_SourcePrefab: {fileID: 100100000, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
 --- !u!4 &1377942718 stripped
 Transform:
@@ -1463219,9 +1463207,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 836964523381807351, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1625955774}
-    - targetCorrespondingSourceObject: {fileID: 343379444949621057, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 0}
   m_SourcePrefab: {fileID: 100100000, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
 --- !u!4 &1625955772 stripped
 Transform:
@@ -1595350,9 +1595335,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 836964523381807351, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1891874032}
-    - targetCorrespondingSourceObject: {fileID: 343379444949621057, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 0}
   m_SourcePrefab: {fileID: 100100000, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
 --- !u!4 &1891874030 stripped
 Transform:

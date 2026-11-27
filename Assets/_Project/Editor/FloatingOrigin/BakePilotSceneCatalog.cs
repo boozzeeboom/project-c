@@ -29,6 +29,24 @@ namespace ProjectC.EditorTools.FloatingOrigin
     {
         private const string CatalogPath = "Assets/_Project/Prefabs/FloatingOrigin/GlobalMotionPilotSceneCatalog.asset";
         private const string ProfilePath = "Assets/_Project/Prefabs/FloatingOrigin/GlobalMotionPilotProfile.asset";
+        private const string BootstrapScenePath = "Assets/_Project/Scenes/BootstrapScene.unity";
+
+        private static readonly HashSet<string> KnownDdolComponentNames = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "NetworkManager", "NetworkManagerController", "ClientSceneLoader",
+            "UIManager", "CloudManager", "WindManager", "WorldSceneManager",
+            "SkillsClientState", "StatsClientState", "EquipmentClientState",
+            "CustomisationClientState", "CraftingClientState", "GatheringClientState",
+            "RecipeKnowledgeClientState", "MetaRequirementClientState",
+            "CombatClientState", "DockingClientState", "NpcShipClientState",
+            "AdminFacade", "AdminRuntimeWindow", "ChartMarkManager", "ChartTrackRecorder",
+            "DayNightConstellationController", "HouseDiscovery", "VengeanceMemory",
+            "SkillVfxService", "ClientTargetLockService", "ClientTargetHighlightService",
+            "ClientDamageNumberService", "CraftingProgressController",
+            "GatheringToastController", "MetaRequirementToast", "KnowledgeToast",
+            "ShipPositionServer", "PlayerPositionServer", "SceneDebugHUD",
+            "HorizonVeilRenderer", "VeilRaymarchMeshController"
+        };
 
         [MenuItem("ProjectC/World/Floating Origin/Bake Pilot Catalog (Preview + Apply)")]
         public static void Open()
@@ -45,18 +63,87 @@ namespace ProjectC.EditorTools.FloatingOrigin
                 var missing = new List<MissingItem>();
                 var stale = new List<StaleItem>();
                 var moved = new List<ReparentItem>();
+                var ownershipFixes = new List<OwnershipFixItem>();
+                var ddolFlagFixes = new List<DdolFlagFixItem>();
                 var errors = new List<string>();
-                ScanCatalog(fresh, missing, stale, moved, errors, out var digest);
+                ScanCatalog(fresh, missing, stale, moved, ownershipFixes, ddolFlagFixes, errors, out var digest);
                 var sb = new System.Text.StringBuilder();
-                sb.Append($"new={fresh.Count} missing={missing.Count} reparent={moved.Count} stale={stale.Count} errors={errors.Count} digest={digest}");
+                sb.Append($"new={fresh.Count} missing={missing.Count} reparent={moved.Count} ddolOwn={ownershipFixes.Count} ddolFlag={ddolFlagFixes.Count} stale={stale.Count} errors={errors.Count} digest={digest}");
                 foreach (var n in fresh) sb.Append($" | NEW:{n.name}[{System.IO.Path.GetFileName(n.scenePath)}]");
                 foreach (var r in moved) sb.Append($" | REPARENT:{r.name}{((r.Blocked) ? "(blocked:" + r.blockedReason + ")" : "")}");
                 foreach (var m in missing) sb.Append($" | MISSING:{m.sourceId}{(m.Blocked ? "(blocked)" : "")}");
+                foreach (var o in ownershipFixes) sb.Append($" | DDOL_FIX:{o.name}({o.oldOwnership}->{o.newOwnership})");
+                foreach (var d in ddolFlagFixes) sb.Append($" | DDOL_FLAG:{d.name}({d.componentName}.{d.propertyName}->false)");
                 foreach (var s in stale) sb.Append($" | STALE:{s.name}[{s.kind}]");
                 foreach (var e in errors) sb.Append($" | ERR:{e}");
                 return sb.ToString();
             }
             catch (Exception ex) { return "EXCEPTION: " + ex.GetType().Name + ": " + ex.Message; }
+        }
+
+        /// <summary>
+        /// 1-клик ребейк (также вызывается из меню/скриптов):
+        /// догружает сцены каталога, сохраняет dirty-сцены, сканирует, применяет всё незаблокированное
+        /// (новые, пропавшие, репаренты, DDOL ownership, хэши, digest) и делает контрольный скан.
+        /// </summary>
+        public static string RunOneClickRebake()
+        {
+            if (EditorApplication.isPlaying) return "Отказ: останови Play Mode перед ребейком.";
+            var catalog = AssetDatabase.LoadAssetAtPath<GlobalMotionSceneCatalog>(CatalogPath);
+            var profile = AssetDatabase.LoadAssetAtPath<GlobalMotionNetworkProfile>(ProfilePath);
+            if (catalog == null || profile == null) return "Отказ: не найден каталог или профиль FO.";
+
+            // 1. Подгрузить недостающие сцены каталога аддитивно и сохранить dirty-сцены.
+            foreach (var source in catalog.Data.scenes)
+            {
+                if (source == null || string.IsNullOrEmpty(source.assetPath)) continue;
+                var scene = SceneManager.GetSceneByPath(source.assetPath);
+                if (!scene.IsValid() || !scene.isLoaded)
+                {
+                    scene = EditorSceneManager.OpenScene(source.assetPath, OpenSceneMode.Additive);
+                    if (!scene.IsValid() || !scene.isLoaded)
+                        return "Отказ: не удалось открыть сцену " + source.assetPath;
+                }
+                if (scene.isDirty)
+                {
+                    if (!EditorSceneManager.SaveScene(scene))
+                        return "Отказ: не удалось сохранить сцену " + source.assetPath;
+                }
+            }
+
+            // 2. Скан.
+            var fresh = new List<NewItem>();
+            var missing = new List<MissingItem>();
+            var stale = new List<StaleItem>();
+            var moved = new List<ReparentItem>();
+            var ownershipFixes = new List<OwnershipFixItem>();
+            var ddolFlagFixes = new List<DdolFlagFixItem>();
+            var errors = new List<string>();
+            ScanCatalog(fresh, missing, stale, moved, ownershipFixes, ddolFlagFixes, errors, out var digest);
+
+            if (errors.Count > 0)
+                return "Отказ: найдены ошибки перед ребейком: " + string.Join("; ", errors);
+
+            bool digestMismatch = digest != "match";
+            bool hasWork = fresh.Count > 0 || missing.Count > 0 || stale.Count > 0
+                || moved.Exists(r => !r.Blocked) || ownershipFixes.Count > 0 || ddolFlagFixes.Count > 0 || digestMismatch;
+            if (!hasWork)
+                return "OK: каталог уже актуален, менять нечего. Можно запускать Play Mode.";
+
+            // 3. Применить всё незаблокированное.
+            var result = ApplyBatch(fresh, missing, moved, ownershipFixes, ddolFlagFixes, stale, digestMismatch);
+            if (!result.StartsWith("OK", StringComparison.Ordinal))
+                return result;
+
+            // 4. Контрольный скан — убедиться, что хвостов не осталось.
+            ScanCatalog(fresh, missing, stale, moved, ownershipFixes, ddolFlagFixes, errors, out var digestAfter);
+            if (fresh.Count == 0 && missing.Count == 0 && stale.Count == 0 && ownershipFixes.Count == 0 && ddolFlagFixes.Count == 0
+                && !moved.Exists(r => !r.Blocked) && errors.Count == 0 && digestAfter == "match")
+            {
+                return result + " | Проверка: всё чисто, можно запускать Play Mode.";
+            }
+
+            return result + $" | Осталось после ребейка: new={fresh.Count}, missing={missing.Count}, reparent={moved.Count}, ddolOwn={ownershipFixes.Count}, ddolFlag={ddolFlagFixes.Count}, stale={stale.Count}, errors={errors.Count}, digest={digestAfter}";
         }
 
         private sealed class NewItem
@@ -103,36 +190,87 @@ namespace ProjectC.EditorTools.FloatingOrigin
             public bool Blocked => !string.IsNullOrEmpty(blockedReason);
         }
 
+        /// <summary>
+        /// Объект в сцене уводит себя в DontDestroyOnLoad, но в каталоге записан не как PersistentBootstrapService.
+        /// Без этого пилот отклоняет старт с cataloged_source_in_ddol.
+        /// </summary>
+        private sealed class OwnershipFixItem
+        {
+            public bool selected = true;
+            public string name, scenePath, sceneGuid, sourceId;
+            public GlobalSceneOwnership oldOwnership, newOwnership;
+            public string reason;
+        }
+
+        /// <summary>
+        /// Объект в мировой сцене (не BootstrapScene) имеет включённый флаг dontDestroyOnLoad.
+        /// В мировой сцене PersistentBootstrapService запрещён, поэтому флаг нужно выключить.
+        /// </summary>
+        private sealed class DdolFlagFixItem
+        {
+            public bool selected = true;
+            public MonoBehaviour component;
+            public string name, scenePath, componentName, propertyName;
+        }
+
         private Vector2 _scroll;
         private readonly List<NewItem> _newItems = new List<NewItem>();
         private readonly List<MissingItem> _missingItems = new List<MissingItem>();
         private readonly List<ReparentItem> _reparentItems = new List<ReparentItem>();
+        private readonly List<OwnershipFixItem> _ownershipFixes = new List<OwnershipFixItem>();
+        private readonly List<DdolFlagFixItem> _ddolFlagFixes = new List<DdolFlagFixItem>();
         private readonly List<StaleItem> _staleItems = new List<StaleItem>();
         private readonly List<string> _errors = new List<string>();
-        private string _status = "Не сканировано. Нажми «Сканировать».";
+        private string _status = "Готово к работе. Нажми «Ребейк (сделать всё)» после правок на сцене.";
+        private MessageType _statusType = MessageType.Info;
         private bool _scanned;
+        private bool _digestMismatch;
+        private bool _showAdvanced;
 
         private void OnGUI()
         {
-            EditorGUILayout.LabelField("Bake Pilot Scene Catalog (T-FO09S)", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Floating Origin — Ребейк каталога (T-FO09S)", EditorStyles.boldLabel);
             EditorGUILayout.HelpBox(
-                "1) Сканируй → 2) отметь нужное, впиши reviewNote каждой новой записи → 3) проверь превью → 4) Применить. " +
-                "Сцены из списка каталога должны быть загружены и сохранены. Откат — Ctrl+Z (Undo).",
+                "Удалил или добавил объекты на сцене? Просто нажми «Ребейк (сделать всё)».\n" +
+                "Тулза сама сохранит сцены, добавит новые объекты, удалит пропавшие, починит DDOL/репаренты и обновит хэши. Откат — Ctrl+Z.",
                 MessageType.Info);
 
-            if (GUILayout.Button("Сканировать (read-only)", GUILayout.Height(28)))
+            var prevBg = GUI.backgroundColor;
+            GUI.backgroundColor = new Color(0.35f, 0.85f, 0.45f);
+            if (GUILayout.Button("Ребейк (сделать всё автоматически)", GUILayout.Height(38)))
             {
-                _newItems.Clear(); _missingItems.Clear(); _staleItems.Clear(); _reparentItems.Clear(); _errors.Clear();
                 try
                 {
-                    ScanCatalog(_newItems, _missingItems, _staleItems, _reparentItems, _errors, out var digest);
-                    _status = $"Скан: новых={_newItems.Count}, пропавших={_missingItems.Count}, структурный дрейф={_reparentItems.Count}, stale={_staleItems.Count}, ошибок={_errors.Count}, digest={digest}";
-                    _scanned = true;
+                    _status = RunOneClickRebake();
+                    _statusType = _status.StartsWith("OK", StringComparison.Ordinal) ? MessageType.Info : MessageType.Error;
+                    if (!_status.StartsWith("OK", StringComparison.Ordinal))
+                    {
+                        RunScanIntoUi();
+                        _showAdvanced = true;
+                    }
+                    else
+                    {
+                        _newItems.Clear(); _missingItems.Clear(); _reparentItems.Clear(); _ownershipFixes.Clear(); _ddolFlagFixes.Clear(); _staleItems.Clear(); _errors.Clear();
+                        _scanned = false;
+                        _digestMismatch = false;
+                    }
                 }
-                catch (Exception ex) { _status = "EXCEPTION: " + ex.Message; }
+                catch (Exception ex)
+                {
+                    _status = "EXCEPTION: " + ex.Message;
+                    _statusType = MessageType.Error;
+                }
             }
+            GUI.backgroundColor = prevBg;
 
-            EditorGUILayout.LabelField("Статус: " + _status, EditorStyles.wordWrappedLabel);
+            EditorGUILayout.HelpBox(_status, _statusType);
+
+            _showAdvanced = EditorGUILayout.Foldout(_showAdvanced, "Подробности / Ручной режим (Preview + Apply)", true);
+            if (!_showAdvanced) return;
+
+            if (GUILayout.Button("Сканировать (read-only)", GUILayout.Height(26)))
+                RunScanIntoUi();
+
             _scroll = EditorGUILayout.BeginScrollView(_scroll);
 
             EditorGUILayout.LabelField($"Новое без записи ({_newItems.Count})", EditorStyles.boldLabel);
@@ -195,6 +333,30 @@ namespace ProjectC.EditorTools.FloatingOrigin
                 EditorGUILayout.EndVertical();
             }
 
+            if (_ownershipFixes.Count > 0)
+            {
+                EditorGUILayout.LabelField($"DDOL ownership (исправить) ({_ownershipFixes.Count})", EditorStyles.boldLabel);
+                foreach (var fix in _ownershipFixes)
+                {
+                    EditorGUILayout.BeginHorizontal(EditorStyles.helpBox);
+                    fix.selected = EditorGUILayout.Toggle(fix.selected, GUILayout.Width(18));
+                    EditorGUILayout.LabelField($"{fix.name}: {fix.oldOwnership} → {fix.newOwnership} ({fix.reason})", EditorStyles.wordWrappedLabel);
+                    EditorGUILayout.EndHorizontal();
+                }
+            }
+
+            if (_ddolFlagFixes.Count > 0)
+            {
+                EditorGUILayout.LabelField($"DDOL-флаг в мировой сцене (выключить) ({_ddolFlagFixes.Count})", EditorStyles.boldLabel);
+                foreach (var fix in _ddolFlagFixes)
+                {
+                    EditorGUILayout.BeginHorizontal(EditorStyles.helpBox);
+                    fix.selected = EditorGUILayout.Toggle(fix.selected, GUILayout.Width(18));
+                    EditorGUILayout.LabelField($"{fix.name}: {fix.componentName}.{fix.propertyName} → false", EditorStyles.wordWrappedLabel);
+                    EditorGUILayout.EndHorizontal();
+                }
+            }
+
             EditorGUILayout.LabelField($"Stale (обновить хэши) ({_staleItems.Count})", EditorStyles.boldLabel);
             foreach (var stale in _staleItems)
             {
@@ -214,17 +376,89 @@ namespace ProjectC.EditorTools.FloatingOrigin
             GUI.enabled = _scanned;
             if (GUILayout.Button("Применить выбранное", GUILayout.Height(32)))
             {
-                try { _status = ApplySelected(); }
-                catch (Exception ex) { _status = "EXCEPTION: " + ex.Message; }
-                if (_status.StartsWith("OK", StringComparison.Ordinal)) { _newItems.Clear(); _missingItems.Clear(); _staleItems.Clear(); _reparentItems.Clear(); }
+                try
+                {
+                    _status = ApplySelected();
+                    _statusType = _status.StartsWith("OK", StringComparison.Ordinal) ? MessageType.Info : MessageType.Error;
+                }
+                catch (Exception ex)
+                {
+                    _status = "EXCEPTION: " + ex.Message;
+                    _statusType = MessageType.Error;
+                }
+                if (_status.StartsWith("OK", StringComparison.Ordinal))
+                {
+                    _newItems.Clear(); _missingItems.Clear(); _staleItems.Clear(); _reparentItems.Clear(); _ownershipFixes.Clear(); _ddolFlagFixes.Clear();
+                    _digestMismatch = false;
+                }
                 _scanned = false; // заставить пересканировать после мутации
             }
             GUI.enabled = true;
         }
 
+        private void RunScanIntoUi()
+        {
+            _newItems.Clear(); _missingItems.Clear(); _staleItems.Clear(); _reparentItems.Clear(); _ownershipFixes.Clear(); _ddolFlagFixes.Clear(); _errors.Clear();
+            try
+            {
+                ScanCatalog(_newItems, _missingItems, _staleItems, _reparentItems, _ownershipFixes, _ddolFlagFixes, _errors, out var digest);
+                _digestMismatch = digest != "match";
+                _status = $"Скан: новых={_newItems.Count}, пропавших={_missingItems.Count}, репарент={_reparentItems.Count}, DDOL={_ownershipFixes.Count + _ddolFlagFixes.Count}, stale={_staleItems.Count}, ошибок={_errors.Count}, digest={digest}";
+                _statusType = _errors.Count > 0 ? MessageType.Error : MessageType.Info;
+                _scanned = true;
+            }
+            catch (Exception ex)
+            {
+                _status = "EXCEPTION: " + ex.Message;
+                _statusType = MessageType.Error;
+            }
+        }
+
         private static string Short(string hex) => hex.Length <= 12 ? hex : hex.Substring(0, 12);
 
         private static string ShowParent(string parentSourceId) => string.IsNullOrEmpty(parentSourceId) ? "<root>" : parentSourceId;
+
+        /// <summary>
+        /// Определяет, уводит ли корневой объект себя в DontDestroyOnLoad в рантайме.
+        /// Проверяет bool-поля dontDestroyOnLoad/_dontDestroyOnLoad == true и известные DDOL-компоненты.
+        /// </summary>
+        private static bool IsLikelyDontDestroyOnLoadRoot(GameObject go, out string reason)
+        {
+            return InspectDdolRoot(go, out reason, out _, out _);
+        }
+
+        private static bool InspectDdolRoot(GameObject go, out string reason, out MonoBehaviour flagComponent, out string flagProperty)
+        {
+            reason = null;
+            flagComponent = null;
+            flagProperty = null;
+            if (go == null || go.transform.parent != null) return false;
+            var behaviours = go.GetComponents<MonoBehaviour>();
+            foreach (var mb in behaviours)
+            {
+                if (mb == null) continue;
+                var so = new SerializedObject(mb);
+                var prop = so.FindProperty("dontDestroyOnLoad") ?? so.FindProperty("_dontDestroyOnLoad");
+                if (prop != null && prop.propertyType == SerializedPropertyType.Boolean)
+                {
+                    if (prop.boolValue)
+                    {
+                        reason = mb.GetType().Name + "." + prop.name + "=true";
+                        flagComponent = mb;
+                        flagProperty = prop.name;
+                        return true;
+                    }
+                    continue;
+                }
+                var typeName = mb.GetType().Name;
+                if (KnownDdolComponentNames.Contains(typeName))
+                {
+                    reason = typeName + " (DDOL)";
+                    return true;
+                }
+            }
+            return false;
+        }
 
         /// <summary>Имя живого объекта по sourceId — только для читаемого превью репарента.</summary>
         private static string NameBySourceId(Dictionary<GameObject, string> ids, string sourceId)
@@ -248,10 +482,11 @@ namespace ProjectC.EditorTools.FloatingOrigin
         }
 
         private static void ScanCatalog(List<NewItem> fresh, List<MissingItem> missingItems, List<StaleItem> stale,
-            List<ReparentItem> reparent, List<string> errors, out string digest)
+            List<ReparentItem> reparent, List<OwnershipFixItem> ownershipFixes, List<DdolFlagFixItem> ddolFlagFixes,
+            List<string> errors, out string digest)
         {
             digest = "?";
-            fresh.Clear(); missingItems.Clear(); stale.Clear(); reparent.Clear(); errors.Clear();
+            fresh.Clear(); missingItems.Clear(); stale.Clear(); reparent.Clear(); ownershipFixes.Clear(); ddolFlagFixes.Clear(); errors.Clear();
             var catalog = AssetDatabase.LoadAssetAtPath<GlobalMotionSceneCatalog>(CatalogPath);
             var profile = AssetDatabase.LoadAssetAtPath<GlobalMotionNetworkProfile>(ProfilePath);
             if (catalog == null) throw new InvalidOperationException("Каталог не найден: " + CatalogPath);
@@ -308,6 +543,26 @@ namespace ProjectC.EditorTools.FloatingOrigin
                     }
                     bool isRoot = go.transform.parent == null;
                     bool isNO = go.GetComponent<NetworkObject>() != null;
+                    bool isBootstrapScene = string.Equals(source.assetPath, BootstrapScenePath, StringComparison.Ordinal);
+                    string ddolReason = null;
+                    MonoBehaviour ddolFlagComp = null;
+                    string ddolFlagProp = null;
+                    bool isDdol = isRoot && InspectDdolRoot(go, out ddolReason, out ddolFlagComp, out ddolFlagProp);
+                    if (isDdol && !isBootstrapScene)
+                    {
+                        if (ddolFlagComp != null)
+                        {
+                            ddolFlagFixes.Add(new DdolFlagFixItem
+                            {
+                                component = ddolFlagComp, name = go.name, scenePath = source.assetPath,
+                                componentName = ddolFlagComp.GetType().Name, propertyName = ddolFlagProp,
+                            });
+                        }
+                        else
+                        {
+                            errors.Add($"Объект '{go.name}' в {System.IO.Path.GetFileName(source.assetPath)} уходит в DontDestroyOnLoad ({ddolReason}) — перенеси в BootstrapScene или удали.");
+                        }
+                    }
                     if (!obsById.TryGetValue(sid, out var stored))
                     {
                         bool hasRB = go.GetComponentsInChildren<Rigidbody>(true).Length != 0;
@@ -316,11 +571,36 @@ namespace ProjectC.EditorTools.FloatingOrigin
                             go = go, name = go.name, scenePath = source.assetPath, sceneGuid = source.sceneGuid,
                             sourceId = sid, parentSid = parentSid, isRoot = isRoot, isNO = isNO, hasRB = hasRB,
                             treatment = GlobalSceneTreatment.Unmanaged,
-                            ownership = !isNO ? GlobalSceneOwnership.AuthoredSceneContent
+                            ownership = (isDdol && isBootstrapScene) ? GlobalSceneOwnership.PersistentBootstrapService
+                                : !isNO ? GlobalSceneOwnership.AuthoredSceneContent
                                 : hasRB ? GlobalSceneOwnership.ShipOrRigidbodyRoot
                                 : GlobalSceneOwnership.SceneOwnedNetworkGameplay,
+                            reviewNote = "Auto-bake (" + DateTime.Now.ToString("yyyy-MM-dd") + ")",
                         });
                         continue;
+                    }
+                    if (isDdol && isBootstrapScene && entryByIdScan.TryGetValue(sid, out var existingEntry)
+                        && existingEntry.ownership != GlobalSceneOwnership.PersistentBootstrapService)
+                    {
+                        ownershipFixes.Add(new OwnershipFixItem
+                        {
+                            name = go.name, scenePath = source.assetPath, sceneGuid = source.sceneGuid,
+                            sourceId = sid, oldOwnership = existingEntry.ownership,
+                            newOwnership = GlobalSceneOwnership.PersistentBootstrapService,
+                            reason = ddolReason,
+                        });
+                    }
+                    else if (!isBootstrapScene && entryByIdScan.TryGetValue(sid, out var worldEntry)
+                        && (worldEntry.ownership == GlobalSceneOwnership.PersistentBootstrapService
+                            || worldEntry.ownership == GlobalSceneOwnership.BootstrapService))
+                    {
+                        ownershipFixes.Add(new OwnershipFixItem
+                        {
+                            name = go.name, scenePath = source.assetPath, sceneGuid = source.sceneGuid,
+                            sourceId = sid, oldOwnership = worldEntry.ownership,
+                            newOwnership = !isNO ? GlobalSceneOwnership.AuthoredSceneContent : GlobalSceneOwnership.SceneOwnedNetworkGameplay,
+                            reason = "Bootstrap ownership запрещён в мировой сцене",
+                        });
                     }
                     string liveHash = AuditGlobalSceneCatalog.LayoutHash(go, out bool missing);
                     if (missing) errors.Add("Missing script в сабтри: " + sid + " (" + go.name + ")");
@@ -413,16 +693,27 @@ namespace ProjectC.EditorTools.FloatingOrigin
 
         private string ApplySelected()
         {
+            var selNew = _newItems.FindAll(i => i.selected);
+            var selStale = _staleItems.FindAll(i => i.selected);
+            var selMissing = _missingItems.FindAll(i => i.selected);
+            var selReparent = _reparentItems.FindAll(i => i.selected);
+            var selOwnership = _ownershipFixes.FindAll(i => i.selected);
+            var selDdolFlags = _ddolFlagFixes.FindAll(i => i.selected);
+            return ApplyBatch(selNew, selMissing, selReparent, selOwnership, selDdolFlags, selStale, _digestMismatch);
+        }
+
+        private static string ApplyBatch(List<NewItem> selNew, List<MissingItem> selMissing,
+            List<ReparentItem> selReparent, List<OwnershipFixItem> selOwnership,
+            List<DdolFlagFixItem> selDdolFlags, List<StaleItem> selStale, bool forceDigestUpdate)
+        {
             if (EditorApplication.isPlaying) return "Отказ: только Edit Mode.";
             var catalog = AssetDatabase.LoadAssetAtPath<GlobalMotionSceneCatalog>(CatalogPath);
             var profile = AssetDatabase.LoadAssetAtPath<GlobalMotionNetworkProfile>(ProfilePath);
             if (catalog == null || profile == null) return "Отказ: нет каталога/профиля.";
 
-            var selNew = _newItems.FindAll(i => i.selected);
-            var selStale = _staleItems.FindAll(i => i.selected);
-            var selMissing = _missingItems.FindAll(i => i.selected);
-            var selReparent = _reparentItems.FindAll(i => i.selected);
-            if (selNew.Count == 0 && selStale.Count == 0 && selMissing.Count == 0 && selReparent.Count == 0) return "Нечего применять: ничего не отмечено.";
+            if (selNew.Count == 0 && selStale.Count == 0 && selMissing.Count == 0
+                && selReparent.Count == 0 && selOwnership.Count == 0 && selDdolFlags.Count == 0 && !forceDigestUpdate)
+                return "Нечего применять: ничего не отмечено.";
             foreach (var item in selReparent)
                 if (item.Blocked) return "Отказ: " + item.name + " — " + item.blockedReason;
             foreach (var item in selNew)
@@ -468,6 +759,30 @@ namespace ProjectC.EditorTools.FloatingOrigin
                 observation.isNetworkObject = item.newIsNO;
                 movedEntry.parentSourceId = item.newParent;
                 touchedScenes.Add(item.scenePath);
+            }
+
+            // 0c. Исправление ownership для DDOL-корней (защита от cataloged_source_in_ddol).
+            foreach (var fix in selOwnership)
+            {
+                if (!entriesById.TryGetValue(fix.sourceId, out var fixEntry))
+                    return "Отказ: запись пропала: " + fix.name;
+                fixEntry.ownership = fix.newOwnership;
+                touchedScenes.Add(fix.scenePath);
+            }
+
+            // 0d. Выключение dontDestroyOnLoad у объектов в мировых сценах.
+            foreach (var fix in selDdolFlags)
+            {
+                if (fix.component == null) continue;
+                Undo.RecordObject(fix.component, "Disable DDOL in world scene");
+                var so = new SerializedObject(fix.component);
+                var prop = so.FindProperty(fix.propertyName);
+                if (prop != null && prop.propertyType == SerializedPropertyType.Boolean)
+                {
+                    prop.boolValue = false;
+                    so.ApplyModifiedProperties();
+                    touchedScenes.Add(fix.scenePath);
+                }
             }
 
             // 1. Маркеры.
@@ -557,21 +872,27 @@ namespace ProjectC.EditorTools.FloatingOrigin
                 var scene = SceneManager.GetSceneByPath(path);
                 if (scene.isDirty) return "Отказ: сцена грязная после сейва: " + path;
             }
-            EditorUtility.SetDirty(catalog);
-            AssetDatabase.SaveAssets();
-            // 4. Digest.
+            // Всегда освежить dependencyHash для всех затронутых сцен после сохранения.
+            foreach (var source in data.scenes)
+            {
+                if (source == null || string.IsNullOrEmpty(source.assetPath)) continue;
+                if (touchedScenes.Contains(source.assetPath))
+                    source.dependencyHash = AssetDatabase.GetAssetDependencyHash(source.assetPath).ToString();
+            }
+            // 4. Digest (компилируем ДО сохранения ассетов, чтобы не записать битый каталог).
             if (!GlobalSceneCatalogCompiler.TryCompile(data, out var plan, out var cerr))
                 return "Откат (Ctrl+Z): компиляция каталога: " + cerr;
             string hex = GlobalMotionNetworkContract.DigestHex(plan.CopyDigest());
             var pso = new SerializedObject(profile);
             pso.FindProperty("_sceneLayoutDigest").stringValue = hex;
             pso.ApplyModifiedProperties();
+            EditorUtility.SetDirty(catalog);
             AssetDatabase.SaveAssets();
             // 5. Ре-верификация с диска.
             if (!GlobalSceneCatalogCompiler.TryCompile(catalog.Data, out var plan2, out _)
                 || !GlobalSceneCatalogCompiler.TryMatchDigest(plan2, profile.SceneLayoutDigest, out _))
                 return "Откат (Ctrl+Z): digest не сошёлся после применения.";
-            return $"OK: +{selNew.Count} записей, структурный дрейф закрыт: {selReparent.Count}, stale закрыто: {selStale.Count}, entries={plan2.SpawnOrder.Count}, digest={hex.Substring(0, 16)}...";
+            return $"OK: +{selNew.Count} новых, -{selMissing.Count} пропавших, репарент={selReparent.Count}, DDOL={selOwnership.Count + selDdolFlags.Count}, stale={selStale.Count}, entries={plan2.SpawnOrder.Count}, digest={hex.Substring(0, 16)}...";
         }
 
         /// <summary>

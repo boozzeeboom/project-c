@@ -20,7 +20,7 @@ MonoBehaviour:
     scenes:
     - sceneGuid: 336a190646b19bc46b22dd4e78f99800
       assetPath: Assets/_Project/Scenes/BootstrapScene.unity
-      dependencyHash: 0d4d99a8be9292939b2362fc993ca561
+      dependencyHash: 4a95a509870bee4801dfc42fa010be5f
       inspectedComplete: 1
       saved: 1
       observations:
@@ -73,7 +73,7 @@ MonoBehaviour:
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 0
-        layoutHash: 2979026adb2c81b77a47f39c6e07f5a4f33e1cf0e30c7b2df7914ac94e5f7438
+        layoutHash: 073d69405bd287f369cd35aa8e62c2a27501ee1a9c5cdb9d923c960006473765
       - sourceId: 336a190646b19bc46b22dd4e78f99800:1280621414:0
         parentSourceId: 
         isRoot: 1
@@ -319,9 +319,39 @@ MonoBehaviour:
         isRoot: 1
         isNetworkObject: 0
         layoutHash: b78284cd6e66a2f72679523106b7a2f0620a36b9d00182cfe768128095d27166
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:835669854:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: 98777f04b55822607f63ba739ea7980775f84c173d8ad300a4bb862da3e6dba6
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:236023828:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: 8123cf3468cae53fde80136c9d5f8df493029223c46454615d4457b0927f93be
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:909090001:0
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: 84445abbbd092e4c341edbeff3b2d2973c6303d02d5552d758284779dbb22c45
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:8004602582317748023:655684132
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: 0ea147f1ce680fb3f930ebc9dda7d20bcd85471faa05dcc775ad5fc33c575590
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:8366445379210990754:1835397970
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: d5627404d1dec14c05de3a628f35dfaf36d472de8d31abb9cce1e948fc3a8d3b
+      - sourceId: 336a190646b19bc46b22dd4e78f99800:8386944598171672423:603430278
+        parentSourceId: 
+        isRoot: 1
+        isNetworkObject: 0
+        layoutHash: 3531de9d54d57c396953d7e36356140dd3eb0e6e7c776fe944617177819786e9
     - sceneGuid: 837a3910185f2b9478ce71df025ccc7c
       assetPath: Assets/_Project/Scenes/World/WorldScene_0_0.unity
-      dependencyHash: 2c9167c4dd10d7fed5e4f3a8965e241d
+      dependencyHash: 17ab82a2e4928e6db9bfa748c8d960fe
       inspectedComplete: 1
       saved: 1
       observations:
@@ -559,7 +589,7 @@ MonoBehaviour:
         parentSourceId: 
         isRoot: 1
         isNetworkObject: 0
-        layoutHash: 771f768625111f968e383a9721fd0d6b62b62dca9edbbb1c6fa28a317425f774
+        layoutHash: 6b39e00c560bd888f9192c1e5419f2a06bcf8b6450cd092dda945b4aff12ba35
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:666140169:0
         parentSourceId: 
         isRoot: 1
@@ -664,7 +694,7 @@ MonoBehaviour:
         parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
         isRoot: 0
         isNetworkObject: 1
-        layoutHash: c897e25a4b0249aaef90e7fa97c712f7ddbddecfbb8b44d784152b935de39a06
+        layoutHash: 3ba75f8ddacd98858914d3fe123d0e03461d1baf0518368c5311dcc921e76307
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1084116511
         parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
         isRoot: 0
@@ -714,7 +744,7 @@ MonoBehaviour:
         parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
         isRoot: 0
         isNetworkObject: 1
-        layoutHash: 97a1065becbb5f99fe32b4c2f11a3e7bf4bf752fd2340e8b493a256fa9383990
+        layoutHash: e220d0f65873a8ea2dd2372a64f0c4f6ac5375cc8d04b3084b4bd95ca63c5ec9
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1400259018
         parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
         isRoot: 0
@@ -774,7 +804,7 @@ MonoBehaviour:
         parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
         isRoot: 0
         isNetworkObject: 1
-        layoutHash: ac1e4a3b0b921635bb9073056696171381936c24487527a314d1c290d1cfa025
+        layoutHash: 340773d4c892048017a9ee0a7805982c73c93b9604e66d879649fafaf3a0b3c7
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:1656733450
         parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
         isRoot: 0
@@ -839,7 +869,7 @@ MonoBehaviour:
         parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
         isRoot: 0
         isNetworkObject: 1
-        layoutHash: 9960f8bfd80c457457627dc83a93ed11031f6e010b366db8ba0f23421ccf9ebf
+        layoutHash: e3d23a0c61b367430630a96e63da88459cbe7222302a808554ef5d323095441e
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:189786323
         parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
         isRoot: 0
@@ -1054,7 +1084,7 @@ MonoBehaviour:
         parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
         isRoot: 0
         isNetworkObject: 1
-        layoutHash: 44c514ab3f670d5e8e8d6ecbe2bc5c19e77e297e50f238e04c51ca8bdb4d498b
+        layoutHash: 9286d12dde0cfa326a5cc55f37fd395bd66e690a21ee7ef27af3d34d0f762eb2
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:940753756
         parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
         isRoot: 0
@@ -1069,7 +1099,7 @@ MonoBehaviour:
         parentSourceId: 837a3910185f2b9478ce71df025ccc7c:654695914:0
         isRoot: 0
         isNetworkObject: 1
-        layoutHash: 14ddb61129a3fa69f51214edc9353a593ae9e725e29939accdb4e713a3bf91bc
+        layoutHash: 25fe7df6a483f2c6f1a33f38c642043e289cdc29399c49bf9d236eda6a2fb52b
       - sourceId: 837a3910185f2b9478ce71df025ccc7c:836964523381807351:977674711
         parentSourceId: 837a3910185f2b9478ce71df025ccc7c:14177344:0
         isRoot: 0
@@ -1253,7 +1283,7 @@ MonoBehaviour:
         leaves this source exactly as authored and does not place, activate, spawn
         or retire it.'
       treatment: 5
-      ownership: 1
+      ownership: 5
       spatial: 0
       replacementPrefabHash: 0
       poseKind: 0
@@ -2107,7 +2137,7 @@ MonoBehaviour:
         in the current saved runtime state. The global pilot does not restore, reparent
         or treat this source as scene gameplay.'
       treatment: 5
-      ownership: 2
+      ownership: 5
       spatial: 0
       replacementPrefabHash: 0
       poseKind: 0
@@ -4779,6 +4809,102 @@ MonoBehaviour:
         or retire it.'
       treatment: 5
       ownership: 4
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:835669854:0
+      reviewNote: Auto-bake (2026-11-27)
+      treatment: 5
+      ownership: 1
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:236023828:0
+      reviewNote: Auto-bake (2026-11-27)
+      treatment: 5
+      ownership: 1
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:909090001:0
+      reviewNote: Auto-bake (2026-11-27)
+      treatment: 5
+      ownership: 5
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:8004602582317748023:655684132
+      reviewNote: Auto-bake (2026-11-27)
+      treatment: 5
+      ownership: 1
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:8366445379210990754:1835397970
+      reviewNote: Auto-bake (2026-11-27)
+      treatment: 5
+      ownership: 1
+      spatial: 0
+      replacementPrefabHash: 0
+      poseKind: 0
+      worldPosition:
+        X: 0
+        Y: 0
+        Z: 0
+      parentLocalPosition: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+      parentSourceId: 
+    - sceneGuid: 336a190646b19bc46b22dd4e78f99800
+      sourceId: 336a190646b19bc46b22dd4e78f99800:8386944598171672423:603430278
+      reviewNote: Auto-bake (2026-11-27)
+      treatment: 5
+      ownership: 1
       spatial: 0
       replacementPrefabHash: 0
       poseKind: 0

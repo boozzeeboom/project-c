@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f381f5728773757488d4897968570c57, type: 3}
+  m_Name: Clothing_ARM_04_AGRAV_SHOULDERS
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Equipment.ClothingItemData
+  itemName: Clothing_ARM_04_AGRAV_SHOULDERS
+  itemType: 1
+  description: Armor set 04_AGRAV (SHOULDERS), Tier 4.
+  icon: {fileID: 21300000, guid: 5224f0d5e99b42e448afd028a3a35d96, type: 3}
+  equipSlot: 0
+  maxStack: 1
+  weightKg: 1.4
+  basePrice: 480
+  visualPrefab: {fileID: 6138339529002292296, guid: 2f9dbe04a8392f841bfc90b7c522423d, type: 3}
+  attachBoneOverride: 55
+  attachPositionOffset: {x: 0, y: 0, z: 0}
+  attachRotationOffset: {x: 0, y: 0, z: 0}
+  attachScale: {x: 1, y: 1, z: 1}
+  equippedVisualPrefab: {fileID: 7606627304229140829, guid: b4ccb22a180a360419f008ec131877c7, type: 3}
+  slot: 7
+  tier: 4
+  strengthBonus: 0
+  dexterityBonus: 0
+  intelligenceBonus: 0
+  strengthMultiplier: 0
+  dexterityMultiplier: 0
+  intelligenceMultiplier: 0
+  armorDefense: 3
+  requiredSkills: []

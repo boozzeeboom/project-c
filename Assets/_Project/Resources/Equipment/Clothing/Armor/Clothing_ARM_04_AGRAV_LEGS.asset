@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f381f5728773757488d4897968570c57, type: 3}
+  m_Name: Clothing_ARM_04_AGRAV_LEGS
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Equipment.ClothingItemData
+  itemName: Clothing_ARM_04_AGRAV_LEGS
+  itemType: 1
+  description: Armor set 04_AGRAV (LEGS), Tier 4.
+  icon: {fileID: 21300000, guid: 95365eccae2cf9541afdf893e703cf0c, type: 3}
+  equipSlot: 0
+  maxStack: 1
+  weightKg: 5
+  basePrice: 480
+  visualPrefab: {fileID: 8018834243440054196, guid: c8208bf33dd7eb541816d05017bbaf55, type: 3}
+  attachBoneOverride: 55
+  attachPositionOffset: {x: 0, y: 0, z: 0}
+  attachRotationOffset: {x: 0, y: 0, z: 0}
+  attachScale: {x: 1, y: 1, z: 1}
+  equippedVisualPrefab: {fileID: 4348274756165821160, guid: 2e426e9806d0d554993d6284feabade0, type: 3}
+  slot: 3
+  tier: 4
+  strengthBonus: 0
+  dexterityBonus: 0
+  intelligenceBonus: 0
+  strengthMultiplier: 0
+  dexterityMultiplier: 0
+  intelligenceMultiplier: 0
+  armorDefense: 10
+  requiredSkills: []

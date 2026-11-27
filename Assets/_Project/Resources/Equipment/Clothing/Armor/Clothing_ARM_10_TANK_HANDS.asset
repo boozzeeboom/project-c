@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f381f5728773757488d4897968570c57, type: 3}
+  m_Name: Clothing_ARM_10_TANK_HANDS
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Equipment.ClothingItemData
+  itemName: Clothing_ARM_10_TANK_HANDS
+  itemType: 1
+  description: Armor set 10_TANK (HANDS), Tier 9.
+  icon: {fileID: 21300000, guid: 9f477572626b74b47b0f16825174de0d, type: 3}
+  equipSlot: 0
+  maxStack: 1
+  weightKg: 0.7
+  basePrice: 1080
+  visualPrefab: {fileID: 954998652178558491, guid: 1cb63f640f77ac74d8213b27c3244ae0, type: 3}
+  attachBoneOverride: 55
+  attachPositionOffset: {x: 0, y: 0, z: 0}
+  attachRotationOffset: {x: 0, y: 0, z: 0}
+  attachScale: {x: 1, y: 1, z: 1}
+  equippedVisualPrefab: {fileID: 4249066249799586033, guid: 4da585a55db80ca4ab35b33ceb2f992d, type: 3}
+  slot: 6
+  tier: 9
+  strengthBonus: 0
+  dexterityBonus: 0
+  intelligenceBonus: 0
+  strengthMultiplier: 0
+  dexterityMultiplier: 0
+  intelligenceMultiplier: 0
+  armorDefense: 4
+  requiredSkills: []

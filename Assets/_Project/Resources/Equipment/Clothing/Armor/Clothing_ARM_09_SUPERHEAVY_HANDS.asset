@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f381f5728773757488d4897968570c57, type: 3}
+  m_Name: Clothing_ARM_09_SUPERHEAVY_HANDS
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Equipment.ClothingItemData
+  itemName: Clothing_ARM_09_SUPERHEAVY_HANDS
+  itemType: 1
+  description: Armor set 09_SUPERHEAVY (HANDS), Tier 8.
+  icon: {fileID: 21300000, guid: 9f477572626b74b47b0f16825174de0d, type: 3}
+  equipSlot: 0
+  maxStack: 1
+  weightKg: 0.7
+  basePrice: 960
+  visualPrefab: {fileID: 7277432032884317913, guid: e72bbebc4aa736b43b98c6abe71af816, type: 3}
+  attachBoneOverride: 55
+  attachPositionOffset: {x: 0, y: 0, z: 0}
+  attachRotationOffset: {x: 0, y: 0, z: 0}
+  attachScale: {x: 1, y: 1, z: 1}
+  equippedVisualPrefab: {fileID: 7246072129633358048, guid: a87fc1d68c94c524f9e104b24d0e8e20, type: 3}
+  slot: 6
+  tier: 8
+  strengthBonus: 0
+  dexterityBonus: 0
+  intelligenceBonus: 0
+  strengthMultiplier: 0
+  dexterityMultiplier: 0
+  intelligenceMultiplier: 0
+  armorDefense: 4
+  requiredSkills: []

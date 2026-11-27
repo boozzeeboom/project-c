@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f381f5728773757488d4897968570c57, type: 3}
+  m_Name: Clothing_ARM_06_CHEMICAL_BELT
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Equipment.ClothingItemData
+  itemName: Clothing_ARM_06_CHEMICAL_BELT
+  itemType: 1
+  description: Armor set 06_CHEMICAL (BELT), Tier 3.
+  icon: {fileID: 21300000, guid: 5224f0d5e99b42e448afd028a3a35d96, type: 3}
+  equipSlot: 0
+  maxStack: 1
+  weightKg: 0.9
+  basePrice: 360
+  visualPrefab: {fileID: 2499405314906264843, guid: d22cde4275b75ea459b8596496e6283b, type: 3}
+  attachBoneOverride: 55
+  attachPositionOffset: {x: 0, y: 0, z: 0}
+  attachRotationOffset: {x: 0, y: 0, z: 0}
+  attachScale: {x: 1, y: 1, z: 1}
+  equippedVisualPrefab: {fileID: 4079634766533978073, guid: a449b3d632258d441bf6d905f0ccf4c6, type: 3}
+  slot: 8
+  tier: 3
+  strengthBonus: 0
+  dexterityBonus: 0
+  intelligenceBonus: 0
+  strengthMultiplier: 0
+  dexterityMultiplier: 0
+  intelligenceMultiplier: 0
+  armorDefense: 1
+  requiredSkills: []

@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f381f5728773757488d4897968570c57, type: 3}
+  m_Name: Clothing_ARM_01_STEEL_SHOULDERS
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Equipment.ClothingItemData
+  itemName: Clothing_ARM_01_STEEL_SHOULDERS
+  itemType: 1
+  description: Armor set 01_STEEL (SHOULDERS), Tier 1.
+  icon: {fileID: 21300000, guid: 5224f0d5e99b42e448afd028a3a35d96, type: 3}
+  equipSlot: 0
+  maxStack: 1
+  weightKg: 1.4
+  basePrice: 120
+  visualPrefab: {fileID: 5993000835601529146, guid: 482e7f24a68307d46a0129d120e460b2, type: 3}
+  attachBoneOverride: 55
+  attachPositionOffset: {x: 0, y: 0, z: 0}
+  attachRotationOffset: {x: 0, y: 0, z: 0}
+  attachScale: {x: 1, y: 1, z: 1}
+  equippedVisualPrefab: {fileID: 2592745775005700876, guid: 5a84436d1d1c9134e94cacef3a980baa, type: 3}
+  slot: 7
+  tier: 1
+  strengthBonus: 0
+  dexterityBonus: 0
+  intelligenceBonus: 0
+  strengthMultiplier: 0
+  dexterityMultiplier: 0
+  intelligenceMultiplier: 0
+  armorDefense: 2
+  requiredSkills: []

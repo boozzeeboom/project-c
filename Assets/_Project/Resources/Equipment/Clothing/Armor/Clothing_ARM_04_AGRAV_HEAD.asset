@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f381f5728773757488d4897968570c57, type: 3}
+  m_Name: Clothing_ARM_04_AGRAV_HEAD
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Equipment.ClothingItemData
+  itemName: Clothing_ARM_04_AGRAV_HEAD
+  itemType: 1
+  description: Armor set 04_AGRAV (HEAD), Tier 4.
+  icon: {fileID: 21300000, guid: a0c09653d76e37643892f418b1e282bc, type: 3}
+  equipSlot: 0
+  maxStack: 1
+  weightKg: 1.6
+  basePrice: 480
+  visualPrefab: {fileID: 8633355322116803638, guid: fa5ab937a563b2f42b5395f20688c2a0, type: 3}
+  attachBoneOverride: 55
+  attachPositionOffset: {x: 0, y: 0, z: 0}
+  attachRotationOffset: {x: 0, y: 0, z: 0}
+  attachScale: {x: 1, y: 1, z: 1}
+  equippedVisualPrefab: {fileID: 6149978929756915717, guid: d9681e13cdf09284a9f22b095ff1fc12, type: 3}
+  slot: 1
+  tier: 4
+  strengthBonus: 0
+  dexterityBonus: 0
+  intelligenceBonus: 0
+  strengthMultiplier: 0
+  dexterityMultiplier: 0
+  intelligenceMultiplier: 0
+  armorDefense: 6
+  requiredSkills: []

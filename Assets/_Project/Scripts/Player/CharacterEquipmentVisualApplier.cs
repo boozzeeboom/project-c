@@ -40,8 +40,8 @@ namespace ProjectC.Player
                  "Default true для debug; можно отключить в release.")]
         [SerializeField] private bool _logWarnings = true;
 
-        // slot → spawned visual GameObject (null если слот пуст или без визуала)
-        private readonly Dictionary<EquipSlot, GameObject> _spawnedVisuals = new();
+        // slot → spawned visual GameObjects (пусто если слот пуст или без визуала)
+        private readonly Dictionary<EquipSlot, List<GameObject>> _spawnedVisuals = new();
 
         // slot → ItemData (для diff'а snapshot vs current)
         private readonly Dictionary<EquipSlot, ItemData> _currentItems = new();
@@ -154,8 +154,8 @@ namespace ProjectC.Player
                 DestroyVisual(slot);
             }
 
-            // 2. Навесить новый, если есть И у него есть visualPrefab.
-            if (newItem != null && newItem.visualPrefab != null)
+            // 2. Навесить новый, если есть И у него есть equippedVisualPrefab или visualPrefab.
+            if (newItem != null && (newItem.equippedVisualPrefab != null || newItem.visualPrefab != null))
             {
                 SpawnVisual(slot, newItem);
             }
@@ -175,6 +175,66 @@ namespace ProjectC.Player
 
         private void SpawnVisual(EquipSlot slot, ItemData item)
         {
+            if (item.equippedVisualPrefab != null)
+            {
+                GameObject root = Instantiate(item.equippedVisualPrefab);
+                var mounts = root.GetComponentsInChildren<EquipmentMirrorMount>(true);
+                if (mounts != null && mounts.Length > 0)
+                {
+                    var list = new List<GameObject>(mounts.Length);
+                    foreach (var mount in mounts)
+                    {
+                        if (mount == null) continue;
+                        Transform boneTransform = mount.bone != HumanBodyBones.LastBone
+                            ? _animator.GetBoneTransform(mount.bone)
+                            : null;
+                        if (boneTransform == null)
+                        {
+                            EquipSlotToBone.TryGetBoneTransformWithOverride(
+                                slot, item.attachBoneOverride, _animator, out boneTransform);
+                        }
+                        if (boneTransform == null)
+                        {
+                            if (_logWarnings)
+                            {
+                                Debug.LogWarning($"[CharacterEquipmentVisualApplier] Bone '{mount.bone}' not found for slot {slot} on '{name}'. Mount '{mount.name}' skipped.", this);
+                            }
+                            continue;
+                        }
+
+                        GameObject node = mount.gameObject;
+                        node.transform.SetParent(boneTransform, worldPositionStays: false);
+                        node.transform.localPosition = mount.localPosition;
+                        node.transform.localEulerAngles = mount.localEulerAngles;
+                        node.transform.localScale = mount.localScale;
+
+                        foreach (var col in node.GetComponentsInChildren<Collider>(true))
+                        {
+                            if (col != null) col.enabled = false;
+                        }
+
+                        list.Add(node);
+                    }
+
+                    if (root != null && !list.Contains(root))
+                    {
+                        if (Application.isPlaying) Destroy(root);
+                        else DestroyImmediate(root);
+                    }
+
+                    if (list.Count > 0)
+                    {
+                        _spawnedVisuals[slot] = list;
+                    }
+                    return;
+                }
+
+                if (Application.isPlaying) Destroy(root);
+                else DestroyImmediate(root);
+            }
+
+            if (item.visualPrefab == null) return;
+
             // 1. Resolve bone (override или default).
             if (!EquipSlotToBone.TryGetBoneTransformWithOverride(
                     slot, item.attachBoneOverride, _animator, out Transform bone))
@@ -203,7 +263,7 @@ namespace ProjectC.Player
             }
 
             // 5. Track.
-            _spawnedVisuals[slot] = go;
+            _spawnedVisuals[slot] = new List<GameObject>(1) { go };
 
             if (Debug.isDebugBuild && _logWarnings)
             {
@@ -213,19 +273,17 @@ namespace ProjectC.Player
 
         private void DestroyVisual(EquipSlot slot)
         {
-            if (!_spawnedVisuals.TryGetValue(slot, out GameObject go)) return;
-            if (go == null)
+            if (!_spawnedVisuals.TryGetValue(slot, out List<GameObject> list)) return;
+            if (list != null)
             {
-                _spawnedVisuals.Remove(slot);
-                return;
-            }
-            if (Application.isPlaying)
-            {
-                Destroy(go);
-            }
-            else
-            {
-                DestroyImmediate(go);
+                for (int i = 0; i < list.Count; i++)
+                {
+                    var go = list[i];
+                    if (go == null) continue;
+                    if (Application.isPlaying) Destroy(go);
+                    else DestroyImmediate(go);
+                }
+                list.Clear();
             }
             _spawnedVisuals.Remove(slot);
         }
@@ -234,10 +292,13 @@ namespace ProjectC.Player
         {
             foreach (var kvp in _spawnedVisuals)
             {
-                if (kvp.Value != null)
+                if (kvp.Value == null) continue;
+                for (int i = 0; i < kvp.Value.Count; i++)
                 {
-                    if (Application.isPlaying) Destroy(kvp.Value);
-                    else DestroyImmediate(kvp.Value);
+                    var go = kvp.Value[i];
+                    if (go == null) continue;
+                    if (Application.isPlaying) Destroy(go);
+                    else DestroyImmediate(go);
                 }
             }
             _spawnedVisuals.Clear();
@@ -285,11 +346,22 @@ namespace ProjectC.Player
         /// <summary>Сколько visual'ов сейчас на персонаже (для UI/debug).</summary>
         public int ActiveVisualCount => _spawnedVisuals.Count;
 
+        /// <summary>Попытка получить первый visual GameObject для слота.</summary>
+        public bool TryGetVisual(EquipSlot slot, out GameObject visual)
+        {
+            visual = null;
+            if (_spawnedVisuals.TryGetValue(slot, out var list) && list != null && list.Count > 0)
+            {
+                visual = list[0];
+                return visual != null;
+            }
+            return false;
+        }
+
         /// <summary>VisualPrefab для слота (или null).</summary>
         public GameObject GetVisualForSlot(EquipSlot slot)
         {
-            _spawnedVisuals.TryGetValue(slot, out var go);
-            return go;
+            return TryGetVisual(slot, out var go) ? go : null;
         }
 
         /// <summary>

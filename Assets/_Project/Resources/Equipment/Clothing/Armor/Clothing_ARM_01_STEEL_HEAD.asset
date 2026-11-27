@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f381f5728773757488d4897968570c57, type: 3}
+  m_Name: Clothing_ARM_01_STEEL_HEAD
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Equipment.ClothingItemData
+  itemName: Clothing_ARM_01_STEEL_HEAD
+  itemType: 1
+  description: Armor set 01_STEEL (HEAD), Tier 1.
+  icon: {fileID: 21300000, guid: a0c09653d76e37643892f418b1e282bc, type: 3}
+  equipSlot: 0
+  maxStack: 1
+  weightKg: 1.6
+  basePrice: 120
+  visualPrefab: {fileID: 8362197879560957443, guid: 0eeb5e3aaaa355b428cf4be08555bc2d, type: 3}
+  attachBoneOverride: 55
+  attachPositionOffset: {x: 0, y: 0, z: 0}
+  attachRotationOffset: {x: 0, y: 0, z: 0}
+  attachScale: {x: 1, y: 1, z: 1}
+  equippedVisualPrefab: {fileID: 1990537651471902154, guid: 886e7aff253f8de44815dd1956df142d, type: 3}
+  slot: 1
+  tier: 1
+  strengthBonus: 0
+  dexterityBonus: 0
+  intelligenceBonus: 0
+  strengthMultiplier: 0
+  dexterityMultiplier: 0
+  intelligenceMultiplier: 0
+  armorDefense: 4
+  requiredSkills: []

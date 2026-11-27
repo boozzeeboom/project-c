@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f381f5728773757488d4897968570c57, type: 3}
+  m_Name: Clothing_ARM_03_BRONZE_HEAD
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Equipment.ClothingItemData
+  itemName: Clothing_ARM_03_BRONZE_HEAD
+  itemType: 1
+  description: Armor set 03_BRONZE (HEAD), Tier 3.
+  icon: {fileID: 21300000, guid: a0c09653d76e37643892f418b1e282bc, type: 3}
+  equipSlot: 0
+  maxStack: 1
+  weightKg: 1.6
+  basePrice: 360
+  visualPrefab: {fileID: 5557723770441472121, guid: fba9bf69b04e95b43b878aa2dd6865a1, type: 3}
+  attachBoneOverride: 55
+  attachPositionOffset: {x: 0, y: 0, z: 0}
+  attachRotationOffset: {x: 0, y: 0, z: 0}
+  attachScale: {x: 1, y: 1, z: 1}
+  equippedVisualPrefab: {fileID: 926311712611756977, guid: b53210c835644934eb177ad55bd578c6, type: 3}
+  slot: 1
+  tier: 3
+  strengthBonus: 0
+  dexterityBonus: 0
+  intelligenceBonus: 0
+  strengthMultiplier: 0
+  dexterityMultiplier: 0
+  intelligenceMultiplier: 0
+  armorDefense: 5
+  requiredSkills: []

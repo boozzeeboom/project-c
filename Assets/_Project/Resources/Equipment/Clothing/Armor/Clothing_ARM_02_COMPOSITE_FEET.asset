@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f381f5728773757488d4897968570c57, type: 3}
+  m_Name: Clothing_ARM_02_COMPOSITE_FEET
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Equipment.ClothingItemData
+  itemName: Clothing_ARM_02_COMPOSITE_FEET
+  itemType: 1
+  description: Armor set 02_COMPOSITE (FEET), Tier 2.
+  icon: {fileID: 21300000, guid: b4b5a491b4505974096d8025a6a2d4bf, type: 3}
+  equipSlot: 0
+  maxStack: 1
+  weightKg: 1.3
+  basePrice: 240
+  visualPrefab: {fileID: 1204310970746743136, guid: 0e97a4a5e75614c4ca58a06fcb05c8d4, type: 3}
+  attachBoneOverride: 55
+  attachPositionOffset: {x: 0, y: 0, z: 0}
+  attachRotationOffset: {x: 0, y: 0, z: 0}
+  attachScale: {x: 1, y: 1, z: 1}
+  equippedVisualPrefab: {fileID: 5333687011827215770, guid: ff573eebf3f0d9947aaede35cb2c0e4b, type: 3}
+  slot: 4
+  tier: 2
+  strengthBonus: 0
+  dexterityBonus: 0
+  intelligenceBonus: 0
+  strengthMultiplier: 0
+  dexterityMultiplier: 0
+  intelligenceMultiplier: 0
+  armorDefense: 3
+  requiredSkills: []

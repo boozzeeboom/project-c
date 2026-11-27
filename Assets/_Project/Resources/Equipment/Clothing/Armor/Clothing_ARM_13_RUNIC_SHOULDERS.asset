@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f381f5728773757488d4897968570c57, type: 3}
+  m_Name: Clothing_ARM_13_RUNIC_SHOULDERS
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Equipment.ClothingItemData
+  itemName: Clothing_ARM_13_RUNIC_SHOULDERS
+  itemType: 1
+  description: Armor set 13_RUNIC (SHOULDERS), Tier 7.
+  icon: {fileID: 21300000, guid: 5224f0d5e99b42e448afd028a3a35d96, type: 3}
+  equipSlot: 0
+  maxStack: 1
+  weightKg: 1.4
+  basePrice: 840
+  visualPrefab: {fileID: 4305097733878538477, guid: 42c4990e82647284db971c62d92a45b6, type: 3}
+  attachBoneOverride: 55
+  attachPositionOffset: {x: 0, y: 0, z: 0}
+  attachRotationOffset: {x: 0, y: 0, z: 0}
+  attachScale: {x: 1, y: 1, z: 1}
+  equippedVisualPrefab: {fileID: 3987637816880128250, guid: 706da109ecc7fb74d85dc2949a1acb83, type: 3}
+  slot: 7
+  tier: 7
+  strengthBonus: 0
+  dexterityBonus: 0
+  intelligenceBonus: 0
+  strengthMultiplier: 0
+  dexterityMultiplier: 0
+  intelligenceMultiplier: 0
+  armorDefense: 4
+  requiredSkills: []

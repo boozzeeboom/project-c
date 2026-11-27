@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f381f5728773757488d4897968570c57, type: 3}
+  m_Name: Clothing_ARM_13_RUNIC_FEET
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Equipment.ClothingItemData
+  itemName: Clothing_ARM_13_RUNIC_FEET
+  itemType: 1
+  description: Armor set 13_RUNIC (FEET), Tier 7.
+  icon: {fileID: 21300000, guid: b4b5a491b4505974096d8025a6a2d4bf, type: 3}
+  equipSlot: 0
+  maxStack: 1
+  weightKg: 1.3
+  basePrice: 840
+  visualPrefab: {fileID: 6045006358008285848, guid: e67e6bc51d0384f4f9bd13b490546a03, type: 3}
+  attachBoneOverride: 55
+  attachPositionOffset: {x: 0, y: 0, z: 0}
+  attachRotationOffset: {x: 0, y: 0, z: 0}
+  attachScale: {x: 1, y: 1, z: 1}
+  equippedVisualPrefab: {fileID: 4423581184547918972, guid: 4248cf2d7d6033a478cfc6bb5b75d149, type: 3}
+  slot: 4
+  tier: 7
+  strengthBonus: 0
+  dexterityBonus: 0
+  intelligenceBonus: 0
+  strengthMultiplier: 0
+  dexterityMultiplier: 0
+  intelligenceMultiplier: 0
+  armorDefense: 6
+  requiredSkills: []

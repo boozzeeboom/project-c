@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f381f5728773757488d4897968570c57, type: 3}
+  m_Name: Clothing_ARM_10_TANK_LAMES_CHEST
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Equipment.ClothingItemData
+  itemName: Clothing_ARM_10_TANK_LAMES_CHEST
+  itemType: 1
+  description: Armor set 10_TANK_LAMES (CHEST), Tier 9.
+  icon: {fileID: 21300000, guid: 1b67feb9ff1ef3e4eaa08f2ab027b5ef, type: 3}
+  equipSlot: 0
+  maxStack: 1
+  weightKg: 6.5
+  basePrice: 1080
+  visualPrefab: {fileID: 8175186061310780586, guid: 8642ce2031b499449bf97a0a8b638e5a, type: 3}
+  attachBoneOverride: 55
+  attachPositionOffset: {x: 0, y: 0, z: 0}
+  attachRotationOffset: {x: 0, y: 0, z: 0}
+  attachScale: {x: 1, y: 1, z: 1}
+  equippedVisualPrefab: {fileID: 6881032706573179335, guid: e4f4fab8d4cd6c1469e6e4e51103b94d, type: 3}
+  slot: 2
+  tier: 9
+  strengthBonus: 0
+  dexterityBonus: 0
+  intelligenceBonus: 0
+  strengthMultiplier: 0
+  dexterityMultiplier: 0
+  intelligenceMultiplier: 0
+  armorDefense: 20
+  requiredSkills: []

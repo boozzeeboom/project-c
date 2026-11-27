@@ -83,5 +83,9 @@ namespace ProjectC.Items
         [Tooltip("Локальный масштаб visualPrefab. (1,1,1) = без изменений. Полезно если меш " +
                  "импортирован в неправильном масштабе (например, cm vs m).")]
         public Vector3 attachScale = Vector3.one;
+
+        [Header("Visual (paired equipment)")]
+        [Tooltip("Префаб с EquipmentMirrorMount. Если null — используется visualPrefab.")]
+        public GameObject equippedVisualPrefab;
     }
 }

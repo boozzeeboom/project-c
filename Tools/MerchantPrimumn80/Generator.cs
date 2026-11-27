@@ -698,6 +698,490 @@ namespace ProjectC.EditorTools.Merchants
 
         // ── helpers ──
 
+        // ── T-MERCH80b: factions + gender-matched models ──
+
+        private static readonly HashSet<string> FemaleFirstNames = new HashSet<string>
+        {
+            "Марта","Нина","Люба","Зоя","Вера","Аглая","Ярослава","Ксения","Марина","Ольга","Таисия","Дарья","Эмилия",
+            "Анастасия","Полина","Инна","Софья","Лада","Арина","Клавдия","Наталья","Елена","Виктория","Инга","Милана",
+            "Жанна","Алиса","Степанида","Агата","Прасковья","Мирослава","Оксана","Ника","Регина","Лидия","Есения"
+        };
+
+        private const string GuildOfSuccessPath = "Assets/_Project/Resources/Data/Factions/GuildOfSuccess.asset";
+        private const string VillagersPath = "Assets/_Project/Resources/Data/Factions/Faction_Villagers.asset";
+        private const string NpcAnimatorPath = "Assets/_Project/Animation/AI/NpcAnimator_Goblin.overrideController";
+
+        private static bool IsFemale(string first) { return FemaleFirstNames.Contains(first); }
+
+        private static string FactionKeyForGroup(string group)
+        {
+            switch (group)
+            {
+                case "weapons":
+                case "tech":
+                case "implants":
+                case "antigrav":
+                case "meziy":
+                    return "success";
+                case "equipment":
+                case "resources":
+                case "fuel":
+                    return "free";
+                default: // grocery, medical, clothing
+                    return "villagers";
+            }
+        }
+
+        private static FactionId LegacyFaction(string key)
+        {
+            if (key == "success") return FactionId.GuildOfSuccess;
+            if (key == "free") return FactionId.FreeTraders;
+            return FactionId.Villagers;
+        }
+
+        private static string ModelPath(string category, string name)
+        {
+            return "Assets/Generated_Models_Rigged_NPC/01_Characters/" + category + "/" + name + "/" + name + "_Rigged_NPC_Humanoid.fbx";
+        }
+
+        private static string GuildSuccessModel(bool female)
+        {
+            return ModelPath("Guilds", female ? "PC_Char_Guild_Success_Female_APOSE_v01" : "PC_Char_Guild_Success_Male_APOSE_v01");
+        }
+
+        private static string VillagerBaseModel(bool female)
+        {
+            return female
+                ? ModelPath("City", "PC_Char_City_MerchantWoman_APOSE_v02")
+                : ModelPath("City", "PC_Char_City_LowerCraftsman_APOSE_v02");
+        }
+
+        private static string FreeTraderBaseModel(bool female, int index)
+        {
+            if (female)
+                return (index % 2 == 0)
+                    ? ModelPath("Archetypes", "PC_Char_Merchant_Intermediary_Female_APOSE_v02")
+                    : ModelPath("City", "PC_Char_City_MerchantWoman_APOSE_v02");
+            return ModelPath("Archetypes", "PC_Char_Merchant_Intermediary_Male_APOSE_v01");
+        }
+
+        private static string BlacksmithModel(bool female)
+        {
+            return ModelPath("Archetypes", female ? "PC_Char_Blacksmith_Female_APOSE_v02" : "PC_Char_Blacksmith_Male_APOSE_v02");
+        }
+
+        private static string EngineerModel(bool female, int index)
+        {
+            if (female)
+                return (index % 2 == 0)
+                    ? ModelPath("Engineers", "PC_Char_Engineer_Female_EastAsian_APOSE_v01")
+                    : ModelPath("Engineers", "PC_Char_Engineer_Female_Nordic_APOSE_v01");
+            return (index % 2 == 0)
+                ? ModelPath("Engineers", "PC_Char_Engineer_Male_Andean_APOSE_v01")
+                : ModelPath("Engineers", "PC_Char_Engineer_Male_Himalayan_APOSE_v01");
+        }
+
+        private static string CityEngineerModel(bool female, int index)
+        {
+            if (female) return EngineerModel(true, index);
+            return ModelPath("City", "PC_Char_City_GuildEngineer_APOSE_v02");
+        }
+
+        private static string StylizedEngineerModel(bool female)
+        {
+            return ModelPath("Archetypes", female ? "PC_Char_Stylized_Engineer_Female_Hazard_APOSE_v01" : "PC_Char_Stylized_Engineer_Male_Hazard_APOSE_v01");
+        }
+
+        private static string PilotModel(bool female, int index)
+        {
+            string[] male =
+            {
+                "PC_Char_Pilot_Male_VioletJacket_APOSE_v01","PC_Char_Pilot_Male_SteelFull_APOSE_v01",
+                "PC_Char_Pilot_Male_Composite_APOSE_v01","PC_Char_Pilot_Male_Stripped_APOSE_v01"
+            };
+            string[] fem =
+            {
+                "PC_Char_Pilot_Female_VioletJacket_APOSE_v01","PC_Char_Pilot_Female_SteelFull_APOSE_v01",
+                "PC_Char_Pilot_Female_Composite_APOSE_v01","PC_Char_Pilot_Female_Stripped_APOSE_v01"
+            };
+            return ModelPath("Pilots", (female ? fem : male)[index % 4]);
+        }
+
+        private static string MesiumHandlerModel(bool female)
+        {
+            return ModelPath("Archetypes", female ? "PC_Char_Mesium_Handler_Female_APOSE_v01" : "PC_Char_Mesium_Handler_Male_APOSE_v01");
+        }
+
+        private static string MedicModel(bool female, int index)
+        {
+            if (female)
+                return (index % 2 == 0)
+                    ? ModelPath("Medics", "PC_Char_Medic_Female_Junior_CoatWinter_APOSE_v01")
+                    : ModelPath("Medics", "PC_Char_Medic_Female_Senior_CoatWinter_APOSE_v01");
+            return (index % 2 == 0)
+                ? ModelPath("Medics", "PC_Char_Medic_Male_Junior_CoatWinter_APOSE_v01")
+                : ModelPath("Medics", "PC_Char_Medic_Male_Senior_CoatWinter_APOSE_v01");
+        }
+
+        private static string ScavengerModel(bool female)
+        {
+            return ModelPath("Archetypes", female ? "PC_Char_Scavenger_Female_APOSE_v01" : "PC_Char_Scavenger_Male_APOSE_v01");
+        }
+
+        private static string ModelFor(MerchantSpec spec, int groupIndex, bool female)
+        {
+            switch (spec.Group)
+            {
+                case "weapons":
+                    return (groupIndex % 2 == 0) ? BlacksmithModel(female) : GuildSuccessModel(female);
+                case "tech":
+                    return (groupIndex % 5 < 2) ? EngineerModel(female, groupIndex) : GuildSuccessModel(female);
+                case "implants":
+                    return (groupIndex == 0) ? StylizedEngineerModel(female) : GuildSuccessModel(female);
+                case "antigrav":
+                    return (groupIndex % 2 == 0) ? PilotModel(female, groupIndex) : GuildSuccessModel(female);
+                case "meziy":
+                    return (groupIndex == 0) ? MesiumHandlerModel(female) : GuildSuccessModel(female);
+                case "medical":
+                    return (groupIndex < 5) ? MedicModel(female, groupIndex) : VillagerBaseModel(female);
+                case "equipment":
+                    return (groupIndex % 5 < 2) ? CityEngineerModel(female, groupIndex) : FreeTraderBaseModel(female, groupIndex);
+                case "resources":
+                    return (groupIndex < 3) ? ScavengerModel(female) : FreeTraderBaseModel(female, groupIndex);
+                case "fuel":
+                    return (groupIndex < 2) ? ScavengerModel(female) : FreeTraderBaseModel(female, groupIndex);
+                default: // grocery, clothing
+                    return VillagerBaseModel(female);
+            }
+        }
+
+        public static string PreviewModels()
+        {
+            try
+            {
+                var sb = new System.Text.StringBuilder();
+                var groupIndex = new Dictionary<string, int>();
+                var factionCount = new Dictionary<string, int>();
+                for (int i = 0; i < Specs.Length; i++)
+                {
+                    var spec = Specs[i];
+                    int gi;
+                    groupIndex.TryGetValue(spec.Group, out gi);
+                    groupIndex[spec.Group] = gi + 1;
+                    bool female = IsFemale(spec.First);
+                    string key = FactionKeyForGroup(spec.Group);
+                    int c;
+                    factionCount.TryGetValue(key, out c);
+                    factionCount[key] = c + 1;
+                    string model = ModelFor(spec, gi, female);
+                    sb.AppendLine((i + 1).ToString("000") + " " + (female ? "F" : "M") + " " + key + " " + spec.FullName + " -> " + System.IO.Path.GetFileNameWithoutExtension(model));
+                }
+                foreach (var pair in factionCount) sb.AppendLine("FACTION " + pair.Key + " = " + pair.Value);
+                return sb.ToString();
+            }
+            catch (Exception ex) { return "EXCEPTION: " + ex; }
+        }
+
+        public static string ApplyFactionsAndModels()
+        {
+            try
+            {
+                if (EditorApplication.isPlaying) return "Refuse: Play Mode is running.";
+
+                var guildSuccess = AssetDatabase.LoadAssetAtPath<FactionDefinition>(GuildOfSuccessPath);
+                var freeTraders = AssetDatabase.LoadAssetAtPath<FactionDefinition>(FactionPath);
+                var villagers = AssetDatabase.LoadAssetAtPath<FactionDefinition>(VillagersPath);
+                var controller = AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(NpcAnimatorPath);
+                if (guildSuccess == null) return "GuildOfSuccess faction missing";
+                if (freeTraders == null) return "FreeTraders faction missing";
+                if (villagers == null) return "Villagers faction missing";
+                if (controller == null) return "NpcAnimator_Goblin override controller missing";
+
+                var factions = new Dictionary<string, FactionDefinition>();
+                factions["success"] = guildSuccess;
+                factions["free"] = freeTraders;
+                factions["villagers"] = villagers;
+
+                var scene = SceneManager.GetSceneByPath(WorldPath);
+                if (!scene.IsValid() || !scene.isLoaded) return "WorldScene_0_0 is not loaded";
+                var root = scene.GetRootGameObjects().FirstOrDefault(r => r.name == "WorldRoot_0_0");
+                var container = root ? root.transform.Find(GroupObjectName) : null;
+                if (container == null) return "NPC_PRIMUM_MERCHANTS container missing";
+
+                var groupIndex = new Dictionary<string, int>();
+                int changed = 0, errors = 0;
+                var log = new System.Text.StringBuilder();
+
+                for (int i = 0; i < Specs.Length; i++)
+                {
+                    var spec = Specs[i];
+                    int gi;
+                    groupIndex.TryGetValue(spec.Group, out gi);
+                    groupIndex[spec.Group] = gi + 1;
+
+                    string key = FactionKeyForGroup(spec.Group);
+                    var faction = factions[key];
+                    bool female = IsFemale(spec.First);
+
+                    var def = AssetDatabase.LoadAssetAtPath<NpcDefinition>(DefPathFor(i));
+                    if (def == null) { errors++; log.AppendLine("MISSING DEF " + DefPathFor(i)); continue; }
+                    def.factionRef = faction;
+                    def.faction = LegacyFaction(key);
+                    EditorUtility.SetDirty(def);
+
+                    string objName = "MERCHANT_" + (i + 1).ToString("000") + "_" + spec.First + "_" + spec.Last;
+                    var child = container.Find(objName);
+                    if (child == null) { errors++; log.AppendLine("MISSING SCENE NPC " + objName); continue; }
+
+                    var social = child.GetComponent<NpcSocialBrain>();
+                    if (social != null)
+                    {
+                        var so = new SerializedObject(social);
+                        so.FindProperty("faction").objectReferenceValue = faction;
+                        so.ApplyModifiedPropertiesWithoutUndo();
+                        PrefabUtility.RecordPrefabInstancePropertyModifications(social);
+                    }
+
+                    string modelPath = ModelFor(spec, gi, female);
+                    string error;
+                    if (!SwapModel(child.gameObject, modelPath, controller, out error))
+                    {
+                        errors++;
+                        log.AppendLine("MODEL FAIL " + spec.FullName + " :: " + error);
+                        continue;
+                    }
+                    changed++;
+                }
+
+                EditorSceneManager.MarkSceneDirty(scene);
+                if (!EditorSceneManager.SaveScene(scene)) return "WorldScene_0_0 save failed";
+                AssetDatabase.SaveAssets();
+
+                return "OK changed=" + changed + " errors=" + errors + (log.Length > 0 ? "\n" + log.ToString() : "");
+            }
+            catch (Exception ex) { return "EXCEPTION: " + ex; }
+        }
+
+        private static bool SwapModel(GameObject go, string fbxPath, RuntimeAnimatorController controller, out string error)
+        {
+            error = null;
+            var visual = go.transform.Find("Visual");
+            if (visual == null) { error = "no Visual child"; return false; }
+
+            for (int i = visual.childCount - 1; i >= 0; i--)
+                UnityEngine.Object.DestroyImmediate(visual.GetChild(i).gameObject);
+
+            var fbx = AssetDatabase.LoadAssetAtPath<GameObject>(fbxPath);
+            if (fbx == null) { error = "missing fbx: " + fbxPath; return false; }
+
+            var model = PrefabUtility.InstantiatePrefab(fbx, visual) as GameObject;
+            if (model == null) { error = "instantiate failed: " + fbxPath; return false; }
+
+            string shortName = System.IO.Path.GetFileNameWithoutExtension(fbxPath).Replace("_Rigged_NPC_Humanoid", "");
+            model.name = "Model_" + shortName;
+            model.transform.localPosition = new Vector3(0f, 1.5f, 0f);
+            model.transform.localRotation = Quaternion.identity;
+            model.transform.localScale = Vector3.one;
+
+            var anim = model.GetComponent<Animator>();
+            if (anim == null) anim = model.GetComponentInChildren<Animator>(true);
+            if (anim != null)
+            {
+                anim.runtimeAnimatorController = controller;
+                anim.applyRootMotion = false;
+                PrefabUtility.RecordPrefabInstancePropertyModifications(anim);
+            }
+            return true;
+        }
+
+        // T-MERCH80b: measure pivots so the swapped models stand on the same ground line.
+        public static string ProbeModelBounds()
+        {
+            try
+            {
+                var sb = new System.Text.StringBuilder();
+                var scene = SceneManager.GetSceneByPath(WorldPath);
+                if (!scene.IsValid() || !scene.isLoaded) return "WorldScene_0_0 is not loaded";
+                var root = scene.GetRootGameObjects().FirstOrDefault(r => r.name == "WorldRoot_0_0");
+                var container = root ? root.transform.Find(GroupObjectName) : null;
+                if (container == null) return "NPC_PRIMUM_MERCHANTS container missing";
+
+                var sample = container.GetChild(0);
+                var visual = sample.Find("Visual");
+                sb.AppendLine("SAMPLE " + sample.name + " rootY=" + sample.position.y.ToString("F3") + " visualLocalY=" + (visual != null ? visual.localPosition.y.ToString("F3") : "n/a"));
+                if (visual != null)
+                    foreach (Transform c in visual)
+                        sb.AppendLine("  OLD " + c.name + " " + BoundsDesc(c.gameObject));
+
+                var used = new List<string>();
+                var groupIndex = new Dictionary<string, int>();
+                for (int i = 0; i < Specs.Length; i++)
+                {
+                    var spec = Specs[i];
+                    int gi; groupIndex.TryGetValue(spec.Group, out gi); groupIndex[spec.Group] = gi + 1;
+                    string p = ModelFor(spec, gi, IsFemale(spec.First));
+                    if (!used.Contains(p)) used.Add(p);
+                }
+
+                foreach (var path in used)
+                {
+                    var fbx = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                    if (fbx == null) { sb.AppendLine("MISSING " + path); continue; }
+                    var temp = PrefabUtility.InstantiatePrefab(fbx) as GameObject;
+                    if (temp == null) { sb.AppendLine("INSTANTIATE FAIL " + path); continue; }
+                    sb.AppendLine("FBX " + System.IO.Path.GetFileNameWithoutExtension(path) + " " + BoundsDesc(temp) + " rootScale=" + temp.transform.localScale);
+                    UnityEngine.Object.DestroyImmediate(temp);
+                }
+                return sb.ToString();
+            }
+            catch (Exception ex) { return "EXCEPTION: " + ex; }
+        }
+
+        private static string BoundsDesc(GameObject go)
+        {
+            var renderers = go.GetComponentsInChildren<Renderer>(true);
+            if (renderers.Length == 0) return "no renderers";
+            var b = renderers[0].bounds;
+            for (int i = 1; i < renderers.Length; i++) b.Encapsulate(renderers[i].bounds);
+            return "minY=" + b.min.y.ToString("F3") + " maxY=" + b.max.y.ToString("F3") + " height=" + b.size.y.ToString("F3") + " centerXZ=" + b.center.x.ToString("F2") + "," + b.center.z.ToString("F2");
+        }
+
+        // T-MERCH80b: verify faction refs + model swaps on definitions and scene instances.
+        public static string VerifyFactionsAndModels()
+        {
+            try
+            {
+                var scene = SceneManager.GetSceneByPath(WorldPath);
+                if (!scene.IsValid() || !scene.isLoaded) return "WorldScene_0_0 is not loaded";
+                var root = scene.GetRootGameObjects().FirstOrDefault(r => r.name == "WorldRoot_0_0");
+                var container = root ? root.transform.Find(GroupObjectName) : null;
+                if (container == null) return "NPC_PRIMUM_MERCHANTS container missing";
+
+                var controller = AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(NpcAnimatorPath);
+                var factionCount = new Dictionary<string, int>();
+                var modelCount = new Dictionary<string, int>();
+                var problems = new List<string>();
+                int ok = 0;
+
+                for (int i = 0; i < Specs.Length; i++)
+                {
+                    var spec = Specs[i];
+                    var def = AssetDatabase.LoadAssetAtPath<NpcDefinition>(DefPathFor(i));
+                    if (def == null) { problems.Add("missing def " + (i + 1)); continue; }
+                    string key = FactionKeyForGroup(spec.Group);
+                    string wantFaction = key == "success" ? "GuildOfSuccess" : key == "free" ? "FreeTraders" : "Villagers";
+                    FactionId wantLegacy = LegacyFaction(key);
+
+                    if (def.factionRef == null || def.factionRef.factionKey != wantFaction)
+                        problems.Add((i + 1) + " def factionRef=" + (def.factionRef ? def.factionRef.factionKey : "null") + " want " + wantFaction);
+                    if (def.faction != wantLegacy)
+                        problems.Add((i + 1) + " def legacy=" + def.faction + " want " + wantLegacy);
+                    string fk = def.factionRef ? def.factionRef.factionKey : "null";
+                    int fc; factionCount.TryGetValue(fk, out fc); factionCount[fk] = fc + 1;
+
+                    string objName = "MERCHANT_" + (i + 1).ToString("000") + "_" + spec.First + "_" + spec.Last;
+                    var child = container.Find(objName);
+                    if (child == null) { problems.Add("missing scene " + objName); continue; }
+                    var social = child.GetComponent<NpcSocialBrain>();
+                    if (social == null || social.faction == null || social.faction.factionKey != wantFaction)
+                        problems.Add(objName + " social faction=" + (social && social.faction ? social.faction.factionKey : "null"));
+
+                    var visual = child.Find("Visual");
+                    if (visual == null || visual.childCount != 1) { problems.Add(objName + " Visual children=" + (visual ? visual.childCount : -1)); continue; }
+                    var model = visual.GetChild(0);
+                    if (!model.name.StartsWith("Model_")) problems.Add(objName + " model name=" + model.name);
+                    var anim = model.GetComponent<Animator>() ?? model.GetComponentInChildren<Animator>(true);
+                    if (anim == null) problems.Add(objName + " no animator");
+                    else
+                    {
+                        if (anim.runtimeAnimatorController != controller) problems.Add(objName + " controller=" + (anim.runtimeAnimatorController ? anim.runtimeAnimatorController.name : "null"));
+                        if (anim.applyRootMotion) problems.Add(objName + " applyRootMotion=true");
+                        if (anim.avatar == null || !anim.avatar.isHuman) problems.Add(objName + " avatar not humanoid");
+                    }
+                    if (Mathf.Abs(model.localPosition.y - 1.5f) > 0.001f) problems.Add(objName + " model localY=" + model.localPosition.y);
+                    string mk = model.name; int mc; modelCount.TryGetValue(mk, out mc); modelCount[mk] = mc + 1;
+                    ok++;
+                }
+
+                var sb = new System.Text.StringBuilder();
+                sb.AppendLine("merchants ok=" + ok + " problems=" + problems.Count);
+                foreach (var p in problems) sb.AppendLine("PROBLEM " + p);
+                foreach (var pair in factionCount) sb.AppendLine("FACTION " + pair.Key + " = " + pair.Value);
+                foreach (var pair in modelCount) sb.AppendLine("MODEL " + pair.Key + " = " + pair.Value);
+                return sb.ToString();
+            }
+            catch (Exception ex) { return "EXCEPTION: " + ex; }
+        }
+
+        // T-MERCH80b: every trade-capable NpcDefinition in the project must belong to one of the 3 allowed factions.
+        public static string CheckModelMaterials()
+        {
+            try
+            {
+                var sb = new System.Text.StringBuilder();
+                var used = new List<string>();
+                var groupIndex = new Dictionary<string, int>();
+                for (int i = 0; i < Specs.Length; i++)
+                {
+                    var spec = Specs[i];
+                    int gi; groupIndex.TryGetValue(spec.Group, out gi); groupIndex[spec.Group] = gi + 1;
+                    string p = ModelFor(spec, gi, IsFemale(spec.First));
+                    if (!used.Contains(p)) used.Add(p);
+                }
+                foreach (var path in used)
+                {
+                    var fbx = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                    if (fbx == null) { sb.AppendLine("MISSING " + path); continue; }
+                    var temp = PrefabUtility.InstantiatePrefab(fbx) as GameObject;
+                    if (temp == null) { sb.AppendLine("INSTANTIATE FAIL " + path); continue; }
+                    var rends = temp.GetComponentsInChildren<Renderer>(true);
+                    var shaders = new HashSet<string>();
+                    int nullMats = 0;
+                    foreach (var r in rends)
+                        foreach (var m in r.sharedMaterials)
+                        {
+                            if (m == null || m.shader == null) { nullMats++; continue; }
+                            shaders.Add(m.shader.name);
+                        }
+                    sb.AppendLine(System.IO.Path.GetFileNameWithoutExtension(path) + " renderers=" + rends.Length + " nullMats=" + nullMats + " shaders=" + string.Join(",", shaders));
+                    UnityEngine.Object.DestroyImmediate(temp);
+                }
+                return sb.ToString();
+            }
+            catch (Exception ex) { return "EXCEPTION: " + ex; }
+        }
+
+        public static string AuditAllTradeNpcs()
+        {
+            try
+            {
+                var sb = new System.Text.StringBuilder();
+                var allowed = new HashSet<string> { "GuildOfSuccess", "FreeTraders", "Villagers" };
+                var guids = AssetDatabase.FindAssets("t:NpcDefinition", new[] { "Assets/_Project/Quests/Data/Npcs" });
+                int trade = 0, bad = 0;
+                var list = new List<NpcDefinition>();
+                foreach (var g in guids)
+                {
+                    var def = AssetDatabase.LoadAssetAtPath<NpcDefinition>(AssetDatabase.GUIDToAssetPath(g));
+                    if (def != null) list.Add(def);
+                }
+                list.Sort((a, b) => string.Compare(a.npcId, b.npcId, StringComparison.Ordinal));
+                foreach (var def in list)
+                {
+                    bool isTrade = def.IsMerchant || (def.services & NpcService.Trade) != 0;
+                    if (!isTrade) continue;
+                    trade++;
+                    string key = def.factionRef != null ? def.factionRef.factionKey : "ref:null";
+                    bool ok = allowed.Contains(key);
+                    if (!ok) bad++;
+                    sb.AppendLine((ok ? "OK   " : "BAD  ") + def.npcId + " key=" + key + " legacy=" + def.faction + " ref=" + (def.factionRef ? def.factionRef.name : "null"));
+                }
+                sb.AppendLine("tradeNpcs=" + trade + " outsideAllowed=" + bad);
+                return sb.ToString();
+            }
+            catch (Exception ex) { return "EXCEPTION: " + ex; }
+        }
+
         private static List<ItemData> LoadAllItems()
         {
             var guids = new HashSet<string>();

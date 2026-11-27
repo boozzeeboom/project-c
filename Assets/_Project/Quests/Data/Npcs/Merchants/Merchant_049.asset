@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectC.Quests.NpcDefinition
   npcId: npc_merchant_primum_049
   displayName: "\u0421\u0435\u043C\u0451\u043D \u041A\u0430\u043F\u0443\u0441\u0442\u0438\u043D"
-  factionRef: {fileID: 11400000, guid: 52d26a5460fa81c4b8b59ee4d00d10d5, type: 2}
-  faction: 8
+  factionRef: {fileID: 11400000, guid: da33f2fb82104954f84d56578574f344, type: 2}
+  faction: 15
   portrait: {fileID: 0}
   prefab: {fileID: 836964523381807351, guid: 172a127fa0f35124bb11eda19a17b16e, type: 3}
   animatorTriggerPrefix: 
